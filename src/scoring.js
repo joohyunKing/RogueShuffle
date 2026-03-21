@@ -62,7 +62,12 @@ function findFlush(cards) {
 
 // ── 스트레이트 ────────────────────────────────────────────────────────────────
 function findStraight(cards) {
-  const vals = [...new Set(cards.map(c => c.val))].sort((a, b) => a - b);
+  // A(14)를 1로도 사용 가능 — A-2-3-4-5(로우) 및 10-J-Q-K-A(하이) 모두 허용
+  const rawVals = [...new Set(cards.map(c => c.val))];
+  const vals = rawVals.includes(14)
+    ? [...new Set([1, ...rawVals])].sort((a, b) => a - b)
+    : rawVals.sort((a, b) => a - b);
+
   let best = null;
   let i = 0;
   while (i < vals.length) {
@@ -70,7 +75,9 @@ function findStraight(cards) {
     while (j + 1 < vals.length && vals[j + 1] === vals[j] + 1) j++;
     if (j - i + 1 >= 5) {
       // 연속 구간에서 가장 높은 5장
-      const top5sum = vals.slice(Math.max(i, j - 4), j + 1).reduce((s, v) => s + v, 0);
+      // 단, val=1(A 로우)이 포함된 구간은 실제 A는 14이므로 점수를 1로 계산
+      const top5 = vals.slice(Math.max(i, j - 4), j + 1);
+      const top5sum = top5.reduce((s, v) => s + v, 0);
       const score   = top5sum * 4;
       if (!best || score > best.score) best = { score, label: '스트레이트' };
     }

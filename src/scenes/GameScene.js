@@ -20,7 +20,7 @@ import sfxKnifeSlice   from "../assets/audio/sfx/knifeSlice.ogg?url";
 
 // ─── 유틸 ────────────────────────────────────────────────────────────────────
 function getRankNum(rank) {
-  if (rank === "A") return 1;
+  if (rank === "A") return 14;
   if (rank === "J") return 11;
   if (rank === "Q") return 12;
   if (rank === "K") return 13;
@@ -86,6 +86,7 @@ export class GameScene extends Phaser.Scene {
     this.isDragging     = false;
     this.isDealing      = true;
     this.fieldPickCount = 0;
+    this.attackCount    = 0;
     this.sortMode       = null;
     this.sortAsc        = true;
     this.battleLogLines = [];
@@ -250,6 +251,10 @@ export class GameScene extends Phaser.Scene {
     menuBg.on("pointerdown", () => this.scene.start("MainMenuScene"));
     menuBg.on("pointerover",  () => menuBg.setFillStyle(0x2d66cc));
     menuBg.on("pointerout",   () => menuBg.setFillStyle(0x1e4e99));
+
+    // 공격 횟수 표시
+    this._attackTxt = this.add.text(GW - 96, btnY - 32, "", TS.infoLabel)
+      .setOrigin(0.5).setDepth(51);
 
     // 턴종료
     this.turnEndBtn = this.add.rectangle(GW - 96, btnY, 160, 46, 0xaa6600).setDepth(50).setInteractive();
@@ -434,6 +439,7 @@ export class GameScene extends Phaser.Scene {
     this.updatePreview();
     this.refreshSortBtns();
     this.refreshPlayerStats();
+    this.refreshAttackCount();
     this.refreshBattleLog();
   }
 
@@ -543,7 +549,8 @@ export class GameScene extends Phaser.Scene {
   // ── 몬스터 렌더 ──────────────────────────────────────────────────────────
   renderMonsters() {
     const positions = this.calcMonsterPositions(this.monsters.length);
-    const hasCombo  = this._getSelectedCombo().score > 0;
+    const hasCombo  = this._getSelectedCombo().score > 0
+                   && this.attackCount < this.player.attacksPerTurn;
     const imgW = 96, imgH = 124;
 
     this.monsters.forEach((mon, idx) => {
@@ -628,6 +635,14 @@ export class GameScene extends Phaser.Scene {
       this.previewLabelTxt.setText("");
       this.previewScoreTxt.setText("");
     }
+  }
+
+  // ── 공격 횟수 표시 갱신 ──────────────────────────────────────────────────
+  refreshAttackCount() {
+    const used = this.attackCount;
+    const max  = this.player.attacksPerTurn;
+    this._attackTxt.setText(`ATK ${used}/${max}`);
+    this._attackTxt.setColor(used >= max ? '#ff6666' : '#aaffcc');
   }
 
   // ── 플레이어 스탯 갱신 ───────────────────────────────────────────────────
@@ -773,6 +788,12 @@ export class GameScene extends Phaser.Scene {
     const { score, label } = this._getSelectedCombo();
     if (score <= 0) return;
 
+    if (this.attackCount >= this.player.attacksPerTurn) {
+      this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
+      return;
+    }
+    this.attackCount++;
+
     const damage = Math.max(0, score - mon.def);
     mon.hp  = Math.max(0, mon.hp - damage);
     mon.def = Math.trunc(mon.def / 2);
@@ -870,6 +891,7 @@ export class GameScene extends Phaser.Scene {
       }));
 
       this.fieldPickCount = 0;
+      this.attackCount    = 0;
       this.selected.clear();
       this.isDealing = false;
       this._applySortToHand();  // 턴 시작마다 기존 정렬 적용

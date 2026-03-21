@@ -19,15 +19,17 @@ export class Player {
    * @param {object} [data] - 이전 씬에서 넘긴 직렬화 데이터 (없으면 초기값)
    */
   constructor(data = {}) {
-    this.hp    = data.hp    ?? 100;
-    this.maxHp = data.maxHp ?? 100;
-    this.def   = data.def   ?? 0;
-    this.score = data.score ?? 0;
-    this.xp    = data.xp    ?? 0;
-    this.gold  = data.gold  ?? 0;
-    this.level = data.level ?? 1;
+    this.hp             = data.hp             ?? 100;
+    this.maxHp          = data.maxHp          ?? 100;
+    this.def            = data.def            ?? 0;
+    this.score          = data.score          ?? 0;
+    this.xp             = data.xp             ?? 0;
+    this.gold           = data.gold           ?? 0;
+    this.level          = data.level          ?? 1;
+    /** 턴당 공격 가능 횟수 */
+    this.attacksPerTurn = data.attacksPerTurn ?? 2;
     /** 슈트별 레벨 { S, H, D, C } */
-    this.attrs = data.attrs ?? { S: 1, H: 1, D: 1, C: 1 };
+    this.attrs          = data.attrs          ?? { S: 1, H: 1, D: 1, C: 1 };
   }
 
   /** 현재 레벨에서 레벨업에 필요한 총 경험치 */
@@ -54,14 +56,15 @@ export class Player {
   /** 씬 전환용 직렬화 */
   toData() {
     return {
-      hp:    this.hp,
-      maxHp: this.maxHp,
-      def:   this.def,
-      score: this.score,
-      xp:    this.xp,
-      gold:  this.gold,
-      level: this.level,
-      attrs: { ...this.attrs },
+      hp:             this.hp,
+      maxHp:          this.maxHp,
+      def:            this.def,
+      score:          this.score,
+      xp:             this.xp,
+      gold:           this.gold,
+      level:          this.level,
+      attacksPerTurn: this.attacksPerTurn,
+      attrs:          { ...this.attrs },
     };
   }
 }
