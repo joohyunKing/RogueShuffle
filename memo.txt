@@ -1,0 +1,73 @@
+claude 시작할 때
+C:/Users/rundo/Rogue-Shuffle 프로젝트 이어서 작업하자. CLAUDE.md 먼저 읽어줘
+
+1. Leonardo.ai  → 카드 일러스트, 캐릭터, UI 아이콘
+2. Aseprite     → 픽셀 후보정 / 애니메이션 (필수 툴)
+3. Suno         → BGM 생성
+4. ElevenLabs   → SFX 생성
+5. Audacity     → 사운드 트리밍/루프 편집 (무료)
+
+npm run dev
+
+
+우선 게임 scene 를 나눠보자.
+
+메인메뉴 scene
+플레이 scene
+(나중에 기획에 따라 메인메뉴와 플레이 사이에 scene 를 추가할 수도 있음)
+
+메인메뉴 scene 에는 옵션버튼, 플레이 버튼이 있어.
+옵션버튼 클릭하면 볼륨 조절, 언어설정 기능이 있어.
+플레이 버튼을 클릭하면 플레이 scene 로 이동
+
+플레이 scene 에는 어제까지 만든 게임 기능을 넣자.
+game over 시 메인메뉴로 이동
+
+--monster
+pixel art character sprite, cute 2d side view,
+colorful, detailed, game asset, transparent background,
+32x32 or 64x64, indie game style,
+skeleton, axe, bow
+
+--card
+pixel art, blank playing card frame,
+white background, thin rounded border,
+clean pixel art, 64x96px, no text, no symbols,
+transparent background, png file
+
+pixel art, ace of spades playing card face,
+large glowing spade symbol center,
+white card background, clean white base,
+transparent background,
+bright card face, light background,
+traditional playing card colors,
+roguelike card game asset, no text,
+transparent background, 64x96px, 16-bit style
+
+ace of hearts playing card face
+
+ace of diamond playing card face
+
+ace of clubs playing card face
+
+node src/gen.js
+
+내가 그냥 phaser 로 생성해서 저장해볼게.
+
+C:\Users\rundo\Rogue-Shuffle\public\symbols
+디렉토리에 4개의 심볼 이미지 넣어놨어.
+card_frame.jpg
+clubs_symbol.jpg
+diamonds_symbol.jpg
+hearts_symbol.jpg
+spade_symbol_.jpg
+
+
+C:\Users\rundo\Rogue-Shuffle\src
+디렉토리에 gen.js 파일로 만들어볼게.
+
+
+dark purple and blue neon colors,
+mystical dark atmosphere, ornate border,
+roguelike card game asset, no text,
+transparent background, 64x96px, 16-bit style
