@@ -3,6 +3,10 @@ export const GW = 1280;
 export const GH = 720;   // 16:9
 export const CW = 100;
 export const CH = 145;
+export const FIELD_CW = Math.round(CW * 0.8);   // 80 — 필드 카드 표시 크기
+export const FIELD_CH = Math.round(CH * 0.8);   // 116
+export const PILE_CW  = Math.round(CW * 0.5);   // 50 — 덱/더미 파일 표시 크기
+export const PILE_CH  = Math.round(CH * 0.5);   // 73
 
 // ─── 카드 데이터 ──────────────────────────────────────────────────────────────
 export const SUITS      = ["S", "H", "D", "C"];

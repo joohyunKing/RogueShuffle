@@ -1,13 +1,22 @@
 import Phaser from "phaser";
 import { calcScore } from "../scoring.js";
 import {
-  GW, GH, CW, CH,
+  GW, GH, CW, CH, FIELD_CW, FIELD_CH, PILE_CW, PILE_CH,
   SUITS, RANKS, SUIT_ORDER,
   BATTLE_LOG_H, MONSTER_AREA_TOP, MONSTER_AREA_H, MONSTER_IMG_Y, PLAYER_STAT_Y,
   FIELD_Y, HAND_Y, HAND_TOP, DEAL_DELAY,
 } from "../constants.js";
 import { getLevelConfig } from "../levels.js";
-import { preloadMonsters, getAvailableMonstersByTier } from "../monsters.js";
+import { preloadMonsters, getAvailableMonstersByTier, TIER_REWARDS } from "../monsters.js";
+import { CardRenderer } from "../CardRenderer.js";
+import { TS } from "../textStyles.js";
+import { Player, getRequiredExp } from "../Player.js";
+import sfxShuffle from "../assets/audio/sfx/card-shuffle.ogg?url";
+import sfxFan     from "../assets/audio/sfx/card-fan-1.ogg?url";
+import sfxSlide   from "../assets/audio/sfx/card-slide-5.ogg?url";
+import sfxPlace   from "../assets/audio/sfx/card-place-1.ogg?url";
+import sfxChop   from "../assets/audio/sfx/chop.ogg?url";
+import sfxKnifeSlice   from "../assets/audio/sfx/knifeSlice.ogg?url";
 
 // ─── 유틸 ────────────────────────────────────────────────────────────────────
 function getRankNum(rank) {
@@ -34,26 +43,31 @@ export class GameScene extends Phaser.Scene {
 
   // ── preload ──────────────────────────────────────────────────────────────
   preload() {
-    SUITS.forEach(suit =>
-      RANKS.forEach(rank => this.load.image(`${suit}${rank}`, `/cards/${suit}${rank}.png`))
-    );
     this.load.image("card_back", "/cards/_card_back.png");
+    CardRenderer.preload(this);
     preloadMonsters(this);
+    this.load.audio("sfx_shuffle", sfxShuffle);
+    this.load.audio("sfx_fan",     sfxFan);
+    this.load.audio("sfx_slide",   sfxSlide);
+    this.load.audio("sfx_place",   sfxPlace);
+    this.load.audio("sfx_chop",   sfxChop);
+    this.load.audio("sfx_knifeSlice",   sfxKnifeSlice);
+  }
+
+  _sfx(key) {
+    this.sound.play(key, { volume: 0.6 });
   }
 
   // ── create ───────────────────────────────────────────────────────────────
   create() {
     const data = this.scene.settings.data || {};
 
-    // 레벨
-    this.level = data.level    ?? 1;
-    this.lv    = getLevelConfig(this.level);
+    // 라운드 (게임 진행 회차)
+    this.round = data.round ?? 1;
+    this.lv    = getLevelConfig(this.round);
 
-    // 플레이어 스탯 (라운드 클리어 시 유지)
-    this.playerHp    = data.playerHp  ?? 100;
-    this.playerMaxHp = 100;
-    this.playerDef   = data.playerDef ?? 0;
-    this.score       = data.score     ?? 0;
+    // 플레이어 (라운드 클리어 시 유지)
+    this.player = new Player(data.player);
 
     // 카드 상태
     const deck      = Phaser.Utils.Array.Shuffle(buildDeck());
@@ -79,6 +93,8 @@ export class GameScene extends Phaser.Scene {
     // 몬스터 스폰
     this.monsters = this._spawnMonsters();
 
+    CardRenderer.createAll(this);
+
     this.drawBg();
     this.createUI();
     this.createSortButtons();
@@ -94,11 +110,14 @@ export class GameScene extends Phaser.Scene {
     return Array.from({ length: monsterCount }, (_, i) => {
       const type = shuffled[i % shuffled.length];
       const hp   = randInt(monsterStats.hp[0],  monsterStats.hp[1]);
+      const rewards = TIER_REWARDS[type.tier] ?? TIER_REWARDS[0];
       return {
         type,
         hp, maxHp: hp,
         atk: randInt(monsterStats.atk[0], monsterStats.atk[1]),
         def: randInt(monsterStats.def[0], monsterStats.def[1]),
+        xp:   randInt(rewards.xp[0],   rewards.xp[1]),
+        gold: randInt(rewards.gold[0], rewards.gold[1]),
         isDead: false,
       };
     });
@@ -144,94 +163,97 @@ export class GameScene extends Phaser.Scene {
     g.strokeRoundedRect(20, hpY, GW - 40, CH + 36, 12);
 
     // 패널 레이블
-    this.add.text(GW / 2, fpY - 8, "F I E L D", {
-      fontSize: "13px", color: "#5fad6d", fontFamily: "Arial", letterSpacing: 4,
-    }).setOrigin(0.5, 1);
-    this.add.text(GW / 2, hpY - 8, "H A N D", {
-      fontSize: "13px", color: "#5fad6d", fontFamily: "Arial", letterSpacing: 4,
-    }).setOrigin(0.5, 1);
+    this.add.text(GW / 2, fpY - 8, "FIELD", TS.panelLabel).setOrigin(0.5, 1);
+    this.add.text(GW / 2, hpY - 8, "HAND",  TS.panelLabel).setOrigin(0.5, 1);
   }
 
   // ── UI 생성 (한 번만) ─────────────────────────────────────────────────────
   createUI() {
     // 타이틀
-    this.add.text(22, 8, "Rogue Shuffle", {
-      fontSize: "17px", color: "#ffffff", fontStyle: "bold", fontFamily: "Arial",
-    });
+    this.add.text(22, 8, "ROGUE SHUFFLE", TS.gameTitle);
 
-    // 점수
-    /*
-    this.add.text(GW / 2 - 60, 4, "SCORE", {
-      fontSize: "11px", color: "#5fad6d", fontFamily: "Arial", letterSpacing: 3,
-    }).setOrigin(0.5, 0);
-    */
-   /*
-    this.scoreTxt = this.add.text(GW / 2 - 60, 18, "0", {
-      fontSize: "19px", color: "#ffdd00", fontStyle: "bold", fontFamily: "Arial",
-    }).setOrigin(0.5, 0);
-    */
-
-    // ── 몬스터 영역 왼쪽 — 레벨 / 덱 / 버린카드 ─────────────────────────
+    // ── 몬스터 영역 왼쪽 — 라운드 / 플레이어 레벨 / 덱 / 버린카드 ─────
     const infoX = 30;
     const infoY = MONSTER_AREA_TOP + 10;
-    this.add.text(infoX, infoY,      "LEVEL",    { fontSize: "11px", color: "#5fad6d", fontFamily: "Arial", letterSpacing: 2 }).setDepth(12);
-    this.add.text(infoX, infoY + 32, "덱",        { fontSize: "11px", color: "#5fad6d", fontFamily: "Arial" }).setDepth(12);
-    this.add.text(infoX, infoY + 64, "버린카드",  { fontSize: "11px", color: "#5fad6d", fontFamily: "Arial" }).setDepth(12);
 
-    this.levelTxt = this.add.text(infoX, infoY + 13, String(this.level), {
-      fontSize: "17px", color: "#aaffcc", fontStyle: "bold", fontFamily: "Arial",
-    }).setDepth(12);
-    this.deckTxt  = this.add.text(infoX, infoY + 45, `${this.deckData.length}장`, {
-      fontSize: "17px", color: "#aabbaa", fontFamily: "Arial",
-    }).setDepth(12);
-    this.dummyTxt = this.add.text(infoX, infoY + 77, "0장", {
-      fontSize: "17px", color: "#998866", fontFamily: "Arial",
-    }).setDepth(12);
+    // ROUND
+    this.add.text(infoX, infoY,      "ROUND", TS.infoLabel).setDepth(12);
+    this.roundTxt = this.add.text(infoX + 55, infoY, String(this.round), TS.levelValue).setDepth(12);
+
+    // Gold
+    this.add.text(infoX, infoY + 18, "GOLD",  TS.infoLabel).setDepth(12);
+    this.goldTxt  = this.add.text(infoX + 55, infoY + 18,  `${this.player.gold}`, TS.levelValue).setDepth(12);
+ 
+    // LV (플레이어 레벨)
+    this.add.text(infoX, infoY + 36, "LV",    TS.infoLabel).setDepth(12);
+    this._playerLevelTxt = this.add.text(infoX + 55, infoY + 36, String(this.player.level), TS.levelValue).setDepth(12);
+
+    // XP 바
+    this._xpBarBg   = this.add.rectangle(infoX, infoY + 55, 70, 5, 0x224433).setOrigin(0, 0.5).setDepth(12);
+    this._xpBarFill = this.add.rectangle(infoX, infoY + 55, 1,  5, 0x44ddaa).setOrigin(0, 0.5).setDepth(13);
+    //this._xpTxt = this.add.text(infoX, infoY + 68, "", { fontFamily: 'Arial', fontSize: '9px', color: '#66ccaa' }).setDepth(12);
+
+    //this.player.gold
+
+    // DECK / USED
+    /*
+    this.add.text(infoX, infoY + 80, "DECK",  TS.infoLabel).setDepth(12);
+    this.add.text(infoX, infoY + 112, "USED", TS.infoLabel).setDepth(12);
+    this.deckTxt  = this.add.text(infoX, infoY + 93,  `${this.deckData.length}`, TS.infoValue).setDepth(12);
+    this.dummyTxt = this.add.text(infoX, infoY + 125, "0",                        TS.infoValue).setDepth(12);
+    */
+
+    // ── 슈트 레벨 표시 ──────────────────────────────────────────────────
+    const attrY = infoY + 148;
+    const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff6666', C: '#aaffaa' };
+    const SUIT_SYMS   = { S: '♠', H: '♥', D: '♦', C: '♣' };
+    const SUIT_KEYS   = ['S', 'H', 'D', 'C'];
+    const attrStyle   = (suit) => ({ fontFamily: 'Arial', fontSize: '11px', color: SUIT_COLORS[suit] });
+    this._attrTxts = {};
+    SUIT_KEYS.forEach((suit, idx) => {
+      const ax = infoX + (idx % 2) * 52;
+      const ay = attrY + Math.floor(idx / 2) * 20;
+      this.add.text(ax, ay, SUIT_SYMS[suit], attrStyle(suit)).setDepth(12);
+      this._attrTxts[suit] = this.add.text(ax + 14, ay, `${this.player.attrs[suit]}`, TS.infoLabel).setDepth(12);
+    });
+
+    // ── 툴팁 (덱/더미 hover용) ──────────────────────────────────────────
+    this._tooltipBg  = this.add.rectangle(0, 0, 70, 26, 0x000000, 0.85).setDepth(200).setVisible(false);
+    this._tooltipTxt = this.add.text(0, 0, "", { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffffff' })
+      .setOrigin(0.5).setDepth(201).setVisible(false);
 
     // 배틀 로그
-    this.logTxt = this.add.text(GW / 2, BATTLE_LOG_H / 2, "", {
-      fontSize: "14px", color: "#ffcc44", fontFamily: "Arial",
-      stroke: "#0a1a10", strokeThickness: 2,
-    }).setOrigin(0.5).setDepth(10);
+    this.logTxt = this.add.text(GW / 2, BATTLE_LOG_H / 2, "", TS.log)
+      .setOrigin(0.5).setDepth(10);
 
     // 임시 메시지 (팝업)
-    this.msgTxt = this.add.text(GW / 2, BATTLE_LOG_H + 8, "", {
-      fontSize: "20px", color: "#ffcc44", fontFamily: "Arial",
-      stroke: "#1a472a", strokeThickness: 3,
-    }).setOrigin(0.5, 0).setDepth(100);
+    this.msgTxt = this.add.text(GW / 2, BATTLE_LOG_H + 8, "", TS.msg)
+      .setOrigin(0.5, 0).setDepth(100);
 
     // ── 플레이어 스탯 ────────────────────────────────────────────────────
-    this.playerHpTxt  = this.add.text(36, PLAYER_STAT_Y + 3, "", {
-      fontSize: "15px", color: "#ff9999", fontFamily: "Arial", fontStyle: "bold",
-    }).setDepth(10);
-    this.playerDefTxt = this.add.text(300, PLAYER_STAT_Y + 3, "", {
-      fontSize: "15px", color: "#88ccff", fontFamily: "Arial",
-    }).setDepth(10);
+    this.playerHpTxt  = this.add.text(36,  PLAYER_STAT_Y + 3, "", TS.playerHp).setDepth(10);
+    this.playerDefTxt = this.add.text(300, PLAYER_STAT_Y + 3, "", TS.playerDef).setDepth(10);
     this._hpBarBg   = this.add.rectangle(36, PLAYER_STAT_Y + 32, 220, 9, 0x2a3a2a).setOrigin(0, 0.5).setDepth(10);
     this._hpBarFill = this.add.rectangle(36, PLAYER_STAT_Y + 32, 220, 9, 0xdd3333).setOrigin(0, 0.5).setDepth(11);
 
     // ── 족보 프리뷰 ──────────────────────────────────────────────────────
     const preY = HAND_Y + CH / 2 + 12;
-    this.previewLabelTxt = this.add.text(GW / 2 - 10, preY, "", {
-      fontSize: "17px", color: "#88ffaa", fontFamily: "Arial", fontStyle: "bold",
-    }).setOrigin(1, 0).setDepth(50);
-    this.previewScoreTxt = this.add.text(GW / 2 + 10, preY, "", {
-      fontSize: "17px", color: "#ffdd66", fontFamily: "Arial",
-    }).setOrigin(0, 0).setDepth(50);
+    this.previewLabelTxt = this.add.text(GW / 2 - 10, preY, "", TS.comboLabel).setOrigin(1, 0).setDepth(50);
+    this.previewScoreTxt = this.add.text(GW / 2 + 10, preY, "", TS.comboScore).setOrigin(0, 0).setDepth(50);
 
     // ── 하단 버튼 ────────────────────────────────────────────────────────
     const btnY = GH - 34;
 
     // 메뉴
     const menuBg = this.add.rectangle(80, btnY, 130, 46, 0x1e4e99).setDepth(50).setInteractive();
-    this.add.text(80, btnY, "≡  메뉴", { fontSize: "17px", color: "#ffffff", fontFamily: "Arial" }).setOrigin(0.5).setDepth(51);
+    this.add.text(80, btnY, "MENU", TS.menuBtn).setOrigin(0.5).setDepth(51);
     menuBg.on("pointerdown", () => this.scene.start("MainMenuScene"));
     menuBg.on("pointerover",  () => menuBg.setFillStyle(0x2d66cc));
     menuBg.on("pointerout",   () => menuBg.setFillStyle(0x1e4e99));
 
     // 턴종료
     this.turnEndBtn = this.add.rectangle(GW - 96, btnY, 160, 46, 0xaa6600).setDepth(50).setInteractive();
-    this.add.text(GW - 96, btnY, "턴  종  료", { fontSize: "19px", color: "#ffffff", fontStyle: "bold", fontFamily: "Arial" }).setOrigin(0.5).setDepth(51);
+    this.add.text(GW - 96, btnY, "TURN END", TS.turnEndBtn).setOrigin(0.5).setDepth(51);
     this.turnEndBtn.on("pointerdown", () => { if (!this.isDealing) this.onTurnEnd(); });
     this.turnEndBtn.on("pointerover",  () => this.turnEndBtn.setFillStyle(0xdd8800));
     this.turnEndBtn.on("pointerout",   () => this.turnEndBtn.setFillStyle(0xaa6600));
@@ -244,17 +266,13 @@ export class GameScene extends Phaser.Scene {
     const btnY = GH - 34;
 
     this.suitBg  = this.add.rectangle(270, btnY, 88, 38, 0x335544).setDepth(50).setInteractive();
-    this.suitTxt = this.add.text(270, btnY, "SUIT", {
-      fontSize: "14px", color: "#aaffcc", fontFamily: "Arial", fontStyle: "bold",
-    }).setOrigin(0.5).setDepth(51);
+    this.suitTxt = this.add.text(270, btnY, "SUIT", TS.sortBtn).setOrigin(0.5).setDepth(51);
     this.suitBg.on("pointerdown", () => { if (!this.isDealing) this.sortBy("suit"); });
     this.suitBg.on("pointerover", () => this.suitBg.setFillStyle(0x447766));
     this.suitBg.on("pointerout",  () => this.refreshSortBtns());
 
     this.rankBg  = this.add.rectangle(368, btnY, 88, 38, 0x335544).setDepth(50).setInteractive();
-    this.rankTxt = this.add.text(368, btnY, "RANK", {
-      fontSize: "14px", color: "#aaffcc", fontFamily: "Arial", fontStyle: "bold",
-    }).setOrigin(0.5).setDepth(51);
+    this.rankTxt = this.add.text(368, btnY, "RANK", TS.sortBtn).setOrigin(0.5).setDepth(51);
     this.rankBg.on("pointerdown", () => { if (!this.isDealing) this.sortBy("rank"); });
     this.rankBg.on("pointerover", () => this.rankBg.setFillStyle(0x447766));
     this.rankBg.on("pointerout",  () => this.refreshSortBtns());
@@ -272,6 +290,7 @@ export class GameScene extends Phaser.Scene {
 
   // ── 딜링 애니메이션 ──────────────────────────────────────────────────────
   startDealAnimation() {
+    this._sfx("sfx_shuffle");
     const deckX = 80, deckY = FIELD_Y;   // renderDeckPile 과 동일 위치
 
     for (let i = Math.min(8, 51); i >= 0; i--) {
@@ -347,8 +366,10 @@ export class GameScene extends Phaser.Scene {
   setupDrag() {
     this.input.on("dragstart", (pointer, obj) => {
       if (this.isDealing) return;
+      this._sfx("sfx_slide");
       this.isDragging = true;
       obj.setDepth(200);
+      obj.setDisplaySize(Math.round(CW * 0.9), Math.round(CH * 0.9));
       const idx = this.cardObjs.indexOf(obj);
       if (idx !== -1) this.cardObjs.splice(idx, 1);
     });
@@ -383,8 +404,13 @@ export class GameScene extends Phaser.Scene {
 
   _snapBack(obj) {
     this.tweens.add({
-      targets: obj, x: obj.getData("origX"), y: obj.getData("origY"),
-      duration: 200, ease: "Back.Out",
+      targets: obj,
+      x: obj.getData("origX"),
+      y: obj.getData("origY"),
+      displayWidth:  obj.getData("origW") ?? FIELD_CW,
+      displayHeight: obj.getData("origH") ?? FIELD_CH,
+      duration: 200,
+      ease: "Back.Out",
       onComplete: () => { obj.destroy(); this.render(); },
     });
   }
@@ -397,8 +423,8 @@ export class GameScene extends Phaser.Scene {
     this.monsterObjs = [];
 
     //this.scoreTxt.setText(this.score);
-    this.deckTxt.setText(`${this.deckData.length}장`);
-    this.dummyTxt.setText(`${this.dummyData.length}장`);
+    //this.deckTxt.setText(`${this.deckData.length}`);
+    //this.dummyTxt.setText(`${this.dummyData.length}`);
 
     this.renderDeckPile();
     this.renderDummyPile();
@@ -412,38 +438,59 @@ export class GameScene extends Phaser.Scene {
   }
 
   renderDeckPile() {
-    if (this.deckData.length === 0) return;
     const x = 80, y = FIELD_Y;
-    for (let i = Math.min(4, this.deckData.length - 1); i >= 0; i--) {
-      this.cardObjs.push(
-        this.add.image(x - i * 2, y - i * 2, "card_back").setDisplaySize(CW, CH).setDepth(i)
-      );
+    const count = this.deckData.length;
+    if (count > 0) {
+      for (let i = Math.min(3, count - 1); i >= 0; i--) {
+        this.cardObjs.push(
+          this.add.image(x - i * 1.5, y - i * 1.5, "card_back")
+            .setDisplaySize(PILE_CW, PILE_CH).setDepth(i)
+        );
+      }
     }
-    /*
-    this.cardObjs.push(
-      this.add.text(x, y + CH / 2 + 6, `${this.deckData.length}장`, {
-        fontSize: "13px", color: "#aabbaa", fontFamily: "Arial",
-      }).setOrigin(0.5, 0).setDepth(20)
-    );
-    */
+    // hover 툴팁 히트 영역
+    const hit = this.add.rectangle(x, y, PILE_CW + 10, PILE_CH + 10, 0xffffff, 0)
+      .setDepth(10).setInteractive();
+    hit.on("pointerover", () => {
+      this._tooltipTxt.setText(`DECK: ${count}`);
+      this._tooltipBg.setPosition(x, y - PILE_CH / 2 - 18);
+      this._tooltipTxt.setPosition(x, y - PILE_CH / 2 - 18);
+      this._tooltipBg.setVisible(true).setDisplaySize(this._tooltipTxt.width + 16, 26);
+      this._tooltipTxt.setVisible(true);
+    });
+    hit.on("pointerout", () => {
+      this._tooltipBg.setVisible(false);
+      this._tooltipTxt.setVisible(false);
+    });
+    this.cardObjs.push(hit);
   }
 
   renderDummyPile() {
-    if (this.dummyData.length === 0) return;
-    const x = GW - 80, y = MONSTER_IMG_Y;
-    for (let i = Math.min(4, this.dummyData.length - 1); i >= 0; i--) {
-      this.cardObjs.push(
-        this.add.image(x - i * 2, y - i * 2, "card_back")
-          .setDisplaySize(CW, CH).setDepth(i).setTint(0x886644)
-      );
+    const x = GW - 80, y = FIELD_Y;
+    const count = this.dummyData.length;
+    if (count > 0) {
+      for (let i = Math.min(3, count - 1); i >= 0; i--) {
+        this.cardObjs.push(
+          this.add.image(x - i * 1.5, y - i * 1.5, "card_back")
+            .setDisplaySize(PILE_CW, PILE_CH).setDepth(i).setTint(0x886644)
+        );
+      }
     }
-    this.cardObjs.push(
-      /*
-      this.add.text(x, y + CH / 2 + 6, `버린\n${this.dummyData.length}장`, {
-        fontSize: "12px", color: "#998866", fontFamily: "Arial", align: "center",
-      }).setOrigin(0.5, 0).setDepth(20)
-      */
-    );
+    // hover 툴팁 히트 영역
+    const hit = this.add.rectangle(x, y, PILE_CW + 10, PILE_CH + 10, 0xffffff, 0)
+      .setDepth(10).setInteractive();
+    hit.on("pointerover", () => {
+      this._tooltipTxt.setText(`USED: ${count}`);
+      this._tooltipBg.setPosition(x, y - PILE_CH / 2 - 18);
+      this._tooltipTxt.setPosition(x, y - PILE_CH / 2 - 18);
+      this._tooltipBg.setVisible(true).setDisplaySize(this._tooltipTxt.width + 16, 26);
+      this._tooltipTxt.setVisible(true);
+    });
+    hit.on("pointerout", () => {
+      this._tooltipBg.setVisible(false);
+      this._tooltipTxt.setVisible(false);
+    });
+    this.cardObjs.push(hit);
   }
 
   renderField() {
@@ -451,15 +498,17 @@ export class GameScene extends Phaser.Scene {
 
     this.fieldData.forEach((card, i) => {
       const x = card.slotX;   // 딜 시 고정된 슬롯 위치 사용
-      const img = this.add.image(x, FIELD_Y, card.key).setDisplaySize(CW, CH).setDepth(10);
+      const img = this.add.image(x, FIELD_Y, card.key).setDisplaySize(FIELD_CW, FIELD_CH).setDepth(10);
 
       if (canPick) {
         img.setInteractive({ draggable: true });
         img.setData("fieldIndex", i);
         img.setData("cardData",   card);
-        img.setData("origX",      x);
-        img.setData("origY",      FIELD_Y);
-        img.on("pointerover", () => { if (!this.isDragging) { this.tweens.add({ targets: img, y: FIELD_Y - 16, duration: 100 }); img.setDepth(20); } });
+        img.setData("origX",  x);
+        img.setData("origY",  FIELD_Y);
+        img.setData("origW",  FIELD_CW);
+        img.setData("origH",  FIELD_CH);
+        img.on("pointerover", () => { if (!this.isDragging) { this.tweens.add({ targets: img, y: FIELD_Y - 12, duration: 100 }); img.setDepth(20); } });
         img.on("pointerout",  () => { if (!this.isDragging) { this.tweens.add({ targets: img, y: FIELD_Y,      duration: 100 }); img.setDepth(10); } });
       } else {
         img.setAlpha(0.45);
@@ -512,19 +561,24 @@ export class GameScene extends Phaser.Scene {
         // 사망 오버레이
         this.monsterObjs.push(
           this.add.rectangle(x, MONSTER_IMG_Y, imgW + 4, imgH + 4, 0x000000, 0.7).setDepth(16),
-          this.add.text(x, MONSTER_IMG_Y, "X", {
-            fontSize: "40px", color: "#cc2222", fontStyle: "bold", fontFamily: "Arial",
-          }).setOrigin(0.5).setDepth(17)
+          this.add.text(x, MONSTER_IMG_Y, "X", TS.monDead).setOrigin(0.5).setDepth(17)
         );
         return;
       }
 
       // 이름
+      /*
       this.monsterObjs.push(
-        this.add.text(x, MONSTER_IMG_Y + imgH / 2 + 8, mon.type.name, {
-          fontSize: "13px", color: "#ffffff", fontFamily: "Arial",
-          stroke: "#000000", strokeThickness: 2,
-        }).setOrigin(0.5, 0).setDepth(16)
+        this.add.text(x, MONSTER_IMG_Y + imgH / 2 + 8, mon.type.name, TS.monName)
+          .setOrigin(0.5, 0).setDepth(16)
+      );
+      */
+
+      // 스탯 텍스트
+      this.monsterObjs.push(
+        this.add.text(x, MONSTER_IMG_Y + imgH / 2 + 8,
+          `HP ${mon.hp}/${mon.maxHp}  ATK ${mon.atk}  DEF ${mon.def}`, TS.monStat)
+          .setOrigin(0.5, 0).setDepth(16)
       );
 
       // HP 바
@@ -536,22 +590,12 @@ export class GameScene extends Phaser.Scene {
           .setOrigin(0, 0.5).setDepth(17)
       );
 
-      // 스탯 텍스트
-      this.monsterObjs.push(
-        this.add.text(x, MONSTER_IMG_Y + imgH / 2 + 38,
-          `HP ${mon.hp}/${mon.maxHp}   ATK ${mon.atk}   DEF ${mon.def}`, {
-            fontSize: "11px", color: "#cccccc", fontFamily: "Arial",
-          }).setOrigin(0.5, 0).setDepth(16)
-      );
-
       // ── 공격 타겟 표시 & 인터랙션 ─────────────────────────────────────
       if (hasCombo) {
         // 타겟 지시 화살표 (항상 표시)
         this.monsterObjs.push(
-          this.add.text(x, MONSTER_IMG_Y - imgH / 2 - 24, "▼  클릭하여 공격", {
-            fontSize: "13px", color: "#ffdd44", fontFamily: "Arial",
-            stroke: "#000000", strokeThickness: 2,
-          }).setOrigin(0.5, 1).setDepth(18)
+          this.add.text(x, MONSTER_IMG_Y - imgH / 2 - 24, "ATTACK!", TS.monTarget)
+            .setOrigin(0.5, 1).setDepth(18)
         );
 
         // 클릭 히트 영역
@@ -588,11 +632,28 @@ export class GameScene extends Phaser.Scene {
 
   // ── 플레이어 스탯 갱신 ───────────────────────────────────────────────────
   refreshPlayerStats() {
-    this.playerHpTxt.setText(`HP  ${this.playerHp} / ${this.playerMaxHp}`);
-    this.playerDefTxt.setText(`DEF  ${this.playerDef}`);
-    const ratio = Math.max(0, this.playerHp / this.playerMaxHp);
+    const p = this.player;
+    this.playerHpTxt.setText(`HP  ${p.hp} / ${p.maxHp}`);
+    this.playerDefTxt.setText(`DEF  ${p.def}`);
+    const ratio = Math.max(0, p.hp / p.maxHp);
     this._hpBarFill.setDisplaySize(Math.max(1, 220 * ratio), 9);
     this._hpBarFill.setFillStyle(ratio > 0.5 ? 0x44cc44 : ratio > 0.25 ? 0xddaa00 : 0xdd3333);
+    this.refreshPlayerLevel();
+    this.goldTxt.setText(`${p.gold}`);
+  }
+
+  // ── 플레이어 레벨 / XP 갱신 ──────────────────────────────────────────────
+  refreshPlayerLevel() {
+    const p      = this.player;
+    const req    = getRequiredExp(p.level);
+    const xpFill = Math.max(1, Math.round(90 * Math.min(1, p.xp / req)));
+    this._playerLevelTxt.setText(String(p.level));
+    this._xpBarFill.setDisplaySize(xpFill, 5);
+    //this._xpTxt.setText(`${p.xp}/${req}`);
+    // 슈트 레벨
+    ['S', 'H', 'D', 'C'].forEach(s => {
+      this._attrTxts[s]?.setText(String(p.attrs[s]));
+    });
   }
 
   // ── 배틀 로그 ────────────────────────────────────────────────────────────
@@ -608,16 +669,18 @@ export class GameScene extends Phaser.Scene {
 
   // ── 핸드 선택 토글 ───────────────────────────────────────────────────────
   toggleHand(i) {
+    this._sfx("sfx_place");
     this.selected.has(i) ? this.selected.delete(i) : this.selected.add(i);
     this.render();
   }
 
   // ── 카드를 dummy 파일로 날리는 애니메이션 ───────────────────────────────
   _flyToDummy(fromX, fromY, key = "card_back") {
+    this._sfx("sfx_fan");
     const img = this.add.image(fromX, fromY, key).setDisplaySize(CW, CH).setDepth(200);
     this.tweens.add({
       targets: img,
-      x: GW - 80, y: MONSTER_IMG_Y,
+      x: GW - 80, y: FIELD_Y,
       displayWidth:  CW * 0.3,
       displayHeight: CH * 0.3,
       alpha: 0,
@@ -638,14 +701,13 @@ export class GameScene extends Phaser.Scene {
       targets: flash, alpha: 0, duration: 480,
       onComplete: () => flash.destroy(),
     });
+    this._sfx("sfx_chop");
 
     // 데미지 수치가 몬스터 → 플레이어 HP 쪽으로 날아옴
-    const label = damage > 0 ? `-${damage} HP` : "BLOCKED!";
-    const color = damage > 0 ? "#ff5555" : "#88ccff";
-    const txt = this.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, {
-      fontSize: "24px", color, fontStyle: "bold", fontFamily: "Arial",
-      stroke: "#000000", strokeThickness: 3,
-    }).setOrigin(0.5, 0).setDepth(501);
+    const label   = damage > 0 ? `-${damage} HP` : "BLOCKED!";
+    const txtStyle = damage > 0 ? TS.damageHit : TS.damageBlocked;
+    const txt = this.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, txtStyle)
+      .setOrigin(0.5, 0).setDepth(501);
 
     this.tweens.add({
       targets: txt,
@@ -714,9 +776,10 @@ export class GameScene extends Phaser.Scene {
     const damage = Math.max(0, score - mon.def);
     mon.hp  = Math.max(0, mon.hp - damage);
     mon.def = Math.trunc(mon.def / 2);
-    this.score += score;
+    this.player.score += score;
 
     this.addBattleLog(`${mon.type.name}에게 ${label}로 ${damage} 데미지!`);
+    this._sfx("sfx_knifeSlice");
 
     // 선택 카드 → dummy 애니메이션 + dummyData 이동
     const handPositions = this.calcHandPositions(this.handData.length);
@@ -730,7 +793,12 @@ export class GameScene extends Phaser.Scene {
 
     if (mon.hp <= 0) {
       mon.isDead = true;
-      this.addBattleLog(`${mon.type.name} 쓰러졌다!`);
+      const newLevels = this.player.addXp(mon.xp);
+      this.player.gold += mon.gold;
+      this.addBattleLog(`${mon.type.name} 처치! +${mon.xp}XP +${mon.gold}G`);
+      if (newLevels.length > 0) {
+        this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
+      }
       if (this.monsters.every(m => m.isDead)) {
         this.render();
         this.time.delayedCall(700, () => this.onRoundClear());
@@ -750,9 +818,9 @@ export class GameScene extends Phaser.Scene {
     alive.forEach((m, localIdx) => {
       const globalIdx = this.monsters.indexOf(m);
       this.time.delayedCall(localIdx * ATK_GAP, () => {
-        const dmg      = Math.max(0, m.atk - this.playerDef);
-        this.playerHp  = Math.max(0, this.playerHp - dmg);
-        this.playerDef = Math.trunc(this.playerDef / 2);
+        const dmg     = Math.max(0, m.atk - this.player.def);
+        this.player.hp  = Math.max(0, this.player.hp - dmg);
+        this.player.def = Math.trunc(this.player.def / 2);
         this.addBattleLog(`${m.type.name}의 공격! ${dmg} 데미지!`);
         this._showMonsterAttack(globalIdx, dmg);
         this.refreshPlayerStats();
@@ -763,7 +831,7 @@ export class GameScene extends Phaser.Scene {
     // 모든 공격 종료 후 처리
     this.time.delayedCall(alive.length * ATK_GAP + 300, () => {
       this.render();
-      if (this.playerHp <= 0) {
+      if (this.player.hp <= 0) {
         this.time.delayedCall(500, () => this.showGameOver());
         return;
       }
@@ -793,6 +861,7 @@ export class GameScene extends Phaser.Scene {
 
     // _flyToDummy 애니메이션(380ms) 완료 후 새 필드 딜
     this.time.delayedCall(420, () => {
+      //this._sfx("sfx_shuffle");
       const slotPos = this.calcFieldPositions(this.lv.fieldSize);
       const draw    = Math.min(this.lv.fieldSize, this.deckData.length);
       this.fieldData = Array.from({ length: draw }, (_, k) => ({
@@ -822,26 +891,14 @@ export class GameScene extends Phaser.Scene {
     g.lineStyle(3, 0x44dd88);
     g.strokeRoundedRect(px, py, pw, ph, 20);
 
-    this.add.text(GW / 2, py + 66, "R O U N D  C L E A R !", {
-      fontSize: "34px", color: "#44ff88", fontStyle: "bold", fontFamily: "Arial",
-      stroke: "#000000", strokeThickness: 4,
-    }).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 66,  "ROUND CLEAR!", TS.clearTitle).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 126, `ROUND ${this.round}  SCORE: ${this.player.score}`, TS.clearSub).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 166, "NEXT ROUND...", TS.clearNote).setOrigin(0.5).setDepth(301);
 
-    this.add.text(GW / 2, py + 126, `LEVEL ${this.level}  완료!  점수: ${this.score}`, {
-      fontSize: "20px", color: "#aaffcc", fontFamily: "Arial",
-    }).setOrigin(0.5).setDepth(301);
-
-    this.add.text(GW / 2, py + 166, "다음 레벨로 이동합니다...", {
-      fontSize: "16px", color: "#88bb99", fontFamily: "Arial",
-    }).setOrigin(0.5).setDepth(301);
-
-    // 2.5초 후 다음 레벨 시작 (플레이어 HP/DEF/점수 유지)
     this.time.delayedCall(2500, () => {
       this.scene.start("GameScene", {
-        level:     this.level + 1,
-        playerHp:  this.playerHp,
-        playerDef: this.playerDef,
-        score:     this.score,
+        round:  this.round + 1,
+        player: this.player.toData(),
       });
     });
   }
@@ -859,23 +916,13 @@ export class GameScene extends Phaser.Scene {
     g.lineStyle(3, 0xcc2200);
     g.strokeRoundedRect(px, py, pw, ph, 20);
 
-    this.add.text(GW / 2, py + 72, "G A M E  O V E R", {
-      fontSize: "44px", color: "#ff4444", fontStyle: "bold", fontFamily: "Arial",
-      stroke: "#000000", strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 72, "GAME OVER", TS.gameOverTitle).setOrigin(0.5).setDepth(301);
 
-    this.add.text(GW / 2, py + 148, "최종 점수", {
-      fontSize: "20px", color: "#88bb99", fontFamily: "Arial",
-    }).setOrigin(0.5).setDepth(301);
-
-    this.add.text(GW / 2, py + 182, `${this.score}점`, {
-      fontSize: "38px", color: "#ffdd00", fontStyle: "bold", fontFamily: "Arial",
-    }).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 148, "FINAL SCORE", TS.gameOverScoreLabel).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 182, `${this.player.score}`, TS.gameOverScore).setOrigin(0.5).setDepth(301);
 
     const btnBg = this.add.rectangle(GW / 2, py + ph - 50, 220, 54, 0x1e4e99).setDepth(302).setInteractive();
-    this.add.text(GW / 2, py + ph - 50, "메인 메뉴로", {
-      fontSize: "22px", color: "#ffffff", fontFamily: "Arial",
-    }).setOrigin(0.5).setDepth(303);
+    this.add.text(GW / 2, py + ph - 50, "MAIN MENU", TS.overlayBtn).setOrigin(0.5).setDepth(303);
     btnBg.on("pointerdown", () => this.scene.start("MainMenuScene"));
     btnBg.on("pointerover",  () => btnBg.setFillStyle(0x2d66cc));
     btnBg.on("pointerout",   () => btnBg.setFillStyle(0x1e4e99));

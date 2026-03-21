@@ -10,6 +10,17 @@
 
 /** @typedef {{ id:string, name:string, image:string|null, tier:number }} MonsterType */
 
+/**
+ * 티어별 경험치·골드 보상 범위 [min, max]
+ * 인덱스 = tier (0~3)
+ */
+export const TIER_REWARDS = [
+  { xp: [3,  5],  gold: [1, 2] },   // tier 0
+  { xp: [5,  10], gold: [3, 4] },   // tier 1
+  { xp: [10, 15], gold: [5, 8] },   // tier 2
+  { xp: [10, 15], gold: [5, 8] },   // tier 3
+];
+
 /** @type {MonsterType[][]} 4×4 grid [tier][col] */
 export const MONSTER_GRID = [
   // ── Tier 0 ───────────────────────────────────────────────────────────────
@@ -67,8 +78,8 @@ export function getAvailableMonstersByTier(tier) {
 }
 
 /**
- * Phaser scene의 preload 에서 호출 — 4×4 spritesheet(1024×1024)로 로드합니다.
- * 프레임 크기: 256×256 (1024 ÷ 4)
+ * Phaser scene의 preload 에서 호출 — 4×3 spritesheet(1024×1024)로 로드합니다.
+ * 프레임 크기: 256×341 (1024 ÷ 4) * (1024 ÷ 3)
  * @param {Phaser.Scene} scene
  */
 export function preloadMonsters(scene) {
@@ -76,7 +87,7 @@ export function preloadMonsters(scene) {
     if (m.image) {
       scene.load.spritesheet(`mon_${m.id}`, `/monster/${m.image}`, {
         frameWidth:  256,
-        frameHeight: 256,
+        frameHeight: 341,
       });
     }
   });
