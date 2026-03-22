@@ -7,7 +7,8 @@ import {
   FIELD_Y, HAND_Y, HAND_TOP, DEAL_DELAY,
 } from "../constants.js";
 import { getLevelConfig } from "../levels.js";
-import { preloadMonsters, getAvailableMonstersByTier, TIER_REWARDS } from "../monsters.js";
+import { preloadMonsters, getAvailableMonstersByTier, TIER_REWARDS, createMonsterAnims } from "../monsters.js";
+import { writeSave, deleteSave } from "../save.js";
 import { CardRenderer } from "../CardRenderer.js";
 import { TS } from "../textStyles.js";
 import { Player, getRequiredExp } from "../Player.js";
@@ -55,7 +56,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   _sfx(key) {
-    this.sound.play(key, { volume: 0.6 });
+    const sfxVol = (this.registry.get("sfxVolume") ?? 7) / 10;
+    this.sound.play(key, { volume: sfxVol * 0.6 });
   }
 
   // ── create ───────────────────────────────────────────────────────────────
@@ -80,9 +82,11 @@ export class GameScene extends Phaser.Scene {
 
     // UI/게임 상태
     this.selected       = new Set();
-    this.cardObjs       = [];
-    this.monsterObjs    = [];
-    this.animObjs       = [];
+    this.cardObjs        = [];
+    this.monsterObjs     = [];
+    this._monsterSprites = [];
+    this.animObjs        = [];
+    this._optOverlayObjs = null;
     this.isDragging     = false;
     this.isDealing      = true;
     this.fieldPickCount = 0;
@@ -95,6 +99,11 @@ export class GameScene extends Phaser.Scene {
     this.monsters = this._spawnMonsters();
 
     CardRenderer.createAll(this);
+    createMonsterAnims(this);
+
+    // 볼륨 기본값 초기화
+    if (this.registry.get("bgmVolume") == null) this.registry.set("bgmVolume", 7);
+    if (this.registry.get("sfxVolume") == null) this.registry.set("sfxVolume", 7);
 
     this.drawBg();
     this.createUI();
@@ -245,12 +254,12 @@ export class GameScene extends Phaser.Scene {
     // ── 하단 버튼 ────────────────────────────────────────────────────────
     const btnY = GH - 34;
 
-    // 메뉴
-    const menuBg = this.add.rectangle(80, btnY, 130, 46, 0x1e4e99).setDepth(50).setInteractive();
-    this.add.text(80, btnY, "MENU", TS.menuBtn).setOrigin(0.5).setDepth(51);
-    menuBg.on("pointerdown", () => this.scene.start("MainMenuScene"));
-    menuBg.on("pointerover",  () => menuBg.setFillStyle(0x2d66cc));
-    menuBg.on("pointerout",   () => menuBg.setFillStyle(0x1e4e99));
+    // 옵션
+    const optBg = this.add.rectangle(80, btnY, 130, 46, 0x335566).setDepth(50).setInteractive();
+    this.add.text(80, btnY, "OPTIONS", TS.menuBtn).setOrigin(0.5).setDepth(51);
+    optBg.on("pointerdown", () => this._showOptions());
+    optBg.on("pointerover",  () => optBg.setFillStyle(0x446688));
+    optBg.on("pointerout",   () => optBg.setFillStyle(0x335566));
 
     // 공격 횟수 표시
     this._attackTxt = this.add.text(GW - 96, btnY - 32, "", TS.infoLabel)
@@ -426,6 +435,8 @@ export class GameScene extends Phaser.Scene {
     this.cardObjs = [];
     this.monsterObjs.forEach(o => o.destroy());
     this.monsterObjs = [];
+    this._monsterSprites.forEach(s => s?.destroy());
+    this._monsterSprites = [];
 
     //this.scoreTxt.setText(this.score);
     //this.deckTxt.setText(`${this.deckData.length}`);
@@ -527,22 +538,32 @@ export class GameScene extends Phaser.Scene {
     if (this.handData.length === 0) return;
     const positions = this.calcHandPositions(this.handData.length);
 
-    this.handData.forEach((card, i) => {
-      const sel = this.selected.has(i);
-      const x   = positions[i].x;
-      const y   = sel ? HAND_Y - 22 : HAND_Y;
+    const combo         = this._getSelectedCombo();
+    const comboCardSet  = new Set(combo.cards ?? []);
+    const hasValidCombo = combo.score > 0;
 
-      if (sel) {
-        const hl = this.add.graphics().setDepth(31);
-        hl.lineStyle(3, 0xffdd00);
-        hl.strokeRect(x - CW / 2 - 2, y - CH / 2 - 2, CW + 4, CH + 4);
-        this.cardObjs.push(hl);
-      }
+    this.handData.forEach((card, i) => {
+      const sel     = this.selected.has(i);
+      const inCombo = sel && hasValidCombo && comboCardSet.has(card);
+      const x       = positions[i].x;
+      const y       = sel ? HAND_Y - 22 : HAND_Y;
 
       const img = this.add.image(x, y, card.key)
         .setDisplaySize(CW, CH).setDepth(sel ? 32 : 30).setInteractive();
       img.on("pointerdown", () => { if (!this.isDragging && !this.isDealing) this.toggleHand(i); });
       this.cardObjs.push(img);
+
+      // 족보 구성 카드만 진동
+      if (inCombo) {
+        this.tweens.add({
+          targets: img,
+          x: { from: x - 3, to: x + 3 },
+          duration: 55,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      }
     });
   }
 
@@ -555,31 +576,43 @@ export class GameScene extends Phaser.Scene {
 
     this.monsters.forEach((mon, idx) => {
       const x = positions[idx].x;
-
-      // ── 이미지 또는 컬러 블록 ─────────────────────────────────────────
       const texKey = `mon_${mon.type.id}`;
-      // spritesheet 에서 frame 0 (4×4 그리드의 첫 번째 프레임) 사용
-      const monImg = this.textures.exists(texKey)
-        ? this.add.image(x, MONSTER_IMG_Y, texKey, 0).setDisplaySize(imgW, imgH).setDepth(15)
-        : this.add.rectangle(x, MONSTER_IMG_Y, imgW, imgH, [0x886622, 0x226688, 0x662288, 0x228866][idx % 4]).setDepth(15);
-      this.monsterObjs.push(monImg);
+
+      // ── 스프라이트 (idle / death 애니메이션) ─────────────────────────
+      let monSprite;
+      if (this.textures.exists(texKey)) {
+        monSprite = this.add.sprite(x, MONSTER_IMG_Y, texKey)
+          .setDisplaySize(imgW, imgH).setDepth(15);
+
+        if (mon.isDead) {
+          if (!mon.deathAnimDone) {
+            const deathKey = `${texKey}_death`;
+            if (this.anims.exists(deathKey)) monSprite.play(deathKey);
+            monSprite.once('animationcomplete', () => { mon.deathAnimDone = true; });
+            // 스프라이트가 render로 먼저 파괴될 때를 대비한 타이머
+            this.time.delayedCall(600, () => { mon.deathAnimDone = true; });
+          } else {
+            monSprite.setFrame(11); // death 마지막 프레임 고정
+          }
+        } else {
+          const idleKey = `${texKey}_idle`;
+          if (this.anims.exists(idleKey)) monSprite.play(idleKey);
+        }
+      } else {
+        monSprite = this.add.rectangle(
+          x, MONSTER_IMG_Y, imgW, imgH,
+          [0x886622, 0x226688, 0x662288, 0x228866][idx % 4]
+        ).setDepth(15);
+      }
+      this._monsterSprites[idx] = monSprite;
 
       if (mon.isDead) {
-        // 사망 오버레이
         this.monsterObjs.push(
-          this.add.rectangle(x, MONSTER_IMG_Y, imgW + 4, imgH + 4, 0x000000, 0.7).setDepth(16),
+          this.add.rectangle(x, MONSTER_IMG_Y, imgW + 4, imgH + 4, 0x000000, 0.55).setDepth(16),
           this.add.text(x, MONSTER_IMG_Y, "X", TS.monDead).setOrigin(0.5).setDepth(17)
         );
         return;
       }
-
-      // 이름
-      /*
-      this.monsterObjs.push(
-        this.add.text(x, MONSTER_IMG_Y + imgH / 2 + 8, mon.type.name, TS.monName)
-          .setOrigin(0.5, 0).setDepth(16)
-      );
-      */
 
       // 스탯 텍스트
       this.monsterObjs.push(
@@ -589,7 +622,7 @@ export class GameScene extends Phaser.Scene {
       );
 
       // HP 바
-      const barW   = 100;
+      const barW    = 100;
       const hpRatio = Math.max(0, mon.hp / mon.maxHp);
       this.monsterObjs.push(
         this.add.rectangle(x, MONSTER_IMG_Y + imgH / 2 + 28, barW, 7, 0x2a2a2a).setDepth(16),
@@ -597,19 +630,14 @@ export class GameScene extends Phaser.Scene {
           .setOrigin(0, 0.5).setDepth(17)
       );
 
-      // ── 공격 타겟 표시 & 인터랙션 ─────────────────────────────────────
+      // 공격 타겟
       if (hasCombo) {
-        // 타겟 지시 화살표 (항상 표시)
         this.monsterObjs.push(
           this.add.text(x, MONSTER_IMG_Y - imgH / 2 - 24, "ATTACK!", TS.monTarget)
             .setOrigin(0.5, 1).setDepth(18)
         );
-
-        // 클릭 히트 영역
-        const hit = this.add.rectangle(x, MONSTER_IMG_Y + imgH / 2 - 10, imgW + 20, imgH + 60, 0xffdd00, 0)
+        const hit = this.add.rectangle(x, MONSTER_IMG_Y + imgH / 2 - 10, imgW + 20, imgH + 60, 0x000000, 0)
           .setDepth(19).setInteractive();
-        hit.on("pointerover", () => hit.setFillStyle(0xffdd00, 0.12));
-        hit.on("pointerout",  () => hit.setFillStyle(0xffdd00, 0));
         hit.on("pointerdown", () => { if (!this.isDealing) this.attackMonster(idx); });
         this.monsterObjs.push(hit);
       }
@@ -689,7 +717,7 @@ export class GameScene extends Phaser.Scene {
     this.render();
   }
 
-  // ── 카드를 dummy 파일로 날리는 애니메이션 ───────────────────────────────
+  // ── 카드를 dummy 파일로 날리는 애니메이션 (필드 교체용) ──────────────────
   _flyToDummy(fromX, fromY, key = "card_back") {
     this._sfx("sfx_fan");
     const img = this.add.image(fromX, fromY, key).setDisplaySize(CW, CH).setDepth(200);
@@ -702,6 +730,34 @@ export class GameScene extends Phaser.Scene {
       duration: 380,
       ease: "Power2.In",
       onComplete: () => img.destroy(),
+    });
+  }
+
+  // ── 공격 카드: 몬스터로 날아가 50%까지 축소 → dummy로 이동 ───────────────
+  _throwCardAtMonster(fromX, fromY, key, monX) {
+    this._sfx("sfx_fan");
+    const img = this.add.image(fromX, fromY, key).setDisplaySize(CW, CH).setDepth(200);
+    this.tweens.add({
+      targets: img,
+      x: monX,
+      y: MONSTER_IMG_Y,
+      displayWidth:  CW * 0.5,
+      displayHeight: CH * 0.5,
+      duration: 280,
+      ease: "Power2.In",
+      onComplete: () => {
+        this.tweens.add({
+          targets: img,
+          x: GW - 80,
+          y: FIELD_Y,
+          displayWidth:  CW * 0.15,
+          displayHeight: CH * 0.15,
+          alpha: 0,
+          duration: 220,
+          ease: "Power2.In",
+          onComplete: () => img.destroy(),
+        });
+      },
     });
   }
 
@@ -802,32 +858,48 @@ export class GameScene extends Phaser.Scene {
     this.addBattleLog(`${mon.type.name}에게 ${label}로 ${damage} 데미지!`);
     this._sfx("sfx_knifeSlice");
 
-    // 선택 카드 → dummy 애니메이션 + dummyData 이동
+    // 선택 카드 → 몬스터를 향해 던진 후 dummy로 이동
+    const monX        = this.calcMonsterPositions(this.monsters.length)[monIdx].x;
     const handPositions = this.calcHandPositions(this.handData.length);
     [...this.selected].forEach(i => {
-      this._flyToDummy(handPositions[i].x, HAND_Y - 22, this.handData[i].key);
+      this._throwCardAtMonster(handPositions[i].x, HAND_Y - 22, this.handData[i].key, monX);
     });
     const usedCards = [...this.selected].sort((a, b) => b - a)
       .map(i => this.handData.splice(i, 1)[0]);
     this.dummyData.push(...usedCards);
     this.selected.clear();
 
+    // 공격 애니메이션 재생 후 결과 처리
+    const sprite   = this._monsterSprites?.[monIdx];
+    const atkKey   = `mon_${mon.type.id}_attack`;
+    const ANIM_DUR = 400; // 4 frames × 10fps
+
+    if (sprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(atkKey)) {
+      this.isDealing = true;
+      sprite.play(atkKey);
+      this.time.delayedCall(ANIM_DUR, () => {
+        this.isDealing = false;
+        this._afterAttack(mon);
+      });
+    } else {
+      this._afterAttack(mon);
+    }
+  }
+
+  _afterAttack(mon) {
     if (mon.hp <= 0) {
       mon.isDead = true;
       const newLevels = this.player.addXp(mon.xp);
       this.player.gold += mon.gold;
       this.addBattleLog(`${mon.type.name} 처치! +${mon.xp}XP +${mon.gold}G`);
-      if (newLevels.length > 0) {
-        this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
-      }
+      if (newLevels.length > 0) this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
+      this.render();
       if (this.monsters.every(m => m.isDead)) {
-        this.render();
         this.time.delayedCall(700, () => this.onRoundClear());
-        return;
       }
+    } else {
+      this.render();
     }
-
-    this.render();
   }
 
   // ── 턴 종료 ──────────────────────────────────────────────────────────────
@@ -902,6 +974,7 @@ export class GameScene extends Phaser.Scene {
   // ── 라운드 클리어 ────────────────────────────────────────────────────────
   onRoundClear() {
     this.isDealing = true;
+    writeSave(this.round + 1, this.player.toData());
 
     // 오버레이
     const g = this.add.graphics().setDepth(300);
@@ -928,6 +1001,7 @@ export class GameScene extends Phaser.Scene {
   // ── 게임 오버 ────────────────────────────────────────────────────────────
   showGameOver() {
     this.isDealing = true;
+    deleteSave();
 
     const g = this.add.graphics().setDepth(300);
     g.fillStyle(0x000000, 0.72);
@@ -955,5 +1029,121 @@ export class GameScene extends Phaser.Scene {
     this.msgTxt.setText(text);
     if (this._mt) this._mt.remove();
     this._mt = this.time.delayedCall(dur, () => this.msgTxt.setText(""));
+  }
+
+  // ── 인게임 옵션 오버레이 ─────────────────────────────────────────────────
+  _showOptions() {
+    if (this._optOverlayObjs) return;
+    this._prevIsDealing = this.isDealing;
+    this.isDealing = true;
+
+    const objs = this._optOverlayObjs = [];
+    const cx = GW / 2, cy = GH / 2;
+    const pw = 400, ph = 360;
+
+    // 딤 배경
+    const dim = this.add.rectangle(cx, cy, GW, GH, 0x000000, 0.65)
+      .setDepth(600).setInteractive(); // 클릭 막기
+    objs.push(dim);
+
+    // 패널
+    const panelG = this.add.graphics().setDepth(601);
+    panelG.fillStyle(0x0d2b18);
+    panelG.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
+    panelG.lineStyle(2, 0x2d7a3a);
+    panelG.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
+    objs.push(panelG);
+
+    objs.push(
+      this.add.text(cx, cy - ph / 2 + 44, "OPTIONS", TS.optTitle).setOrigin(0.5).setDepth(602)
+    );
+
+    // BGM 볼륨
+    let bgm = this.registry.get("bgmVolume") ?? 7;
+    const bgmY = cy - 70;
+    objs.push(this.add.text(cx, bgmY - 28, "BGM", TS.optLabel).setOrigin(0.5).setDepth(602));
+
+    const bgmMinus = this.add.rectangle(cx - 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
+    objs.push(bgmMinus, this.add.text(cx - 80, bgmY, "-", TS.optBtn).setOrigin(0.5).setDepth(603));
+
+    const bgmTxt = this.add.text(cx, bgmY, String(bgm), TS.optValue).setOrigin(0.5).setDepth(602);
+    objs.push(bgmTxt);
+
+    const bgmPlus = this.add.rectangle(cx + 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
+    objs.push(bgmPlus, this.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
+
+    const bgmBarBg = this.add.rectangle(cx, bgmY + 28, 190, 7, 0x224433).setDepth(602);
+    const bgmBar   = this.add.rectangle(cx - 95, bgmY + 28, bgm * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
+    objs.push(bgmBarBg, bgmBar);
+
+    const updateBgm = (v) => {
+      bgm = Phaser.Math.Clamp(v, 0, 10);
+      this.registry.set("bgmVolume", bgm);
+      bgmTxt.setText(String(bgm));
+      bgmBar.setDisplaySize(Math.max(1, bgm * 19), 7);
+    };
+    bgmMinus.on("pointerdown", () => updateBgm(bgm - 1));
+    bgmPlus.on("pointerdown",  () => updateBgm(bgm + 1));
+    bgmMinus.on("pointerover", () => bgmMinus.setFillStyle(0x447766));
+    bgmMinus.on("pointerout",  () => bgmMinus.setFillStyle(0x335544));
+    bgmPlus.on("pointerover",  () => bgmPlus.setFillStyle(0x447766));
+    bgmPlus.on("pointerout",   () => bgmPlus.setFillStyle(0x335544));
+
+    // SFX 볼륨
+    let sfx = this.registry.get("sfxVolume") ?? 7;
+    const sfxY = cy + 50;
+    objs.push(this.add.text(cx, sfxY - 28, "SFX", TS.optLabel).setOrigin(0.5).setDepth(602));
+
+    const sfxMinus = this.add.rectangle(cx - 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
+    objs.push(sfxMinus, this.add.text(cx - 80, sfxY, "-", TS.optBtn).setOrigin(0.5).setDepth(603));
+
+    const sfxTxt = this.add.text(cx, sfxY, String(sfx), TS.optValue).setOrigin(0.5).setDepth(602);
+    objs.push(sfxTxt);
+
+    const sfxPlus = this.add.rectangle(cx + 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
+    objs.push(sfxPlus, this.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
+
+    const sfxBarBg = this.add.rectangle(cx, sfxY + 28, 190, 7, 0x224433).setDepth(602);
+    const sfxBar   = this.add.rectangle(cx - 95, sfxY + 28, sfx * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
+    objs.push(sfxBarBg, sfxBar);
+
+    const updateSfx = (v) => {
+      sfx = Phaser.Math.Clamp(v, 0, 10);
+      this.registry.set("sfxVolume", sfx);
+      sfxTxt.setText(String(sfx));
+      sfxBar.setDisplaySize(Math.max(1, sfx * 19), 7);
+    };
+    sfxMinus.on("pointerdown", () => updateSfx(sfx - 1));
+    sfxPlus.on("pointerdown",  () => updateSfx(sfx + 1));
+    sfxMinus.on("pointerover", () => sfxMinus.setFillStyle(0x447766));
+    sfxMinus.on("pointerout",  () => sfxMinus.setFillStyle(0x335544));
+    sfxPlus.on("pointerover",  () => sfxPlus.setFillStyle(0x447766));
+    sfxPlus.on("pointerout",   () => sfxPlus.setFillStyle(0x335544));
+
+    // 나가기 버튼
+    const exitBtn = this.add.rectangle(cx - 80, cy + ph / 2 - 48, 140, 48, 0x882211)
+      .setDepth(602).setInteractive();
+    objs.push(exitBtn, this.add.text(cx - 80, cy + ph / 2 - 48, "MAIN MENU", TS.menuBtn).setOrigin(0.5).setDepth(603));
+    exitBtn.on("pointerdown", () => {
+      writeSave(this.round, this.player.toData());
+      this.scene.start("MainMenuScene");
+    });
+    exitBtn.on("pointerover",  () => exitBtn.setFillStyle(0xaa2222));
+    exitBtn.on("pointerout",   () => exitBtn.setFillStyle(0x882211));
+
+    // 닫기 버튼
+    const closeBtn = this.add.rectangle(cx + 80, cy + ph / 2 - 48, 140, 48, 0x335544)
+      .setDepth(602).setInteractive();
+    objs.push(closeBtn, this.add.text(cx + 80, cy + ph / 2 - 48, "CLOSE", TS.menuBtn).setOrigin(0.5).setDepth(603));
+    closeBtn.on("pointerdown", () => this._closeOptions());
+    closeBtn.on("pointerover",  () => closeBtn.setFillStyle(0x447766));
+    closeBtn.on("pointerout",   () => closeBtn.setFillStyle(0x335544));
+  }
+
+  _closeOptions() {
+    if (!this._optOverlayObjs) return;
+    this._optOverlayObjs.forEach(o => o.destroy());
+    this._optOverlayObjs = null;
+    this.isDealing = this._prevIsDealing ?? false;
   }
 }

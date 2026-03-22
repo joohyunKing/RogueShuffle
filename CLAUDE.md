@@ -18,39 +18,52 @@ Phaser 3 + Vite(ES Modules) 구성.
 src/
   main.js               # FontFace 로드 → Phaser.Game 생성, 씬 등록
   constants.js          # 레이아웃 전용 상수 (GW/GH/CW/CH/FIELD_*/PILE_*/Y좌표 등)
-  scoring.js            # 족보 점수 계산 로직 (calcScore)
+  scoring.js            # 족보 점수 계산 로직 (calcScore) — { score, label, cards } 반환
   levels.js             # 라운드별 게임플레이 수치 (getLevelConfig)
-  monsters.js           # 몬스터 종류 4×4 그리드 + TIER_REWARDS + preloadMonsters
+  monsters.js           # 몬스터 종류 4×4 그리드 + 스프라이트 애니메이션 정의
+  save.js               # localStorage 세이브/로드 유틸 (hasSave/loadSave/writeSave/deleteSave)
   Player.js             # 플레이어 상태 클래스 (hp/xp/gold/level/attrs)
   CardRenderer.js       # Canvas2D API로 런타임 카드 텍스처 생성
   textStyles.js         # Phaser Text 스타일 상수 모음 (TS 객체)
   scenes/
-    MainMenuScene.js    # 타이틀 화면 (PLAY / OPTIONS 버튼)
-    OptionsScene.js     # 볼륨 · 언어 설정 (registry에 저장)
+    MainMenuScene.js    # 타이틀 화면 (NEW GAME / CONTINUE / OPTIONS)
+    OptionsScene.js     # BGM·SFX 볼륨 · 언어 설정 (registry에 저장)
     GameScene.js        # 메인 플레이 씬
   assets/
     fonts/              # PressStart2P-Regular.ttf
     audio/sfx/          # card-shuffle.ogg, card-fan-1.ogg, card-slide-5.ogg,
-                        # card-place-1.ogg, card-place-2.ogg, chop.ogg, knifeSlice.ogg
-    images/symbol/      # spade_symbol.jpg, hearts_symbol.jpg,
+                        # card-place-1.ogg, chop.ogg, knifeSlice.ogg
+    images/
+      symbol/           # spade_symbol.jpg, hearts_symbol.jpg,
                         # diamonds_symbol.jpg, clubs_symbol.jpg
+      monster/          # skeleton.png, zombi.png, goblin.png, werewolf.png
+                        # (1024×1024, 4col×3row spritesheet — PNG, Vite static import)
 public/
   cards/        # 카드 이미지 (사용 안 함 — CardRenderer로 대체됨)
-  monster/      # 몬스터 이미지 (skeleton.jpg, zombi.jpg — monsters.js에 등록)
 ```
 
 ## 씬 전환 흐름
 ```
-MainMenuScene → (PLAY)    → GameScene
-MainMenuScene → (OPTIONS) → OptionsScene → (BACK) → MainMenuScene
-GameScene     → (≡ MENU)  → MainMenuScene
-GameScene     → (라운드 클리어) → GameScene { round+1, player.toData() }
-GameScene     → (게임오버)     → GameOver 오버레이 → MainMenuScene
+MainMenuScene → (NEW GAME) → GameScene (세이브 있을 때는 기존 세이브 삭제)
+MainMenuScene → (CONTINUE) → GameScene { round, player } (세이브 데이터 로드)
+MainMenuScene → (OPTIONS)  → OptionsScene → (BACK) → MainMenuScene
+GameScene     → (OPTIONS 오버레이) → CLOSE → GameScene 복귀
+GameScene     → (OPTIONS 오버레이) → MAIN MENU → 세이브 후 MainMenuScene
+GameScene     → (라운드 클리어) → 자동 세이브(round+1) → GameScene { round+1, player }
+GameScene     → (게임오버)     → 세이브 삭제 → GameOver 오버레이 → MainMenuScene
 ```
+
+## 세이브 시스템 (save.js)
+- `localStorage` 키: `"rogueShuffle_save"`
+- 포맷: `{ round: number, player: PlayerData }`
+- **자동 저장**: 라운드 클리어 시 `writeSave(round+1, player.toData())`
+- **저장 후 이동**: 인게임 OPTIONS → MAIN MENU 클릭 시 현재 상태 저장
+- **삭제**: 게임오버 시 `deleteSave()`
+- **NEW GAME**: 기존 세이브 삭제 후 새 게임 시작
 
 ## 씬 데이터 전달
 ```js
-// 라운드 클리어 시
+// 라운드 클리어 / CONTINUE 시
 this.scene.start("GameScene", { round: this.round + 1, player: this.player.toData() });
 
 // GameScene.create()에서 수신
@@ -62,8 +75,12 @@ this.player = new Player(data.player);  // data.player 없으면 초기값
 ## 설정 저장 (Phaser registry)
 | 키 | 기본값 | 설명 |
 |----|--------|------|
-| `volume` | 7 | 볼륨 (0~10) |
-| `lang`   | `"ko"` | 언어 (`"ko"` \| `"en"`) |
+| `bgmVolume` | 7 | BGM 볼륨 (0~10) |
+| `sfxVolume` | 7 | SFX 볼륨 (0~10) |
+| `lang`      | `"ko"` | 언어 (`"ko"` \| `"en"`) |
+
+- SFX 재생: `_sfx(key)` — `sfxVolume / 10 × 0.6` 적용
+- BGM 사운드는 미구현 (registry 키만 준비됨)
 
 ---
 
@@ -130,12 +147,6 @@ CardRenderer.createAll(scene)  // 52장 카드 텍스처 일괄 생성
 
 ### 카드 텍스처 키: `${suit}${rank}` (예: `SA`, `H10`, `DK`)
 
-### 렌더링 방식
-- A: 중앙에 심볼 크게 (50px)
-- 2~10: `LAYOUTS` pip 좌표 배치 (카드 W/H 비율, y>0.5이면 flip)
-- J/Q/K: 컬러 배경 패널 + 대형 랭크 문자 (face card placeholder)
-- 좌상단/우하단 모서리: 랭크 텍스트 + 작은 심볼
-
 ---
 
 ## textStyles.js (TS 객체)
@@ -155,6 +166,15 @@ this.add.text(x, y, "text", TS.gameTitle);
 
 ## monsters.js
 
+### MONSTER_ANIMS (스프라이트시트 구성 1024×1024, 4col×3row)
+```js
+export const MONSTER_ANIMS = {
+  idle:   { start: 0,  end: 3,  frameRate: 8,  repeat: -1 },  // Row 0
+  attack: { start: 4,  end: 7,  frameRate: 10, repeat: 0  },  // Row 1
+  death:  { start: 8,  end: 11, frameRate: 8,  repeat: 0  },  // Row 2
+};
+```
+
 ### TIER_REWARDS
 ```js
 export const TIER_REWARDS = [
@@ -170,7 +190,13 @@ export const TIER_REWARDS = [
 getMonstersByTier(tier)           // 티어 몬스터 목록
 getAvailableMonstersByTier(tier)  // image != null 인 것만 (없으면 tier 0 fallback)
 preloadMonsters(scene)            // spritesheet 로드 (frameWidth:256, frameHeight:341)
+createMonsterAnims(scene)         // idle/attack/death 애니메이션 등록 (씬 재시작 안전)
 ```
+
+### 몬스터 이미지
+- `src/assets/images/monster/` 하위 PNG 파일
+- Vite static import (`import skeletonUrl from './assets/images/monster/skeleton.png'`)
+- `m.image` 필드에 import된 URL이 직접 저장됨
 
 ---
 
@@ -196,6 +222,9 @@ MAX_DEFINED_LEVEL       // 현재 정의된 최대 라운드 수 (4)
 
 ## scoring.js (calcScore)
 
+반환값: `{ score: number, label: string, cards: CardObj[] }`
+`cards` — 족보를 구성하는 카드 객체 배열 (진동 효과 등에 활용)
+
 | 족보 | 조건 | 점수 공식 |
 |------|------|-----------|
 | 포카드 | 같은 val 4장 | val 합산 × 5 |
@@ -205,7 +234,7 @@ MAX_DEFINED_LEVEL       // 현재 정의된 최대 라운드 수 (4)
 | 페어 | 같은 val 2장 | val 합산 × 2 |
 | 하이카드 | 패턴 없음 | 선택 카드 중 최고 val |
 
-- A=1, J=11, Q=12, K=13
+- A=14(스트레이트에서 A-로우는 1로도 처리), J=11, Q=12, K=13
 - 여러 패턴 중 **가장 높은 점수 1개** 적용
 
 ---
@@ -214,22 +243,25 @@ MAX_DEFINED_LEVEL       // 현재 정의된 최대 라운드 수 (4)
 
 | 변수 | 설명 |
 |------|------|
-| `this.round` | 현재 라운드 번호 (게임 진행 회차, 1~) |
+| `this.round` | 현재 라운드 번호 (1~) |
 | `this.lv` | `getLevelConfig(round)` 결과 |
-| `this.player` | `Player` 인스턴스 (hp/xp/gold/level/attrs) |
+| `this.player` | `Player` 인스턴스 |
 | `this.handData[]` | 핸드 카드 배열 |
 | `this.fieldData[]` | 필드 카드 배열 (각 카드에 `slotX` 포함) |
 | `this.deckData[]` | 남은 덱 |
 | `this.dummyData[]` | 버린 카드 더미 |
-| `this.monsters[]` | 몬스터 배열 `{type, hp, maxHp, atk, def, xp, gold, isDead}` |
+| `this.monsters[]` | 몬스터 배열 `{type, hp, maxHp, atk, def, xp, gold, isDead, deathAnimDone}` |
 | `this.selected` | Set — 핸드 선택 인덱스 |
 | `this.fieldPickCount` | 이번 턴 필드 픽 횟수 |
-| `this.isDealing` | 딜링/애니메이션 중 인터랙션 차단 여부 |
+| `this.attackCount` | 이번 턴 공격 횟수 |
+| `this.isDealing` | 애니메이션 중 인터랙션 차단 여부 |
 | `this.sortMode` | `'suit'` \| `'rank'` \| `null` |
 | `this.sortAsc` | 정렬 방향 (boolean) |
 | `this.cardObjs[]` | 렌더 시마다 재생성 (카드 게임오브젝트) |
-| `this.monsterObjs[]` | 렌더 시마다 재생성 (몬스터 UI) |
+| `this.monsterObjs[]` | 렌더 시마다 재생성 (몬스터 UI — HP바, 텍스트 등) |
+| `this._monsterSprites[]` | 렌더 시마다 재생성 (몬스터 스프라이트 본체, index=몬스터idx) |
 | `this.animObjs[]` | 딜링 애니메이션 전용 |
+| `this._optOverlayObjs` | 인게임 OPTIONS 오버레이 오브젝트 배열 (null이면 미표시) |
 | `this.battleLogLines[]` | 배틀 로그 줄들 |
 
 ## GameScene — 턴 흐름
@@ -237,18 +269,27 @@ MAX_DEFINED_LEVEL       // 현재 정의된 최대 라운드 수 (4)
 create() → startDealAnimation() → render()
   ↓ 플레이어 행동 (반복 가능)
   - 필드 카드 드래그 → 핸드로 (fieldPickCount < fieldPickLimit)
-  - 핸드 카드 클릭 → 선택/해제 → 족보 프리뷰
-  - 몬스터 클릭 (족보 있을 때) → attackMonster() → 카드 소모
+  - 핸드 카드 클릭 → 선택/해제 → 족보 프리뷰 + 족보 카드 진동
+  - 몬스터 클릭 (족보 있을 때) → attackMonster()
+      → 카드가 몬스터를 향해 날아가며 50%로 축소 → dummy로 이동
+      → 몬스터 attack 애니메이션 (400ms) → _afterAttack()
   ↓ 턴종료 클릭
   onTurnEnd() → 몬스터 반격 → 게임오버 or startTurn()
   startTurn() → 핸드 보충 + 필드 교체 → render()
 ```
 
 ## GameScene — 렌더 방식
-- `render()` 호출 시 `cardObjs` 전체 destroy 후 재생성
-- UI 요소(버튼, 텍스트)는 `create()`에서 한 번만 생성 — `cardObjs`에 넣지 않음
-- 정렬 버튼도 한 번만 생성, `refreshSortBtns()`로 상태만 갱신
+- `render()` 호출 시 `cardObjs` + `monsterObjs` + `_monsterSprites` 전체 destroy 후 재생성
+- UI 요소(버튼, 텍스트)는 `create()`에서 한 번만 생성
 - `refreshPlayerStats()` / `refreshPlayerLevel()` 로 UI 텍스트 갱신
+
+## GameScene — 몬스터 렌더 및 애니메이션
+- 살아있는 몬스터: `idle` 애니메이션 루프
+- 사망 몬스터:
+  - `mon.deathAnimDone === false`: `death` 애니메이션 1회 재생 후 플래그 설정
+    (animationcomplete 이벤트 + 600ms fallback 타이머로 이중 보호)
+  - `mon.deathAnimDone === true`: 마지막 프레임(11) 고정 표시
+- 공격 시: `_monsterSprites[monIdx]`에 `attack` 애니메이션 재생 (400ms, `isDealing=true`)
 
 ## GameScene — 카드 크기 정책
 - 핸드 카드: `CW × CH` (100×145)
@@ -260,9 +301,23 @@ create() → startDealAnimation() → render()
 - `drop` (핸드 패널 위): 삽입 위치 탐지 후 `handData` splice
 - `dragend` (핸드 밖): `_snapBack()` → origW/origH로 복원
 
-## GameScene — 더미 fly 애니메이션
-- `_flyToDummy(cardObjs)`: 카드들을 `(GW-80, FIELD_Y)`로 tween
-- 420ms 딜레이 후 `startTurn()` 호출
+## GameScene — 카드 애니메이션
+- `_flyToDummy(fromX, fromY, key)`: 필드 교체 시 카드를 `(GW-80, FIELD_Y)`로 날림 (380ms)
+- `_throwCardAtMonster(fromX, fromY, key, monX)`: 공격 카드 애니메이션
+  - 핸드 → 몬스터 위치 (280ms, CW×0.5로 축소)
+  - 몬스터 → dummy 파일 (220ms, 페이드아웃)
+
+## GameScene — 핸드 UX
+- 선택 카드: 22px 위로 올라감 (노란 테두리 없음)
+- 족보 구성 카드만 x축 진동 tween (repeat: -1, 카드 파괴 시 자동 중단)
+- 족보 없는 선택 카드: 위치만 올라가고 진동 없음
+
+## GameScene — OPTIONS 오버레이
+- 하단 OPTIONS 버튼 클릭 시 `_showOptions()` 호출 (isDealing 이전 상태 보존)
+- BGM 볼륨, SFX 볼륨 조절 (registry 즉시 반영)
+- MAIN MENU: 현재 상태 세이브 후 MainMenuScene 이동
+- CLOSE: 오버레이 제거 후 게임 복귀
+- 씬 재시작 시 `_optOverlayObjs = null` 초기화 (재진입 시 오버레이 정상 작동)
 
 ---
 

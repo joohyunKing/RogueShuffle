@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { GW, GH } from "../constants.js";
 import { TS } from "../textStyles.js";
+import { hasSave, loadSave, deleteSave } from "../save.js";
 
 export class MainMenuScene extends Phaser.Scene {
   constructor() { super("MainMenuScene"); }
@@ -27,21 +28,51 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   _createButtons() {
-    // ── PLAY ──────────────────────────────────────────────────────────────
-    const playBg = this.add.rectangle(GW / 2, 410, 280, 64, 0x22aa44).setInteractive();
-    this.add.text(GW / 2, 410, "PLAY", TS.menuPlayBtn).setOrigin(0.5);
-    playBg.on("pointerdown", () => this.scene.start("GameScene"));
-    playBg.on("pointerover",  () => playBg.setFillStyle(0x33cc55));
-    playBg.on("pointerout",   () => playBg.setFillStyle(0x22aa44));
+    const cx         = GW / 2;
+    const saveExists = hasSave();
 
-    // ── OPTIONS ───────────────────────────────────────────────────────────
-    const optBg = this.add.rectangle(GW / 2, 500, 280, 56, 0x335544).setInteractive();
-    this.add.text(GW / 2, 500, "OPTIONS", TS.menuOptBtn).setOrigin(0.5);
-    optBg.on("pointerdown", () => this.scene.start("OptionsScene"));
-    optBg.on("pointerover",  () => optBg.setFillStyle(0x447766));
-    optBg.on("pointerout",   () => optBg.setFillStyle(0x335544));
+    if (saveExists) {
+      // ── NEW GAME ──────────────────────────────────────────────────────
+      const newBg = this.add.rectangle(cx, 380, 280, 56, 0x22aa44).setInteractive();
+      this.add.text(cx, 380, "NEW GAME", TS.menuPlayBtn).setOrigin(0.5);
+      newBg.on("pointerdown", () => { deleteSave(); this.scene.start("GameScene"); });
+      newBg.on("pointerover",  () => newBg.setFillStyle(0x33cc55));
+      newBg.on("pointerout",   () => newBg.setFillStyle(0x22aa44));
 
-    // ── 버전 ──────────────────────────────────────────────────────────────
+      // ── CONTINUE ──────────────────────────────────────────────────────
+      const contBg = this.add.rectangle(cx, 454, 280, 56, 0x1a8833).setInteractive();
+      this.add.text(cx, 454, "CONTINUE", TS.menuPlayBtn).setOrigin(0.5);
+      contBg.on("pointerdown", () => {
+        const save = loadSave();
+        this.scene.start("GameScene", save ?? {});
+      });
+      contBg.on("pointerover",  () => contBg.setFillStyle(0x2dbb55));
+      contBg.on("pointerout",   () => contBg.setFillStyle(0x1a8833));
+
+      // ── OPTIONS ───────────────────────────────────────────────────────
+      const optBg = this.add.rectangle(cx, 530, 280, 48, 0x335544).setInteractive();
+      this.add.text(cx, 530, "OPTIONS", TS.menuOptBtn).setOrigin(0.5);
+      optBg.on("pointerdown", () => this.scene.start("OptionsScene"));
+      optBg.on("pointerover",  () => optBg.setFillStyle(0x447766));
+      optBg.on("pointerout",   () => optBg.setFillStyle(0x335544));
+
+    } else {
+      // ── NEW GAME ──────────────────────────────────────────────────────
+      const newBg = this.add.rectangle(cx, 420, 280, 64, 0x22aa44).setInteractive();
+      this.add.text(cx, 420, "NEW GAME", TS.menuPlayBtn).setOrigin(0.5);
+      newBg.on("pointerdown", () => this.scene.start("GameScene"));
+      newBg.on("pointerover",  () => newBg.setFillStyle(0x33cc55));
+      newBg.on("pointerout",   () => newBg.setFillStyle(0x22aa44));
+
+      // ── OPTIONS ───────────────────────────────────────────────────────
+      const optBg = this.add.rectangle(cx, 510, 280, 56, 0x335544).setInteractive();
+      this.add.text(cx, 510, "OPTIONS", TS.menuOptBtn).setOrigin(0.5);
+      optBg.on("pointerdown", () => this.scene.start("OptionsScene"));
+      optBg.on("pointerover",  () => optBg.setFillStyle(0x447766));
+      optBg.on("pointerout",   () => optBg.setFillStyle(0x335544));
+    }
+
+    // ── 버전 ────────────────────────────────────────────────────────────
     this.add.text(GW - 20, GH - 12, "v0.1.0", TS.version).setOrigin(1, 1);
   }
 }

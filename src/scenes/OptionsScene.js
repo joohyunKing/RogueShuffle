@@ -3,22 +3,26 @@ import { GW, GH } from "../constants.js";
 import { TS } from "../textStyles.js";
 
 const PANEL_W = 560;
-const PANEL_H = 460;
+const PANEL_H = 520;
 const PANEL_X = GW / 2 - PANEL_W / 2;
-const PANEL_Y = 160;
+const PANEL_Y = 130;
 
 export class OptionsScene extends Phaser.Scene {
   constructor() { super("OptionsScene"); }
 
   create() {
-    if (this.registry.get("volume") == null) this.registry.set("volume", 7);
-    if (this.registry.get("lang")   == null) this.registry.set("lang",   "ko");
+    // 기본값 초기화
+    if (this.registry.get("bgmVolume") == null) this.registry.set("bgmVolume", 7);
+    if (this.registry.get("sfxVolume") == null) this.registry.set("sfxVolume", 7);
+    if (this.registry.get("lang")      == null) this.registry.set("lang",      "ko");
 
-    this._volume = this.registry.get("volume");
-    this._lang   = this.registry.get("lang");
+    this._bgm  = this.registry.get("bgmVolume");
+    this._sfx  = this.registry.get("sfxVolume");
+    this._lang = this.registry.get("lang");
 
     this._drawBg();
-    this._createVolumeRow();
+    this._createBgmRow();
+    this._createSfxRow();
     this._createLangRow();
     this._createBackButton();
   }
@@ -35,45 +39,87 @@ export class OptionsScene extends Phaser.Scene {
     this.add.text(GW / 2, PANEL_Y + 52, "OPTIONS", TS.optTitle).setOrigin(0.5);
   }
 
-  _createVolumeRow() {
-    const rowY = PANEL_Y + 160;
-    this.add.text(GW / 2, rowY - 40, "VOLUME", TS.optLabel).setOrigin(0.5);
+  // ── BGM 볼륨 ─────────────────────────────────────────────────────────────
+  _createBgmRow() {
+    const rowY = PANEL_Y + 150;
+    this.add.text(GW / 2, rowY - 38, "BGM VOLUME", TS.optLabel).setOrigin(0.5);
 
     const minusBg = this.add.rectangle(GW / 2 - 90, rowY, 50, 50, 0x335544).setInteractive();
     this.add.text(GW / 2 - 90, rowY, "-", TS.optBtn).setOrigin(0.5);
 
-    this._volTxt = this.add.text(GW / 2, rowY, String(this._volume), TS.optValue).setOrigin(0.5);
+    this._bgmTxt = this.add.text(GW / 2, rowY, String(this._bgm), TS.optValue).setOrigin(0.5);
 
     const plusBg = this.add.rectangle(GW / 2 + 90, rowY, 50, 50, 0x335544).setInteractive();
     this.add.text(GW / 2 + 90, rowY, "+", TS.optBtn).setOrigin(0.5);
 
-    this._volBarBg = this.add.rectangle(GW / 2, rowY + 40, 200, 8, 0x224433);
-    this._volBar   = this.add.rectangle(GW / 2 - 100, rowY + 40, this._volume * 20, 8, 0x44dd88).setOrigin(0, 0.5);
-    this._updateVolBar();
+    this._bgmBarBg = this.add.rectangle(GW / 2, rowY + 40, 200, 8, 0x224433);
+    this._bgmBar   = this.add.rectangle(GW / 2 - 100, rowY + 40, this._bgm * 20, 8, 0x44dd88).setOrigin(0, 0.5);
+    this._updateBgmBar();
 
-    minusBg.on("pointerdown", () => this._changeVolume(-1));
-    plusBg.on("pointerdown",  () => this._changeVolume(+1));
+    minusBg.on("pointerdown", () => this._changeBgm(-1));
+    plusBg.on("pointerdown",  () => this._changeBgm(+1));
     minusBg.on("pointerover", () => minusBg.setFillStyle(0x447766));
     minusBg.on("pointerout",  () => minusBg.setFillStyle(0x335544));
     plusBg.on("pointerover",  () => plusBg.setFillStyle(0x447766));
     plusBg.on("pointerout",   () => plusBg.setFillStyle(0x335544));
   }
 
-  _changeVolume(delta) {
-    this._volume = Phaser.Math.Clamp(this._volume + delta, 0, 10);
-    this.registry.set("volume", this._volume);
-    this.sound.volume = this._volume / 10;
-    this._volTxt.setText(String(this._volume));
-    this._updateVolBar();
+  _changeBgm(delta) {
+    this._bgm = Phaser.Math.Clamp(this._bgm + delta, 0, 10);
+    this.registry.set("bgmVolume", this._bgm);
+    this._bgmTxt.setText(String(this._bgm));
+    this._updateBgmBar();
+    // BGM 사운드가 있으면 여기서 볼륨 적용
   }
 
-  _updateVolBar() {
-    this._volBar.setDisplaySize(Math.max(this._volume * 20, 1), 8);
+  _updateBgmBar() {
+    this._bgmBar.setDisplaySize(Math.max(1, this._bgm * 20), 8);
   }
 
+  // ── SFX 볼륨 ─────────────────────────────────────────────────────────────
+  _createSfxRow() {
+    const rowY = PANEL_Y + 280;
+    this.add.text(GW / 2, rowY - 38, "SFX VOLUME", TS.optLabel).setOrigin(0.5);
+
+    const minusBg = this.add.rectangle(GW / 2 - 90, rowY, 50, 50, 0x335544).setInteractive();
+    this.add.text(GW / 2 - 90, rowY, "-", TS.optBtn).setOrigin(0.5);
+
+    this._sfxTxt = this.add.text(GW / 2, rowY, String(this._sfx), TS.optValue).setOrigin(0.5);
+
+    const plusBg = this.add.rectangle(GW / 2 + 90, rowY, 50, 50, 0x335544).setInteractive();
+    this.add.text(GW / 2 + 90, rowY, "+", TS.optBtn).setOrigin(0.5);
+
+    this._sfxBarBg = this.add.rectangle(GW / 2, rowY + 40, 200, 8, 0x224433);
+    this._sfxBar   = this.add.rectangle(GW / 2 - 100, rowY + 40, this._sfx * 20, 8, 0x44dd88).setOrigin(0, 0.5);
+    this._updateSfxBar();
+
+    minusBg.on("pointerdown", () => this._changeSfx(-1));
+    plusBg.on("pointerdown",  () => this._changeSfx(+1));
+    minusBg.on("pointerover", () => minusBg.setFillStyle(0x447766));
+    minusBg.on("pointerout",  () => minusBg.setFillStyle(0x335544));
+    plusBg.on("pointerover",  () => plusBg.setFillStyle(0x447766));
+    plusBg.on("pointerout",   () => plusBg.setFillStyle(0x335544));
+  }
+
+  _changeSfx(delta) {
+    this._sfx = Phaser.Math.Clamp(this._sfx + delta, 0, 10);
+    this.registry.set("sfxVolume", this._sfx);
+    this._sfxTxt.setText(String(this._sfx));
+    this._updateSfxBar();
+    // 볼륨 미리듣기 (GameScene을 거쳐서 온 경우에만 소리 있음)
+    if (this._sfx > 0 && this.cache.audio.exists("sfx_place")) {
+      this.sound.play("sfx_place", { volume: (this._sfx / 10) * 0.6 });
+    }
+  }
+
+  _updateSfxBar() {
+    this._sfxBar.setDisplaySize(Math.max(1, this._sfx * 20), 8);
+  }
+
+  // ── 언어 ─────────────────────────────────────────────────────────────────
   _createLangRow() {
-    const rowY = PANEL_Y + 300;
-    this.add.text(GW / 2, rowY - 40, "LANGUAGE", TS.optLabel).setOrigin(0.5);
+    const rowY = PANEL_Y + 400;
+    this.add.text(GW / 2, rowY - 38, "LANGUAGE", TS.optLabel).setOrigin(0.5);
 
     this._koBg = this.add.rectangle(GW / 2 - 70, rowY, 120, 50, 0x335544).setInteractive();
     this._koTxt = this.add.text(GW / 2 - 70, rowY, "한국어", TS.optLangBtn).setOrigin(0.5);
@@ -102,6 +148,7 @@ export class OptionsScene extends Phaser.Scene {
     this._enBg.setFillStyle(this._lang === "en" ? 0x227744 : 0x335544);
   }
 
+  // ── 뒤로 ─────────────────────────────────────────────────────────────────
   _createBackButton() {
     const backBg = this.add.rectangle(GW / 2, PANEL_Y + PANEL_H - 48, 200, 54, 0x1e4e99).setInteractive();
     this.add.text(GW / 2, PANEL_Y + PANEL_H - 48, "BACK", TS.optBackBtn).setOrigin(0.5);
