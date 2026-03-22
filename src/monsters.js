@@ -88,12 +88,14 @@ export function getMonstersByTier(tier) {
 }
 
 /**
- * 이미지가 있는 몬스터만 반환합니다. 없으면 tier 0 fallback.
- * @param {number} tier
+ * 이미지가 있는 몬스터만 반환합니다. tier는 숫자 또는 숫자 배열.
+ * 해당 티어에 이미지가 없으면 tier 0 fallback.
+ * @param {number|number[]} tier
  * @returns {MonsterType[]}
  */
 export function getAvailableMonstersByTier(tier) {
-  const pool      = getMonstersByTier(tier);
+  const tiers     = Array.isArray(tier) ? tier : [tier];
+  const pool      = tiers.flatMap(t => getMonstersByTier(t));
   const available = pool.filter(m => m.image !== null);
   return available.length > 0
     ? available

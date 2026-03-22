@@ -14,9 +14,9 @@
  * @property {number} fieldSize           - 라운드 시작 / 턴 시작 시 필드 배치 수
  * @property {number} fieldSizeLimit      - 필드 최대 카드 수
  * @property {number} fieldPickLimit      - 턴당 필드에서 픽업 가능한 카드 수
- * @property {number} monsterCount        - 등장 몬스터 수 (1~3)
- * @property {number} monsterTier         - 등장 몬스터 티어 (0~3, monsters.js MONSTER_GRID 기준)
- *                                          스탯은 monster.json 각 몬스터 데이터 참조
+ * @property {number} monsterCount           - 등장 몬스터 수 (1~3)
+ * @property {number|number[]} monsterTier  - 등장 몬스터 티어. 단일 숫자 또는 배열로 복수 티어 지정
+ *                                            스탯은 monster.json 각 몬스터 데이터 참조
  */
 
 /** @type {LevelConfig[]} */
@@ -41,7 +41,7 @@ const LEVEL_CONFIGS = [
     fieldSizeLimit:     6,
     fieldPickLimit:     1,
     monsterCount:       2,
-    monsterTier:        0,
+    monsterTier:        [0,1]
   },
   // ── Level 3 ──────────────────────────────────────────────────────────────
   {
@@ -63,7 +63,7 @@ const LEVEL_CONFIGS = [
     fieldSizeLimit:     6,
     fieldPickLimit:     1,
     monsterCount:       3,
-    monsterTier:        2,
+    monsterTier:        [1,2]
   },
 ];
 
