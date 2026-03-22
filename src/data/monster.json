@@ -1,0 +1,137 @@
+{
+  "skeleton": {
+    "name": "스켈레톤",
+    "tier": 0,
+    "race": "undead",
+    "hp":  [20, 25],
+    "atk": [3,  5],
+    "def": [0,  2],
+    "sprite": "skeleton.png"
+  },
+  "zombi": {
+    "name": "좀비",
+    "tier": 0,
+    "race": "undead",
+    "hp":  [22, 28],
+    "atk": [4,  6],
+    "def": [0,  1],
+    "sprite": "zombi.png"
+  },
+  "goblin": {
+    "name": "고블린",
+    "tier": 0,
+    "race": "beast",
+    "hp":  [18, 22],
+    "atk": [3,  6],
+    "def": [0,  2],
+    "sprite": "goblin.png"
+  },
+  "orc": {
+    "name": "오크",
+    "tier": 1,
+    "race": "beast",
+    "hp":  [35, 45],
+    "atk": [6,  9],
+    "def": [1,  3],
+    "sprite": null
+  },
+  "werewolf": {
+    "name": "늑대인간",
+    "tier": 1,
+    "race": "beast",
+    "hp":  [30, 40],
+    "atk": [7, 10],
+    "def": [0,  2],
+    "sprite": "werewolf.png"
+  },
+  "harpy": {
+    "name": "하피",
+    "tier": 1,
+    "race": "beast",
+    "hp":  [28, 36],
+    "atk": [8, 11],
+    "def": [0,  1],
+    "sprite": null
+  },
+  "golem": {
+    "name": "골렘",
+    "tier": 1,
+    "race": "construct",
+    "hp":  [45, 55],
+    "atk": [5,  8],
+    "def": [3,  5],
+    "sprite": null
+  },
+  "vampire": {
+    "name": "뱀파이어",
+    "tier": 2,
+    "race": "undead",
+    "hp":  [50, 65],
+    "atk": [10, 14],
+    "def": [2,  4],
+    "sprite": null
+  },
+  "medusa": {
+    "name": "메두사",
+    "tier": 2,
+    "race": "mythic",
+    "hp":  [45, 60],
+    "atk": [12, 16],
+    "def": [1,  3],
+    "sprite": null
+  },
+  "chimera": {
+    "name": "키메라",
+    "tier": 2,
+    "race": "mythic",
+    "hp":  [55, 70],
+    "atk": [11, 15],
+    "def": [2,  4],
+    "sprite": null
+  },
+  "wyvern": {
+    "name": "와이번",
+    "tier": 2,
+    "race": "dragon",
+    "hp":  [60, 75],
+    "atk": [10, 14],
+    "def": [3,  5],
+    "sprite": null
+  },
+  "lich": {
+    "name": "리치",
+    "tier": 3,
+    "race": "undead",
+    "hp":  [80, 100],
+    "atk": [15, 20],
+    "def": [4,  6],
+    "sprite": null
+  },
+  "demon": {
+    "name": "데몬",
+    "tier": 3,
+    "race": "demon",
+    "hp":  [90, 110],
+    "atk": [18, 24],
+    "def": [3,  6],
+    "sprite": null
+  },
+  "dragon": {
+    "name": "드래곤",
+    "tier": 3,
+    "race": "dragon",
+    "hp":  [100, 130],
+    "atk": [20,  26],
+    "def": [5,   8],
+    "sprite": null
+  },
+  "darkgod": {
+    "name": "암흑신",
+    "tier": 3,
+    "race": "divine",
+    "hp":  [120, 150],
+    "atk": [22,  28],
+    "def": [6,   10],
+    "sprite": null
+  }
+}

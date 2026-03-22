@@ -114,18 +114,18 @@ export class GameScene extends Phaser.Scene {
 
   // ── 몬스터 스폰 ──────────────────────────────────────────────────────────
   _spawnMonsters() {
-    const { monsterCount, monsterTier, monsterStats } = this.lv;
-    const pool    = getAvailableMonstersByTier(monsterTier);
+    const { monsterCount, monsterTier } = this.lv;
+    const pool     = getAvailableMonstersByTier(monsterTier);
     const shuffled = Phaser.Utils.Array.Shuffle([...pool]);
     return Array.from({ length: monsterCount }, (_, i) => {
-      const type = shuffled[i % shuffled.length];
-      const hp   = randInt(monsterStats.hp[0],  monsterStats.hp[1]);
+      const type    = shuffled[i % shuffled.length];
+      const hp      = randInt(type.hp[0],  type.hp[1]);
       const rewards = TIER_REWARDS[type.tier] ?? TIER_REWARDS[0];
       return {
         type,
         hp, maxHp: hp,
-        atk: randInt(monsterStats.atk[0], monsterStats.atk[1]),
-        def: randInt(monsterStats.def[0], monsterStats.def[1]),
+        atk:  randInt(type.atk[0], type.atk[1]),
+        def:  randInt(type.def[0], type.def[1]),
         xp:   randInt(rewards.xp[0],   rewards.xp[1]),
         gold: randInt(rewards.gold[0], rewards.gold[1]),
         isDead: false,

@@ -16,7 +16,7 @@
  * @property {number} fieldPickLimit      - 턴당 필드에서 픽업 가능한 카드 수
  * @property {number} monsterCount        - 등장 몬스터 수 (1~3)
  * @property {number} monsterTier         - 등장 몬스터 티어 (0~3, monsters.js MONSTER_GRID 기준)
- * @property {{ hp:[min,max], atk:[min,max], def:[min,max] }} monsterStats - 몬스터 스탯 범위
+ *                                          스탯은 monster.json 각 몬스터 데이터 참조
  */
 
 /** @type {LevelConfig[]} */
@@ -31,7 +31,6 @@ const LEVEL_CONFIGS = [
     fieldPickLimit:     1,
     monsterCount:       1,
     monsterTier:        0,
-    monsterStats: { hp: [20, 30], atk: [1, 4], def: [0, 1] },
   },
   // ── Level 2 ──────────────────────────────────────────────────────────────
   {
@@ -43,7 +42,6 @@ const LEVEL_CONFIGS = [
     fieldPickLimit:     1,
     monsterCount:       2,
     monsterTier:        0,
-    monsterStats: { hp: [22, 32], atk: [2, 5], def: [0, 2] },
   },
   // ── Level 3 ──────────────────────────────────────────────────────────────
   {
@@ -55,7 +53,6 @@ const LEVEL_CONFIGS = [
     fieldPickLimit:     1,
     monsterCount:       3,
     monsterTier:        1,
-    monsterStats: { hp: [25, 35], atk: [3, 6], def: [0, 2] },
   },
   // ── Level 4 ──────────────────────────────────────────────────────────────
   {
@@ -67,7 +64,6 @@ const LEVEL_CONFIGS = [
     fieldPickLimit:     1,
     monsterCount:       3,
     monsterTier:        2,
-    monsterStats: { hp: [28, 40], atk: [4, 7], def: [1, 3] },
   },
 ];
 
