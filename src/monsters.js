@@ -31,6 +31,7 @@ function _resolveImage(sprite) {
  *   image: string|null,
  *   tier:  number,
  *   race:  string,
+ *   cost:  number,
  *   hp:    [number, number],
  *   atk:   [number, number],
  *   def:   [number, number],
@@ -39,16 +40,18 @@ function _resolveImage(sprite) {
 
 // ── MONSTER_GRID 구성 (JSON → tier 기준 분류) ────────────────────────────
 /** @type {MonsterType[][]} [tier][col] */
-export const MONSTER_GRID = [[], [], [], []];
+export const MONSTER_GRID = [];
 
 for (const [id, d] of Object.entries(monsterData)) {
   const tier = d.tier ?? 0;
+  while (MONSTER_GRID.length <= tier) MONSTER_GRID.push([]);
   MONSTER_GRID[tier].push({
     id,
     name:  d.name  ?? id,
     image: _resolveImage(d.sprite),
     tier,
     race:  d.race  ?? 'unknown',
+    cost:  d.cost  ?? 1,
     hp:    d.hp,
     atk:   d.atk,
     def:   d.def,

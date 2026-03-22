@@ -14,9 +14,9 @@
  * @property {number} fieldSize           - 라운드 시작 / 턴 시작 시 필드 배치 수
  * @property {number} fieldSizeLimit      - 필드 최대 카드 수
  * @property {number} fieldPickLimit      - 턴당 필드에서 픽업 가능한 카드 수
- * @property {number|[number,number]} monsterCount - 등장 몬스터 수. 배열이면 [min, max] 랜덤
  * @property {number|number[]} monsterTier  - 등장 몬스터 티어. 단일 숫자 또는 배열로 복수 티어 지정
- *                                            스탯은 monster.json 각 몬스터 데이터 참조
+ * @property {[number,number]} monsterCost  - 등장 몬스터 총 cost 범위 [min, max]
+ *                                            monster.json cost 합산으로 배치 수 결정 (최소 1, 최대 5)
  */
 
 /** @type {LevelConfig[]} */
@@ -29,8 +29,8 @@ const LEVEL_CONFIGS = [
     fieldSize:          5,
     fieldSizeLimit:     6,
     fieldPickLimit:     1,
-    monsterCount:       1,
     monsterTier:        0,
+    monsterCost:        [2, 3],
   },
   // ── Level 2 ──────────────────────────────────────────────────────────────
   {
@@ -40,8 +40,8 @@ const LEVEL_CONFIGS = [
     fieldSize:          5,
     fieldSizeLimit:     6,
     fieldPickLimit:     1,
-    monsterCount:       2,
-    monsterTier:        [0,1]
+    monsterTier:        [0, 1],
+    monsterCost:        [2, 4],
   },
   // ── Level 3 ──────────────────────────────────────────────────────────────
   {
@@ -51,8 +51,8 @@ const LEVEL_CONFIGS = [
     fieldSize:          5,
     fieldSizeLimit:     6,
     fieldPickLimit:     1,
-    monsterCount:       3,
-    monsterTier:        1,
+    monsterTier:        [0, 1],
+    monsterCost:        [3, 5],
   },
   // ── Level 4 ──────────────────────────────────────────────────────────────
   {
@@ -62,8 +62,30 @@ const LEVEL_CONFIGS = [
     fieldSize:          5,
     fieldSizeLimit:     6,
     fieldPickLimit:     1,
-    monsterCount:       3,
-    monsterTier:        [1,2]
+    monsterTier:        [1, 2],
+    monsterCost:        [4, 7],
+  },
+  // ── Level 5 ──────────────────────────────────────────────────────────────
+  {
+    handSize:           7,
+    handSizeLimit:      8,
+    turnStartDrawLimit: 3,
+    fieldSize:          5,
+    fieldSizeLimit:     6,
+    fieldPickLimit:     1,
+    monsterTier:        [2, 3],
+    monsterCost:        [6, 9],
+  },
+  // ── Level 6 ──────────────────────────────────────────────────────────────
+  {
+    handSize:           7,
+    handSizeLimit:      8,
+    turnStartDrawLimit: 3,
+    fieldSize:          5,
+    fieldSizeLimit:     6,
+    fieldPickLimit:     1,
+    monsterTier:        [3, 4],
+    monsterCost:        [7, 10],
   },
 ];
 

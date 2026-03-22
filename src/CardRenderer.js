@@ -144,6 +144,8 @@ export class CardRenderer {
       ctx.textAlign    = 'left';
     }
 
-    scene.textures.addCanvas(key, canvas);
+    if (!scene.textures.exists(key)) {
+      scene.textures.addCanvas(key, canvas);
+    }
   }
 }

@@ -35,7 +35,7 @@ export class MainMenuScene extends Phaser.Scene {
       // ── NEW GAME ──────────────────────────────────────────────────────
       const newBg = this.add.rectangle(cx, 380, 280, 56, 0x22aa44).setInteractive();
       this.add.text(cx, 380, "NEW GAME", TS.menuPlayBtn).setOrigin(0.5);
-      newBg.on("pointerdown", () => { deleteSave(); this.scene.start("GameScene"); });
+      newBg.on("pointerdown", () => { deleteSave(); this.scene.start("GameScene", {}); });
       newBg.on("pointerover",  () => newBg.setFillStyle(0x33cc55));
       newBg.on("pointerout",   () => newBg.setFillStyle(0x22aa44));
 
@@ -60,7 +60,7 @@ export class MainMenuScene extends Phaser.Scene {
       // ── NEW GAME ──────────────────────────────────────────────────────
       const newBg = this.add.rectangle(cx, 420, 280, 64, 0x22aa44).setInteractive();
       this.add.text(cx, 420, "NEW GAME", TS.menuPlayBtn).setOrigin(0.5);
-      newBg.on("pointerdown", () => this.scene.start("GameScene"));
+      newBg.on("pointerdown", () => this.scene.start("GameScene", {}));
       newBg.on("pointerover",  () => newBg.setFillStyle(0x33cc55));
       newBg.on("pointerout",   () => newBg.setFillStyle(0x22aa44));
 
