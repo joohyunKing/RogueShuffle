@@ -114,7 +114,8 @@ export class GameScene extends Phaser.Scene {
 
   // ── 몬스터 스폰 ──────────────────────────────────────────────────────────
   _spawnMonsters() {
-    const { monsterCount, monsterTier } = this.lv;
+    const { monsterCount: _mc, monsterTier } = this.lv;
+    const monsterCount = Array.isArray(_mc) ? randInt(_mc[0], _mc[1]) : _mc;
     const pool     = getAvailableMonstersByTier(monsterTier);
     const shuffled = Phaser.Utils.Array.Shuffle([...pool]);
     return Array.from({ length: monsterCount }, (_, i) => {
