@@ -13,20 +13,22 @@ export const SUITS      = ["S", "H", "D", "C"];
 export const RANKS      = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
 export const SUIT_ORDER = { S: 0, H: 1, D: 2, C: 3 };
 
-// ─── 레이아웃 Y 좌표 (GH=720 기준) ───────────────────────────────────────────
+// ─── 레이아웃 (GW=1280, GH=720 기준) ─────────────────────────────────────────
 //
-//   0 ──── 40  : 배틀 로그 바
-//  44 ── 294   : 몬스터 영역  (250px)
-// 298 ── 355   : 플레이어 스탯 행
+// [플레이어 패널 0~199] | [컨텐츠 영역 200~1280]
+//
+//   0 ───  40  : 배틀 로그 바  (컨텐츠 영역)
+//  44 ── 354   : 몬스터 영역  (310px)
 // 358 ── 481   : 필드 패널  (FIELD_Y=420, 카드: 420±44)
 // 482 ── 690   : 핸드 패널  (HAND_Y=600, 카드: 600±73)
 // 690 ── 720   : 하단 여백
 //
+export const PLAYER_PANEL_W   = 200;            // 왼쪽 플레이어 정보 패널 폭
+
 export const BATTLE_LOG_H     = 40;
 export const MONSTER_AREA_TOP = 44;
-export const MONSTER_AREA_H   = 250;
-export const MONSTER_IMG_Y    = 169;   // MONSTER_AREA_TOP + MONSTER_AREA_H/2
-export const PLAYER_STAT_Y    = 310;
+export const MONSTER_AREA_H   = 310;            // 250 → 310 (플레이어 스탯 행 제거)
+export const MONSTER_IMG_Y    = 199;            // MONSTER_AREA_TOP + MONSTER_AREA_H/2
 
 export const FIELD_Y  = 420;                    // 필드 카드 중심  (패널: 358~481)
 export const HAND_Y   = 600;                    // 핸드 카드 중심  (패널: 482~690)

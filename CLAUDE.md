@@ -22,7 +22,7 @@ src/
   levels.js             # 라운드별 게임플레이 수치 (getLevelConfig)
   monsters.js           # 몬스터 데이터 관리 (monster.json 기반, 스프라이트 애니메이션)
   save.js               # localStorage 세이브/로드 유틸 (hasSave/loadSave/writeSave/deleteSave)
-  Player.js             # 플레이어 상태 클래스 (hp/xp/gold/level/attrs)
+  Player.js             # 플레이어 상태 클래스 (hp/xp/gold/level/attrs/job/adaptability 등)
   CardRenderer.js       # Canvas2D API로 런타임 카드 텍스처 생성
   textStyles.js         # Phaser Text 스타일 상수 모음 (TS 객체)
   data/
@@ -75,7 +75,7 @@ this.scene.start("GameScene", { round: this.round + 1, player: this.player.toDat
 // GameScene.create()에서 수신
 const data = this.scene.settings.data || {};
 this.round  = data.round  ?? 1;
-this.player = new Player(data.player);  // data.player 없으면 초기값
+this.player = new Player(data.player, this.lv);  // levelConfig로 handSize 등 기본값 설정
 ```
 
 ## 설정 저장 (Phaser registry)
@@ -100,17 +100,21 @@ FIELD_CW = 60, FIELD_CH = 87    // 필드 카드 (60%)
 PILE_CW  = 50, PILE_CH  = 73    // 덱/더미 파일 (50%)
 ```
 
-### 레이아웃 Y 좌표 (GH=720 기준)
+### 레이아웃 (GW=1280, GH=720 기준)
 ```
+[플레이어 패널 0~199px] | [컨텐츠 영역 200~1280px]
+
   0 ──  40 : 배틀 로그 바       (BATTLE_LOG_H = 40)
- 44 ── 294 : 몬스터 영역        (MONSTER_AREA_TOP=44, MONSTER_AREA_H=250)
-298 ── 355 : 플레이어 스탯 행   (PLAYER_STAT_Y = 310)
+ 44 ── 354 : 몬스터 영역        (MONSTER_AREA_TOP=44, MONSTER_AREA_H=310)
 358 ── 481 : 필드 패널          (FIELD_Y = 420, 카드 중심)
 482 ── 690 : 핸드 패널          (HAND_Y = 600, 카드 중심)
 690 ── 720 : 하단 여백
+
+플레이어 패널 (좌측 200px): JOB / ROUND / GOLD / LV / XP바 / HP / DEF / 슈트 레벨(♠♥♦♣)
 ```
 ```js
-MONSTER_IMG_Y = 169              // 몬스터 스프라이트 중심 Y
+PLAYER_PANEL_W = 200             // 왼쪽 플레이어 정보 패널 폭
+MONSTER_IMG_Y = 199              // 몬스터 스프라이트 중심 Y
 HAND_TOP      = HAND_Y - CH/2 - 18  // ≈509 (드래그 드롭 판정 기준)
 DEAL_DELAY    = 110              // 딜링 애니메이션 카드 간 딜레이 (ms)
 ```
@@ -123,20 +127,36 @@ DEAL_DELAY    = 110              // 딜링 애니메이션 카드 간 딜레이 
 | 속성 | 설명 |
 |------|------|
 | `hp / maxHp` | 플레이어 HP |
-| `def` | 방어력 |
+| `def` | 방어력 (라운드 클리어 시 0으로 리셋) |
 | `score` | 누적 점수 |
 | `xp` | 현재 경험치 |
 | `gold` | 골드 |
 | `level` | 플레이어 레벨 (1~) |
 | `attacksPerTurn` | 턴당 공격 가능 횟수 |
-| `attrs` | 슈트별 레벨 `{ S, H, D, C }` |
+| `attrs` | 슈트별 레벨 `{ S, H, D, C }` — 레벨업 시 suit 선택 팝업으로 증가 |
+| `job` | 직업 (default: `"Magician"`) |
+| `adaptability` | 슈트별 적응도 `{ S, H, D, C }` (default: 각 `1.0` = 100%) |
+| `handSize` | 라운드 시작 시 핸드 배치 수 (levels.js 기본값, 버프로 변경 가능) |
+| `handSizeLimit` | 핸드 최대 보유 수 |
+| `turnStartDrawLimit` | 턴 시작 시 핸드 보충 최대 수 |
+| `fieldSize` | 라운드/턴 시작 시 필드 배치 수 |
+| `fieldSizeLimit` | 필드 최대 카드 수 |
+| `fieldPickLimit` | 턴당 필드에서 픽업 가능한 카드 수 |
+
+### suit 적응 효과 (공격 시 자동 적용)
+`적응 수치 = floor(attrs[suit] × adaptability[suit] × 해당 suit 카드 수)`
+- **♠ Spade**: 공격 대상 몬스터 DEF 감소 (음수 가능 → 데미지 보너스)
+- **♥ Hearts**: 플레이어 HP 회복
+- **♦ Diamonds**: 플레이어 DEF 추가
+- **♣ Clubs**: 공격 대상 몬스터 ATK 감소 (최소 0)
 
 ### 주요 메서드
 ```js
-getRequiredExp(level)   // 레벨업 필요 경험치: floor((level²+level+14)/2)
-player.requiredXp       // getter — getRequiredExp(this.level)
-player.addXp(amount)    // XP 추가 + 레벨업 처리 → 새 레벨 배열 반환
-player.toData()         // 씬 전환용 직렬화 (plain object)
+getRequiredExp(level)             // 레벨업 필요 경험치: floor((level²+level+14)/2)
+player.requiredXp                 // getter — getRequiredExp(this.level)
+player.addXp(amount)              // XP 추가 + 레벨업 처리 → 새 레벨 배열 반환
+player.toData()                   // 씬 전환용 직렬화 (plain object)
+new Player(data, levelConfig)     // levelConfig로 handSize 등 기본값 초기화
 ```
 
 ---
@@ -218,15 +238,19 @@ MAX_DEFINED_LEVEL       // 현재 정의된 최대 라운드 수 (4)
 
 | 필드 | 설명 |
 |------|------|
-| `handSize` | 라운드 시작 시 핸드 배치 수 |
-| `handSizeLimit` | 핸드 최대 보유 수 |
-| `turnStartDrawLimit` | 턴 시작 시 핸드 보충 최대 수 |
-| `fieldSize` | 라운드/턴 시작 시 필드 배치 수 |
-| `fieldSizeLimit` | 필드 최대 카드 수 |
-| `fieldPickLimit` | 턴당 필드 픽업 가능 수 |
+| `handSize` | 라운드 시작 시 핸드 배치 수 (→ Player 초기값으로 전달) |
+| `handSizeLimit` | 핸드 최대 보유 수 (→ Player 초기값) |
+| `turnStartDrawLimit` | 턴 시작 시 핸드 보충 최대 수 (→ Player 초기값) |
+| `fieldSize` | 라운드/턴 시작 시 필드 배치 수 (→ Player 초기값) |
+| `fieldSizeLimit` | 필드 최대 카드 수 (→ Player 초기값) |
+| `fieldPickLimit` | 턴당 필드 픽업 가능 수 (→ Player 초기값) |
 | `monsterTier` | 등장 몬스터 티어 — 숫자 또는 배열 (`0` or `[0,1]`) |
 | `monsterCost` | 등장 몬스터 총 cost 범위 `[min, max]` — cost 합산으로 마리 수 결정 (최소 1, 최대 5) |
 
+> `handSize` 등 6개 수치는 `new Player(data, levelConfig)` 생성 시 기본값으로 사용됨.
+> 이후 실제 게임플레이에서는 `player.handSize` 등 Player 속성을 직접 참조.
+> 아이템/버프는 `player.handSize` 등을 직접 수정하면 됨.
+>
 > `monsterStats`, `monsterCount` 필드는 제거됨. 스탯은 monster.json 에서, 마리 수는 monsterCost 예산으로 결정.
 
 ---
@@ -265,7 +289,7 @@ MAX_DEFINED_LEVEL       // 현재 정의된 최대 라운드 수 (4)
 | `this.selected` | Set — 핸드 선택 인덱스 |
 | `this.fieldPickCount` | 이번 턴 필드 픽 횟수 |
 | `this.attackCount` | 이번 턴 공격 횟수 |
-| `this.isDealing` | 애니메이션 중 인터랙션 차단 여부 |
+| `this.isDealing` | 애니메이션/팝업 중 인터랙션 차단 여부 |
 | `this.sortMode` | `'suit'` \| `'rank'` \| `null` |
 | `this.sortAsc` | 정렬 방향 (boolean) |
 | `this.cardObjs[]` | 렌더 시마다 재생성 (카드 게임오브젝트) |
@@ -273,7 +297,10 @@ MAX_DEFINED_LEVEL       // 현재 정의된 최대 라운드 수 (4)
 | `this._monsterSprites[]` | 렌더 시마다 재생성 (몬스터 스프라이트 본체, index=몬스터idx) |
 | `this.animObjs[]` | 딜링 애니메이션 전용 |
 | `this._optOverlayObjs` | 인게임 OPT 오버레이 오브젝트 배열 (null이면 미표시) |
-| `this.battleLogLines[]` | 배틀 로그 줄들 |
+| `this.battleLogLines[]` | 배틀 로그 줄들 (최근 4개) |
+| `this._fullBattleLog[]` | 전체 배틀 로그 (팝업용) |
+| `this._suitLevelUpCount` | 레벨업으로 누적된 미사용 suit 선택 횟수 |
+| `this._logPopupObjs` | 배틀 로그 팝업 오브젝트 배열 (null이면 미표시) |
 
 ## GameScene — 턴 흐름
 ```
@@ -285,17 +312,33 @@ create() → startDealAnimation() → render()
       → 카드가 몬스터를 향해 날아가며 50%로 축소 → dummy로 이동
       → 몬스터 attack 애니메이션 (400ms) → _afterAttack()
       → 오버킬 시 → _applyOverkill() → 카드 날아가는 연쇄 애니메이션
+      → _checkLevelUpThenProceed() → 레벨업 있으면 suit 선택 팝업
+      → 모든 몬스터 사망 시 → onRoundClear()
   ↓ 턴종료 클릭
   onTurnEnd() → 몬스터 반격 → 게임오버 or startTurn()
   startTurn() → 핸드 보충 + 필드 교체 → render()
 ```
+
+## GameScene — 레벨업 suit 선택 팝업
+- 몬스터 처치로 레벨업 발생 시 `_suitLevelUpCount += 레벨업 횟수`
+- 공격/오버킬 완료 후 `_checkLevelUpThenProceed()` 호출
+- `_suitLevelUpCount > 0` 이면 `_showLevelUpPopup(onAllDone)` 표시
+  - ♠♥♦♣ 버튼 4개, 남은 선택 횟수 표시
+  - 버튼 클릭 → `player.attrs[suit]++`, `_suitLevelUpCount--`
+  - 횟수 소진 시 팝업 닫고 `onAllDone()` (라운드 클리어 체크)
+- 레벨업 없으면 바로 라운드 클리어 체크
+
+## GameScene — DEF 규칙
+- **라운드 클리어 시**: `player.def = 0` (리셋)
+- **공격받을 때**: DEF 절반 감소 로직 없음 (공격마다 DEF 유지)
+- **♦ Diamonds 적응**: 공격 시 DEF 누적 증가
 
 ## GameScene — 오버킬 연쇄
 - 공격 데미지 > 몬스터 HP → 초과분(overkill)이 다음 대상으로 전달
 - 대상 선택: **오른쪽 가장 가까운 살아있는 몬스터** → 없으면 **맨 왼쪽** 살아있는 몬스터
 - 연쇄 사망 시 동일 규칙 반복 (재귀)
 - 애니메이션: `card_back` 이미지가 죽은 몬스터 위치 → 대상 몬스터로 날아감 (280ms)
-- 오버킬 중 `isDealing = true` → 완료 후 `render()` + 라운드 클리어 체크
+- 오버킬 중 `isDealing = true` → 완료 후 `render()` + `_checkLevelUpThenProceed()`
 
 ## GameScene — 렌더 방식
 - `render()` 호출 시 `cardObjs` + `monsterObjs` + `_monsterSprites` 전체 destroy 후 재생성
@@ -339,6 +382,12 @@ create() → startDealAnimation() → render()
 - 족보 구성 카드만 x축 진동 tween (repeat: -1, 카드 파괴 시 자동 중단)
 - 족보 없는 선택 카드: 위치만 올라가고 진동 없음
 
+## GameScene — 배틀 로그 팝업
+- 배틀 로그 바 클릭 → `_showBattleLogPopup()` 호출
+- 팝업 위치: 배틀 로그 바 **바로 아래** (y=BATTLE_LOG_H=40), 컨텐츠 전체 폭
+- 최근 18개 로그 표시, 오래된 것일수록 반투명
+- 배경 딤 또는 CLOSE 버튼 클릭으로 닫기
+
 ## GameScene — OPTIONS 오버레이
 - OPT 버튼(우측 상단) 클릭 시 `_showOptions()` 호출
 - BGM 볼륨, SFX 볼륨 조절 (registry 즉시 반영)
@@ -348,6 +397,9 @@ create() → startDealAnimation() → render()
 
 > **주의:** `_closeOptions()`에서 `isDealing`은 항상 `false`로 설정.
 > 이전에 `_prevIsDealing` 복원 방식을 사용했으나, 딜링 타이머와 경쟁 조건이 생겨 영구 블록되는 버그 발생.
+
+> **주의:** `time.delayedCall` 콜백 내부에서 예외 발생 시 이후 코드가 실행되지 않아 `isDealing`이 영구적으로 true로 남는 버그 발생 가능.
+> `onTurnEnd`, `startTurn` 등 주요 타이머 콜백에는 try-catch + finally로 보호.
 
 ---
 
