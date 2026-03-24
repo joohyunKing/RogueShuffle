@@ -1,0 +1,109 @@
+{
+    "relics": [
+      {
+        "id": "relic_a",
+        "name": "다이아의 힘",
+        "description": "다이아 10 카드에 +20 점수",
+        "rarity": "common",
+  
+        "effects": [
+          {
+            "scope": "card",
+            "type": "add",
+            "value": 20,
+            "condition": {
+              "suit": "D",
+              "rank": "10"
+            }
+          }
+        ]
+      },
+  
+      {
+        "id": "relic_b",
+        "name": "쌍둥이 반지",
+        "description": "페어 점수 2배",
+        "rarity": "rare",
+  
+        "effects": [
+          {
+            "scope": "hand",
+            "type": "multiply",
+            "value": 2,
+            "condition": {
+              "handName": "ONE_PAIR"
+            }
+          }
+        ]
+      },
+  
+      {
+        "id": "relic_c",
+        "name": "탐욕의 주머니",
+        "description": "덱이 30장 이상이면 +30 점수",
+        "rarity": "common",
+  
+        "effects": [
+          {
+            "scope": "final",
+            "type": "add",
+            "value": 30,
+            "condition": {
+              "deckCountGte": 30
+            }
+          }
+        ]
+      },
+  
+      {
+        "id": "relic_d",
+        "name": "하트의 축복",
+        "description": "하트 카드마다 +5 점수",
+        "rarity": "common",
+  
+        "effects": [
+          {
+            "scope": "card",
+            "type": "add",
+            "value": 5,
+            "condition": {
+              "suit": "h"
+            }
+          }
+        ]
+      },
+  
+      {
+        "id": "relic_e",
+        "name": "스트레이트 장인",
+        "description": "스트레이트일 경우 +50 점수",
+        "rarity": "rare",
+  
+        "effects": [
+          {
+            "scope": "hand",
+            "type": "add",
+            "value": 50,
+            "condition": {
+              "handRank": "STRAIGHT"
+            }
+          }
+        ]
+      },
+  
+      {
+        "id": "relic_f",
+        "name": "올인",
+        "description": "최종 점수 1.5배",
+        "rarity": "epic",
+  
+        "effects": [
+          {
+            "scope": "final",
+            "type": "multiply",
+            "value": 1.5
+          }
+        ]
+      }
+    ]
+  }

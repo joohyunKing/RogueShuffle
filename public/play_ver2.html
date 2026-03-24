@@ -1,0 +1,163 @@
+<html>
+
+<head>
+    <title>Rogue Shuffle</title>
+    <style>
+        .card_container {
+            text-align: center;
+            line-height: 0;
+        }
+        .card_b {
+            display: inline-block;
+            margin-left: 3px;
+            font-size: 17px;
+            color: black;
+            background: #f3f7fa;
+            border:solid 1px #333333;
+            border-radius: 5px;
+            text-align: center;
+            padding-top: 30px;
+            width: 40px;
+            height:40px;
+            vertical-align: bottom; 
+        }
+        .card_r {
+            display: inline-block;
+            margin-left: 3px;
+            font-size: 17px;
+            color: red;
+            background: #f3f7fa;
+            border:solid 1px #333333;
+            border-radius: 5px;
+            text-align: center;
+            padding-top: 30px;
+            width: 40px;
+            height:40px;
+            vertical-align: bottom; 
+        }
+        .selected {
+            width: 44px;
+            height:44px;
+            font-size: 19px;
+            font-weight: 700;
+            background: #d3d7da;
+        }
+        .maded {
+            width: 45px;
+            height:45px;
+            background: #b3b7ba;
+            border:solid 2px black;
+        }
+        .mini {
+            padding-top: 15px;
+            width: 30px;
+            height:30px;
+            font-size: 13px;
+        }
+        .mon {
+            width:120px; display: inline-block; margin-left: 30px;
+        }
+        td {text-align: center;}
+    </style>
+</head>
+
+<body>
+    <div style="width:800px; height:500px; border: 1px solid black; border-radius: 5px;">
+        <table style="width:100%;">
+            <colgroup>
+                <col style="width: 200px;"/>
+                <col style="width: 80px;"/>
+                <col style="width: 120px;"/>
+                <col style="width: 200px;"/>
+                <col style="width: 120px;"/>
+                <col style="width: 80px;"/>
+            </colgroup>
+
+            <tr>
+                <td rowspan="4" id="playerInfo" style="border:solid 1px black; vertical-align: top; text-align: left; margin-left: 10px;">
+                <p>Round 3-2</p>
+                <p>Lv 6</p>
+                <p>Exp 34 / 52</p>
+                <p>HP 65 / 80</p>
+                <p>DEF 8</p>
+                <p>♥ 2lv &nbsp; &nbsp; &nbsp; ◆ 5lv</p>
+                <p>♠ 1lv &nbsp; &nbsp; &nbsp; ♣ 2lv</p>
+
+                <p>
+                    [유물1] [유물2] [유물3]
+
+
+                </p>
+                </td>
+                <td colspan="5" id="battleLog" style="height:25px; border:1px solid red; text-align: left;">
+                    [battle log]
+                    몬스터1 에게 Triple 로 27 공격!
+                </td>
+            </tr>
+            <tr>
+                <td colspan="5" style="height:275px; line-height: 0; position:relative; border:solid 1px black;">
+                    <div id="attckCount" style="position: absolute; top: 10px; left:10px;">2 / 2</div>
+                    <div class="mon">
+                        <img src="mon1.png" height="150px;"/>
+                        <p>hp : 23 / 30</p>
+                        <p>atk : 4 / def : 3</p>
+                    </div>
+                    <div class="mon">
+                        <img src="mon2.png" height="150px;"/>
+                        <p>hp : 12 / 25</p>
+                        <p>atk : 6 / def : 1</p>
+                    </div>
+                    <div class="mon">
+                        <img src="mon1.png" height="150px;"/>
+                        <p>hp : 31 / 31</p>
+                        <p>atk : 7 / def : 4</p>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="width:80px; vertical-align: bottom; padding-bottom: 20px;">
+                    <div class="card_b mini">deck</div>
+                </td>
+                <td colspan="2">
+                    <div id="fieldDiv" class="card_container">
+
+                        <div class="card_b mini">♣ 8</div>
+                        <div class="card_b mini">♣ 9</div>
+                        <div class="card_b mini">◆ 2</div>
+                        <div class="card_r mini">♥ 7</div>
+                        <div class="card_r mini">♥ 7</div>
+                    </div>
+                </td>
+                <td>
+                    [item]
+                </td>
+                <td style="width:80px; vertical-align: bottom; padding-bottom: 20px;">
+                    <div class="card_b mini">dummy</div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    [suit / rank]<br/>
+
+                    <div id="divHand" class="card_container">
+
+                        <div class="card_b selected">♣ 8</div>
+                        <div class="card_b">♣ 9</div>
+                        <div class="card_r selected maded">♥ Q</div>
+                        <div class="card_b">◆ 2</div>
+                        <div class="card_r selected maded">♠ Q</div>
+                        <div class="card_r selected">♠ K</div>
+                        <div class="card_r">♥ 7</div>
+                    </div>
+                    [Pair]
+                </td>
+                <td>
+                    [턴종료]
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+
+</html>

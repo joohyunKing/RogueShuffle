@@ -3,7 +3,12 @@
     "allow": [
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(python3 -c \":*)",
+      "Bash(python -c \":*)",
+      "Bash(node:*)",
+      "Bash(npx vite:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

@@ -31,10 +31,10 @@ export function calcScore(cards) {
 
   if (candidates.length === 0) {
     const best = cards.reduce((a, b) => a.val > b.val ? a : b);
-    return { score: best.val, label: '하이카드', cards: [best] };
+    return { score: best.baseScore, label: '하이카드', cards: [best] };
   }
 
-  candidates.sort((a, b) => b.score - a.score);
+  candidates.sort((a, b) => b.baseScore - a.baseScore);
   return candidates[0];
 }
 
@@ -44,7 +44,7 @@ function findFourOfKind(cards) {
   for (const g of Object.values(groupByVal(cards))) {
     if (g.length >= 4) {
       const used  = g.slice(0, 4);
-      const score = used.reduce((s, c) => s + c.val, 0) * 5;
+      const score = used.reduce((s, c) => s + c.baseScore, 0) * 5;
       if (!best || score > best.score) best = { score, label: '포카드', cards: used };
     }
   }
@@ -58,7 +58,7 @@ function findFlush(cards) {
     if (g.length >= 5) {
       const sorted = [...g].sort((a, b) => b.val - a.val);
       const used   = sorted.slice(0, 5);
-      const score  = used.reduce((s, c) => s + c.val, 0) * 4;
+      const score  = used.reduce((s, c) => s + c.baseScore, 0) * 4;
       if (!best || score > best.score) best = { score, label: '플러시', cards: used };
     }
   }
