@@ -12,7 +12,6 @@ import {
 import roundData from '../data/round.json';
 import { RoundManager } from '../manager/roundManager.js';
 
-//import { preloadMonsters, getAvailableMonstersByTier, TIER_REWARDS, createMonsterAnims } from "../monsters.js";
 import { preloadMonsters, getAvailableMonstersByTier, TIER_REWARDS, createMonsterAnims } from "../service/monsterService.js";
 import { writeSave, deleteSave } from "../save.js";
 import { buildDeck, cloneCard, removeCardById } from "../service/cardService.js";
@@ -133,9 +132,6 @@ export class GameScene extends Phaser.Scene {
   _spawnMonsters() {
 
     const { monsterTier, totalCost } = this.roundManager.getCurrentRoundData();
-
-    console.log(monsterTier, totalCost);
-
     const pool = getAvailableMonstersByTier(monsterTier);
     const types = this._buildMonsterGroup(pool, totalCost[0], totalCost[1]);
 

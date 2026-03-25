@@ -101,9 +101,6 @@ function getRelicsFromContext(context) {
 }
 
 function checkCondition(cond, card, ctx) {
-    console.log(cond, card, ctx);
-
-
     if (!cond) return true;
 
     // 카드 조건
