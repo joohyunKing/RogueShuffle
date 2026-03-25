@@ -1,0 +1,54 @@
+{
+    "rounds": [
+      {
+        "round": 1,
+        "normalCount": 3,
+        "monsterTier": [1],
+        "totalCost": 5,
+        "boss": {
+          "monsterTier": [2],
+          "totalCost": 10
+        }
+      },
+      {
+        "round": 2,
+        "normalCount": 3,
+        "monsterTier": [1, 2],
+        "totalCost": 8,
+        "boss": {
+          "monsterTier": [3],
+          "totalCost": 15
+        }
+      },
+      {
+        "round": 3,
+        "normalCount": 3,
+        "monsterTier": [2, 3],
+        "totalCost": 12,
+        "boss": {
+          "monsterTier": [4],
+          "totalCost": 18
+        }
+      },
+      {
+        "round": 4,
+        "normalCount": 3,
+        "monsterTier": [3, 4],
+        "totalCost": 16,
+        "boss": {
+          "monsterTier": [5],
+          "totalCost": 22
+        }
+      },
+      {
+        "round": 5,
+        "normalCount": 3,
+        "monsterTier": [4, 5],
+        "totalCost": 20,
+        "boss": {
+          "monsterTier": [6],
+          "totalCost": 26
+        }
+      }
+    ]
+  }

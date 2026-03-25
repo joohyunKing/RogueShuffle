@@ -1,6 +1,6 @@
 import {
     SUITS, RANKS, SUIT_ORDER,
-} from "./constants.js";
+} from "../constants.js";
 
 
 let cardIdCounter = 0;

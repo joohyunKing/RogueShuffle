@@ -1,5 +1,5 @@
 /**
- * monsters.js
+ * monsterService.js
  *
  * 몬스터 데이터를 src/data/monster.json 에서 읽어 관리합니다.
  * MONSTER_GRID는 tier 기준 4×N 배열로 자동 구성됩니다.
@@ -10,17 +10,17 @@
  *   Row 2 (frames 8~11 ): death  animation
  */
 
-import monsterData from './data/monster.json';
+import monsterData from '../data/monster.json';
 
 // Vite glob import — monster PNG 전체를 URL로 수집
 const _imgs = import.meta.glob(
-  './assets/images/monster/*.png',
+  '../assets/images/monster/*.png',
   { eager: true, query: '?url', import: 'default' }
 );
 
 function _resolveImage(sprite) {
   if (!sprite) return null;
-  return _imgs[`./assets/images/monster/${sprite}`] ?? null;
+  return _imgs[`../assets/images/monster/${sprite}`] ?? null;
 }
 
 // ── 타입 정의 ──────────────────────────────────────────────────────────────

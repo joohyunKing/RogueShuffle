@@ -1,63 +1,41 @@
 /*
 사용법
-import { calculateScore } from "../calcScore.js";
 
+const sample_cards = [
+    { suit: "S", rank: "A", val: 14, baseScore: 11 },
+    { suit: "D", rank: "10", val: 10, baseScore: 10 },
+    { suit: "H", rank: "10", val: 10, baseScore: 10 }
+];
+const sample_context = {
+    handRank: 2,
+    deckCount: 32,
+    cards: [],
+    relics: ["relic_a", "relic_b"],
+    debug: false
+};
+;
 
-    const sample_cards = [
-      { suit: "S", rank: "A", val: 14, baseScore: 11 },
-      { suit: "D", rank: "10", val: 10, baseScore: 10 },
-      { suit: "H", rank: "10", val: 10, baseScore: 10 }
-    ];
-    const sample_context = {
-      handRank: 2,
-      deckCount: 32,
-      cards: [],
-      relics: ["relic_a", "relic_b"],
-      debug: false
-    };
-    ;
-
-    console.log(calculateScore(sample_cards, sample_context));
+console.log(calculateScore(sample_cards, sample_context));
 
 */
 
-import relicData from './data/relic.json';
-
-const HAND_RANK = {
-    FIVE_CARD: 9,        // 파이브카드 (같은 숫자 5장)
-    STRAIGHT_FLUSH: 8,
-    FOUR_OF_A_KIND: 7,
-    FULL_HOUSE: 6,
-    FLUSH: 5,
-    STRAIGHT: 4,
-    THREE_OF_A_KIND: 3,
-    TWO_PAIR: 2,
-    ONE_PAIR: 1,
-    HIGH_CARD: 0
-};
-
+import { HAND_RANK, HAND_NAME } from "../constants.js";
+import relicData from '../data/relic.json';
 
 //최종 점수
 export function calculateScore(cards, context) {
     const relics = getRelicsFromContext(context);
 
     // 1. 족보 계산
-    /*
-        rank,
-        score,
-        cards: bestCards
-    */
     const handResult = evaluateHand(cards);
 
     const ctx = {
       ...context,
       handRank: handResult.rank,
-      handName : Object.keys(HAND_RANK).find(key => HAND_RANK[key] === handResult.rank),
+      handName : HAND_NAME[handResult.rank],
       cards: handResult.cards // 실제 사용된 5장
     };
-    console.log("ctx");
-    console.log(ctx);
-  
+
     // 2. 기본 점수
     let score = calcHandScore(ctx.cards, ctx, relics);
   
@@ -71,6 +49,7 @@ export function calculateScore(cards, context) {
   
     return {
       rank: ctx.handRank,
+      handName: ctx.handName,
       score,
       cards: ctx.cards
     };
@@ -221,15 +200,6 @@ function evaluateHand(cards) {
         bestCards = straightCards.slice(0, 5);
     }
 
-    // Three of a kind
-    else if (groups[0].length === 3) {
-        rank = HAND_RANK.THREE_OF_A_KIND;
-        bestCards = [
-            ...groups[0]
-            //,...getKickers(sorted, groups[0], 2)
-        ];
-    }
-
     // Two pair
     else if (groups[0].length === 2 && groups[1]?.length === 2) {
         rank = HAND_RANK.TWO_PAIR;
@@ -237,6 +207,15 @@ function evaluateHand(cards) {
             ...groups[0],
             ...groups[1],
             ...getKickers(sorted, [...groups[0], ...groups[1]], 1)
+        ];
+    }
+
+    // TRIPLE
+    else if (groups[0].length === 3) {
+        rank = HAND_RANK.TRIPLE;
+        bestCards = [
+            ...groups[0]
+            //,...getKickers(sorted, groups[0], 2)
         ];
     }
 

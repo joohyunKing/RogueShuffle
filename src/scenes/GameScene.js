@@ -1,19 +1,24 @@
 import Phaser from "phaser";
-import { calcScore } from "../scoring.js";
+import { calculateScore } from "../service/scoreService.js";
 import {
   GW, GH, CW, CH, FIELD_CW, FIELD_CH, PILE_CW, PILE_CH,
   SUITS, RANKS, SUIT_ORDER,
   PLAYER_PANEL_W,
   BATTLE_LOG_H, MONSTER_AREA_TOP, MONSTER_AREA_H, MONSTER_IMG_Y,
   FIELD_Y, HAND_Y, HAND_TOP, DEAL_DELAY,
+  context
 } from "../constants.js";
-import { getLevelConfig } from "../levels.js";
-import { preloadMonsters, getAvailableMonstersByTier, TIER_REWARDS, createMonsterAnims } from "../monsters.js";
+
+import roundData from '../data/round.json';
+import { RoundManager } from '../manager/roundManager.js';
+
+//import { preloadMonsters, getAvailableMonstersByTier, TIER_REWARDS, createMonsterAnims } from "../monsters.js";
+import { preloadMonsters, getAvailableMonstersByTier, TIER_REWARDS, createMonsterAnims } from "../service/monsterService.js";
 import { writeSave, deleteSave } from "../save.js";
-import { buildDeck, cloneCard, removeCardById } from "../cardService.js";
+import { buildDeck, cloneCard, removeCardById } from "../service/cardService.js";
 import { CardRenderer } from "../CardRenderer.js";
 import { TS } from "../textStyles.js";
-import { Player, getRequiredExp } from "../Player.js";
+import { Player, getRequiredExp } from "../manager/playerManager.js";
 import sfxShuffle from "../assets/audio/sfx/card-shuffle.ogg?url";
 import sfxFan from "../assets/audio/sfx/card-fan-1.ogg?url";
 import sfxSlide from "../assets/audio/sfx/card-slide-5.ogg?url";
@@ -37,7 +42,7 @@ export class GameScene extends Phaser.Scene {
 
   // ── preload ──────────────────────────────────────────────────────────────
   preload() {
-    this.load.image("card_back", "/cards/_card_back.png");
+    this.load.image("card_back", "/_card_back.png");
     CardRenderer.preload(this);
     preloadMonsters(this);
     this.load.audio("sfx_shuffle", sfxShuffle);
@@ -62,12 +67,19 @@ export class GameScene extends Phaser.Scene {
   create() {
     const data = this.scene.settings.data || {};
 
-    // 라운드 (게임 진행 회차)
-    this.round = data.round ?? 1;
-    this.lv = getLevelConfig(this.round);
+    // 라운드 결정
+    const startRound = data.round ?? 1;
+
+    // roundManager 생성
+    this.roundManager = new RoundManager(roundData, startRound);
+
+    // 필요하면 기존 코드 호환용
+    this.round = this.roundManager.getRound();
+
+
 
     // 플레이어 (라운드 클리어 시 유지, 새 게임 시 levelConfig로 초기값 설정)
-    this.player = new Player(data.player, this.lv);
+    this.player = new Player(data.player);
 
     // 카드 상태
     const deck = Phaser.Utils.Array.Shuffle(buildDeck());
@@ -77,6 +89,10 @@ export class GameScene extends Phaser.Scene {
       .map((c, i) => ({ ...c, slotX: slotPos0[i].x }));
     this.deckData = deck;
     this.dummyData = [];
+
+    // 컨텍스트 셋팅
+    context.deckCount = deck.length;
+    context.dummyCount = 0;
 
     // UI/게임 상태
     this.selected = new Set();
@@ -115,9 +131,13 @@ export class GameScene extends Phaser.Scene {
 
   // ── 몬스터 스폰 ──────────────────────────────────────────────────────────
   _spawnMonsters() {
-    const { monsterTier, monsterCost } = this.lv;
+
+    const { monsterTier, totalCost } = this.roundManager.getCurrentRoundData();
+
+    console.log(monsterTier, totalCost);
+
     const pool = getAvailableMonstersByTier(monsterTier);
-    const types = this._buildMonsterGroup(pool, monsterCost[0], monsterCost[1]);
+    const types = this._buildMonsterGroup(pool, totalCost[0], totalCost[1]);
 
     return types.map(type => {
       const hp = randInt(type.hp[0], type.hp[1]);
@@ -700,18 +720,19 @@ export class GameScene extends Phaser.Scene {
 
   // ── 족보 계산 헬퍼 ───────────────────────────────────────────────────────
   _getSelectedCombo() {
-    if (this.selected.size === 0) return { score: 0, label: "" };
-    return calcScore([...this.selected].map(i => this.handData[i]));
+    if (this.selected.size === 0) return { score: 0, handName: "" };
+    //return calcScore([...this.selected].map(i => this.handData[i]));
+    return calculateScore([...this.selected].map(i => this.handData[i]), context);
   }
 
   // ── 족보 프리뷰 ──────────────────────────────────────────────────────────
   updatePreview() {
-    const { score, label } = this._getSelectedCombo();
+    const { score, handName } = this._getSelectedCombo();
     if (score > 0) {
-      this.previewLabelTxt.setText(`${label}  →`).setColor("#88ffaa");
+      this.previewLabelTxt.setText(`${handName}  →`).setColor("#88ffaa");
       this.previewScoreTxt.setText(`${score}점`).setColor("#ffdd66");
-    } else if (label) {
-      this.previewLabelTxt.setText(label).setColor("#ff9966");
+    } else if (handName) {
+      this.previewLabelTxt.setText(handName).setColor("#ff9966");
       this.previewScoreTxt.setText("");
     } else {
       this.previewLabelTxt.setText("");
@@ -894,7 +915,11 @@ export class GameScene extends Phaser.Scene {
     const mon = this.monsters[monIdx];
     if (!mon || mon.isDead || this.isDealing) return;
 
-    const { score, label } = this._getSelectedCombo();
+    // 컨텍스트 셋팅
+    context.deckCount = this.deckData.length;
+    context.dummyCount = this.dummyData.length;
+
+    const { score, handName } = this._getSelectedCombo();
     if (score <= 0) return;
 
     if (this.attackCount >= this.player.attacksPerTurn) {
@@ -944,7 +969,7 @@ export class GameScene extends Phaser.Scene {
       if (eff > 0) this.addBattleLog(`\u2666 적응: DEF +${eff}`);
     }
 
-    this.addBattleLog(`${mon.type.name}에게 ${label}로 ${Math.max(0, damage)} 데미지!`);
+    this.addBattleLog(`${mon.type.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
     this._sfx("sfx_knifeSlice");
 
     // 선택 카드 → 몬스터를 향해 던진 후 dummy로 이동
