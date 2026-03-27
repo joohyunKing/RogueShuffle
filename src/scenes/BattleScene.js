@@ -25,7 +25,8 @@ export class BattleScene extends Phaser.Scene {
 
   // ── preload ──────────────────────────────────────────────────────────────
   preload() {
-    this.load.image("card_back", "/_card_back.png");
+    //this.load.image("card_back", "/_card_back.png");
+    this.load.image("card_back", "/assets/images/ui/card_back_deck.png");
     if (!this.textures.exists("card_back_deck"))
       this.load.image("card_back_deck", "/assets/images/ui/card_back_deck.png");
     if (!this.textures.exists("card_back_dummy"))
@@ -102,15 +103,15 @@ export class BattleScene extends Phaser.Scene {
   create() {
     const data = this.scene.settings.data || {};
 
-    this.round       = data.round       ?? 1;
-    this.isBoss      = data.isBoss      ?? false;
+    this.round = data.round ?? 1;
+    this.isBoss = data.isBoss ?? false;
     this.battleIndex = data.battleIndex ?? 0;
     this.normalCount = data.normalCount ?? 3;
     this.monsterTier = data.monsterTier ?? [0];
-    this.totalCost   = data.totalCost   ?? 3;
+    this.totalCost = data.totalCost ?? 3;
 
     this.player = new Player(data.player ?? {});
-    this.deck   = new DeckManager(data.deck   ?? {}, this.player);
+    this.deck = new DeckManager(data.deck ?? {}, this.player);
 
     // 덱 상태는 있지만 hand/field가 비어있으면 초기 배치 (배틀 간 리셋 후)
     if (this.deck.deckPile.length > 0 && this.deck.hand.length === 0) {
@@ -120,32 +121,35 @@ export class BattleScene extends Phaser.Scene {
       this.deck.startTurn(this.player.fieldSize);
     }
 
-    this.handData  = this.deck.hand;
+    this.handData = this.deck.hand;
     const slotPos0 = this.calcFieldPositions(this.player.fieldSize);
     this.fieldData = this.deck.field.map((c, i) => ({ ...c, slotX: slotPos0[i].x }));
-    this.deckData  = this.deck.deckPile;
+    this.deckData = this.deck.deckPile;
     this.dummyData = this.deck.dummyPile;
 
-    context.deckCount  = this.deckData.length;
+    context.deckCount = this.deckData.length;
     context.dummyCount = 0;
 
-    this.selected        = new Set();
-    this.cardObjs        = [];
-    this.monsterObjs     = [];
+    this.selected = new Set();
+    this.cardObjs = [];
+    this.monsterObjs = [];
     this._monsterSprites = [];
-    this.animObjs        = [];
+    this.animObjs = [];
     this._optOverlayObjs = null;
-    this.isDragging      = false;
-    this.isDealing       = true;
-    this.fieldPickCount  = 0;
-    this.attackCount     = 0;
-    this.sortMode        = null;
-    this.sortAsc         = true;
-    this.battleLogLines  = [];
-    this._fullBattleLog  = [];
+    this.isDragging = false;
+    this.isDealing = true;
+    this.fieldPickCount = 0;
+    this.attackCount = 0;
+    this.sortMode = null;
+    this.sortAsc = true;
+    this._fullBattleLog = data.battleLog ?? [];
     this._suitLevelUpCount = 0;
-    this._logPopupObjs   = null;
-    this._pilePopupObjs  = null;
+    this._logExpanded = false;
+    this._logExpandedBg = null;
+    this._logExpandedLines = null;
+    this._logScrollOffset = 0;
+    this._logWheelHandler = null;
+    this._pilePopupObjs = null;
     this._cardPreviewObjs = null;
 
     // 세이브에서 몬스터 복원, 없으면 새로 스폰
@@ -157,17 +161,17 @@ export class BattleScene extends Phaser.Scene {
 
     // 몬스터 PNG 애니메이션 등록
     const ANIM_CFGS = {
-      idle:    { frameRate: 8,  repeat: -1 },
-      attack:  { frameRate: 10, repeat: 0  },
-      damaged: { frameRate: 10, repeat: 0  },
-      die:     { frameRate: 8,  repeat: 0  },
-      skill:   { frameRate: 10, repeat: 0  },
+      idle: { frameRate: 8, repeat: -1 },
+      attack: { frameRate: 10, repeat: 0 },
+      damaged: { frameRate: 10, repeat: 0 },
+      die: { frameRate: 8, repeat: 0 },
+      skill: { frameRate: 10, repeat: 0 },
     };
     MONSTER_LIST.forEach(m => {
       if (!m.sprite) return;
       for (const [state, cfg] of Object.entries(ANIM_CFGS)) {
         if (!m.sprite[state]) continue;
-        const texKey  = `mon_${m.id}_${state}`;
+        const texKey = `mon_${m.id}_${state}`;
         const animKey = `${texKey}_anim`;
         if (!this.textures.exists(texKey) || this.anims.exists(animKey)) continue;
         const validFrames = this._countValidFrames(texKey);
@@ -190,11 +194,11 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 배경 & 패널 ──────────────────────────────────────────────────────────
   drawBg() {
-    const PW   = PLAYER_PANEL_W;
-    const IPW  = ITEM_PANEL_W;
-    const IPX  = GW - IPW;            // 아이템 패널 시작 x
-    const FAW  = GW - PW - IPW;       // 필드 영역 폭 = 880
-    const CX   = PW + 10;
+    const PW = PLAYER_PANEL_W;
+    const IPW = ITEM_PANEL_W;
+    const IPX = GW - IPW;            // 아이템 패널 시작 x
+    const FAW = GW - PW - IPW;       // 필드 영역 폭 = 880
+    const CX = PW + 10;
     const FAW_ = FAW - 20;            // 패널 내부 폭
 
     if (this.textures.exists("bg")) {
@@ -211,11 +215,11 @@ export class BattleScene extends Phaser.Scene {
     g.lineStyle(1, 0x2a5a38);
     g.strokeRect(0, 0, PW - 4, GH);
 
-    // 배틀 로그 헤더 (필드 영역만)
-    g.fillStyle(0x050e08, 0.80);
-    g.fillRect(PW, 0, FAW, BATTLE_LOG_H);
-    g.lineStyle(1, 0x2a5a38);
-    g.strokeRect(PW, 0, FAW, BATTLE_LOG_H);
+    // 배틀 로그 헤더 — 몬스터 영역과 동일한 x/width, 하단 radius만 0
+    g.fillStyle(0x050e08, 0.88);
+    g.fillRoundedRect(CX, 0, FAW_, BATTLE_LOG_H, { tl: 0, tr: 0, bl: 10, br: 10 });
+    g.lineStyle(1, 0x4a7055);
+    g.strokeRoundedRect(CX, 0, FAW_, BATTLE_LOG_H, { tl: 0, tr: 0, bl: 10, br: 10 });
 
     // 몬스터 영역 (필드 영역만)
     g.fillStyle(0x000000, 0.30);
@@ -248,8 +252,8 @@ export class BattleScene extends Phaser.Scene {
 
   // ── UI 생성 (한 번만) ─────────────────────────────────────────────────────
   createUI() {
-    const PW  = PLAYER_PANEL_W;
-    const px  = 10;
+    const PW = PLAYER_PANEL_W;
+    const px = 10;
     const pcx = PW / 2 - 2;
 
     this.add.text(pcx, 14, this.player.job.toUpperCase(), {
@@ -270,14 +274,14 @@ export class BattleScene extends Phaser.Scene {
     this._playerLevelTxt = this.add.text(PW - 14, 72, String(this.player.level), TS.levelValue)
       .setOrigin(1, 0).setDepth(12);
 
-    this._xpBarBg   = this.add.rectangle(px, 90, PW - 24, 5, 0x224433).setOrigin(0, 0.5).setDepth(12);
+    this._xpBarBg = this.add.rectangle(px, 90, PW - 24, 5, 0x224433).setOrigin(0, 0.5).setDepth(12);
     this._xpBarFill = this.add.rectangle(px, 90, 1, 5, 0x44ddaa).setOrigin(0, 0.5).setDepth(13);
 
     this.add.rectangle(pcx, 102, PW - 20, 1, 0x2a5a38).setDepth(12);
 
     this.add.text(px, 110, "HP", TS.infoLabel).setDepth(12);
     this.playerHpTxt = this.add.text(px + 22, 110, "", TS.playerHp).setDepth(12);
-    this._hpBarBg   = this.add.rectangle(px, 128, PW - 24, 7, 0x2a3a2a).setOrigin(0, 0.5).setDepth(12);
+    this._hpBarBg = this.add.rectangle(px, 128, PW - 24, 7, 0x2a3a2a).setOrigin(0, 0.5).setDepth(12);
     this._hpBarFill = this.add.rectangle(px, 128, 1, 7, 0xdd3333).setOrigin(0, 0.5).setDepth(13);
 
     this.add.text(px, 138, "DEF", TS.infoLabel).setDepth(12);
@@ -290,9 +294,17 @@ export class BattleScene extends Phaser.Scene {
 
     const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
     const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
-    const SUIT_KEYS   = ['S', 'H', 'D', 'C'];
+    const SUIT_DESCS  = {
+      S: ['♠ Spade', '적 DEF 감소', 'Lv × 적응 × ♠장'],
+      H: ['♥ Hearts', '내 HP 회복',  'Lv × 적응 × ♥장'],
+      D: ['♦ Diamonds','내 DEF 증가', 'Lv × 적응 × ♦장'],
+      C: ['♣ Clubs',  '적 ATK 감소', 'Lv × 적응 × ♣장'],
+    };
+    const SUIT_KEYS = ['S', 'H', 'D', 'C'];
     this._attrTxts  = {};
     this._suitUpBtns = {};
+    this._suitTooltipObjs = [];
+
     SUIT_KEYS.forEach((suit, idx) => {
       const sy = 177 + idx * 26;
       this.add.text(px, sy, SUIT_SYMS[suit],
@@ -301,33 +313,49 @@ export class BattleScene extends Phaser.Scene {
         `Lv${this.player.attrs[suit]}`,
         { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: SUIT_COLORS[suit] })
         .setDepth(12);
+
+      // hover / click → 툴팁
+      const rowHit = this.add.rectangle(pcx, sy + 10, PW - 16, 24, 0xffffff, 0)
+        .setDepth(14).setInteractive();
+      rowHit.on('pointerover', () => this._showSuitTooltip(suit, sy, SUIT_DESCS[suit], SUIT_COLORS[suit]));
+      rowHit.on('pointerout',  () => this._hideSuitTooltip());
+      rowHit.on('pointerdown', () => this._showSuitTooltip(suit, sy, SUIT_DESCS[suit], SUIT_COLORS[suit]));
     });
 
-    // Deck / Used count
+    // Deck / DUMMY count
     this.add.rectangle(pcx, 284, PW - 20, 1, 0x2a5a38).setDepth(12);
     this.add.text(px, 290, "DECK", TS.infoLabel).setDepth(12);
     this._deckCountTxt = this.add.text(PW - 14, 290, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
-    this.add.text(px, 306, "USED", TS.infoLabel).setDepth(12);
+    this.add.text(px, 306, "DUMMY", TS.infoLabel).setDepth(12);
     this._dummyCountTxt = this.add.text(PW - 14, 306, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
 
-    this._tooltipBg  = this.add.rectangle(0, 0, 70, 26, 0x000000, 0.85).setDepth(200).setVisible(false);
+    this.add.text(px, 322, "FIELD", TS.infoLabel).setDepth(12);
+    this._fieldCountTxt = this.add.text(PW - 14, 322, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(12);
+    this.add.text(px, 338, "HAND", TS.infoLabel).setDepth(12);
+    this._handCountTxt = this.add.text(PW - 14, 338, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(12);
+
+    this._tooltipBg = this.add.rectangle(0, 0, 70, 26, 0x000000, 0.85).setDepth(200).setVisible(false);
     this._tooltipTxt = this.add.text(0, 0, "", { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffffff' })
       .setOrigin(0.5).setDepth(201).setVisible(false);
 
     // 필드 영역 중심 (아이템 패널 제외)
-    const FAW    = GW - PW - ITEM_PANEL_W;   // 700
-    const IPX    = GW - ITEM_PANEL_W;        // 1000
-    const IPCX   = IPX + ITEM_PANEL_W / 2;  // 1140 — 아이템 패널 중심
-    const faCX   = PW + FAW / 2;            // 650  — 필드 영역 중심
+    const FAW = GW - PW - ITEM_PANEL_W;   // 700
+    const IPX = GW - ITEM_PANEL_W;        // 1000
+    const IPCX = IPX + ITEM_PANEL_W / 2;  // 1140 — 아이템 패널 중심
+    const faCX = PW + FAW / 2;            // 650  — 필드 영역 중심
 
-    this.logTxt = this.add.text(faCX, BATTLE_LOG_H / 2, "", TS.log)
-      .setOrigin(0.5).setDepth(10);
+    // 배틀 로그 2줄 (위: 오래된, 아래: 최신)
+    this._logLine1 = this.add.text(faCX, 18, "", TS.log)
+      .setOrigin(0.5, 0.5).setDepth(10).setAlpha(0.55);
+    this._logLine2 = this.add.text(faCX, 46, "", TS.log)
+      .setOrigin(0.5, 0.5).setDepth(10);
 
-    const logHit = this.add.rectangle(faCX, BATTLE_LOG_H / 2, FAW, BATTLE_LOG_H, 0xffffff, 0)
+    const FAW_ = FAW - 20;
+    const logHit = this.add.rectangle(faCX, BATTLE_LOG_H / 2, FAW_, BATTLE_LOG_H, 0xffffff, 0)
       .setDepth(15).setInteractive();
-    logHit.on('pointerdown', () => this._showBattleLogPopup());
-    logHit.on('pointerover', () => this.logTxt.setStyle({ color: '#ffffff' }));
-    logHit.on('pointerout',  () => this.logTxt.setStyle({ color: '#ffcc44' }));
+    logHit.on('pointerdown', () => this._toggleBattleLog());
+    logHit.on('pointerover', () => { this._logLine1.setAlpha(0.75); this._logLine2.setAlpha(0.75); });
+    logHit.on('pointerout',  () => { this._logLine1.setAlpha(0.55); this._logLine2.setAlpha(1.0);  });
 
     this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg)
       .setOrigin(0.5, 0).setDepth(100);
@@ -341,19 +369,19 @@ export class BattleScene extends Phaser.Scene {
     this.add.text(IPCX, 20, "OPTIONS", TS.menuBtn).setOrigin(0.5).setDepth(61);
     optBg.on("pointerdown", () => this._showOptions());
     optBg.on("pointerover", () => optBg.setFillStyle(0x446688));
-    optBg.on("pointerout",  () => optBg.setFillStyle(0x335566));
+    optBg.on("pointerout", () => optBg.setFillStyle(0x335566));
 
     // TURN END 버튼 — 아이템 패널 하단
-    const turnBtnX      = IPCX;
+    const turnBtnX = IPCX;
     const turnBtnBottom = HAND_Y + CH / 2;
-    const turnBtnH      = 30;
-    const turnBtnY      = turnBtnBottom - turnBtnH / 2;
+    const turnBtnH = 30;
+    const turnBtnY = turnBtnBottom - turnBtnH / 2;
     this.turnEndBtn = this.add.rectangle(turnBtnX, turnBtnY, 120, turnBtnH, 0xaa6600)
       .setDepth(60).setInteractive();
     this.add.text(turnBtnX, turnBtnY, "TURN END", TS.turnEndBtn).setOrigin(0.5).setDepth(61);
     this.turnEndBtn.on("pointerdown", () => { if (!this.isDealing) this.onTurnEnd(); });
     this.turnEndBtn.on("pointerover", () => this.turnEndBtn.setFillStyle(0xdd8800));
-    this.turnEndBtn.on("pointerout",  () => this.turnEndBtn.setFillStyle(0xaa6600));
+    this.turnEndBtn.on("pointerout", () => this.turnEndBtn.setFillStyle(0xaa6600));
 
     this._attackTxt = this.add.text(turnBtnX, turnBtnY - turnBtnH / 2 - 8, "", TS.infoLabel)
       .setOrigin(0.5, 1).setDepth(61);
@@ -365,16 +393,16 @@ export class BattleScene extends Phaser.Scene {
   createSortButton() {
     const sortCH = 30;
     const sortBottom = HAND_Y + CH / 2;
-    const sortY  = sortBottom - sortCH / 2; // HAND_Y - CH / 2 - 14;
+    const sortY = sortBottom - sortCH / 2; // HAND_Y - CH / 2 - 14;
     const sortCX = PLAYER_PANEL_W / 2; // PLAYER_PANEL_W + (GW - PLAYER_PANEL_W - ITEM_PANEL_W) / 2;
-    this.sortBg  = this.add.rectangle(sortCX, sortY, 110, sortCH, 0x335544).setDepth(60).setInteractive();
+    this.sortBg = this.add.rectangle(sortCX, sortY, 110, sortCH, 0x335544).setDepth(60).setInteractive();
     this.sortTxt = this.add.text(sortCX, sortY, "SORT", TS.sortBtn).setOrigin(0.5).setDepth(61);
     this.sortBg.on("pointerdown", () => {
       if (this.isDealing) return;
       this.sortBy(this.sortMode === "suit" ? "rank" : "suit");
     });
     this.sortBg.on("pointerover", () => this.sortBg.setFillStyle(0x447766));
-    this.sortBg.on("pointerout",  () => this.refreshSortBtns());
+    this.sortBg.on("pointerout", () => this.refreshSortBtns());
   }
 
   refreshSortBtns() {
@@ -390,7 +418,8 @@ export class BattleScene extends Phaser.Scene {
 
     for (let i = Math.min(8, 51); i >= 0; i--) {
       this.animObjs.push(
-        this.add.image(deckX - i * 2, deckY - i * 2, "card_back").setDisplaySize(CW, CH).setDepth(i)
+        //this.add.image(deckX - i * 2, deckY - i * 2, "card_back").setDisplaySize(CW, CH).setDepth(i)
+        this.add.image(deckX - i * 2, deckY - i * 2, "card_back").setDisplaySize(110, 140).setDepth(i)
       );
     }
 
@@ -436,9 +465,9 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 위치 계산 ────────────────────────────────────────────────────────────
   calcFieldPositions(count) {
-    const PW   = PLAYER_PANEL_W;
-    const FAW  = GW - PW - ITEM_PANEL_W;   // 880
-    const gap  = 14;
+    const PW = PLAYER_PANEL_W;
+    const FAW = GW - PW - ITEM_PANEL_W;   // 880
+    const gap = 14;
     const areaW = FAW - 140;               // deck/dummy 파일 공간 제외: 740
     const totalW = count * FIELD_CW + (count - 1) * gap;
     const x0 = PW + 40 + FIELD_CW / 2 + (areaW - totalW) / 2;
@@ -447,9 +476,9 @@ export class BattleScene extends Phaser.Scene {
 
   calcHandPositions(count) {
     if (count === 0) return [];
-    const PW   = PLAYER_PANEL_W;
-    const FAW  = GW - PW - ITEM_PANEL_W;   // 880
-    const gap  = 10;
+    const PW = PLAYER_PANEL_W;
+    const FAW = GW - PW - ITEM_PANEL_W;   // 880
+    const gap = 10;
     const areaW = FAW - 85;               // 795
     const baseW = Math.round(CW * 0.95);
     const scale = count >= 9 ? Math.max(0.65, 8 / count) : 1;
@@ -460,9 +489,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   calcMonsterPositions(count) {
-    const PW  = PLAYER_PANEL_W;
+    const PW = PLAYER_PANEL_W;
     const FAW = GW - PW - ITEM_PANEL_W;   // 880
-    const cx  = PW + FAW / 2;
+    const cx = PW + FAW / 2;
     if (count <= 1) return [{ x: cx }];
     const margin = 100;
     const gap = Math.min(130, Math.floor((FAW - margin * 2) / (count - 1)));
@@ -519,8 +548,8 @@ export class BattleScene extends Phaser.Scene {
           return;
         }
         const newPositions = this.calcHandPositions(this.handData.length + 1);
-        const insertIdx    = newPositions.findIndex(p => pointer.x < p.x);
-        const handInsert   = insertIdx === -1 ? this.handData.length : insertIdx;
+        const insertIdx = newPositions.findIndex(p => pointer.x < p.x);
+        const handInsert = insertIdx === -1 ? this.handData.length : insertIdx;
 
         this.fieldData.splice(fieldIdx, 1);
         this.deck.field = this.deck.field.filter(c => c.uid !== cardData.uid);
@@ -534,6 +563,36 @@ export class BattleScene extends Phaser.Scene {
         this._snapBack(obj);
       }
     });
+  }
+
+  _showSuitTooltip(suit, rowY, lines, color) {
+    this._hideSuitTooltip();
+    const PW = PLAYER_PANEL_W;
+    const tx = PW + 12;
+    const ty = Math.min(rowY, GH - 80);
+    const tw = 160, lineH = 16, pad = 10;
+    const th = pad * 2 + lines.length * lineH;
+
+    const g = this.add.graphics().setDepth(300);
+    g.fillStyle(0x0a1e12, 0.95);
+    g.fillRoundedRect(tx, ty, tw, th, 6);
+    g.lineStyle(1, Phaser.Display.Color.HexStringToColor(color).color);
+    g.strokeRoundedRect(tx, ty, tw, th, 6);
+    this._suitTooltipObjs.push(g);
+
+    lines.forEach((line, i) => {
+      const style = i === 0
+        ? { fontFamily: "'PressStart2P', Arial", fontSize: '8px', color }
+        : { fontFamily: 'Arial', fontSize: '11px', color: '#aaccbb' };
+      const t = this.add.text(tx + pad, ty + pad + i * lineH, line, style)
+        .setOrigin(0, 0).setDepth(301);
+      this._suitTooltipObjs.push(t);
+    });
+  }
+
+  _hideSuitTooltip() {
+    this._suitTooltipObjs.forEach(o => o.destroy());
+    this._suitTooltipObjs = [];
   }
 
   _isValidItemDropZone(px, py) {
@@ -552,7 +611,7 @@ export class BattleScene extends Phaser.Scene {
     if (!item) { obj?.destroy(); return; }
 
     const itemDef = itemData.items.find(d => d.id === item.id);
-    const eff     = itemDef?.effect;
+    const eff = itemDef?.effect;
     if (eff) {
       switch (eff.type) {
         case 'heal':
@@ -561,7 +620,7 @@ export class BattleScene extends Phaser.Scene {
           break;
         case 'maxHp':
           this.player.maxHp += eff.value;
-          this.player.hp    += eff.value;
+          this.player.hp += eff.value;
           this.addBattleLog(`[${item.name}] 최대 HP +${eff.value}`);
           break;
         case 'def':
@@ -573,12 +632,12 @@ export class BattleScene extends Phaser.Scene {
           this.addBattleLog(`[${item.name}] 공격횟수 +${eff.value}`);
           break;
         case 'handSize':
-          this.player.handSize      += eff.value;
+          this.player.handSize += eff.value;
           this.player.handSizeLimit += eff.value;
           this.addBattleLog(`[${item.name}] 핸드 크기 +${eff.value}`);
           break;
         case 'fieldSize':
-          this.player.fieldSize      += eff.value;
+          this.player.fieldSize += eff.value;
           this.player.fieldSizeLimit += eff.value;
           this.addBattleLog(`[${item.name}] 필드 크기 +${eff.value}`);
           break;
@@ -599,7 +658,7 @@ export class BattleScene extends Phaser.Scene {
       targets: obj,
       x: obj.getData("origX"),
       y: obj.getData("origY"),
-      displayWidth:  obj.getData("origW") ?? FIELD_CW,
+      displayWidth: obj.getData("origW") ?? FIELD_CW,
       displayHeight: obj.getData("origH") ?? FIELD_CH,
       duration: 200,
       ease: "Back.Out",
@@ -634,7 +693,7 @@ export class BattleScene extends Phaser.Scene {
     const count = this.deckData.length;
 
     const pile = this.textures.exists("card_back_deck")
-      ? this.add.image(x, y, "card_back_deck").setDisplaySize(FIELD_CW, FIELD_CH).setDepth(10)
+      ? this.add.image(x, y, "card_back_deck").setDisplaySize(PILE_CW, PILE_CH).setDepth(10)
       : this.add.rectangle(x, y, FIELD_CW, FIELD_CH, 0x223344).setDepth(10);
     this.cardObjs.push(pile);
 
@@ -647,31 +706,31 @@ export class BattleScene extends Phaser.Scene {
       this._tooltipBg.setVisible(true).setDisplaySize(this._tooltipTxt.width + 16, 26);
       this._tooltipTxt.setVisible(true);
     });
-    hit.on("pointerout",  () => { this._tooltipBg.setVisible(false); this._tooltipTxt.setVisible(false); });
+    hit.on("pointerout", () => { this._tooltipBg.setVisible(false); this._tooltipTxt.setVisible(false); });
     hit.on("pointerdown", () => { if (!this._pilePopupObjs) this._showPilePopup(this.deckData, "DECK"); });
     this.cardObjs.push(hit);
   }
 
   renderDummyPile() {
-    const x = GW - ITEM_PANEL_W - 40, y = FIELD_Y;
+    const x = GW - ITEM_PANEL_W - 50, y = FIELD_Y;
     const count = this.dummyData.length;
 
     const pile = this.textures.exists("card_back_dummy")
-      ? this.add.image(x, y, "card_back_dummy").setDisplaySize(FIELD_CW, FIELD_CH).setDepth(10)
+      ? this.add.image(x, y, "card_back_dummy").setDisplaySize(PILE_CW, PILE_CH).setDepth(10)
       : this.add.rectangle(x, y, FIELD_CW, FIELD_CH, 0x332211).setDepth(10);
     this.cardObjs.push(pile);
 
     const hit = this.add.rectangle(x, y, FIELD_CW + 10, FIELD_CH + 10, 0xffffff, 0)
       .setDepth(12).setInteractive();
     hit.on("pointerover", () => {
-      this._tooltipTxt.setText(`USED: ${count}`);
+      this._tooltipTxt.setText(`DUMMY: ${count}`);
       this._tooltipBg.setPosition(x, y - FIELD_CH / 2 - 18);
       this._tooltipTxt.setPosition(x, y - FIELD_CH / 2 - 18);
       this._tooltipBg.setVisible(true).setDisplaySize(this._tooltipTxt.width + 16, 26);
       this._tooltipTxt.setVisible(true);
     });
-    hit.on("pointerout",  () => { this._tooltipBg.setVisible(false); this._tooltipTxt.setVisible(false); });
-    hit.on("pointerdown", () => { if (!this._pilePopupObjs) this._showPilePopup(this.dummyData, "USED CARDS"); });
+    hit.on("pointerout", () => { this._tooltipBg.setVisible(false); this._tooltipTxt.setVisible(false); });
+    hit.on("pointerdown", () => { if (!this._pilePopupObjs) this._showPilePopup(this.dummyData, "DUMMY CARDS"); });
     this.cardObjs.push(hit);
   }
 
@@ -681,7 +740,7 @@ export class BattleScene extends Phaser.Scene {
       && this.attackCount < this.player.attacksPerTurn;
 
     this.fieldData.forEach((card, i) => {
-      const x   = card.slotX;
+      const x = card.slotX;
       const img = this.add.image(x, FIELD_Y, card.key).setDisplaySize(FIELD_CW, FIELD_CH).setDepth(10);
 
       img.setInteractive({ draggable: canPick });
@@ -706,6 +765,9 @@ export class BattleScene extends Phaser.Scene {
           }
         });
       } else {
+        img.on("pointerdown", () => {
+          this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
+        });
         img.setAlpha(0.45);
       }
       this.cardObjs.push(img);
@@ -714,8 +776,14 @@ export class BattleScene extends Phaser.Scene {
 
   renderHand() {
     if (this.handData.length === 0) return;
-    const positions    = this.calcHandPositions(this.handData.length);
-    const combo        = this._getSelectedCombo();
+
+    // 공격 횟수 소진 또는 필드픽 한도 도달 시 비활성화
+    const canPick = this.fieldPickCount < this.player.fieldSize
+      && this.attackCount < this.player.attacksPerTurn;
+
+
+    const positions = this.calcHandPositions(this.handData.length);
+    const combo = this._getSelectedCombo();
     const comboCardSet = new Set(combo.cards ?? []);
     const hasValidCombo = combo.score > 0;
 
@@ -730,7 +798,7 @@ export class BattleScene extends Phaser.Scene {
     const hoverH = Math.round(cardH * 1.35);
 
     this.handData.forEach((card, i) => {
-      const sel     = this.selected.has(i);
+      const sel = this.selected.has(i);
       const inCombo = sel && hasValidCombo && comboCardSet.has(card);
       const x = positions[i].x;
       const selOffset = Math.round(22 * scale);
@@ -738,19 +806,28 @@ export class BattleScene extends Phaser.Scene {
 
       const img = this.add.image(x, y, card.key)
         .setDisplaySize(cardW, cardH).setDepth(sel ? 32 : 30).setInteractive();
-      img.on("pointerdown", () => { if (!this.isDragging && !this.isDealing) this.toggleHand(i); });
-      img.on("pointerover", () => {
-        if (!this.isDragging) {
-          this.tweens.add({ targets: img, displayWidth: hoverW, displayHeight: hoverH, y: y - 8, duration: 100 });
-          img.setDepth(40);
-        }
-      });
-      img.on("pointerout", () => {
-        if (!this.isDragging) {
-          this.tweens.add({ targets: img, displayWidth: cardW, displayHeight: cardH, y, duration: 100 });
-          img.setDepth(sel ? 32 : 30);
-        }
-      });
+
+      if (canPick) {
+
+        img.on("pointerdown", () => { if (!this.isDragging && !this.isDealing) this.toggleHand(i); });
+        img.on("pointerover", () => {
+          if (!this.isDragging) {
+            this.tweens.add({ targets: img, displayWidth: hoverW, displayHeight: hoverH, y: y - 8, duration: 100 });
+            img.setDepth(40);
+          }
+        });
+        img.on("pointerout", () => {
+          if (!this.isDragging) {
+            this.tweens.add({ targets: img, displayWidth: cardW, displayHeight: cardH, y, duration: 100 });
+            img.setDepth(sel ? 32 : 30);
+          }
+        });
+      } else {
+        img.on("pointerdown", () => {
+          this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
+        });
+      }
+
       this.cardObjs.push(img);
 
       if (inCombo) {
@@ -766,17 +843,17 @@ export class BattleScene extends Phaser.Scene {
   // ── 몬스터 렌더 ──────────────────────────────────────────────────────────
   renderMonsters() {
     const positions = this.calcMonsterPositions(this.monsters.length);
-    const hasCombo  = this._getSelectedCombo().score > 0
+    const hasCombo = this._getSelectedCombo().score > 0
       && this.attackCount < this.player.attacksPerTurn;
     const imgW = 120, imgH = 120;
 
     // 하단 기준 레이아웃
     const MON_BOTTOM = MONSTER_AREA_TOP + MONSTER_AREA_H - 4;  // 400
-    const BAR_H      = 10;
-    const STAT_H     = 14;
-    const barY       = MON_BOTTOM - STAT_H - 6 - BAR_H / 2;    // bar 중심
-    const statY      = MON_BOTTOM - STAT_H / 2;                 // ATK/DEF 중심
-    const spriteY    = barY - BAR_H / 2 - 8 - imgH / 2;        // 스프라이트 중심
+    const BAR_H = 10;
+    const STAT_H = 14;
+    const barY = MON_BOTTOM - STAT_H - 6 - BAR_H / 2;    // bar 중심
+    const statY = MON_BOTTOM - STAT_H / 2;                 // ATK/DEF 중심
+    const spriteY = barY - BAR_H / 2 - 8 - imgH / 2;        // 스프라이트 중심
 
     this.monsters.forEach((mon, idx) => {
       const x = positions[idx].x;
@@ -784,7 +861,7 @@ export class BattleScene extends Phaser.Scene {
       const mobId = mon.mob.id;
 
       if (mon.isDead) {
-        const dieTexKey  = `mon_${mobId}_die`;
+        const dieTexKey = `mon_${mobId}_die`;
         const dieAnimKey = `${dieTexKey}_anim`;
         if (this.textures.exists(dieTexKey)) {
           monObj = this.add.sprite(x, spriteY, dieTexKey)
@@ -801,7 +878,7 @@ export class BattleScene extends Phaser.Scene {
           }
         }
       } else {
-        const idleTexKey  = `mon_${mobId}_idle`;
+        const idleTexKey = `mon_${mobId}_idle`;
         const idleAnimKey = `${idleTexKey}_anim`;
         if (this.textures.exists(idleTexKey)) {
           monObj = this.add.sprite(x, spriteY, idleTexKey)
@@ -829,7 +906,7 @@ export class BattleScene extends Phaser.Scene {
       */
 
       // ── HP 바 (텍스트 포함) ──────────────────────────────────────────────
-      const barW    = 110;
+      const barW = 110;
       const hpRatio = Math.max(0, mon.hp / mon.maxHp);
       const hpColor = hpRatio > 0.5 ? 0x44cc44 : hpRatio > 0.25 ? 0xddaa00 : 0xdd3333;
       this.monsterObjs.push(
@@ -837,8 +914,10 @@ export class BattleScene extends Phaser.Scene {
         this.add.rectangle(x - barW / 2, barY, Math.max(1, barW * hpRatio), BAR_H, hpColor)
           .setOrigin(0, 0.5).setDepth(17),
         this.add.text(x, barY, `${mon.hp}/${mon.maxHp}`,
-          { fontFamily: "'PressStart2P',Arial", fontSize: '7px', color: '#ffffff',
-            stroke: '#000000', strokeThickness: 2 })
+          {
+            fontFamily: "'PressStart2P',Arial", fontSize: '7px', color: '#ffffff',
+            stroke: '#000000', strokeThickness: 2
+          })
           .setOrigin(0.5).setDepth(18)
       );
 
@@ -866,89 +945,91 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 아이템 패널 렌더 ─────────────────────────────────────────────────────
   renderItemPanel() {
-    const IPX  = GW - ITEM_PANEL_W;
+    const IPX = GW - ITEM_PANEL_W;
     const IPCX = IPX + ITEM_PANEL_W / 2;
     const items = this.player.items ?? [];
 
-    // 헤더
+    // 헤더 (OPTIONS 버튼 아래)
+    const headerY = BATTLE_LOG_H + 19;
     this.cardObjs.push(
-      this.add.text(IPCX, BATTLE_LOG_H / 2, "ITEMS", TS.panelLabel)
+      this.add.text(IPCX, headerY, "ITEMS", TS.panelLabel)
         .setOrigin(0.5).setDepth(10)
     );
 
     if (items.length === 0) {
       this.cardObjs.push(
-        this.add.text(IPCX, BATTLE_LOG_H + 50, "—", TS.infoLabel)
+        this.add.text(IPCX, headerY + 30, "—", TS.infoLabel)
           .setOrigin(0.5, 0).setDepth(10)
       );
       return;
     }
 
-    // 2열 카드 그리드 (FIELD_CW × FIELD_CH)
-    const C_W  = FIELD_CW, C_H = FIELD_CH;
-    const GAP  = 8;
+    // 2열 카드 그리드 — 핸드 카드와 비슷한 비율 (80×116 ≈ CW:CH)
+    const C_W = 80, C_H = 116;
+    const NAME_H = 18;  // 이름 띠 높이
+    const GAP = 8;
     const PAD_L = Math.floor((ITEM_PANEL_W - C_W * 2 - GAP) / 2);
-    const startY = BATTLE_LOG_H + 46;
+    const startY = headerY + 20;
 
-    const RARITY_BG  = { common: 0x1a3a22, rare: 0x1a2a4a, epic: 0x2a1a3a };
-    const RARITY_BRD = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
-    const RARITY_LBL = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
+    const RARITY_BG  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
+    const RARITY_LBL = { common: '#ffffff', rare: '#ffffff', epic: '#ffffff' };
 
     items.forEach((item, i) => {
       const col = i % 2;
       const row = Math.floor(i / 2);
-      const cx  = IPX + PAD_L + col * (C_W + GAP) + C_W / 2;
-      const cy  = startY + row * (C_H + GAP) + C_H / 2;
+      const cx = IPX + PAD_L + col * (C_W + GAP) + C_W / 2;
+      const cy = startY + row * (C_H + GAP) + C_H / 2;
 
-      const bg_col  = RARITY_BG[item.rarity]  ?? RARITY_BG.common;
-      const brd_col = RARITY_BRD[item.rarity] ?? RARITY_BRD.common;
-      const lbl_col = RARITY_LBL[item.rarity] ?? RARITY_LBL.common;
+      const stripColor = RARITY_BG[item.rarity] ?? RARITY_BG.common;
+      const lblColor   = RARITY_LBL[item.rarity] ?? RARITY_LBL.common;
 
-      // Container로 카드 전체를 하나의 오브젝트로 묶기
       const container = this.add.container(cx, cy).setDepth(9);
       container.setSize(C_W, C_H);
       container.setInteractive();
-      this.input.setDraggable(container);
 
       container.setData("itemIndex", i);
       container.setData("origX", cx);
       container.setData("origY", cy);
 
-      // 카드 배경
-      container.add(this.add.rectangle(0, 0, C_W, C_H, bg_col).setStrokeStyle(1, brd_col));
+      // 흰색 카드 배경
+      container.add(this.add.rectangle(0, 0, C_W, C_H, 0xffffff).setStrokeStyle(1, 0xaaaaaa));
 
-      // name 띠
-      container.add(this.add.rectangle(0, -C_H / 2 + 6, C_W, 12, brd_col, 0.45));
-      container.add(this.add.text(0, -C_H / 2 + 6, item.name,
-        { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: lbl_col })
-        .setOrigin(0.5));
+      // 상단 이름 띠 (레어도 색)
+      const stripY = -C_H / 2 + NAME_H / 2;
+      container.add(this.add.rectangle(0, stripY, C_W, NAME_H, stripColor));
+      container.add(
+        this.add.text(0, stripY, item.name,
+          { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: lblColor })
+          .setOrigin(0.5)
+      );
 
-      // 이미지
+      // 이미지 or 플레이스홀더
       const imgKey = `item_${item.id}`;
-      const imgY   = -C_H / 2 + 12 + 20;
+      const imgY = -C_H / 2 + NAME_H + 28;
       if (item.img && this.textures.exists(imgKey)) {
-        container.add(this.add.image(0, imgY, imgKey).setDisplaySize(36, 36));
+        container.add(this.add.image(0, imgY, imgKey).setDisplaySize(40, 40));
       } else {
-        container.add(this.add.rectangle(0, imgY, 36, 36, brd_col, 0.2).setStrokeStyle(1, brd_col));
-        container.add(this.add.text(0, imgY, '?',
-          { fontFamily: 'Arial', fontSize: '14px', color: lbl_col }).setOrigin(0.5));
+        container.add(this.add.rectangle(0, imgY, 40, 40, 0xdddddd).setStrokeStyle(1, 0xaaaaaa));
+        container.add(
+          this.add.text(0, imgY, '?',
+            { fontFamily: 'Arial', fontSize: '16px', color: '#888888' }).setOrigin(0.5)
+        );
       }
 
       // desc
-      container.add(this.add.text(0, C_H / 2 - 20, item.desc,
-        { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: '#cccccc',
-          wordWrap: { width: C_W - 8 } })
-        .setOrigin(0.5, 0));
+      container.add(
+        this.add.text(0, -C_H / 2 + NAME_H + 58, item.desc ?? "",
+          { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: '#444444', wordWrap: { width: C_W - 8 } })
+          .setOrigin(0.5, 0)
+      );
 
-      // hover / click 확대
+      // hover 확대
       container.on("pointerover", () => {
-        if (!this.isDragging)
-          this.tweens.add({ targets: container, scaleX: 1.4, scaleY: 1.4, y: cy - 10, duration: 100 });
+        this.tweens.add({ targets: container, scaleX: 1.3, scaleY: 1.3, y: cy - 8, duration: 100 });
         container.setDepth(25);
       });
       container.on("pointerout", () => {
-        if (!this.isDragging)
-          this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, y: cy, duration: 100 });
+        this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, y: cy, duration: 100 });
         container.setDepth(9);
       });
 
@@ -979,14 +1060,14 @@ export class BattleScene extends Phaser.Scene {
 
   refreshAttackCount() {
     const used = this.attackCount;
-    const max  = this.player.attacksPerTurn;
+    const max = this.player.attacksPerTurn;
     this._attackTxt.setText(`ATK ${used}/${max}`);
     this._attackTxt.setColor(used >= max ? '#ff6666' : '#aaffcc');
   }
 
   refreshPlayerStats() {
-    const p    = this.player;
-    const PW   = PLAYER_PANEL_W;
+    const p = this.player;
+    const PW = PLAYER_PANEL_W;
     const barW = PW - 24;
     this.playerHpTxt.setText(`${p.hp}/${p.maxHp}`);
     this.playerDefTxt.setText(`${p.def}`);
@@ -998,10 +1079,13 @@ export class BattleScene extends Phaser.Scene {
     this.goldTxt.setText(`${p.gold}`);
     this._deckCountTxt?.setText(`${this.deckData?.length ?? 0}`);
     this._dummyCountTxt?.setText(`${this.dummyData?.length ?? 0}`);
+
+    this._fieldCountTxt?.setText(`${this.fieldData?.length ?? 0}/${p.fieldSize}`);
+    this._handCountTxt?.setText(`${this.handData?.length ?? 0}/${p.handSizeLimit}`);
   }
 
   refreshPlayerLevel() {
-    const p   = this.player;
+    const p = this.player;
     const req = getRequiredExp(p.level);
     const xpFill = Math.max(1, Math.round((PLAYER_PANEL_W - 24) * Math.min(1, p.xp / req)));
     this._playerLevelTxt.setText(String(p.level));
@@ -1013,13 +1097,14 @@ export class BattleScene extends Phaser.Scene {
 
   addBattleLog(text) {
     this._fullBattleLog.push(text);
-    this.battleLogLines.push(text);
-    if (this.battleLogLines.length > 4) this.battleLogLines.shift();
     this.refreshBattleLog();
+    if (this._logExpanded) this._updateExpandedLogLines();
   }
 
   refreshBattleLog() {
-    this.logTxt.setText(this.battleLogLines.slice(-2).join("  |  "));
+    const logs = this._fullBattleLog;
+    this._logLine1?.setText(logs.length >= 2 ? logs[logs.length - 2] : "");
+    this._logLine2?.setText(logs.length >= 1 ? logs[logs.length - 1] : "");
   }
 
   toggleHand(i) {
@@ -1059,12 +1144,12 @@ export class BattleScene extends Phaser.Scene {
 
   _showMonsterAttack(monIdx, damage) {
     const positions = this.calcMonsterPositions(this.monsters.length);
-    const mX        = positions[monIdx]?.x ?? GW / 2;
+    const mX = positions[monIdx]?.x ?? GW / 2;
 
     const monSprite = this._monsterSprites?.[monIdx];
-    const mon       = this.monsters[monIdx];
+    const mon = this.monsters[monIdx];
     const attackKey = `mon_${mon?.mob?.id}_attack_anim`;
-    const idleKey   = `mon_${mon?.mob?.id}_idle_anim`;
+    const idleKey = `mon_${mon?.mob?.id}_idle_anim`;
     if (monSprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(attackKey)) {
       monSprite.play(attackKey);
       monSprite.once('animationcomplete', () => {
@@ -1076,7 +1161,7 @@ export class BattleScene extends Phaser.Scene {
     this.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
     this._sfx("sfx_chop");
 
-    const label   = damage > 0 ? `-${damage} HP` : "BLOCKED!";
+    const label = damage > 0 ? `-${damage} HP` : "BLOCKED!";
     const txtStyle = damage > 0 ? TS.damageHit : TS.damageBlocked;
     const txt = this.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, txtStyle)
       .setOrigin(0.5, 0).setDepth(501);
@@ -1129,10 +1214,10 @@ export class BattleScene extends Phaser.Scene {
     const mon = this.monsters[monIdx];
     if (!mon || mon.isDead || this.isDealing) return;
 
-    context.deckCount  = this.deckData.length;
+    context.deckCount = this.deckData.length;
     context.dummyCount = this.dummyData.length;
 
-    const { score: cardScore, handName } = this._getSelectedCombo();
+    const { score: cardScore, handName, aoe } = this._getSelectedCombo();
     if (cardScore <= 0) return;
     const score = cardScore + this.player.atk;
 
@@ -1148,69 +1233,144 @@ export class BattleScene extends Phaser.Scene {
       this.player.attrs[s] * this.player.adaptability[s] * suitCounts[s]
     );
 
-    if (suitCounts.S > 0) {
-      const eff = suitEff('S');
-      mon.def -= eff;
-      if (eff > 0) this.addBattleLog(`\u2660 적응: ${mon.mob.name} DEF -${eff}`);
-    }
-    if (suitCounts.C > 0) {
-      const eff     = suitEff('C');
-      const reduced = Math.min(eff, mon.atk);
-      mon.atk = Math.max(0, mon.atk - eff);
-      if (reduced > 0) this.addBattleLog(`\u2663 적응: ${mon.mob.name} ATK -${reduced}`);
-    }
-
-    const damage  = score - mon.def;
-    const prevHp  = mon.hp;
-    mon.hp = Math.max(0, mon.hp - Math.max(0, damage));
-    const overkill = Math.max(0, damage - prevHp);
-    this.player.score += score;
-
-    if (suitCounts.H > 0) {
-      const eff = suitEff('H');
-      this.player.hp = Math.min(this.player.maxHp, this.player.hp + eff);
-      if (eff > 0) this.addBattleLog(`\u2665 적응: HP +${eff}`);
-    }
-    if (suitCounts.D > 0) {
-      const eff = suitEff('D');
-      this.player.def += eff;
-      if (eff > 0) this.addBattleLog(`\u2666 적응: DEF +${eff}`);
-    }
-
-    this.addBattleLog(`${mon.mob.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
-    this._sfx("sfx_knifeSlice");
-
-    console.log(this._monsterSprites);
-    this.effects.hitLightning(mon);
-    //this.effects.hitExplosion(640, 360, this._monsterSprites);
-
-    const monX         = this.calcMonsterPositions(this.monsters.length)[monIdx].x;
+    // 카드 애니메이션 & 더미 처리
+    const positions = this.calcMonsterPositions(this.monsters.length);
     const handPositions = this.calcHandPositions(this.handData.length);
+    const targetX = positions[monIdx].x;
     [...this.selected].forEach(i => {
-      this._throwCardAtMonster(handPositions[i].x, HAND_Y - 22, this.handData[i].key, monX);
+      this._throwCardAtMonster(handPositions[i].x, HAND_Y - 22, this.handData[i].key, targetX);
     });
     const usedCards = [...this.selected].sort((a, b) => b - a)
       .map(i => this.handData.splice(i, 1)[0]);
     this.dummyData.push(...usedCards);
     this.selected.clear();
 
-    const monSprite  = this._monsterSprites?.[monIdx];
-    const damagedKey = `mon_${mon.mob.id}_damaged_anim`;
-    const idleKey    = `mon_${mon.mob.id}_idle_anim`;
+    if (aoe) {
+      // ── 광역 공격 ────────────────────────────────────────────────────────
+      const aliveMonsters = this.monsters.filter(m => !m.isDead);
+      const aliveSprites = this._monsterSprites?.filter((_, i) => !this.monsters[i]?.isDead) ?? [];
 
-    if (monSprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(damagedKey)) {
-      this.isDealing = true;
-      monSprite.play(damagedKey);
-      monSprite.once('animationcomplete', () => {
-        this.isDealing = false;
-        this._afterAttack(mon, monIdx, overkill);
+      // S/C 적응 — 모든 살아있는 몬스터에 적용
+      if (suitCounts.S > 0) {
+        const eff = suitEff('S');
+        if (eff > 0) {
+          aliveMonsters.forEach(m => { m.def -= eff; });
+          this.addBattleLog(`♠ 적응: 전체 DEF -${eff}`);
+        }
+      }
+      if (suitCounts.C > 0) {
+        const eff = suitEff('C');
+        if (eff > 0) {
+          aliveMonsters.forEach(m => {
+            const reduced = Math.min(eff, m.atk);
+            m.atk = Math.max(0, m.atk - eff);
+            if (reduced > 0) this.addBattleLog(`♣ 적응: ${m.mob.name} ATK -${reduced}`);
+          });
+        }
+      }
+
+      // H/D 적응 — 플레이어에게 한 번
+      if (suitCounts.H > 0) {
+        const eff = suitEff('H');
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + eff);
+        if (eff > 0) this.addBattleLog(`♥ 적응: HP +${eff}`);
+      }
+      if (suitCounts.D > 0) {
+        const eff = suitEff('D');
+        this.player.def += eff;
+        if (eff > 0) this.addBattleLog(`♦ 적응: DEF +${eff}`);
+      }
+
+      // 전체 데미지
+      this.player.score += score;
+      this.addBattleLog(`${handName}! 전체에 ${score}점 광역 공격!`);
+      this._sfx("sfx_knifeSlice");
+
+      const aoeX = positions.length > 0
+        ? positions.reduce((s, p) => s + p.x, 0) / positions.length
+        : GW / 2;
+      const aoeY = MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
+      this.effects.hitExplosion(aoeX, aoeY, aliveSprites);
+
+      let lastDeadIdx = monIdx;
+      aliveMonsters.forEach((m, _) => {
+        const actualIdx = this.monsters.indexOf(m);
+        const dmg = score - m.def;
+        const prevHp = m.hp;
+        m.hp = Math.max(0, m.hp - Math.max(0, dmg));
+        const ok = Math.max(0, dmg - prevHp);
+        this.addBattleLog(`${m.mob.name}에게 ${Math.max(0, dmg)} 데미지!`);
+        if (m.hp <= 0) {
+          m.isDead = true;
+          lastDeadIdx = actualIdx;
+          const newLevels = this.player.addXp(m.xp);
+          this.player.gold += m.gold;
+          this.addBattleLog(`${m.mob.name} 처치! +${m.xp}XP +${m.gold}G`);
+          if (newLevels.length > 0) {
+            this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
+            this._suitLevelUpCount += newLevels.length;
+          }
+        }
       });
+
+      this.render();
+      this._checkLevelUpThenProceed();
+
     } else {
-      this._afterAttack(mon, monIdx, overkill);
+      // ── 단일 타겟 공격 ───────────────────────────────────────────────────
+      if (suitCounts.S > 0) {
+        const eff = suitEff('S');
+        mon.def -= eff;
+        if (eff > 0) this.addBattleLog(`♠ 적응: ${mon.mob.name} DEF -${eff}`);
+      }
+      if (suitCounts.C > 0) {
+        const eff = suitEff('C');
+        const reduced = Math.min(eff, mon.atk);
+        mon.atk = Math.max(0, mon.atk - eff);
+        if (reduced > 0) this.addBattleLog(`♣ 적응: ${mon.mob.name} ATK -${reduced}`);
+      }
+
+      const damage = score - mon.def;
+      const prevHp = mon.hp;
+      mon.hp = Math.max(0, mon.hp - Math.max(0, damage));
+      const overkill = Math.max(0, damage - prevHp);
+      const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
+      this.player.score += score;
+
+      if (suitCounts.H > 0) {
+        const eff = suitEff('H');
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + eff);
+        if (eff > 0) this.addBattleLog(`♥ 적응: HP +${eff}`);
+      }
+      if (suitCounts.D > 0) {
+        const eff = suitEff('D');
+        this.player.def += eff;
+        if (eff > 0) this.addBattleLog(`♦ 적응: DEF +${eff}`);
+      }
+
+      this.addBattleLog(`${mon.mob.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
+      this._sfx("sfx_knifeSlice");
+
+      this.effects.hitExplosion(positions[monIdx].x, MONSTER_AREA_TOP + MONSTER_AREA_H / 2,
+        [this._monsterSprites?.[monIdx]].filter(Boolean));
+
+      const monSprite = this._monsterSprites?.[monIdx];
+      const damagedKey = `mon_${mon.mob.id}_damaged_anim`;
+
+      if (monSprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(damagedKey)) {
+        this.isDealing = true;
+        monSprite.play(damagedKey);
+        monSprite.once('animationcomplete', () => {
+          this.isDealing = false;
+          this._afterAttack(mon, monIdx, overkill, bullseye);
+        });
+      } else {
+        this._afterAttack(mon, monIdx, overkill, bullseye);
+      }
     }
   }
 
-  _afterAttack(mon, monIdx, overkill = 0) {
+  _afterAttack(mon, monIdx, overkill = 0, bullseye = false) {
     if (mon.hp <= 0) {
       mon.isDead = true;
       const newLevels = this.player.addXp(mon.xp);
@@ -1227,6 +1387,14 @@ export class BattleScene extends Phaser.Scene {
           this.render();
           this._checkLevelUpThenProceed();
         });
+      } else if (bullseye) {
+        this.isDealing = true;
+        this.addBattleLog(`BULLSEYE! ${mon.mob.name} 최대 체력(${mon.maxHp})으로 광역!`);
+        this._applyBullseye(monIdx, mon.maxHp, () => {
+          this.isDealing = false;
+          this.render();
+          this._checkLevelUpThenProceed();
+        });
       } else {
         this.render();
         this._checkLevelUpThenProceed();
@@ -1234,6 +1402,43 @@ export class BattleScene extends Phaser.Scene {
     } else {
       this.render();
     }
+  }
+
+  _applyBullseye(fromIdx, dmg, onDone) {
+    if (dmg <= 0) { onDone?.(); return; }
+
+    const aliveTargets = this.monsters
+      .map((m, i) => ({ m, i }))
+      .filter(({ m, i }) => !m.isDead && i !== fromIdx);
+
+    if (aliveTargets.length === 0) { onDone?.(); return; }
+
+    const positions = this.calcMonsterPositions(this.monsters.length);
+    const aoeX = positions[fromIdx].x;
+    const aoeY = MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
+    const aliveSprites = aliveTargets
+      .map(({ i }) => this._monsterSprites?.[i])
+      .filter(Boolean);
+
+    this.effects.hitExplosion(aoeX, aoeY, aliveSprites);
+
+    aliveTargets.forEach(({ m }) => {
+      const actualDmg = Math.max(0, dmg - m.def);
+      m.hp = Math.max(0, m.hp - actualDmg);
+      this.addBattleLog(`BULLSEYE 연쇄! ${m.mob.name}에게 ${actualDmg} 데미지!`);
+      if (m.hp <= 0 && !m.isDead) {
+        m.isDead = true;
+        const newLevels = this.player.addXp(m.xp);
+        this.player.gold += m.gold;
+        this.addBattleLog(`${m.mob.name} 처치! +${m.xp}XP +${m.gold}G`);
+        if (newLevels.length > 0) {
+          this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
+          this._suitLevelUpCount += newLevels.length;
+        }
+      }
+    });
+
+    onDone?.();
   }
 
   _applyOverkill(fromIdx, dmg, onDone) {
@@ -1252,7 +1457,7 @@ export class BattleScene extends Phaser.Scene {
 
     const positions = this.calcMonsterPositions(this.monsters.length);
     const fromX = positions[fromIdx].x;
-    const toX   = positions[idx].x;
+    const toX = positions[idx].x;
 
     this.effects.hitLightning(this.monsters[idx]);
     //this.effects.hitExplosion(640, 360, this._monsterSprites);
@@ -1266,18 +1471,18 @@ export class BattleScene extends Phaser.Scene {
       onComplete: () => {
         img.destroy();
 
-        const target    = this.monsters[idx];
+        const target = this.monsters[idx];
         const actualDmg = Math.max(0, dmg - target.def);
-        const prevHp    = target.hp;
+        const prevHp = target.hp;
         target.hp = Math.max(0, target.hp - actualDmg);
         const chain = Math.max(0, actualDmg - prevHp);
 
         this.addBattleLog(`오버킬! ${target.mob.name}에게 ${actualDmg} 연쇄!`);
         this._sfx("sfx_knifeSlice");
 
-        const monSprite  = this._monsterSprites?.[idx];
+        const monSprite = this._monsterSprites?.[idx];
         const damagedKey = `mon_${target.mob.id}_damaged_anim`;
-        const afterAnim  = () => {
+        const afterAnim = () => {
           if (target.hp <= 0 && !target.isDead) {
             target.isDead = true;
             const newLevels = this.player.addXp(target.xp);
@@ -1307,7 +1512,7 @@ export class BattleScene extends Phaser.Scene {
   // ── 턴 종료 ──────────────────────────────────────────────────────────────
   onTurnEnd() {
     this.isDealing = true;
-    const alive   = this.monsters.filter(m => !m.isDead);
+    const alive = this.monsters.filter(m => !m.isDead);
     const ATK_GAP = 650;
 
     alive.forEach((m, localIdx) => {
@@ -1347,14 +1552,14 @@ export class BattleScene extends Phaser.Scene {
   startTurn() {
     this.time.delayedCall(420, () => {
       try {
-        const slotPos  = this.calcFieldPositions(this.player.fieldSize);
-        const draw     = Math.min(this.player.fieldSize, this.deckData.length);
+        const slotPos = this.calcFieldPositions(this.player.fieldSize);
+        const draw = Math.min(this.player.fieldSize, this.deckData.length);
         const newCards = Array.from({ length: draw }, () => this.deckData.pop());
         this.deck.field = newCards;
-        this.fieldData  = newCards.map((c, k) => ({ ...c, slotX: slotPos[k].x }));
+        this.fieldData = newCards.map((c, k) => ({ ...c, slotX: slotPos[k].x }));
 
         this.fieldPickCount = 0;
-        this.attackCount    = 0;
+        this.attackCount = 0;
         this.selected.clear();
         this._applySortToHand();
         this.render();
@@ -1369,7 +1574,7 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 배틀 클리어 ──────────────────────────────────────────────────────────
   onBattleClear() {
-    this.isDealing  = true;
+    this.isDealing = true;
     this.player.def = 0;
 
     const g = this.add.graphics().setDepth(300);
@@ -1382,21 +1587,21 @@ export class BattleScene extends Phaser.Scene {
     g.strokeRoundedRect(px, py, pw, ph, 20);
 
     const titleText = this.isBoss ? "ROUND CLEAR!" : "BATTLE CLEAR!";
-    const subText   = this.isBoss
+    const subText = this.isBoss
       ? `ROUND ${this.round} 완료  SCORE: ${this.player.score}`
       : `${this.round}-${this.battleIndex + 1}  SCORE: ${this.player.score}`;
-    const noteText  = this.isBoss ? "다음 라운드로..." : "다음 전투로...";
+    const noteText = this.isBoss ? "다음 라운드로..." : "다음 전투로...";
 
-    this.add.text(GW / 2, py + 60,  titleText, TS.clearTitle).setOrigin(0.5).setDepth(301);
-    this.add.text(GW / 2, py + 118, subText,   TS.clearSub).setOrigin(0.5).setDepth(301);
-    this.add.text(GW / 2, py + 158, noteText,  TS.clearNote).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 60, titleText, TS.clearTitle).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 118, subText, TS.clearSub).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 158, noteText, TS.clearNote).setOrigin(0.5).setDepth(301);
 
     const btn = this.add.rectangle(GW / 2, py + ph - 46, 180, 44, 0x1e4e99)
       .setDepth(302).setInteractive();
     this.add.text(GW / 2, py + ph - 46, "CONTINUE", TS.overlayBtn)
       .setOrigin(0.5).setDepth(303);
     btn.on("pointerover", () => btn.setFillStyle(0x2d66cc));
-    btn.on("pointerout",  () => btn.setFillStyle(0x1e4e99));
+    btn.on("pointerout", () => btn.setFillStyle(0x1e4e99));
     btn.on("pointerdown", () => {
       // 모든 카드를 deck으로 모아 셔플 (permanent만 유지)
       this.deck.resetForNextBattle();
@@ -1404,17 +1609,19 @@ export class BattleScene extends Phaser.Scene {
       if (this.isBoss) {
         writeSave(this.round + 1, this.player.toData(), this.deck.getState());
         this.scene.start("GameScene", {
-          round:  this.round + 1,
+          round: this.round + 1,
           player: this.player.toData(),
-          deck:   this.deck.getState(),
+          deck: this.deck.getState(),
+          battleLog: this._fullBattleLog,
         });
       } else {
         this.scene.start("GameScene", {
-          round:        this.round,
-          player:       this.player.toData(),
-          deck:         this.deck.getState(),
-          phase:        'battle',
-          battleIndex:  this.battleIndex + 1,
+          round: this.round,
+          player: this.player.toData(),
+          deck: this.deck.getState(),
+          phase: 'battle',
+          battleIndex: this.battleIndex + 1,
+          battleLog: this._fullBattleLog,
         });
       }
     });
@@ -1437,11 +1644,11 @@ export class BattleScene extends Phaser.Scene {
   // ── 레벨업 suit 선택 팝업 ─────────────────────────────────────────────────
   _showLevelUpPopup(onAllDone) {
     const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
-    const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
-    const SUIT_DESCS  = { S: 'MON DEF\u2193', H: 'HP\u2191', D: 'MY DEF\u2191', C: 'MON ATK\u2193' };
-    const SUIT_KEYS   = ['S', 'H', 'D', 'C'];
+    const SUIT_SYMS = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
+    const SUIT_DESCS = { S: 'MON DEF\u2193', H: 'HP\u2191', D: 'MY DEF\u2191', C: 'MON ATK\u2193' };
+    const SUIT_KEYS = ['S', 'H', 'D', 'C'];
 
-    const objs    = [];
+    const objs = [];
     const destroy = () => objs.forEach(o => o?.destroy());
     const cx = GW / 2, cy = GH / 2;
     const pw = 460, ph = 310;
@@ -1473,10 +1680,10 @@ export class BattleScene extends Phaser.Scene {
 
     SUIT_KEYS.forEach((suit, idx) => {
       const bx = btnX0 + idx * btnGap;
-      const btnBg  = this.add.rectangle(bx, btnY, btnW, btnH, 0x1a4a2a).setDepth(802).setInteractive();
+      const btnBg = this.add.rectangle(bx, btnY, btnW, btnH, 0x1a4a2a).setDepth(802).setInteractive();
       const symTxt = this.add.text(bx, btnY - 12, SUIT_SYMS[suit],
         { fontFamily: 'Arial', fontSize: '24px', color: SUIT_COLORS[suit] }).setOrigin(0.5).setDepth(803);
-      const lvTxt  = this.add.text(bx, btnY + 10, `Lv${this.player.attrs[suit]}`,
+      const lvTxt = this.add.text(bx, btnY + 10, `Lv${this.player.attrs[suit]}`,
         { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: SUIT_COLORS[suit] }).setOrigin(0.5).setDepth(803);
       const descTxt = this.add.text(bx, btnY + 26, SUIT_DESCS[suit],
         { fontFamily: "'PressStart2P', Arial", fontSize: '7px', color: '#88aa88' }).setOrigin(0.5).setDepth(803);
@@ -1492,7 +1699,7 @@ export class BattleScene extends Phaser.Scene {
         if (this._suitLevelUpCount <= 0) { destroy(); onAllDone?.(); }
       });
       btnBg.on('pointerover', () => btnBg.setFillStyle(0x2a6644));
-      btnBg.on('pointerout',  () => btnBg.setFillStyle(0x1a4a2a));
+      btnBg.on('pointerout', () => btnBg.setFillStyle(0x1a4a2a));
       objs.push(btnBg, symTxt, lvTxt, descTxt);
     });
   }
@@ -1521,12 +1728,12 @@ export class BattleScene extends Phaser.Scene {
   // ── 턴 시작 세이브 ────────────────────────────────────────────────────────
   _saveTurnState() {
     writeSave(this.round, this.player.toData(), this.deck.getState(), {
-      isBoss:      this.isBoss,
+      isBoss: this.isBoss,
       battleIndex: this.battleIndex,
       normalCount: this.normalCount,
       monsterTier: this.monsterTier,
-      totalCost:   this.totalCost,
-      monsters:    this.monsters,
+      totalCost: this.totalCost,
+      monsters: this.monsters,
     });
   }
 
@@ -1535,13 +1742,13 @@ export class BattleScene extends Phaser.Scene {
     if (this._pilePopupObjs) return;
     const objs = this._pilePopupObjs = [];
 
-    const RANK_LIST = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const RANK_LIST = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
     const CW_ = FIELD_CW, CH_ = FIELD_CH;
-    const GAP_X  = CW_ + 4, ROW_H = CH_ + 16, LABEL_W = 26, PAD = 20;
+    const GAP_X = CW_ + 4, ROW_H = CH_ + 16, LABEL_W = 26, PAD = 20;
     const panelX = PLAYER_PANEL_W + PAD;
     const panelW = GW - PLAYER_PANEL_W - PAD * 2;
 
-    const bySuit = { S:[], H:[], D:[], C:[] };
+    const bySuit = { S: [], H: [], D: [], C: [] };
     for (const card of pileData) {
       const s = card.key[0];
       if (bySuit[s]) bySuit[s].push(card);
@@ -1552,10 +1759,10 @@ export class BattleScene extends Phaser.Scene {
       )
     );
 
-    const titleH  = 38, closeH = 40;
-    const panelH  = titleH + SUITS.length * ROW_H + closeH;
+    const titleH = 38, closeH = 40;
+    const panelH = titleH + SUITS.length * ROW_H + closeH;
     const panelTop = Math.max(BATTLE_LOG_H + 6, (GH - panelH) / 2);
-    const panelCX  = panelX + panelW / 2;
+    const panelCX = panelX + panelW / 2;
 
     const dim = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x000000, 0.78)
       .setDepth(600).setInteractive();
@@ -1567,20 +1774,20 @@ export class BattleScene extends Phaser.Scene {
     objs.push(
       this.add.text(panelCX, panelTop + titleH / 2,
         `${title}  (${pileData.length})`,
-        { fontFamily:"'PressStart2P',Arial", fontSize:'11px', color:'#ccffcc' }
+        { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#ccffcc' }
       ).setOrigin(0.5).setDepth(602)
     );
 
-    const SUIT_SYMS   = { S:'♠', H:'♥', D:'♦', C:'♣' };
-    const SUIT_COLORS = { S:'#8888ff', H:'#ff6666', D:'#ff6666', C:'#8888ff' };
+    const SUIT_SYMS = { S: '♠', H: '♥', D: '♦', C: '♣' };
+    const SUIT_COLORS = { S: '#8888ff', H: '#ff6666', D: '#ff6666', C: '#8888ff' };
     const rowsY = panelTop + titleH;
 
     SUITS.forEach((suit, si) => {
-      const cy    = rowsY + si * ROW_H + CH_ / 2 + 8;
+      const cy = rowsY + si * ROW_H + CH_ / 2 + 8;
       const cards = bySuit[suit];
       objs.push(
         this.add.text(panelX + LABEL_W / 2, cy, SUIT_SYMS[suit],
-          { fontFamily:'Arial', fontSize:'18px', color: SUIT_COLORS[suit] }
+          { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }
         ).setOrigin(0.5).setDepth(602)
       );
       cards.forEach((card, ci) => {
@@ -1599,11 +1806,11 @@ export class BattleScene extends Phaser.Scene {
       });
     });
 
-    const closeY  = rowsY + SUITS.length * ROW_H + closeH / 2;
+    const closeY = rowsY + SUITS.length * ROW_H + closeH / 2;
     const closeBg = this.add.rectangle(panelCX, closeY, 130, 28, 0x1a3a22)
       .setDepth(602).setStrokeStyle(1, 0x4a9a5a);
     const closeTxt = this.add.text(panelCX, closeY, 'CLOSE',
-      { fontFamily:"'PressStart2P',Arial", fontSize:'10px', color:'#aaffaa' }
+      { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: '#aaffaa' }
     ).setOrigin(0.5).setDepth(603).setInteractive();
     closeTxt.on('pointerdown', () => this._closePilePopup());
     dim.on('pointerdown', () => this._closePilePopup());
@@ -1617,55 +1824,112 @@ export class BattleScene extends Phaser.Scene {
     this._pilePopupObjs = null;
   }
 
-  // ── 배틀 로그 팝업 ────────────────────────────────────────────────────────
-  _showBattleLogPopup() {
-    if (this._logPopupObjs) return;
-    const objs = this._logPopupObjs = [];
-    const pw = GW - PLAYER_PANEL_W - ITEM_PANEL_W, ph = 430;
-    const px = PLAYER_PANEL_W, py = BATTLE_LOG_H;
-    const cx = px + pw / 2;
-
-    const dim = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x000000, 0.65)
-      .setDepth(700).setInteractive();
-    dim.on('pointerdown', () => this._closeBattleLogPopup());
-    objs.push(dim);
-
-    const pg = this.add.graphics().setDepth(701);
-    pg.fillStyle(0x0a1e12);
-    pg.fillRoundedRect(px, py, pw, ph, 14);
-    pg.lineStyle(2, 0x2d7a3a);
-    pg.strokeRoundedRect(px, py, pw, ph, 14);
-    objs.push(pg);
-
-    objs.push(this.add.text(cx, py + 22, 'BATTLE LOG',
-      { fontFamily: "'PressStart2P', Arial", fontSize: '13px', color: '#44ffaa' })
-      .setOrigin(0.5).setDepth(702));
-
-    const lines  = this._fullBattleLog.slice(-18);
-    const lineH  = 18;
-    const startY = py + 50;
-    lines.forEach((line, i) => {
-      const alpha = 0.5 + 0.5 * (i / Math.max(1, lines.length - 1));
-      objs.push(this.add.text(px + 16, startY + i * lineH, line,
-        { fontFamily: 'Arial', fontSize: '12px', color: '#ccffcc', alpha })
-        .setOrigin(0, 0).setDepth(702));
-    });
-
-    const closeBtn = this.add.rectangle(cx, py + ph - 28, 140, 34, 0x335544)
-      .setDepth(702).setInteractive();
-    objs.push(closeBtn,
-      this.add.text(cx, py + ph - 28, 'CLOSE',
-        { fontFamily: "'PressStart2P', Arial", fontSize: '10px', color: '#ffffff' })
-        .setOrigin(0.5).setDepth(703));
-    closeBtn.on('pointerdown', () => this._closeBattleLogPopup());
-    closeBtn.on('pointerover', () => closeBtn.setFillStyle(0x447766));
-    closeBtn.on('pointerout',  () => closeBtn.setFillStyle(0x335544));
+  // ── 배틀 로그 확장 패널 ───────────────────────────────────────────────────
+  _toggleBattleLog() {
+    if (this._logExpanded) this._hideExpandedLog();
+    else this._showExpandedLog();
   }
 
-  _closeBattleLogPopup() {
-    if (!this._logPopupObjs) return;
-    this._logPopupObjs.forEach(o => o.destroy());
-    this._logPopupObjs = null;
+  _showExpandedLog() {
+    if (this._logExpanded) return;
+    this._logExpanded = true;
+    this._logExpandedBg = [];
+    this._logExpandedLines = [];
+
+    const PW  = PLAYER_PANEL_W;
+    const FAW = GW - PW - ITEM_PANEL_W;
+    const cx  = PW + FAW / 2;
+    const panelH = MONSTER_AREA_TOP + MONSTER_AREA_H; // 몬스터 영역 하단까지
+
+    const CX   = PW + 10;
+    const FAW_ = FAW - 20;
+
+    // 배경 (몬스터 영역과 같은 x/width, 하단만 radius)
+    const g = this.add.graphics().setDepth(500);
+    g.fillStyle(0x050e08, 0.97);
+    g.fillRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
+    g.lineStyle(1, 0x4a7055);
+    g.strokeRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
+    // 헤더 구분선
+    g.lineStyle(1, 0x2a5a38);
+    g.lineBetween(CX, BATTLE_LOG_H, CX + FAW_, BATTLE_LOG_H);
+    this._logExpandedBg.push(g);
+
+    // 헤더 (collapsed 와 동일 스타일: TS.log)
+    const hdrTxt = this.add.text(cx, BATTLE_LOG_H / 2, '▲ BATTLE LOG  (클릭하여 닫기)', TS.log)
+      .setOrigin(0.5).setDepth(501).setColor('#44ffaa');
+    this._logExpandedBg.push(hdrTxt);
+
+    // 헤더 히트영역 (닫기)
+    const hdrHit = this.add.rectangle(cx, BATTLE_LOG_H / 2, FAW_, BATTLE_LOG_H, 0xffffff, 0)
+      .setDepth(502).setInteractive();
+    hdrHit.on('pointerdown', () => this._hideExpandedLog());
+    this._logExpandedBg.push(hdrHit);
+
+    // 스크롤 오프셋 초기값: 최신이 맨 아래
+    const lineH = 16;
+    const maxLines = Math.floor((panelH - BATTLE_LOG_H - 12) / lineH);
+    this._logScrollOffset = Math.max(0, this._fullBattleLog.length - maxLines);
+
+    this._updateExpandedLogLines();
+
+    // 휠 스크롤
+    this._logWheelHandler = (pointer, gameObjs, dx, dy) => {
+      const logs = this._fullBattleLog;
+      const lh = 16;
+      const ml = Math.floor((panelH - BATTLE_LOG_H - 12) / lh);
+      const maxOff = Math.max(0, logs.length - ml);
+      if (dy > 0) this._logScrollOffset = Math.min(maxOff, this._logScrollOffset + 3);
+      else        this._logScrollOffset = Math.max(0, this._logScrollOffset - 3);
+      this._updateExpandedLogLines();
+    };
+    this.input.on('wheel', this._logWheelHandler);
+  }
+
+  _updateExpandedLogLines() {
+    this._logExpandedLines.forEach(o => o.destroy());
+    this._logExpandedLines = [];
+
+    const PW   = PLAYER_PANEL_W;
+    const FAW  = GW - PW - ITEM_PANEL_W;
+    const cx   = PW + FAW / 2;
+    const panelH  = MONSTER_AREA_TOP + MONSTER_AREA_H;
+    const lineH   = 20;
+    const maxLines = Math.floor((panelH - BATTLE_LOG_H - 8) / lineH);
+    const logs  = this._fullBattleLog;
+    const start = Math.max(0, Math.min(this._logScrollOffset, Math.max(0, logs.length - maxLines)));
+    const slice = logs.slice(start, start + maxLines);
+
+    slice.forEach((line, i) => {
+      const isLast = i === slice.length - 1;
+      const alpha = isLast ? 1.0 : 0.4 + 0.55 * (i / Math.max(1, slice.length - 1));
+      const txt = this.add.text(cx, BATTLE_LOG_H + 6 + i * lineH, line, TS.log)
+        .setColor(isLast ? '#ffff88' : '#ffcc44')
+        .setAlpha(alpha).setOrigin(0.5, 0).setDepth(503);
+      this._logExpandedLines.push(txt);
+    });
+
+    // 스크롤 위치 표시
+    if (logs.length > maxLines) {
+      const end = Math.min(start + maxLines, logs.length);
+      const indicator = this.add.text(cx, panelH - 6,
+        `${start + 1}-${end} / ${logs.length}`,
+        { fontFamily: "'PressStart2P', Arial", fontSize: '7px', color: '#446655' })
+        .setOrigin(0.5, 1).setDepth(503);
+      this._logExpandedLines.push(indicator);
+    }
+  }
+
+  _hideExpandedLog() {
+    if (!this._logExpanded) return;
+    this._logExpanded = false;
+    [...(this._logExpandedBg ?? []), ...(this._logExpandedLines ?? [])].forEach(o => o.destroy());
+    this._logExpandedBg = null;
+    this._logExpandedLines = null;
+    if (this._logWheelHandler) {
+      this.input.off('wheel', this._logWheelHandler);
+      this._logWheelHandler = null;
+    }
   }
 
   // ── 게임 오버 ────────────────────────────────────────────────────────────
@@ -1690,7 +1954,7 @@ export class BattleScene extends Phaser.Scene {
     this.add.text(GW / 2, py + ph - 50, "MAIN MENU", TS.overlayBtn).setOrigin(0.5).setDepth(303);
     btnBg.on("pointerdown", () => this.scene.start("MainMenuScene"));
     btnBg.on("pointerover", () => btnBg.setFillStyle(0x2d66cc));
-    btnBg.on("pointerout",  () => btnBg.setFillStyle(0x1e4e99));
+    btnBg.on("pointerout", () => btnBg.setFillStyle(0x1e4e99));
   }
 
   showMsg(text, dur = 2000) {
@@ -1733,7 +1997,7 @@ export class BattleScene extends Phaser.Scene {
     const bgmPlus = this.add.rectangle(cx + 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
     objs.push(bgmPlus, this.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
     const bgmBarBg = this.add.rectangle(cx, bgmY + 28, 190, 7, 0x224433).setDepth(602);
-    const bgmBar   = this.add.rectangle(cx - 95, bgmY + 28, bgm * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
+    const bgmBar = this.add.rectangle(cx - 95, bgmY + 28, bgm * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
     objs.push(bgmBarBg, bgmBar);
     const updateBgm = (v) => {
       bgm = Phaser.Math.Clamp(v, 0, 10);
@@ -1743,11 +2007,11 @@ export class BattleScene extends Phaser.Scene {
       saveOptionsByRegistry();
     };
     bgmMinus.on("pointerdown", () => updateBgm(bgm - 1));
-    bgmPlus.on("pointerdown",  () => updateBgm(bgm + 1));
+    bgmPlus.on("pointerdown", () => updateBgm(bgm + 1));
     bgmMinus.on("pointerover", () => bgmMinus.setFillStyle(0x447766));
-    bgmMinus.on("pointerout",  () => bgmMinus.setFillStyle(0x335544));
-    bgmPlus.on("pointerover",  () => bgmPlus.setFillStyle(0x447766));
-    bgmPlus.on("pointerout",   () => bgmPlus.setFillStyle(0x335544));
+    bgmMinus.on("pointerout", () => bgmMinus.setFillStyle(0x335544));
+    bgmPlus.on("pointerover", () => bgmPlus.setFillStyle(0x447766));
+    bgmPlus.on("pointerout", () => bgmPlus.setFillStyle(0x335544));
 
     // SFX 볼륨
     let sfx = this.registry.get("sfxVolume") ?? 7;
@@ -1761,7 +2025,7 @@ export class BattleScene extends Phaser.Scene {
     const sfxPlus = this.add.rectangle(cx + 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
     objs.push(sfxPlus, this.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
     const sfxBarBg = this.add.rectangle(cx, sfxY + 28, 190, 7, 0x224433).setDepth(602);
-    const sfxBar   = this.add.rectangle(cx - 95, sfxY + 28, sfx * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
+    const sfxBar = this.add.rectangle(cx - 95, sfxY + 28, sfx * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
     objs.push(sfxBarBg, sfxBar);
     const updateSfx = (v) => {
       sfx = Phaser.Math.Clamp(v, 0, 10);
@@ -1771,11 +2035,11 @@ export class BattleScene extends Phaser.Scene {
       saveOptionsByRegistry();
     };
     sfxMinus.on("pointerdown", () => updateSfx(sfx - 1));
-    sfxPlus.on("pointerdown",  () => updateSfx(sfx + 1));
+    sfxPlus.on("pointerdown", () => updateSfx(sfx + 1));
     sfxMinus.on("pointerover", () => sfxMinus.setFillStyle(0x447766));
-    sfxMinus.on("pointerout",  () => sfxMinus.setFillStyle(0x335544));
-    sfxPlus.on("pointerover",  () => sfxPlus.setFillStyle(0x447766));
-    sfxPlus.on("pointerout",   () => sfxPlus.setFillStyle(0x335544));
+    sfxMinus.on("pointerout", () => sfxMinus.setFillStyle(0x335544));
+    sfxPlus.on("pointerover", () => sfxPlus.setFillStyle(0x447766));
+    sfxPlus.on("pointerout", () => sfxPlus.setFillStyle(0x335544));
 
     // MAIN MENU 버튼
     const exitBtn = this.add.rectangle(cx - 80, cy + ph / 2 - 48, 140, 48, 0x882211)
@@ -1786,7 +2050,7 @@ export class BattleScene extends Phaser.Scene {
       this.scene.start("MainMenuScene");
     });
     exitBtn.on("pointerover", () => exitBtn.setFillStyle(0xaa2222));
-    exitBtn.on("pointerout",  () => exitBtn.setFillStyle(0x882211));
+    exitBtn.on("pointerout", () => exitBtn.setFillStyle(0x882211));
 
     // CLOSE 버튼
     const closeBtn = this.add.rectangle(cx + 80, cy + ph / 2 - 48, 140, 48, 0x335544)
@@ -1794,7 +2058,7 @@ export class BattleScene extends Phaser.Scene {
     objs.push(closeBtn, this.add.text(cx + 80, cy + ph / 2 - 48, "CLOSE", TS.menuBtn).setOrigin(0.5).setDepth(603));
     closeBtn.on("pointerdown", () => this._closeOptions());
     closeBtn.on("pointerover", () => closeBtn.setFillStyle(0x447766));
-    closeBtn.on("pointerout",  () => closeBtn.setFillStyle(0x335544));
+    closeBtn.on("pointerout", () => closeBtn.setFillStyle(0x335544));
   }
 
   _closeOptions() {

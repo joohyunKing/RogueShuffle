@@ -20,6 +20,7 @@ export class GameScene extends Phaser.Scene {
     const deck        = data.deck        ?? null;
     const phase       = data.phase       ?? 'market';
     const battleIndex = data.battleIndex ?? 0;
+    const battleLog   = data.battleLog   ?? [];
 
     // round.json에서 현재 라운드 데이터 조회 (범위 초과 시 마지막 라운드 사용)
     const rounds  = roundData.rounds;
@@ -42,6 +43,7 @@ export class GameScene extends Phaser.Scene {
           normalCount,
           monsterTier: rd.monsterTier,
           totalCost:   rd.totalCost,
+          battleLog,
         });
       } else if (battleIndex === normalCount) {
         // 보스 배틀
@@ -54,10 +56,11 @@ export class GameScene extends Phaser.Scene {
           normalCount,
           monsterTier: rd.boss.monsterTier,
           totalCost:   rd.boss.totalCost,
+          battleLog,
         });
       } else {
         // 모든 배틀 완료 → 다음 라운드 (이미 BattleScene의 onBattleClear에서 처리됨)
-        this.scene.start('GameScene', { round, player, deck });
+        this.scene.start('GameScene', { round, player, deck, battleLog });
       }
     }
   }

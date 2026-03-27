@@ -30,63 +30,82 @@ export function calculateScore(cards, context) {
     const handResult = evaluateHand(cards);
 
     const ctx = {
-      ...context,
-      handRank: handResult.rank,
-      handName : HAND_NAME[handResult.rank],
-      cards: handResult.cards // 실제 사용된 5장
+        ...context,
+        handRank: handResult.rank,
+        handName: HAND_NAME[handResult.rank],
+        cards: handResult.cards // 실제 사용된 5장
     };
 
     // 2. 기본 점수
     let score = calcHandScore(ctx.cards, ctx, relics);
-  
+
     // 3. final scope 적용
     for (const relic of relics) {
-      for (const effect of relic.effects) {
-        if (effect.scope !== "final") continue;
-        score = applyEffect(score, effect, null, ctx);
-      }
+        for (const effect of relic.effects) {
+            if (effect.scope !== "final") continue;
+            score = applyEffect(score, effect, null, ctx);
+        }
     }
-  
+
     return {
-      rank: ctx.handRank,
-      handName: ctx.handName,
-      score,
-      cards: ctx.cards
+        rank: ctx.handRank,
+        handName: ctx.handName,
+        score,
+        cards: ctx.cards,
+        aoe: handResult.aoe ?? false
     };
-  }
+}
 
 //핸드 점수
 function calcHandScore(cards, ctx, relics) {
     let total = 0;
-  
+    let multiple = 1;
+
     for (const card of cards) {
-      total += calcCardScore(card, ctx, relics);
+        total += calcCardScore(card, ctx, relics);
     }
-  
+
+    switch (ctx.handRank) {
+        case HAND_RANK.FIVE_CARD: multiple = 8; break;
+        case HAND_RANK.STRAIGHT_FLUSH: multiple = 7; break;
+        case HAND_RANK.FOUR_OF_A_KIND: multiple = 6; break;
+        case HAND_RANK.FULL_HOUSE: multiple = 4; break;
+        case HAND_RANK.FLUSH: multiple = 4; break;
+        case HAND_RANK.STRAIGHT: multiple = 4; break;
+        case HAND_RANK.TWO_PAIR: multiple = 3; break;
+        case HAND_RANK.TRIPLE: multiple = 2; break;
+        case HAND_RANK.ONE_PAIR: multiple = 2; break;
+        default: multiple = 1;
+    }
+
+    //console.log("handRank : " + ctx.handRank + " / total : " + total+ " / multiple : " + multiple);
+
+    total = total * multiple;
+
     // hand scope 적용
     for (const relic of relics) {
-      for (const effect of relic.effects) {
-        if (effect.scope !== "hand") continue;
-        total = applyEffect(total, effect, null, ctx);
-      }
+        for (const effect of relic.effects) {
+            if (effect.scope !== "hand") continue;
+            total = applyEffect(total, effect, null, ctx);
+        }
     }
-  
+
     return total;
-  }
+}
 
 //카드 점수
 function calcCardScore(card, ctx, relics) {
     let score = card.baseScore;
-  
+
     for (const relic of relics) {
-      for (const effect of relic.effects) {
-        if (effect.scope !== "card") continue;
-        score = applyEffect(score, effect, card, ctx);
-      }
+        for (const effect of relic.effects) {
+            if (effect.scope !== "card") continue;
+            score = applyEffect(score, effect, card, ctx);
+        }
     }
-  
+
     return score;
-  }
+}
 
 // id → relic 객체 빠르게 찾기
 const relicMap = Object.fromEntries(
@@ -145,6 +164,8 @@ function evaluateHand(cards) {
 
     const groups = Object.values(valueMap).sort((a, b) => b.length - a.length);
 
+    let aoe = false;
+
     let bestCards = [];
     let rank = HAND_RANK.HIGH_CARD;
 
@@ -152,6 +173,7 @@ function evaluateHand(cards) {
     if (groups[0].length === 5) {
         rank = HAND_RANK.FIVE_CARD;
         bestCards = groups[0];
+        aoe = true;
     }
 
     // Straight Flush
@@ -162,6 +184,7 @@ function evaluateHand(cards) {
         if (sf.length >= 5) {
             rank = HAND_RANK.STRAIGHT_FLUSH;
             bestCards = sf.slice(0, 5);
+            aoe = true;
         }
     }
 
@@ -172,6 +195,7 @@ function evaluateHand(cards) {
             ...groups[0]
             //,...getKickers(sorted, groups[0], 1)
         ];
+        aoe = true;
     }
 
     // Full house
@@ -181,18 +205,21 @@ function evaluateHand(cards) {
             ...groups[0],
             ...groups[1].slice(0, 2)
         ];
+        aoe = true;
     }
 
     // Flush
     else if (flushSuit) {
         rank = HAND_RANK.FLUSH;
         bestCards = flushCards;
+        aoe = true;
     }
 
     // Straight
     else if (straightCards) {
         rank = HAND_RANK.STRAIGHT;
         bestCards = straightCards.slice(0, 5);
+        aoe = true;
     }
 
     // Two pair
@@ -233,6 +260,7 @@ function evaluateHand(cards) {
     return {
         rank,
         score,
+        aoe,
         cards: bestCards
     };
 }
