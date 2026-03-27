@@ -28,9 +28,9 @@ export class BattleScene extends Phaser.Scene {
     //this.load.image("card_back", "/_card_back.png");
     this.load.image("card_back", "/assets/images/ui/card_back_deck.png");
     if (!this.textures.exists("card_back_deck"))
-      this.load.image("card_back_deck", "/assets/images/ui/card_back_deck.png");
+      this.load.image("card_back_deck", "/assets/images/ui/deck_rembg.png");
     if (!this.textures.exists("card_back_dummy"))
-      this.load.image("card_back_dummy", "/assets/images/ui/card_back_dummy.png");
+      this.load.image("card_back_dummy", "/assets/images/ui/dummy_rembg.png");
     this.load.image("bg", "/assets/images/bg/old_stone_castle.jpg");
     itemData.items.forEach(item => {
       if (item.img && !this.textures.exists(`item_${item.id}`))
@@ -45,9 +45,9 @@ export class BattleScene extends Phaser.Scene {
     this.load.audio("sfx_knifeSlice", "/assets/audio/sfx/knifeSlice.ogg");
     if (!this.textures.exists("ui_deck")) this.load.image("ui_deck", "/assets/images/ui/deck.png");
     if (!this.textures.exists("ui_dummy")) this.load.image("ui_dummy", "/assets/images/ui/dummy.png");
-    if (!this.textures.exists("ui_option")) this.load.image("ui_option", "/assets/images/ui/option.jpg");
-    if (!this.textures.exists("ui_end_turn")) this.load.image("ui_end_turn", "/assets/images/ui/end_turn.jpg");
-    if (!this.textures.exists("ui_sort")) this.load.image("ui_sort", "/assets/images/ui/SuitRank.jpg");
+    if (!this.textures.exists("ui_option")) this.load.image("ui_option", "/assets/images/ui/option_rembg.png");
+    if (!this.textures.exists("ui_end_turn")) this.load.image("ui_end_turn", "/assets/images/ui/end_turn_rembg.png");
+    if (!this.textures.exists("ui_sort")) this.load.image("ui_sort", "/assets/images/ui/SuitRank_rembg.png");
 
     // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
     MONSTER_LIST.forEach(m => {
@@ -190,7 +190,7 @@ export class BattleScene extends Phaser.Scene {
     this.createUI();
     this.createSortButton();
     this.setupDrag();
-    this.startDealAnimation();
+    //this.startDealAnimation(); //애니메이션 이상해서 안쓴다.
   }
 
   // ── 배경 & 패널 ──────────────────────────────────────────────────────────
@@ -230,14 +230,16 @@ export class BattleScene extends Phaser.Scene {
 
     // 필드 패널 (필드 영역만)
     const fpY = FIELD_Y - FIELD_CH / 2 - 18;
-    g.fillStyle(0x0d3318, 0.82);
+    g.fillStyle(0x050e08, 0.88);
+    //g.fillStyle(0x0d3318, 0.82);
     g.fillRoundedRect(CX, fpY, FAW_, FIELD_CH + 36, 12);
     g.lineStyle(2, 0x2d7a3a);
     g.strokeRoundedRect(CX, fpY, FAW_, FIELD_CH + 36, 12);
 
     // 핸드 패널 (필드 영역만)
     const hpY = HAND_Y - CH / 2 - 18;
-    g.fillStyle(0x0d3318, 0.82);
+    g.fillStyle(0x050e08, 0.88);
+    //g.fillStyle(0x0d3318, 0.82);
     g.fillRoundedRect(CX, hpY, FAW_, CH + 36, 12);
     g.lineStyle(2, 0x2d7a3a);
     g.strokeRoundedRect(CX, hpY, FAW_, CH + 36, 12);
@@ -364,23 +366,22 @@ export class BattleScene extends Phaser.Scene {
     this.previewScoreTxt = this.add.text(faCX + 10, preY, "", TS.comboScore).setOrigin(0, 0).setDepth(50);
 
     // OPT 버튼 — 아이템 패널 상단
-    const optBg = this.add.rectangle(IPCX, 20, 120, 30, 0x335566).setDepth(60).setInteractive();
-    this.add.text(IPCX, 20, "OPTIONS", TS.menuBtn).setOrigin(0.5).setDepth(61);
-    optBg.on("pointerdown", () => this._showOptions());
-    optBg.on("pointerover", () => optBg.setFillStyle(0x446688));
-    optBg.on("pointerout", () => optBg.setFillStyle(0x335566));
+    const optImg = this.add.image(IPCX, 20, "ui_option")
+      .setDisplaySize(140, 40).setDepth(60).setInteractive();
+    optImg.on("pointerdown", () => this._showOptions());
+    optImg.on("pointerover", () => optImg.setTint(0xaaddff));
+    optImg.on("pointerout",  () => optImg.clearTint());
 
     // TURN END 버튼 — 아이템 패널 하단
     const turnBtnX = IPCX;
     const turnBtnBottom = HAND_Y + CH / 2;
     const turnBtnH = 30;
     const turnBtnY = turnBtnBottom - turnBtnH / 2;
-    this.turnEndBtn = this.add.rectangle(turnBtnX, turnBtnY, 120, turnBtnH, 0xaa6600)
-      .setDepth(60).setInteractive();
-    this.add.text(turnBtnX, turnBtnY, "TURN END", TS.turnEndBtn).setOrigin(0.5).setDepth(61);
+    this.turnEndBtn = this.add.image(turnBtnX, turnBtnY, "ui_end_turn")
+      .setDisplaySize(140, 40).setDepth(60).setInteractive();
     this.turnEndBtn.on("pointerdown", () => { if (!this.isDealing) this.onTurnEnd(); });
-    this.turnEndBtn.on("pointerover", () => this.turnEndBtn.setFillStyle(0xdd8800));
-    this.turnEndBtn.on("pointerout", () => this.turnEndBtn.setFillStyle(0xaa6600));
+    this.turnEndBtn.on("pointerover", () => this.turnEndBtn.setTint(0xffdd88));
+    this.turnEndBtn.on("pointerout",  () => this.turnEndBtn.clearTint());
 
     this._attackTxt = this.add.text(turnBtnX, turnBtnY - turnBtnH / 2 - 8, "", TS.infoLabel)
       .setOrigin(0.5, 1).setDepth(61);
@@ -394,20 +395,19 @@ export class BattleScene extends Phaser.Scene {
     const sortBottom = HAND_Y + CH / 2;
     const sortY = sortBottom - sortCH / 2; // HAND_Y - CH / 2 - 14;
     const sortCX = PLAYER_PANEL_W / 2; // PLAYER_PANEL_W + (GW - PLAYER_PANEL_W - ITEM_PANEL_W) / 2;
-    this.sortBg = this.add.rectangle(sortCX, sortY, 110, sortCH, 0x335544).setDepth(60).setInteractive();
-    this.sortTxt = this.add.text(sortCX, sortY, "SORT", TS.sortBtn).setOrigin(0.5).setDepth(61);
+    this.sortBg = this.add.image(sortCX, sortY, "ui_sort")
+      .setDisplaySize(110, sortCH).setDepth(60).setInteractive();
     this.sortBg.on("pointerdown", () => {
       if (this.isDealing) return;
       this.sortBy(this.sortMode === "suit" ? "rank" : "suit");
     });
-    this.sortBg.on("pointerover", () => this.sortBg.setFillStyle(0x447766));
-    this.sortBg.on("pointerout", () => this.refreshSortBtns());
+    this.sortBg.on("pointerover", () => this.sortBg.setTint(0xaaffcc));
+    this.sortBg.on("pointerout",  () => this.refreshSortBtns());
   }
 
   refreshSortBtns() {
-    const label = this.sortMode === "suit" ? "SUIT ▲" : this.sortMode === "rank" ? "RANK ▲" : "SORT";
-    this.sortTxt?.setText(label);
-    this.sortBg?.setFillStyle(this.sortMode ? 0x227744 : 0x335544);
+    if (this.sortMode) this.sortBg?.setTint(0x88ffaa);
+    else               this.sortBg?.clearTint();
   }
 
   // ── 딜링 애니메이션 ──────────────────────────────────────────────────────
@@ -985,6 +985,7 @@ export class BattleScene extends Phaser.Scene {
       const container = this.add.container(cx, cy).setDepth(9);
       container.setSize(C_W, C_H);
       container.setInteractive();
+      this.input.setDraggable(container);
 
       container.setData("itemIndex", i);
       container.setData("origX", cx);
