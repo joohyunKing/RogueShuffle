@@ -5,8 +5,8 @@ export const CW = 100;
 export const CH = 145;
 export const FIELD_CW = Math.round(CW * 0.6);   // 60 — 필드 카드 표시 크기
 export const FIELD_CH = Math.round(CH * 0.6);   // 87
-export const PILE_CW = Math.round(CW * 0.5);   // 50 — 덱/더미 파일 표시 크기
-export const PILE_CH = Math.round(CH * 0.5);   // 73
+export const PILE_CW = Math.round(125);   // 46 — 덱/더미 파일 표시 크기
+export const PILE_CH = Math.round(86);   // 67
 
 // ─── 카드 데이터 ──────────────────────────────────────────────────────────────
 export const SUITS = ["S", "H", "D", "C"];
@@ -69,9 +69,9 @@ export const context = {
 export const PLAYER_PANEL_W = 200;            // 왼쪽 플레이어 정보 패널 폭
 export const ITEM_PANEL_W   = 200;            // 오른쪽 아이템 패널 폭
 
-export const BATTLE_LOG_H = 40;
-export const MONSTER_AREA_TOP = 44;
-export const MONSTER_AREA_H = 360;            // 310 → 360 (높이 증가)
+export const BATTLE_LOG_H = 70;
+export const MONSTER_AREA_TOP = 80;
+export const MONSTER_AREA_H = 315;
 export const MONSTER_IMG_Y = 310;             // 몬스터 영역 하단 정렬 (스프라이트 중심)
 
 export const FIELD_Y = 470;                   // 필드 카드 중심  (패널: 408~532)

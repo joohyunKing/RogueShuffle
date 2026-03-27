@@ -6,10 +6,10 @@
 import { CW, CH, SUITS, RANKS } from './constants.js';
 
 const SYM_URLS = {
-  S: '/assets/images/symbol/spade_symbol.jpg',
-  H: '/assets/images/symbol/hearts_symbol.jpg',
-  D: '/assets/images/symbol/diamonds_symbol.jpg',
-  C: '/assets/images/symbol/clubs_symbol.jpg',
+  S: '/assets/images/symbol/spade_symbol.png',
+  H: '/assets/images/symbol/hearts_symbol.png',
+  D: '/assets/images/symbol/diamonds_symbol.png',
+  C: '/assets/images/symbol/clubs_symbol.png',
 };
 
 // 숫자 카드 pip 배치 좌표 (카드 폭/높이 비율)

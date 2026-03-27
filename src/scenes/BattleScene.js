@@ -26,7 +26,7 @@ export class BattleScene extends Phaser.Scene {
   // ── preload ──────────────────────────────────────────────────────────────
   preload() {
     //this.load.image("card_back", "/_card_back.png");
-    this.load.image("card_back", "/assets/images/ui/card_back_deck.png");
+    this.load.image("card_back", "/assets/images/ui/card_back.png");
     if (!this.textures.exists("card_back_deck"))
       this.load.image("card_back_deck", "/assets/images/ui/deck_rembg.png");
     if (!this.textures.exists("card_back_dummy"))
@@ -233,7 +233,7 @@ export class BattleScene extends Phaser.Scene {
     g.fillStyle(0x050e08, 0.88);
     //g.fillStyle(0x0d3318, 0.82);
     g.fillRoundedRect(CX, fpY, FAW_, FIELD_CH + 36, 12);
-    g.lineStyle(2, 0x2d7a3a);
+    g.lineStyle(1, 0x4a7055, 1);
     g.strokeRoundedRect(CX, fpY, FAW_, FIELD_CH + 36, 12);
 
     // 핸드 패널 (필드 영역만)
@@ -241,7 +241,7 @@ export class BattleScene extends Phaser.Scene {
     g.fillStyle(0x050e08, 0.88);
     //g.fillStyle(0x0d3318, 0.82);
     g.fillRoundedRect(CX, hpY, FAW_, CH + 36, 12);
-    g.lineStyle(2, 0x2d7a3a);
+    g.lineStyle(1, 0x4a7055, 1);
     g.strokeRoundedRect(CX, hpY, FAW_, CH + 36, 12);
 
     // 아이템 패널
@@ -259,42 +259,58 @@ export class BattleScene extends Phaser.Scene {
     const px = 10;
     const pcx = PW / 2 - 2;
 
-    this.add.text(pcx, 14, this.player.job.toUpperCase(), {
+    this.add.text(pcx, 12, this.player.job.toUpperCase(), {
       fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffdd88',
     }).setOrigin(0.5, 0).setDepth(12);
 
-    // ROUND-BATTLE 표시
+    // ── 기본 스탯 (라벨 왼쪽, 값 오른쪽 정렬) ─────────────────────────────
+    const R = PW - 10;   // 오른쪽 정렬 기준 x
+    const ROW = 22;      // 행 간격
+
     const battleLabel = this.isBoss ? 'BOSS' : `${this.battleIndex + 1}`;
-    this.add.text(px, 36, "ROUND", TS.infoLabel).setDepth(12);
-    this.roundTxt = this.add.text(PW - 14, 36, `${this.round}-${battleLabel}`, TS.levelValue)
+    let ry = 36;
+    this.add.text(px, ry, "ROUND", TS.infoLabel).setDepth(12);
+    this.roundTxt = this.add.text(R, ry, `${this.round}-${battleLabel}`, TS.levelValue)
       .setOrigin(1, 0).setDepth(12);
 
-    this.add.text(px, 54, "GOLD", TS.infoLabel).setDepth(12);
-    this.goldTxt = this.add.text(PW - 14, 54, `${this.player.gold}`, TS.levelValue)
+    ry += ROW;
+    this.add.text(px, ry, "GOLD", TS.infoLabel).setDepth(12);
+    this.goldTxt = this.add.text(R, ry, `${this.player.gold}`, TS.levelValue)
       .setOrigin(1, 0).setDepth(12);
 
-    this.add.text(px, 72, "LV", TS.infoLabel).setDepth(12);
-    this._playerLevelTxt = this.add.text(PW - 14, 72, String(this.player.level), TS.levelValue)
+    ry += ROW;
+    this.add.text(px, ry, "LV", TS.infoLabel).setDepth(12);
+    this._playerLevelTxt = this.add.text(R, ry, String(this.player.level), TS.levelValue)
       .setOrigin(1, 0).setDepth(12);
 
-    this._xpBarBg = this.add.rectangle(px, 90, PW - 24, 5, 0x224433).setOrigin(0, 0.5).setDepth(12);
-    this._xpBarFill = this.add.rectangle(px, 90, 1, 5, 0x44ddaa).setOrigin(0, 0.5).setDepth(13);
+    ry += ROW;
+    this._xpBarBg = this.add.rectangle(px, ry, PW - 24, 5, 0x224433).setOrigin(0, 0.5).setDepth(12);
+    this._xpBarFill = this.add.rectangle(px, ry, 1, 5, 0x44ddaa).setOrigin(0, 0.5).setDepth(13);
 
-    this.add.rectangle(pcx, 102, PW - 20, 1, 0x2a5a38).setDepth(12);
+    ry += 14;
+    this.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(12);
 
-    this.add.text(px, 110, "HP", TS.infoLabel).setDepth(12);
-    this.playerHpTxt = this.add.text(px + 22, 110, "", TS.playerHp).setDepth(12);
-    this._hpBarBg = this.add.rectangle(px, 128, PW - 24, 7, 0x2a3a2a).setOrigin(0, 0.5).setDepth(12);
-    this._hpBarFill = this.add.rectangle(px, 128, 1, 7, 0xdd3333).setOrigin(0, 0.5).setDepth(13);
+    // ── HP / DEF / ATK (값 오른쪽 정렬) ──────────────────────────────────
+    ry += 14;
+    this.add.text(px, ry, "HP", TS.infoLabel).setDepth(12);
+    this.playerHpTxt = this.add.text(R, ry, "", TS.playerHp).setOrigin(1, 0).setDepth(12);
 
-    this.add.text(px, 138, "DEF", TS.infoLabel).setDepth(12);
-    this.playerDefTxt = this.add.text(px + 32, 138, "", TS.playerDef).setDepth(12);
+    ry += ROW;
+    this._hpBarBg = this.add.rectangle(px, ry, PW - 24, 7, 0x2a3a2a).setOrigin(0, 0.5).setDepth(12);
+    this._hpBarFill = this.add.rectangle(px, ry, 1, 7, 0xdd3333).setOrigin(0, 0.5).setDepth(13);
 
-    this.add.text(px, 152, "ATK", TS.infoLabel).setDepth(12);
-    this.playerAtkTxt = this.add.text(px + 32, 152, `${this.player.atk}`, TS.playerDef).setDepth(12);
+    ry += 16;
+    this.add.text(px, ry, "DEF", TS.infoLabel).setDepth(12);
+    this.playerDefTxt = this.add.text(R, ry, "", TS.playerDef).setOrigin(1, 0).setDepth(12);
 
-    this.add.rectangle(pcx, 167, PW - 20, 1, 0x2a5a38).setDepth(12);
+    ry += ROW;
+    this.add.text(px, ry, "ATK", TS.infoLabel).setDepth(12);
+    this.playerAtkTxt = this.add.text(R, ry, `${this.player.atk}`, TS.playerDef).setOrigin(1, 0).setDepth(12);
 
+    ry += ROW + 6;
+    this.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(12);
+
+    // ── Suit 레벨 ─────────────────────────────────────────────────────────
     const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
     const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
     const SUIT_DESCS  = {
@@ -308,8 +324,10 @@ export class BattleScene extends Phaser.Scene {
     this._suitUpBtns = {};
     this._suitTooltipObjs = [];
 
+    const SUIT_ROW = 30;
+    ry += 12;
     SUIT_KEYS.forEach((suit, idx) => {
-      const sy = 177 + idx * 26;
+      const sy = ry + idx * SUIT_ROW;
       this.add.text(px, sy, SUIT_SYMS[suit],
         { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }).setDepth(12);
       this._attrTxts[suit] = this.add.text(px + 26, sy + 2,
@@ -318,24 +336,28 @@ export class BattleScene extends Phaser.Scene {
         .setDepth(12);
 
       // hover / click → 툴팁
-      const rowHit = this.add.rectangle(pcx, sy + 10, PW - 16, 24, 0xffffff, 0)
+      const rowHit = this.add.rectangle(pcx, sy + 10, PW - 16, 26, 0xffffff, 0)
         .setDepth(14).setInteractive();
       rowHit.on('pointerover', () => this._showSuitTooltip(suit, sy, SUIT_DESCS[suit], SUIT_COLORS[suit]));
       rowHit.on('pointerout',  () => this._hideSuitTooltip());
       rowHit.on('pointerdown', () => this._showSuitTooltip(suit, sy, SUIT_DESCS[suit], SUIT_COLORS[suit]));
     });
 
-    // Deck / DUMMY count
-    this.add.rectangle(pcx, 284, PW - 20, 1, 0x2a5a38).setDepth(12);
-    this.add.text(px, 290, "DECK", TS.infoLabel).setDepth(12);
-    this._deckCountTxt = this.add.text(PW - 14, 290, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
-    this.add.text(px, 306, "DUMMY", TS.infoLabel).setDepth(12);
-    this._dummyCountTxt = this.add.text(PW - 14, 306, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
-
-    this.add.text(px, 322, "FIELD", TS.infoLabel).setDepth(12);
-    this._fieldCountTxt = this.add.text(PW - 14, 322, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(12);
-    this.add.text(px, 338, "HAND", TS.infoLabel).setDepth(12);
-    this._handCountTxt = this.add.text(PW - 14, 338, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(12);
+    // ── Deck / DUMMY / FIELD / HAND count ────────────────────────────────
+    ry += SUIT_KEYS.length * SUIT_ROW + 8;
+    this.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(12);
+    ry += 12;
+    this.add.text(px, ry, "DECK", TS.infoLabel).setDepth(12);
+    this._deckCountTxt = this.add.text(R, ry, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
+    ry += ROW;
+    this.add.text(px, ry, "DUMMY", TS.infoLabel).setDepth(12);
+    this._dummyCountTxt = this.add.text(R, ry, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
+    ry += ROW;
+    this.add.text(px, ry, "FIELD", TS.infoLabel).setDepth(12);
+    this._fieldCountTxt = this.add.text(R, ry, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(12);
+    ry += ROW;
+    this.add.text(px, ry, "HAND", TS.infoLabel).setDepth(12);
+    this._handCountTxt = this.add.text(R, ry, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(12);
 
     this._tooltipBg = this.add.rectangle(0, 0, 70, 26, 0x000000, 0.85).setDepth(200).setVisible(false);
     this._tooltipTxt = this.add.text(0, 0, "", { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffffff' })
@@ -366,8 +388,8 @@ export class BattleScene extends Phaser.Scene {
     this.previewScoreTxt = this.add.text(faCX + 10, preY, "", TS.comboScore).setOrigin(0, 0).setDepth(50);
 
     // OPT 버튼 — 아이템 패널 상단
-    const optImg = this.add.image(IPCX, 20, "ui_option")
-      .setDisplaySize(140, 40).setDepth(60).setInteractive();
+    const optImg = this.add.image(IPCX, 30, "ui_option")
+      .setDisplaySize(100, 50).setDepth(60).setInteractive();
     optImg.on("pointerdown", () => this._showOptions());
     optImg.on("pointerover", () => optImg.setTint(0xaaddff));
     optImg.on("pointerout",  () => optImg.clearTint());
@@ -378,12 +400,12 @@ export class BattleScene extends Phaser.Scene {
     const turnBtnH = 30;
     const turnBtnY = turnBtnBottom - turnBtnH / 2;
     this.turnEndBtn = this.add.image(turnBtnX, turnBtnY, "ui_end_turn")
-      .setDisplaySize(140, 40).setDepth(60).setInteractive();
+      .setDisplaySize(100, 50).setDepth(60).setInteractive();
     this.turnEndBtn.on("pointerdown", () => { if (!this.isDealing) this.onTurnEnd(); });
     this.turnEndBtn.on("pointerover", () => this.turnEndBtn.setTint(0xffdd88));
     this.turnEndBtn.on("pointerout",  () => this.turnEndBtn.clearTint());
 
-    this._attackTxt = this.add.text(turnBtnX, turnBtnY - turnBtnH / 2 - 8, "", TS.infoLabel)
+    this._attackTxt = this.add.text(turnBtnX, turnBtnY - turnBtnH / 2 - 16, "", TS.infoLabel)
       .setOrigin(0.5, 1).setDepth(61);
 
     this.refreshPlayerStats();
@@ -391,12 +413,12 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 정렬 버튼 ────────────────────────────────────────────────────────────
   createSortButton() {
-    const sortCH = 30;
+    const sortCH = 50;
     const sortBottom = HAND_Y + CH / 2;
     const sortY = sortBottom - sortCH / 2; // HAND_Y - CH / 2 - 14;
     const sortCX = PLAYER_PANEL_W / 2; // PLAYER_PANEL_W + (GW - PLAYER_PANEL_W - ITEM_PANEL_W) / 2;
     this.sortBg = this.add.image(sortCX, sortY, "ui_sort")
-      .setDisplaySize(110, sortCH).setDepth(60).setInteractive();
+      .setDisplaySize(100, sortCH).setDepth(60).setInteractive();
     this.sortBg.on("pointerdown", () => {
       if (this.isDealing) return;
       this.sortBy(this.sortMode === "suit" ? "rank" : "suit");
@@ -418,7 +440,7 @@ export class BattleScene extends Phaser.Scene {
     for (let i = Math.min(8, 51); i >= 0; i--) {
       this.animObjs.push(
         //this.add.image(deckX - i * 2, deckY - i * 2, "card_back").setDisplaySize(CW, CH).setDepth(i)
-        this.add.image(deckX - i * 2, deckY - i * 2, "card_back").setDisplaySize(110, 140).setDepth(i)
+        this.add.image(deckX - i * 2, deckY - i * 2, "card_back").setDisplaySize(FIELD_CW, FIELD_CH).setDepth(i)
       );
     }
 
@@ -445,7 +467,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   flyCard(cardData, fromX, fromY, toX, toY) {
-    const img = this.add.image(fromX, fromY, "card_back").setDisplaySize(CW, CH).setDepth(200);
+    let card_width = (toY === FIELD_Y) ? FIELD_CW : CW;
+    let card_height = (toY === FIELD_Y) ? FIELD_CH : CH;
+
+
+    const img = this.add.image(fromX, fromY, "card_back").setDisplaySize(card_width, card_height).setDepth(200);
     this.animObjs.push(img);
     this.tweens.add({
       targets: img, x: toX, y: toY, duration: 320, ease: "Power2.Out",
@@ -454,8 +480,8 @@ export class BattleScene extends Phaser.Scene {
           targets: img, displayWidth: 1, duration: 70, ease: "Linear",
           onComplete: () => {
             img.setTexture(cardData.key);
-            img.setDisplaySize(1, CH);
-            this.tweens.add({ targets: img, displayWidth: CW, duration: 70, ease: "Linear" });
+            img.setDisplaySize(1, card_height);
+            this.tweens.add({ targets: img, displayWidth: card_width, duration: 70, ease: "Linear" });
           },
         });
       },
@@ -688,7 +714,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   renderDeckPile() {
-    const x = PLAYER_PANEL_W + 50, y = FIELD_Y;
+    const x = PLAYER_PANEL_W + 100, y = FIELD_Y;
     const count = this.deckData.length;
 
     const pile = this.textures.exists("card_back_deck")
@@ -711,7 +737,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   renderDummyPile() {
-    const x = GW - ITEM_PANEL_W - 50, y = FIELD_Y;
+    const x = GW - ITEM_PANEL_W - 100, y = FIELD_Y;
     const count = this.dummyData.length;
 
     const pile = this.textures.exists("card_back_dummy")
