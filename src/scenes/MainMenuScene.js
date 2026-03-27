@@ -2,14 +2,23 @@ import Phaser from "phaser";
 import { GW, GH } from "../constants.js";
 import { TS } from "../textStyles.js";
 import { hasSave, loadSave, deleteSave } from "../save.js";
+import { loadOptions } from "../manager/optionManager.js";
 
 export class MainMenuScene extends Phaser.Scene {
   constructor() { super("MainMenuScene"); }
 
   create() {
+    this._checkOption();
     this._drawBg();
     this._drawTitle();
     this._createButtons();
+  }
+
+  _checkOption() {
+    const options = loadOptions();
+    this.registry.set("bgmVolume", options.bgmVolume);
+    this.registry.set("sfxVolume", options.sfxVolume);
+    this.registry.set("lang", options.lang);
   }
 
   _drawBg() {
@@ -44,7 +53,19 @@ export class MainMenuScene extends Phaser.Scene {
       this.add.text(cx, 454, "CONTINUE", TS.menuPlayBtn).setOrigin(0.5);
       contBg.on("pointerdown", () => {
         const save = loadSave();
-        this.scene.start("GameScene", save ?? {});
+        if (!save) { this.scene.start("GameScene", {}); return; }
+        if (save.battle) {
+          // 턴 중 세이브 → 해당 배틀로 직접 복귀
+          this.scene.start("BattleScene", {
+            round:  save.round,
+            player: save.player,
+            deck:   save.deck,
+            ...save.battle,
+          });
+        } else {
+          // 라운드 경계 세이브 → 흐름 컨트롤러 경유
+          this.scene.start("GameScene", save);
+        }
       });
       contBg.on("pointerover", () => contBg.setFillStyle(0x2dbb55));
       contBg.on("pointerout", () => contBg.setFillStyle(0x1a8833));

@@ -3,8 +3,8 @@
       {
         "round": 1,
         "normalCount": 3,
-        "monsterTier": [1],
-        "totalCost": 5,
+        "monsterTier": [0],
+        "totalCost": 3,
         "boss": {
           "monsterTier": [2],
           "totalCost": 10
@@ -13,8 +13,8 @@
       {
         "round": 2,
         "normalCount": 3,
-        "monsterTier": [1, 2],
-        "totalCost": 8,
+        "monsterTier": [0, 1],
+        "totalCost": 5,
         "boss": {
           "monsterTier": [3],
           "totalCost": 15
@@ -23,8 +23,8 @@
       {
         "round": 3,
         "normalCount": 3,
-        "monsterTier": [2, 3],
-        "totalCost": 12,
+        "monsterTier": [1, 2],
+        "totalCost": 7,
         "boss": {
           "monsterTier": [4],
           "totalCost": 18
@@ -33,8 +33,8 @@
       {
         "round": 4,
         "normalCount": 3,
-        "monsterTier": [3, 4],
-        "totalCost": 16,
+        "monsterTier": [2, 3],
+        "totalCost": 10,
         "boss": {
           "monsterTier": [5],
           "totalCost": 22
@@ -43,8 +43,8 @@
       {
         "round": 5,
         "normalCount": 3,
-        "monsterTier": [4, 5],
-        "totalCost": 20,
+        "monsterTier": [3, 4],
+        "totalCost": 14,
         "boss": {
           "monsterTier": [6],
           "totalCost": 26

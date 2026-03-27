@@ -137,9 +137,7 @@ function evaluateHand(cards) {
     const sorted = [...cards].sort((a, b) => b.val - a.val);
 
     const valueMap = groupBy(sorted, c => c.val);
-    const suitMap = groupBy(sorted, c => c.suits);
-
-    //const values = sorted.map(c => c.val);
+    const suitMap = groupBy(sorted, c => c.suit);
 
     const straightCards = getStraightCards(sorted);
     const flushSuit = Object.keys(suitMap).find(s => suitMap[s].length >= 5);
@@ -227,7 +225,7 @@ function evaluateHand(cards) {
 
     // High card
     else {
-        bestCards = sorted.slice(0, 5);
+        bestCards = sorted.slice(0, 1);
     }
 
     const score = bestCards.reduce((sum, c) => sum + c.baseScore, 0);

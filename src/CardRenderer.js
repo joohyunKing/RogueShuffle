@@ -3,13 +3,14 @@
  * Canvas2D API로 런타임 카드 텍스처를 생성합니다.
  */
 
-import spadeUrl    from './assets/images/symbol/spade_symbol.jpg?url';
-import heartsUrl   from './assets/images/symbol/hearts_symbol.jpg?url';
-import diamondsUrl from './assets/images/symbol/diamonds_symbol.jpg?url';
-import clubsUrl    from './assets/images/symbol/clubs_symbol.jpg?url';
 import { CW, CH, SUITS, RANKS } from './constants.js';
 
-const SYM_URLS = { S: spadeUrl, H: heartsUrl, D: diamondsUrl, C: clubsUrl };
+const SYM_URLS = {
+  S: '/assets/images/symbol/spade_symbol.jpg',
+  H: '/assets/images/symbol/hearts_symbol.jpg',
+  D: '/assets/images/symbol/diamonds_symbol.jpg',
+  C: '/assets/images/symbol/clubs_symbol.jpg',
+};
 
 // 숫자 카드 pip 배치 좌표 (카드 폭/높이 비율)
 const LAYOUTS = {

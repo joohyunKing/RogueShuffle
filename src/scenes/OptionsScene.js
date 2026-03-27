@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { GW, GH } from "../constants.js";
 import { TS } from "../textStyles.js";
+import { loadOptions, saveOptionsByRegistry } from "../manager/optionManager.js";
 
 const PANEL_W = 560;
 const PANEL_H = 520;
@@ -11,13 +12,10 @@ export class OptionsScene extends Phaser.Scene {
   constructor() { super("OptionsScene"); }
 
   create() {
-    // 기본값 초기화
-    if (this.registry.get("bgmVolume") == null) this.registry.set("bgmVolume", 7);
-    if (this.registry.get("sfxVolume") == null) this.registry.set("sfxVolume", 7);
-    if (this.registry.get("lang")      == null) this.registry.set("lang",      "ko");
+    this._checkOption();
 
-    this._bgm  = this.registry.get("bgmVolume");
-    this._sfx  = this.registry.get("sfxVolume");
+    this._bgm = this.registry.get("bgmVolume");
+    this._sfx = this.registry.get("sfxVolume");
     this._lang = this.registry.get("lang");
 
     this._drawBg();
@@ -25,6 +23,13 @@ export class OptionsScene extends Phaser.Scene {
     this._createSfxRow();
     this._createLangRow();
     this._createBackButton();
+  }
+
+  _checkOption() {
+    const options = loadOptions();
+    this.registry.set("bgmVolume", options.bgmVolume);
+    this.registry.set("sfxVolume", options.sfxVolume);
+    this.registry.set("lang", options.language);
   }
 
   _drawBg() {
@@ -53,15 +58,15 @@ export class OptionsScene extends Phaser.Scene {
     this.add.text(GW / 2 + 90, rowY, "+", TS.optBtn).setOrigin(0.5);
 
     this._bgmBarBg = this.add.rectangle(GW / 2, rowY + 40, 200, 8, 0x224433);
-    this._bgmBar   = this.add.rectangle(GW / 2 - 100, rowY + 40, this._bgm * 20, 8, 0x44dd88).setOrigin(0, 0.5);
+    this._bgmBar = this.add.rectangle(GW / 2 - 100, rowY + 40, this._bgm * 20, 8, 0x44dd88).setOrigin(0, 0.5);
     this._updateBgmBar();
 
     minusBg.on("pointerdown", () => this._changeBgm(-1));
-    plusBg.on("pointerdown",  () => this._changeBgm(+1));
+    plusBg.on("pointerdown", () => this._changeBgm(+1));
     minusBg.on("pointerover", () => minusBg.setFillStyle(0x447766));
-    minusBg.on("pointerout",  () => minusBg.setFillStyle(0x335544));
-    plusBg.on("pointerover",  () => plusBg.setFillStyle(0x447766));
-    plusBg.on("pointerout",   () => plusBg.setFillStyle(0x335544));
+    minusBg.on("pointerout", () => minusBg.setFillStyle(0x335544));
+    plusBg.on("pointerover", () => plusBg.setFillStyle(0x447766));
+    plusBg.on("pointerout", () => plusBg.setFillStyle(0x335544));
   }
 
   _changeBgm(delta) {
@@ -69,6 +74,7 @@ export class OptionsScene extends Phaser.Scene {
     this.registry.set("bgmVolume", this._bgm);
     this._bgmTxt.setText(String(this._bgm));
     this._updateBgmBar();
+    saveOptionsByRegistry();
     // BGM 사운드가 있으면 여기서 볼륨 적용
   }
 
@@ -90,15 +96,15 @@ export class OptionsScene extends Phaser.Scene {
     this.add.text(GW / 2 + 90, rowY, "+", TS.optBtn).setOrigin(0.5);
 
     this._sfxBarBg = this.add.rectangle(GW / 2, rowY + 40, 200, 8, 0x224433);
-    this._sfxBar   = this.add.rectangle(GW / 2 - 100, rowY + 40, this._sfx * 20, 8, 0x44dd88).setOrigin(0, 0.5);
+    this._sfxBar = this.add.rectangle(GW / 2 - 100, rowY + 40, this._sfx * 20, 8, 0x44dd88).setOrigin(0, 0.5);
     this._updateSfxBar();
 
     minusBg.on("pointerdown", () => this._changeSfx(-1));
-    plusBg.on("pointerdown",  () => this._changeSfx(+1));
+    plusBg.on("pointerdown", () => this._changeSfx(+1));
     minusBg.on("pointerover", () => minusBg.setFillStyle(0x447766));
-    minusBg.on("pointerout",  () => minusBg.setFillStyle(0x335544));
-    plusBg.on("pointerover",  () => plusBg.setFillStyle(0x447766));
-    plusBg.on("pointerout",   () => plusBg.setFillStyle(0x335544));
+    minusBg.on("pointerout", () => minusBg.setFillStyle(0x335544));
+    plusBg.on("pointerover", () => plusBg.setFillStyle(0x447766));
+    plusBg.on("pointerout", () => plusBg.setFillStyle(0x335544));
   }
 
   _changeSfx(delta) {
@@ -110,6 +116,7 @@ export class OptionsScene extends Phaser.Scene {
     if (this._sfx > 0 && this.cache.audio.exists("sfx_place")) {
       this.sound.play("sfx_place", { volume: (this._sfx / 10) * 0.6 });
     }
+    saveOptionsByRegistry();
   }
 
   _updateSfxBar() {
@@ -132,15 +139,16 @@ export class OptionsScene extends Phaser.Scene {
     this._koBg.on("pointerdown", () => this._setLang("ko"));
     this._enBg.on("pointerdown", () => this._setLang("en"));
     this._koBg.on("pointerover", () => { if (this._lang !== "ko") this._koBg.setFillStyle(0x447766); });
-    this._koBg.on("pointerout",  () => this._refreshLangBtns());
+    this._koBg.on("pointerout", () => this._refreshLangBtns());
     this._enBg.on("pointerover", () => { if (this._lang !== "en") this._enBg.setFillStyle(0x447766); });
-    this._enBg.on("pointerout",  () => this._refreshLangBtns());
+    this._enBg.on("pointerout", () => this._refreshLangBtns());
   }
 
   _setLang(lang) {
     this._lang = lang;
     this.registry.set("lang", lang);
     this._refreshLangBtns();
+    saveOptionsByRegistry();
   }
 
   _refreshLangBtns() {
@@ -153,7 +161,7 @@ export class OptionsScene extends Phaser.Scene {
     const backBg = this.add.rectangle(GW / 2, PANEL_Y + PANEL_H - 48, 200, 54, 0x1e4e99).setInteractive();
     this.add.text(GW / 2, PANEL_Y + PANEL_H - 48, "BACK", TS.optBackBtn).setOrigin(0.5);
     backBg.on("pointerdown", () => this.scene.start("MainMenuScene"));
-    backBg.on("pointerover",  () => backBg.setFillStyle(0x2d66cc));
-    backBg.on("pointerout",   () => backBg.setFillStyle(0x1e4e99));
+    backBg.on("pointerover", () => backBg.setFillStyle(0x2d66cc));
+    backBg.on("pointerout", () => backBg.setFillStyle(0x1e4e99));
   }
 }

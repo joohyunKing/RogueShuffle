@@ -13,6 +13,13 @@ export const SUITS = ["S", "H", "D", "C"];
 export const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 export const SUIT_ORDER = { S: 0, H: 1, D: 2, C: 3 };
 
+
+/*
+//test 용
+export const SUITS = ["S", "H"];
+export const RANKS = ["A", "2", "3", "4", "5"];
+*/
+
 // ─── hand rank  ──────────────────────────────────────────────────────────────
 export const HAND_RANK = {
     FIVE_CARD: 9,        // 파이브카드 (같은 숫자 5장)
@@ -51,23 +58,24 @@ export const context = {
 
 // ─── 레이아웃 (GW=1280, GH=720 기준) ─────────────────────────────────────────
 //
-// [플레이어 패널 0~199] | [컨텐츠 영역 200~1280]
+// [플레이어 패널 0~299] | [필드 영역 300~999] | [아이템 패널 1000~1279]
 //
-//   0 ───  40  : 배틀 로그 바  (컨텐츠 영역)
-//  44 ── 354   : 몬스터 영역  (310px)
-// 358 ── 481   : 필드 패널  (FIELD_Y=420, 카드: 420±44)
-// 482 ── 690   : 핸드 패널  (HAND_Y=600, 카드: 600±73)
-// 690 ── 720   : 하단 여백
+//   0 ───  40  : 배틀 로그 바  (필드 영역)
+//  44 ── 404   : 몬스터 영역  (360px)
+// 408 ── 532   : 필드 패널  (FIELD_Y=470, 카드: 470±44)
+// 535 ── 715   : 핸드 패널  (HAND_Y=625, 카드: 625±73)
+// 715 ── 720   : 하단 여백
 //
 export const PLAYER_PANEL_W = 200;            // 왼쪽 플레이어 정보 패널 폭
+export const ITEM_PANEL_W   = 200;            // 오른쪽 아이템 패널 폭
 
 export const BATTLE_LOG_H = 40;
 export const MONSTER_AREA_TOP = 44;
-export const MONSTER_AREA_H = 310;            // 250 → 310 (플레이어 스탯 행 제거)
-export const MONSTER_IMG_Y = 199;            // MONSTER_AREA_TOP + MONSTER_AREA_H/2
+export const MONSTER_AREA_H = 360;            // 310 → 360 (높이 증가)
+export const MONSTER_IMG_Y = 310;             // 몬스터 영역 하단 정렬 (스프라이트 중심)
 
-export const FIELD_Y = 420;                    // 필드 카드 중심  (패널: 358~481)
-export const HAND_Y = 600;                    // 핸드 카드 중심  (패널: 482~690)
-export const HAND_TOP = HAND_Y - CH / 2 - 18;  // 509 — 드롭 판정 기준
+export const FIELD_Y = 470;                   // 필드 카드 중심  (패널: 408~532)
+export const HAND_Y  = 625;                   // 핸드 카드 중심  (패널: 535~715)
+export const HAND_TOP = HAND_Y - CH / 2 - 18; // 535 — 드롭 판정 기준
 
 export const DEAL_DELAY = 110;

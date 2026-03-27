@@ -29,8 +29,12 @@ export class Player {
         this.level = data.level ?? 1;
         /** 턴당 공격 가능 횟수 */
         this.attacksPerTurn = data.attacksPerTurn ?? 2;
+        /** 공격력 (기본 카드 점수에 합산) */
+        this.atk = data.atk ?? 5;
         /** 슈트별 레벨 { S, H, D, C } */
         this.attrs = data.attrs ?? { S: 1, H: 1, D: 1, C: 1 };
+        /** 구매한 아이템 목록 */
+        this.items = data.items ?? [];
 
         // ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
         /** 직업 */
@@ -52,16 +56,16 @@ export class Player {
             handSizeLimit: 8,
             turnStartDrawLimit: 3,
             fieldSize: 5,
-            fieldSizeLimit: 6,
-            fieldPickLimit: 1,
+            fieldSizeLimit: this.fieldSize, //6,
+            fieldPickLimit: this.fieldSize, //1,
         };
 
-        this.handSize = data.handSize ?? lc.handSize ?? 7;
-        this.handSizeLimit = data.handSizeLimit ?? lc.handSizeLimit ?? 8;
-        this.turnStartDrawLimit = data.turnStartDrawLimit ?? lc.turnStartDrawLimit ?? 3;
-        this.fieldSize = data.fieldSize ?? lc.fieldSize ?? 5;
-        this.fieldSizeLimit = data.fieldSizeLimit ?? lc.fieldSizeLimit ?? 6;
-        this.fieldPickLimit = data.fieldPickLimit ?? lc.fieldPickLimit ?? 1;
+        this.handSize = data.handSize ?? lc.handSize;
+        this.handSizeLimit = data.handSizeLimit ?? lc.handSizeLimit;
+        this.turnStartDrawLimit = data.turnStartDrawLimit ?? lc.turnStartDrawLimit;
+        this.fieldSize = data.fieldSize ?? lc.fieldSize;
+        this.fieldSizeLimit = data.fieldSizeLimit ?? lc.fieldSizeLimit;
+        this.fieldPickLimit = data.fieldPickLimit ?? lc.fieldPickLimit;
     }
 
     /** 현재 레벨에서 레벨업에 필요한 총 경험치 */
@@ -80,6 +84,9 @@ export class Player {
         while (this.xp >= getRequiredExp(this.level)) {
             this.xp -= getRequiredExp(this.level);
             this.level++;
+            this.maxHp += 2;
+            this.hp = Math.min(this.hp + 2, this.maxHp);
+            this.atk += 1;
             gained.push(this.level);
         }
         return gained;
@@ -96,6 +103,7 @@ export class Player {
             gold: this.gold,
             level: this.level,
             attacksPerTurn: this.attacksPerTurn,
+            atk: this.atk,
             attrs: { ...this.attrs },
             job: this.job,
             adaptability: { ...this.adaptability },
@@ -105,6 +113,7 @@ export class Player {
             fieldSize: this.fieldSize,
             fieldSizeLimit: this.fieldSizeLimit,
             fieldPickLimit: this.fieldPickLimit,
+            items: [...this.items],
         };
     }
 }

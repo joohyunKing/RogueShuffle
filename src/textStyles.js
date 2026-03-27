@@ -72,4 +72,22 @@ export const TS = {
   optBtn:            { fontFamily: F, fontSize: '20px', color: '#ffffff' },
   optLangBtn:        { fontFamily: F, fontSize: '13px', color: '#ffffff' },
   optBackBtn:        { fontFamily: F, fontSize: '13px', color: '#ffffff' },
+
+  // ── 마켓 씬 ────────────────────────────────────────────────────────────────
+  marketTitle:       { fontFamily: F, fontSize: '18px', color: '#44ffaa' },
+  marketSub:         { fontFamily: F, fontSize: '8px',  color: '#88cc88' },
+  marketContinue:    { fontFamily: F, fontSize: '12px', color: '#aaffcc' },
+
+  // ── 아이템 카드 ────────────────────────────────────────────────────────────
+  itemName:          { fontFamily: F, fontSize: '8px',  color: '#aaffaa' },
+  itemDesc:          { fontFamily: F, fontSize: '7px',  color: '#cccccc' },
+  itemCost:          { fontFamily: F, fontSize: '9px',  color: '#ffdd44' },
+  itemCostNA:        { fontFamily: F, fontSize: '9px',  color: '#ff4444' },
+  itemBuy:           { fontFamily: F, fontSize: '8px',  color: '#aaffcc' },
+  itemBought:        { fontFamily: F, fontSize: '8px',  color: '#666666' },
+
+  // ── 팝업 공통 ──────────────────────────────────────────────────────────────
+  popupTitle:        { fontFamily: F, fontSize: '11px', color: '#ccffcc' },
+  popupClose:        { fontFamily: F, fontSize: '10px', color: '#aaffaa' },
+  logPopupTitle:     { fontFamily: F, fontSize: '13px', color: '#44ffaa' },
 };

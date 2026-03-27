@@ -1,52 +1,117 @@
 {
-  "skeleton": {
-    "name": "스켈레톤",
+  "skeleton_warrior": {
+    "name": "스켈레톤 전사",
     "tier": 0,
     "race": "undead",
-    "hp":  [20, 25],
-    "atk": [3,  7],
-    "def": [0,  2],
+    "hp":  [24, 27],
+    "atk": [3,  5],
+    "def": [1,  3],
     "cost": 1,
-    "sprite": "skeleton.png"
+    "sprite": {
+      "idle": "skell_warrior_idle.png",
+      "attack": "skell_warrior_attack.png",
+      "damaged": "skell_warrior_Damaged.png",
+      "die": "skell_warrior_Die.png"
+    }
   },
-  "zombi": {
-    "name": "좀비",
-    "tier": 1,
+  "skeleton_archer": {
+    "name": "스켈레톤 궁수",
+    "tier": 0,
     "race": "undead",
-    "hp":  [30, 34],
-    "atk": [5,  9],
+    "hp":  [20, 23],
+    "atk": [6,  8],
     "def": [0,  1],
     "cost": 1,
-    "sprite": "zombi.png"
+    "sprite": {
+      "idle": "skell_archer_idle.png",
+      "attack": "skell_archer_Attack.png",
+      "damaged": "skell_archer_Damaged.png",
+      "die": "skell_archer_Die.png"
+    }
   },
-  "goblin": {
-    "name": "고블린",
-    "tier": 2,
-    "race": "beast",
-    "hp":  [28, 34],
-    "atk": [6,  10],
-    "def": [2,  5],
+  "undead_lancer": {
+    "name": "언데드 랜서",
+    "tier": 1,
+    "race": "undead",
+    "hp":  [34, 37],
+    "atk": [6,  8],
+    "def": [2,  3],
     "cost": 2,
-    "sprite": "goblin.png"
+    "sprite": {
+      "idle": "undead_lance_idle.png",
+      "attack": "undead_lance_Attack.png",
+      "damaged": "undead_lance_Damaged.png",
+      "die": "undead_lance_Die.png"
+    }
   },
-  "werewolf": {
-    "name": "늑대인간",
-    "tier": 3,
-    "race": "beast",
-    "hp":  [33, 40],
-    "atk": [10, 15],
-    "def": [3,  7],
+  "orc_warrior": {
+    "name": "오크 전사",
+    "tier": 2,
+    "race": "undead",
+    "hp":  [35, 38],
+    "atk": [8,  10],
+    "def": [3,  5],
+    "cost": 2,
+    "sprite": {
+      "idle": "orc_warrior_idle.png",
+      "attack": "orc_warrior_Attack.png",
+      "damaged": "orc_warrior_Damaged.png",
+      "die": "orc_warrior_Die.png"
+    }
+  },
+  "undead_mage": {
+    "name": "언데드 메이지",
+    "tier": 2,
+    "race": "undead",
+    "hp":  [30, 33],
+    "atk": [8,  10],
+    "def": [1,  3],
     "cost": 3,
-    "sprite": "werewolf.png"
+    "skill":{
+      "type":"damage",
+      "value":15
+    },
+    "sprite": {
+      "idle": "undead_mage_idle.png",
+      "attack": "undead_mage_Attack.png",
+      "skill": "undead_mage_Skill.png",
+      "damaged": "undead_mage_Damaged.png",
+      "die": "undead_mage_Die.png"
+    }
   },
-  "golem": {
-    "name": "골렘",
+  "undead_warrior": {
+    "name": "언데드 전사",
+    "tier": 3,
+    "race": "undead",
+    "hp":  [34, 37],
+    "atk": [6,  8],
+    "def": [2,  3],
+    "cost": 4,
+    "skill":{
+      "type":"damage",
+      "value":20
+    },
+    "sprite": {
+      "idle": "undead_warrior_idle.png",
+      "attack": "undead_warrior_Attack.png",
+      "skill": "undead_warrior_Skill.png",
+      "damaged": "undead_warrior_Damaged.png",
+      "die": "undead_warrior_Die.png"
+    }
+  },
+  "undead_knight": {
+    "name": "언데드 기사",
     "tier": 4,
-    "race": "construct",
-    "hp":  [60, 70],
-    "atk": [15,  20],
-    "def": [10,  15],
-    "cost": 5,
-    "sprite": "golem.png"
+    "race": "undead",
+    "hp":  [40, 46],
+    "atk": [12,  14],
+    "def": [5,  7],
+    "cost": 7,
+    "sprite": {
+      "idle": "undead_knight_idle.png",
+      "attack": "undead_knight_attack.png",
+      "damaged": "undead_knight_Damaged.png",
+      "die": "undead_knight_Die.png"
+    }
   }
 }

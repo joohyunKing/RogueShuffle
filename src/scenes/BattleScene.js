@@ -1,0 +1,1806 @@
+import Phaser from "phaser";
+import { calculateScore } from "../service/scoreService.js";
+import {
+  GW, GH, CW, CH, FIELD_CW, FIELD_CH, PILE_CW, PILE_CH,
+  SUITS, RANKS, SUIT_ORDER,
+  PLAYER_PANEL_W, ITEM_PANEL_W,
+  BATTLE_LOG_H, MONSTER_AREA_TOP, MONSTER_AREA_H, MONSTER_IMG_Y,
+  FIELD_Y, HAND_Y, HAND_TOP, DEAL_DELAY,
+  context
+} from "../constants.js";
+
+import { spawnMonsters, MONSTER_LIST } from "../service/monsterService.js";
+import { writeSave, deleteSave } from "../save.js";
+import { CardRenderer } from "../CardRenderer.js";
+import { TS } from "../textStyles.js";
+import { Player, getRequiredExp } from "../manager/playerManager.js";
+import { saveOptionsByRegistry } from "../manager/optionManager.js";
+import effectManager from '../manager/effectManager.js';
+import DeckManager from '../manager/deckManager.js';
+import itemData from '../data/item.json';
+
+// ─── 씬 ──────────────────────────────────────────────────────────────────────
+export class BattleScene extends Phaser.Scene {
+  constructor() { super("BattleScene"); }
+
+  // ── preload ──────────────────────────────────────────────────────────────
+  preload() {
+    this.load.image("card_back", "/_card_back.png");
+    if (!this.textures.exists("card_back_deck"))
+      this.load.image("card_back_deck", "/assets/images/ui/card_back_deck.png");
+    if (!this.textures.exists("card_back_dummy"))
+      this.load.image("card_back_dummy", "/assets/images/ui/card_back_dummy.png");
+    this.load.image("bg", "/assets/images/bg/old_stone_castle.jpg");
+    itemData.items.forEach(item => {
+      if (item.img && !this.textures.exists(`item_${item.id}`))
+        this.load.image(`item_${item.id}`, `/assets/images/item/${item.img}`);
+    });
+    CardRenderer.preload(this);
+    this.load.audio("sfx_shuffle", "/assets/audio/sfx/card-shuffle.ogg");
+    this.load.audio("sfx_fan", "/assets/audio/sfx/card-fan-1.ogg");
+    this.load.audio("sfx_slide", "/assets/audio/sfx/card-slide-5.ogg");
+    this.load.audio("sfx_place", "/assets/audio/sfx/card-place-1.ogg");
+    this.load.audio("sfx_chop", "/assets/audio/sfx/chop.ogg");
+    this.load.audio("sfx_knifeSlice", "/assets/audio/sfx/knifeSlice.ogg");
+    if (!this.textures.exists("ui_deck")) this.load.image("ui_deck", "/assets/images/ui/deck.png");
+    if (!this.textures.exists("ui_dummy")) this.load.image("ui_dummy", "/assets/images/ui/dummy.png");
+    if (!this.textures.exists("ui_option")) this.load.image("ui_option", "/assets/images/ui/option.jpg");
+    if (!this.textures.exists("ui_end_turn")) this.load.image("ui_end_turn", "/assets/images/ui/end_turn.jpg");
+    if (!this.textures.exists("ui_sort")) this.load.image("ui_sort", "/assets/images/ui/SuitRank.jpg");
+
+    // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
+    MONSTER_LIST.forEach(m => {
+      if (!m.sprite) return;
+      for (const [state, url] of Object.entries(m.sprite)) {
+        const key = `mon_${m.id}_${state}`;
+        if (!this.textures.exists(key)) {
+          this.load.spritesheet(key, url, { frameWidth: 384, frameHeight: 384 });
+        }
+      }
+    });
+
+    this.deck = new DeckManager();
+    this.effects = new effectManager(this);
+  }
+
+  _sfx(key) {
+    const sfxVol = (this.registry.get("sfxVolume") ?? 7) / 10;
+    this.sound.play(key, { volume: sfxVol * 0.6 });
+  }
+
+  // ── 스프라이트시트에서 실제 유효 프레임 수 감지 ────────────────────────────
+  _countValidFrames(texKey) {
+    const tex = this.textures.get(texKey);
+    const total = tex.frameTotal - 1;
+    const srcImg = tex.getSourceImage();
+    const FW = 384, FH = 384, COLS = 3;
+
+    const cvs = document.createElement('canvas');
+    cvs.width = FW; cvs.height = FH;
+    const ctx = cvs.getContext('2d', { willReadFrequently: true });
+
+    for (let i = 0; i < total; i++) {
+      const col = i % COLS;
+      const row = Math.floor(i / COLS);
+      ctx.clearRect(0, 0, FW, FH);
+      ctx.drawImage(srcImg, col * FW, row * FH, FW, FH, 0, 0, FW, FH);
+
+      const data = ctx.getImageData(0, 0, FW, FH).data;
+      const step = Math.floor(FW / 10);
+      let hasPixel = false;
+      outer: for (let py = step >> 1; py < FH; py += step) {
+        for (let px = step >> 1; px < FW; px += step) {
+          if (data[(py * FW + px) * 4 + 3] > 10) { hasPixel = true; break outer; }
+        }
+      }
+      if (!hasPixel) return i;
+    }
+    return total;
+  }
+
+  // ── create ───────────────────────────────────────────────────────────────
+  create() {
+    const data = this.scene.settings.data || {};
+
+    this.round       = data.round       ?? 1;
+    this.isBoss      = data.isBoss      ?? false;
+    this.battleIndex = data.battleIndex ?? 0;
+    this.normalCount = data.normalCount ?? 3;
+    this.monsterTier = data.monsterTier ?? [0];
+    this.totalCost   = data.totalCost   ?? 3;
+
+    this.player = new Player(data.player ?? {});
+    this.deck   = new DeckManager(data.deck   ?? {}, this.player);
+
+    // 덱 상태는 있지만 hand/field가 비어있으면 초기 배치 (배틀 간 리셋 후)
+    if (this.deck.deckPile.length > 0 && this.deck.hand.length === 0) {
+      this.deck.draw(this.player.handSize);
+    }
+    if (this.deck.deckPile.length > 0 && this.deck.field.length === 0) {
+      this.deck.startTurn(this.player.fieldSize);
+    }
+
+    this.handData  = this.deck.hand;
+    const slotPos0 = this.calcFieldPositions(this.player.fieldSize);
+    this.fieldData = this.deck.field.map((c, i) => ({ ...c, slotX: slotPos0[i].x }));
+    this.deckData  = this.deck.deckPile;
+    this.dummyData = this.deck.dummyPile;
+
+    context.deckCount  = this.deckData.length;
+    context.dummyCount = 0;
+
+    this.selected        = new Set();
+    this.cardObjs        = [];
+    this.monsterObjs     = [];
+    this._monsterSprites = [];
+    this.animObjs        = [];
+    this._optOverlayObjs = null;
+    this.isDragging      = false;
+    this.isDealing       = true;
+    this.fieldPickCount  = 0;
+    this.attackCount     = 0;
+    this.sortMode        = null;
+    this.sortAsc         = true;
+    this.battleLogLines  = [];
+    this._fullBattleLog  = [];
+    this._suitLevelUpCount = 0;
+    this._logPopupObjs   = null;
+    this._pilePopupObjs  = null;
+    this._cardPreviewObjs = null;
+
+    // 세이브에서 몬스터 복원, 없으면 새로 스폰
+    this.monsters = data.monsters
+      ? data.monsters
+      : spawnMonsters(this.monsterTier, this.totalCost);
+
+    CardRenderer.createAll(this);
+
+    // 몬스터 PNG 애니메이션 등록
+    const ANIM_CFGS = {
+      idle:    { frameRate: 8,  repeat: -1 },
+      attack:  { frameRate: 10, repeat: 0  },
+      damaged: { frameRate: 10, repeat: 0  },
+      die:     { frameRate: 8,  repeat: 0  },
+      skill:   { frameRate: 10, repeat: 0  },
+    };
+    MONSTER_LIST.forEach(m => {
+      if (!m.sprite) return;
+      for (const [state, cfg] of Object.entries(ANIM_CFGS)) {
+        if (!m.sprite[state]) continue;
+        const texKey  = `mon_${m.id}_${state}`;
+        const animKey = `${texKey}_anim`;
+        if (!this.textures.exists(texKey) || this.anims.exists(animKey)) continue;
+        const validFrames = this._countValidFrames(texKey);
+        if (validFrames === 0) continue;
+        this.anims.create({
+          key: animKey,
+          frames: this.anims.generateFrameNumbers(texKey, { start: 0, end: validFrames - 1 }),
+          frameRate: cfg.frameRate,
+          repeat: cfg.repeat,
+        });
+      }
+    });
+
+    this.drawBg();
+    this.createUI();
+    this.createSortButton();
+    this.setupDrag();
+    this.startDealAnimation();
+  }
+
+  // ── 배경 & 패널 ──────────────────────────────────────────────────────────
+  drawBg() {
+    const PW   = PLAYER_PANEL_W;
+    const IPW  = ITEM_PANEL_W;
+    const IPX  = GW - IPW;            // 아이템 패널 시작 x
+    const FAW  = GW - PW - IPW;       // 필드 영역 폭 = 880
+    const CX   = PW + 10;
+    const FAW_ = FAW - 20;            // 패널 내부 폭
+
+    if (this.textures.exists("bg")) {
+      // 정사각형 이미지를 가로(GW)에 맞추고, 아래에서부터 표시 (위쪽이 클리핑)
+      this.add.image(GW / 2, GH / 2, "bg")
+        .setOrigin(0.5, 0.5).setDisplaySize(GW, GH).setDepth(-1);
+    }
+
+    const g = this.add.graphics().setDepth(0);
+
+    // 플레이어 패널
+    g.fillStyle(0x0a1810, 0.88);
+    g.fillRect(0, 0, PW - 4, GH);
+    g.lineStyle(1, 0x2a5a38);
+    g.strokeRect(0, 0, PW - 4, GH);
+
+    // 배틀 로그 헤더 (필드 영역만)
+    g.fillStyle(0x050e08, 0.80);
+    g.fillRect(PW, 0, FAW, BATTLE_LOG_H);
+    g.lineStyle(1, 0x2a5a38);
+    g.strokeRect(PW, 0, FAW, BATTLE_LOG_H);
+
+    // 몬스터 영역 (필드 영역만)
+    g.fillStyle(0x000000, 0.30);
+    g.fillRoundedRect(CX, MONSTER_AREA_TOP, FAW_, MONSTER_AREA_H, 10);
+    g.lineStyle(1, 0x4a7055, 1);
+    g.strokeRoundedRect(CX, MONSTER_AREA_TOP, FAW_, MONSTER_AREA_H, 10);
+
+    // 필드 패널 (필드 영역만)
+    const fpY = FIELD_Y - FIELD_CH / 2 - 18;
+    g.fillStyle(0x0d3318, 0.82);
+    g.fillRoundedRect(CX, fpY, FAW_, FIELD_CH + 36, 12);
+    g.lineStyle(2, 0x2d7a3a);
+    g.strokeRoundedRect(CX, fpY, FAW_, FIELD_CH + 36, 12);
+
+    // 핸드 패널 (필드 영역만)
+    const hpY = HAND_Y - CH / 2 - 18;
+    g.fillStyle(0x0d3318, 0.82);
+    g.fillRoundedRect(CX, hpY, FAW_, CH + 36, 12);
+    g.lineStyle(2, 0x2d7a3a);
+    g.strokeRoundedRect(CX, hpY, FAW_, CH + 36, 12);
+
+    // 아이템 패널
+    g.fillStyle(0x080f14, 0.92);
+    g.fillRect(IPX, 0, IPW, GH);
+    g.lineStyle(1, 0x2a4a5a);
+    g.strokeRect(IPX, 0, IPW, GH);
+    g.lineStyle(1, 0x2a4a5a);
+    g.strokeRect(IPX, BATTLE_LOG_H, IPW, 38);  // 아이템 패널 헤더 구분선
+  }
+
+  // ── UI 생성 (한 번만) ─────────────────────────────────────────────────────
+  createUI() {
+    const PW  = PLAYER_PANEL_W;
+    const px  = 10;
+    const pcx = PW / 2 - 2;
+
+    this.add.text(pcx, 14, this.player.job.toUpperCase(), {
+      fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffdd88',
+    }).setOrigin(0.5, 0).setDepth(12);
+
+    // ROUND-BATTLE 표시
+    const battleLabel = this.isBoss ? 'BOSS' : `${this.battleIndex + 1}`;
+    this.add.text(px, 36, "ROUND", TS.infoLabel).setDepth(12);
+    this.roundTxt = this.add.text(PW - 14, 36, `${this.round}-${battleLabel}`, TS.levelValue)
+      .setOrigin(1, 0).setDepth(12);
+
+    this.add.text(px, 54, "GOLD", TS.infoLabel).setDepth(12);
+    this.goldTxt = this.add.text(PW - 14, 54, `${this.player.gold}`, TS.levelValue)
+      .setOrigin(1, 0).setDepth(12);
+
+    this.add.text(px, 72, "LV", TS.infoLabel).setDepth(12);
+    this._playerLevelTxt = this.add.text(PW - 14, 72, String(this.player.level), TS.levelValue)
+      .setOrigin(1, 0).setDepth(12);
+
+    this._xpBarBg   = this.add.rectangle(px, 90, PW - 24, 5, 0x224433).setOrigin(0, 0.5).setDepth(12);
+    this._xpBarFill = this.add.rectangle(px, 90, 1, 5, 0x44ddaa).setOrigin(0, 0.5).setDepth(13);
+
+    this.add.rectangle(pcx, 102, PW - 20, 1, 0x2a5a38).setDepth(12);
+
+    this.add.text(px, 110, "HP", TS.infoLabel).setDepth(12);
+    this.playerHpTxt = this.add.text(px + 22, 110, "", TS.playerHp).setDepth(12);
+    this._hpBarBg   = this.add.rectangle(px, 128, PW - 24, 7, 0x2a3a2a).setOrigin(0, 0.5).setDepth(12);
+    this._hpBarFill = this.add.rectangle(px, 128, 1, 7, 0xdd3333).setOrigin(0, 0.5).setDepth(13);
+
+    this.add.text(px, 138, "DEF", TS.infoLabel).setDepth(12);
+    this.playerDefTxt = this.add.text(px + 32, 138, "", TS.playerDef).setDepth(12);
+
+    this.add.text(px, 152, "ATK", TS.infoLabel).setDepth(12);
+    this.playerAtkTxt = this.add.text(px + 32, 152, `${this.player.atk}`, TS.playerDef).setDepth(12);
+
+    this.add.rectangle(pcx, 167, PW - 20, 1, 0x2a5a38).setDepth(12);
+
+    const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
+    const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
+    const SUIT_KEYS   = ['S', 'H', 'D', 'C'];
+    this._attrTxts  = {};
+    this._suitUpBtns = {};
+    SUIT_KEYS.forEach((suit, idx) => {
+      const sy = 177 + idx * 26;
+      this.add.text(px, sy, SUIT_SYMS[suit],
+        { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }).setDepth(12);
+      this._attrTxts[suit] = this.add.text(px + 26, sy + 2,
+        `Lv${this.player.attrs[suit]}`,
+        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: SUIT_COLORS[suit] })
+        .setDepth(12);
+    });
+
+    // Deck / Used count
+    this.add.rectangle(pcx, 284, PW - 20, 1, 0x2a5a38).setDepth(12);
+    this.add.text(px, 290, "DECK", TS.infoLabel).setDepth(12);
+    this._deckCountTxt = this.add.text(PW - 14, 290, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
+    this.add.text(px, 306, "USED", TS.infoLabel).setDepth(12);
+    this._dummyCountTxt = this.add.text(PW - 14, 306, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
+
+    this._tooltipBg  = this.add.rectangle(0, 0, 70, 26, 0x000000, 0.85).setDepth(200).setVisible(false);
+    this._tooltipTxt = this.add.text(0, 0, "", { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffffff' })
+      .setOrigin(0.5).setDepth(201).setVisible(false);
+
+    // 필드 영역 중심 (아이템 패널 제외)
+    const FAW    = GW - PW - ITEM_PANEL_W;   // 700
+    const IPX    = GW - ITEM_PANEL_W;        // 1000
+    const IPCX   = IPX + ITEM_PANEL_W / 2;  // 1140 — 아이템 패널 중심
+    const faCX   = PW + FAW / 2;            // 650  — 필드 영역 중심
+
+    this.logTxt = this.add.text(faCX, BATTLE_LOG_H / 2, "", TS.log)
+      .setOrigin(0.5).setDepth(10);
+
+    const logHit = this.add.rectangle(faCX, BATTLE_LOG_H / 2, FAW, BATTLE_LOG_H, 0xffffff, 0)
+      .setDepth(15).setInteractive();
+    logHit.on('pointerdown', () => this._showBattleLogPopup());
+    logHit.on('pointerover', () => this.logTxt.setStyle({ color: '#ffffff' }));
+    logHit.on('pointerout',  () => this.logTxt.setStyle({ color: '#ffcc44' }));
+
+    this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg)
+      .setOrigin(0.5, 0).setDepth(100);
+
+    const preY = HAND_Y + CH / 2 + 14;
+    this.previewLabelTxt = this.add.text(faCX - 10, preY, "", TS.comboLabel).setOrigin(1, 0).setDepth(50);
+    this.previewScoreTxt = this.add.text(faCX + 10, preY, "", TS.comboScore).setOrigin(0, 0).setDepth(50);
+
+    // OPT 버튼 — 아이템 패널 상단
+    const optBg = this.add.rectangle(IPCX, 20, 120, 30, 0x335566).setDepth(60).setInteractive();
+    this.add.text(IPCX, 20, "OPTIONS", TS.menuBtn).setOrigin(0.5).setDepth(61);
+    optBg.on("pointerdown", () => this._showOptions());
+    optBg.on("pointerover", () => optBg.setFillStyle(0x446688));
+    optBg.on("pointerout",  () => optBg.setFillStyle(0x335566));
+
+    // TURN END 버튼 — 아이템 패널 하단
+    const turnBtnX      = IPCX;
+    const turnBtnBottom = HAND_Y + CH / 2;
+    const turnBtnH      = 30;
+    const turnBtnY      = turnBtnBottom - turnBtnH / 2;
+    this.turnEndBtn = this.add.rectangle(turnBtnX, turnBtnY, 120, turnBtnH, 0xaa6600)
+      .setDepth(60).setInteractive();
+    this.add.text(turnBtnX, turnBtnY, "TURN END", TS.turnEndBtn).setOrigin(0.5).setDepth(61);
+    this.turnEndBtn.on("pointerdown", () => { if (!this.isDealing) this.onTurnEnd(); });
+    this.turnEndBtn.on("pointerover", () => this.turnEndBtn.setFillStyle(0xdd8800));
+    this.turnEndBtn.on("pointerout",  () => this.turnEndBtn.setFillStyle(0xaa6600));
+
+    this._attackTxt = this.add.text(turnBtnX, turnBtnY - turnBtnH / 2 - 8, "", TS.infoLabel)
+      .setOrigin(0.5, 1).setDepth(61);
+
+    this.refreshPlayerStats();
+  }
+
+  // ── 정렬 버튼 ────────────────────────────────────────────────────────────
+  createSortButton() {
+    const sortCH = 30;
+    const sortBottom = HAND_Y + CH / 2;
+    const sortY  = sortBottom - sortCH / 2; // HAND_Y - CH / 2 - 14;
+    const sortCX = PLAYER_PANEL_W / 2; // PLAYER_PANEL_W + (GW - PLAYER_PANEL_W - ITEM_PANEL_W) / 2;
+    this.sortBg  = this.add.rectangle(sortCX, sortY, 110, sortCH, 0x335544).setDepth(60).setInteractive();
+    this.sortTxt = this.add.text(sortCX, sortY, "SORT", TS.sortBtn).setOrigin(0.5).setDepth(61);
+    this.sortBg.on("pointerdown", () => {
+      if (this.isDealing) return;
+      this.sortBy(this.sortMode === "suit" ? "rank" : "suit");
+    });
+    this.sortBg.on("pointerover", () => this.sortBg.setFillStyle(0x447766));
+    this.sortBg.on("pointerout",  () => this.refreshSortBtns());
+  }
+
+  refreshSortBtns() {
+    const label = this.sortMode === "suit" ? "SUIT ▲" : this.sortMode === "rank" ? "RANK ▲" : "SORT";
+    this.sortTxt?.setText(label);
+    this.sortBg?.setFillStyle(this.sortMode ? 0x227744 : 0x335544);
+  }
+
+  // ── 딜링 애니메이션 ──────────────────────────────────────────────────────
+  startDealAnimation() {
+    this._sfx("sfx_shuffle");
+    const deckX = PLAYER_PANEL_W + 50, deckY = FIELD_Y;
+
+    for (let i = Math.min(8, 51); i >= 0; i--) {
+      this.animObjs.push(
+        this.add.image(deckX - i * 2, deckY - i * 2, "card_back").setDisplaySize(CW, CH).setDepth(i)
+      );
+    }
+
+    const handPos = this.calcHandPositions(this.player.handSize);
+    let delay = 300;
+
+    this.handData.forEach((card, i) => {
+      this.time.delayedCall(delay, () => this.flyCard(card, deckX, deckY, handPos[i].x, handPos[i].y));
+      delay += DEAL_DELAY;
+    });
+    this.fieldData.forEach(card => {
+      this.time.delayedCall(delay, () => this.flyCard(card, deckX, deckY, card.slotX, FIELD_Y));
+      delay += DEAL_DELAY;
+    });
+
+    this.time.delayedCall(delay + 550, () => {
+      this.animObjs.forEach(o => o.destroy());
+      this.animObjs = [];
+      this.isDealing = false;
+      this._applySortToHand();
+      this.render();
+      this._saveTurnState();
+    });
+  }
+
+  flyCard(cardData, fromX, fromY, toX, toY) {
+    const img = this.add.image(fromX, fromY, "card_back").setDisplaySize(CW, CH).setDepth(200);
+    this.animObjs.push(img);
+    this.tweens.add({
+      targets: img, x: toX, y: toY, duration: 320, ease: "Power2.Out",
+      onComplete: () => {
+        this.tweens.add({
+          targets: img, displayWidth: 1, duration: 70, ease: "Linear",
+          onComplete: () => {
+            img.setTexture(cardData.key);
+            img.setDisplaySize(1, CH);
+            this.tweens.add({ targets: img, displayWidth: CW, duration: 70, ease: "Linear" });
+          },
+        });
+      },
+    });
+  }
+
+  // ── 위치 계산 ────────────────────────────────────────────────────────────
+  calcFieldPositions(count) {
+    const PW   = PLAYER_PANEL_W;
+    const FAW  = GW - PW - ITEM_PANEL_W;   // 880
+    const gap  = 14;
+    const areaW = FAW - 140;               // deck/dummy 파일 공간 제외: 740
+    const totalW = count * FIELD_CW + (count - 1) * gap;
+    const x0 = PW + 40 + FIELD_CW / 2 + (areaW - totalW) / 2;
+    return Array.from({ length: count }, (_, i) => ({ x: x0 + i * (FIELD_CW + gap), y: FIELD_Y }));
+  }
+
+  calcHandPositions(count) {
+    if (count === 0) return [];
+    const PW   = PLAYER_PANEL_W;
+    const FAW  = GW - PW - ITEM_PANEL_W;   // 880
+    const gap  = 10;
+    const areaW = FAW - 85;               // 795
+    const baseW = Math.round(CW * 0.95);
+    const scale = count >= 9 ? Math.max(0.65, 8 / count) : 1;
+    const cardW = Math.round(baseW * scale);
+    const spacing = count === 1 ? 0 : Math.min(cardW + gap, (areaW - cardW) / (count - 1));
+    const x0 = PW + 40 + cardW / 2 + (areaW - (cardW + spacing * (count - 1))) / 2;
+    return Array.from({ length: count }, (_, i) => ({ x: x0 + i * spacing, y: HAND_Y }));
+  }
+
+  calcMonsterPositions(count) {
+    const PW  = PLAYER_PANEL_W;
+    const FAW = GW - PW - ITEM_PANEL_W;   // 880
+    const cx  = PW + FAW / 2;
+    if (count <= 1) return [{ x: cx }];
+    const margin = 100;
+    const gap = Math.min(130, Math.floor((FAW - margin * 2) / (count - 1)));
+    const x0 = Math.round(cx - gap * (count - 1) / 2);
+    return Array.from({ length: count }, (_, i) => ({ x: x0 + i * gap }));
+  }
+
+  // ── 드래그 ───────────────────────────────────────────────────────────────
+  setupDrag() {
+    this.input.on("dragstart", (pointer, obj) => {
+      if (this.isDealing) return;
+      this._sfx("sfx_slide");
+      this.isDragging = true;
+      obj.setDepth(200);
+      if (obj.getData("itemIndex") !== undefined) {
+        // 아이템 컨테이너
+        this.tweens.killTweensOf(obj);
+        this.tweens.add({ targets: obj, scaleX: 0.9, scaleY: 0.9, duration: 60 });
+      } else {
+        // 필드 카드
+        obj.setDisplaySize(Math.round(CW * 0.9), Math.round(CH * 0.9));
+        const idx = this.cardObjs.indexOf(obj);
+        if (idx !== -1) this.cardObjs.splice(idx, 1);
+      }
+    });
+    this.input.on("drag", (pointer, obj, dragX, dragY) => {
+      obj.x = dragX; obj.y = dragY;
+    });
+    this.input.on("dragend", (pointer, obj) => {
+      this.isDragging = false;
+
+      // ── 아이템 drag ──────────────────────────────────────────────────
+      if (obj.getData("itemIndex") !== undefined) {
+        if (this._isValidItemDropZone(pointer.x, pointer.y)) {
+          this._useItem(obj.getData("itemIndex"), obj);
+        } else {
+          this.tweens.add({
+            targets: obj,
+            x: obj.getData("origX"), y: obj.getData("origY"),
+            scaleX: 1, scaleY: 1,
+            duration: 200, ease: "Back.Out",
+            onComplete: () => { obj.destroy(); this.render(); },
+          });
+        }
+        return;
+      }
+
+      // ── 필드 카드 drag ───────────────────────────────────────────────
+      if (pointer.y >= HAND_TOP) {
+        const cardData = obj.getData("cardData");
+        const fieldIdx = obj.getData("fieldIndex");
+        if (this.handData.length >= this.player.handSizeLimit) {
+          this._snapBack(obj);
+          return;
+        }
+        const newPositions = this.calcHandPositions(this.handData.length + 1);
+        const insertIdx    = newPositions.findIndex(p => pointer.x < p.x);
+        const handInsert   = insertIdx === -1 ? this.handData.length : insertIdx;
+
+        this.fieldData.splice(fieldIdx, 1);
+        this.deck.field = this.deck.field.filter(c => c.uid !== cardData.uid);
+        this.handData.splice(handInsert, 0, cardData);
+        if (this.sortMode) this.doSorting(this.sortMode);
+        this.fieldPickCount++;
+        this.selected.clear();
+        obj.destroy();
+        this.render();
+      } else {
+        this._snapBack(obj);
+      }
+    });
+  }
+
+  _isValidItemDropZone(px, py) {
+    if (px < PLAYER_PANEL_W || px > GW - ITEM_PANEL_W) return false;
+    // 몬스터 영역
+    if (py >= MONSTER_AREA_TOP && py <= MONSTER_AREA_TOP + MONSTER_AREA_H) return true;
+    // 필드 영역
+    if (py >= FIELD_Y - FIELD_CH / 2 - 18 && py <= FIELD_Y + FIELD_CH / 2 + 18) return true;
+    // 핸드 영역
+    if (py >= HAND_TOP) return true;
+    return false;
+  }
+
+  _useItem(idx, obj) {
+    const item = this.player.items[idx];
+    if (!item) { obj?.destroy(); return; }
+
+    const itemDef = itemData.items.find(d => d.id === item.id);
+    const eff     = itemDef?.effect;
+    if (eff) {
+      switch (eff.type) {
+        case 'heal':
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + eff.value);
+          this.addBattleLog(`[${item.name}] HP +${eff.value}`);
+          break;
+        case 'maxHp':
+          this.player.maxHp += eff.value;
+          this.player.hp    += eff.value;
+          this.addBattleLog(`[${item.name}] 최대 HP +${eff.value}`);
+          break;
+        case 'def':
+          this.player.def += eff.value;
+          this.addBattleLog(`[${item.name}] DEF +${eff.value}`);
+          break;
+        case 'attacksPerTurn':
+          this.player.attacksPerTurn += eff.value;
+          this.addBattleLog(`[${item.name}] 공격횟수 +${eff.value}`);
+          break;
+        case 'handSize':
+          this.player.handSize      += eff.value;
+          this.player.handSizeLimit += eff.value;
+          this.addBattleLog(`[${item.name}] 핸드 크기 +${eff.value}`);
+          break;
+        case 'fieldSize':
+          this.player.fieldSize      += eff.value;
+          this.player.fieldSizeLimit += eff.value;
+          this.addBattleLog(`[${item.name}] 필드 크기 +${eff.value}`);
+          break;
+        case 'attr':
+          this.player.attrs[eff.suit] += eff.value;
+          this.addBattleLog(`[${item.name}] ${eff.suit} 적응 +${eff.value}`);
+          break;
+      }
+    }
+
+    this.player.items.splice(idx, 1);
+    obj?.destroy();
+    this.render();
+  }
+
+  _snapBack(obj) {
+    this.tweens.add({
+      targets: obj,
+      x: obj.getData("origX"),
+      y: obj.getData("origY"),
+      displayWidth:  obj.getData("origW") ?? FIELD_CW,
+      displayHeight: obj.getData("origH") ?? FIELD_CH,
+      duration: 200,
+      ease: "Back.Out",
+      onComplete: () => { obj.destroy(); this.render(); },
+    });
+  }
+
+  // ── 전체 렌더 ────────────────────────────────────────────────────────────
+  render() {
+    this.cardObjs.forEach(o => o.destroy());
+    this.cardObjs = [];
+    this.monsterObjs.forEach(o => o.destroy());
+    this.monsterObjs = [];
+    this._monsterSprites.forEach(s => s?.destroy());
+    this._monsterSprites = [];
+
+    this.renderDeckPile();
+    this.renderDummyPile();
+    this.renderField();
+    this.renderHand();
+    this.renderMonsters();
+    this.renderItemPanel();
+    this.updatePreview();
+    this.refreshSortBtns();
+    this.refreshPlayerStats();
+    this.refreshAttackCount();
+    this.refreshBattleLog();
+  }
+
+  renderDeckPile() {
+    const x = PLAYER_PANEL_W + 50, y = FIELD_Y;
+    const count = this.deckData.length;
+
+    const pile = this.textures.exists("card_back_deck")
+      ? this.add.image(x, y, "card_back_deck").setDisplaySize(FIELD_CW, FIELD_CH).setDepth(10)
+      : this.add.rectangle(x, y, FIELD_CW, FIELD_CH, 0x223344).setDepth(10);
+    this.cardObjs.push(pile);
+
+    const hit = this.add.rectangle(x, y, FIELD_CW + 10, FIELD_CH + 10, 0xffffff, 0)
+      .setDepth(12).setInteractive();
+    hit.on("pointerover", () => {
+      this._tooltipTxt.setText(`DECK: ${count}`);
+      this._tooltipBg.setPosition(x, y - FIELD_CH / 2 - 18);
+      this._tooltipTxt.setPosition(x, y - FIELD_CH / 2 - 18);
+      this._tooltipBg.setVisible(true).setDisplaySize(this._tooltipTxt.width + 16, 26);
+      this._tooltipTxt.setVisible(true);
+    });
+    hit.on("pointerout",  () => { this._tooltipBg.setVisible(false); this._tooltipTxt.setVisible(false); });
+    hit.on("pointerdown", () => { if (!this._pilePopupObjs) this._showPilePopup(this.deckData, "DECK"); });
+    this.cardObjs.push(hit);
+  }
+
+  renderDummyPile() {
+    const x = GW - ITEM_PANEL_W - 40, y = FIELD_Y;
+    const count = this.dummyData.length;
+
+    const pile = this.textures.exists("card_back_dummy")
+      ? this.add.image(x, y, "card_back_dummy").setDisplaySize(FIELD_CW, FIELD_CH).setDepth(10)
+      : this.add.rectangle(x, y, FIELD_CW, FIELD_CH, 0x332211).setDepth(10);
+    this.cardObjs.push(pile);
+
+    const hit = this.add.rectangle(x, y, FIELD_CW + 10, FIELD_CH + 10, 0xffffff, 0)
+      .setDepth(12).setInteractive();
+    hit.on("pointerover", () => {
+      this._tooltipTxt.setText(`USED: ${count}`);
+      this._tooltipBg.setPosition(x, y - FIELD_CH / 2 - 18);
+      this._tooltipTxt.setPosition(x, y - FIELD_CH / 2 - 18);
+      this._tooltipBg.setVisible(true).setDisplaySize(this._tooltipTxt.width + 16, 26);
+      this._tooltipTxt.setVisible(true);
+    });
+    hit.on("pointerout",  () => { this._tooltipBg.setVisible(false); this._tooltipTxt.setVisible(false); });
+    hit.on("pointerdown", () => { if (!this._pilePopupObjs) this._showPilePopup(this.dummyData, "USED CARDS"); });
+    this.cardObjs.push(hit);
+  }
+
+  renderField() {
+    // 공격 횟수 소진 또는 필드픽 한도 도달 시 비활성화
+    const canPick = this.fieldPickCount < this.player.fieldSize
+      && this.attackCount < this.player.attacksPerTurn;
+
+    this.fieldData.forEach((card, i) => {
+      const x   = card.slotX;
+      const img = this.add.image(x, FIELD_Y, card.key).setDisplaySize(FIELD_CW, FIELD_CH).setDepth(10);
+
+      img.setInteractive({ draggable: canPick });
+
+      if (canPick) {
+        img.setData("fieldIndex", i);
+        img.setData("cardData", card);
+        img.setData("origX", x);
+        img.setData("origY", FIELD_Y);
+        img.setData("origW", FIELD_CW);
+        img.setData("origH", FIELD_CH);
+        img.on("pointerover", () => {
+          if (!this.isDragging) {
+            this.tweens.add({ targets: img, displayWidth: FIELD_CW * 1.4, displayHeight: FIELD_CH * 1.4, y: FIELD_Y - 10, duration: 100 });
+            img.setDepth(20);
+          }
+        });
+        img.on("pointerout", () => {
+          if (!this.isDragging) {
+            this.tweens.add({ targets: img, displayWidth: FIELD_CW, displayHeight: FIELD_CH, y: FIELD_Y, duration: 100 });
+            img.setDepth(10);
+          }
+        });
+      } else {
+        img.setAlpha(0.45);
+      }
+      this.cardObjs.push(img);
+    });
+  }
+
+  renderHand() {
+    if (this.handData.length === 0) return;
+    const positions    = this.calcHandPositions(this.handData.length);
+    const combo        = this._getSelectedCombo();
+    const comboCardSet = new Set(combo.cards ?? []);
+    const hasValidCombo = combo.score > 0;
+
+    const count = this.handData.length;
+    // 기본 크기: CW * 0.95, 9장 이상이면 추가 축소
+    const baseW = Math.round(CW * 0.95);
+    const baseH = Math.round(CH * 0.95);
+    const scale = count >= 9 ? Math.max(0.65, 8 / count) : 1;
+    const cardW = Math.round(baseW * scale);
+    const cardH = Math.round(baseH * scale);
+    const hoverW = Math.round(cardW * 1.35);
+    const hoverH = Math.round(cardH * 1.35);
+
+    this.handData.forEach((card, i) => {
+      const sel     = this.selected.has(i);
+      const inCombo = sel && hasValidCombo && comboCardSet.has(card);
+      const x = positions[i].x;
+      const selOffset = Math.round(22 * scale);
+      const y = sel ? HAND_Y - selOffset : HAND_Y;
+
+      const img = this.add.image(x, y, card.key)
+        .setDisplaySize(cardW, cardH).setDepth(sel ? 32 : 30).setInteractive();
+      img.on("pointerdown", () => { if (!this.isDragging && !this.isDealing) this.toggleHand(i); });
+      img.on("pointerover", () => {
+        if (!this.isDragging) {
+          this.tweens.add({ targets: img, displayWidth: hoverW, displayHeight: hoverH, y: y - 8, duration: 100 });
+          img.setDepth(40);
+        }
+      });
+      img.on("pointerout", () => {
+        if (!this.isDragging) {
+          this.tweens.add({ targets: img, displayWidth: cardW, displayHeight: cardH, y, duration: 100 });
+          img.setDepth(sel ? 32 : 30);
+        }
+      });
+      this.cardObjs.push(img);
+
+      if (inCombo) {
+        this.tweens.add({
+          targets: img,
+          x: { from: x - 3, to: x + 3 },
+          duration: 55, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+        });
+      }
+    });
+  }
+
+  // ── 몬스터 렌더 ──────────────────────────────────────────────────────────
+  renderMonsters() {
+    const positions = this.calcMonsterPositions(this.monsters.length);
+    const hasCombo  = this._getSelectedCombo().score > 0
+      && this.attackCount < this.player.attacksPerTurn;
+    const imgW = 120, imgH = 120;
+
+    // 하단 기준 레이아웃
+    const MON_BOTTOM = MONSTER_AREA_TOP + MONSTER_AREA_H - 4;  // 400
+    const BAR_H      = 10;
+    const STAT_H     = 14;
+    const barY       = MON_BOTTOM - STAT_H - 6 - BAR_H / 2;    // bar 중심
+    const statY      = MON_BOTTOM - STAT_H / 2;                 // ATK/DEF 중심
+    const spriteY    = barY - BAR_H / 2 - 8 - imgH / 2;        // 스프라이트 중심
+
+    this.monsters.forEach((mon, idx) => {
+      const x = positions[idx].x;
+      let monObj;
+      const mobId = mon.mob.id;
+
+      if (mon.isDead) {
+        const dieTexKey  = `mon_${mobId}_die`;
+        const dieAnimKey = `${dieTexKey}_anim`;
+        if (this.textures.exists(dieTexKey)) {
+          monObj = this.add.sprite(x, spriteY, dieTexKey)
+            .setDisplaySize(imgW, imgH).setDepth(15).setAlpha(0.7);
+          if (!mon.deathAnimDone) {
+            if (this.anims.exists(dieAnimKey)) {
+              monObj.play(dieAnimKey);
+              monObj.once('animationcomplete', () => { mon.deathAnimDone = true; });
+            }
+            this.time.delayedCall(1500, () => { mon.deathAnimDone = true; });
+          } else {
+            const lastFrame = this._countValidFrames(dieTexKey) - 1;
+            monObj.setFrame(Math.max(0, lastFrame));
+          }
+        }
+      } else {
+        const idleTexKey  = `mon_${mobId}_idle`;
+        const idleAnimKey = `${idleTexKey}_anim`;
+        if (this.textures.exists(idleTexKey)) {
+          monObj = this.add.sprite(x, spriteY, idleTexKey)
+            .setDisplaySize(imgW, imgH).setDepth(15);
+          if (this.anims.exists(idleAnimKey)) monObj.play(idleAnimKey);
+        }
+      }
+
+      if (!monObj) {
+        monObj = this.add.rectangle(
+          x, spriteY, imgW, imgH,
+          [0x886622, 0x226688, 0x662288, 0x228866][idx % 4]
+        ).setDepth(15);
+      }
+      this._monsterSprites[idx] = monObj;
+
+      /*
+      if (mon.isDead) {
+        this.monsterObjs.push(
+          this.add.rectangle(x, spriteY, imgW + 4, imgH + 4, 0x000000, 0.45).setDepth(16),
+          this.add.text(x, spriteY, "X", TS.monDead).setOrigin(0.5).setDepth(17)
+        );
+        return;
+      }
+      */
+
+      // ── HP 바 (텍스트 포함) ──────────────────────────────────────────────
+      const barW    = 110;
+      const hpRatio = Math.max(0, mon.hp / mon.maxHp);
+      const hpColor = hpRatio > 0.5 ? 0x44cc44 : hpRatio > 0.25 ? 0xddaa00 : 0xdd3333;
+      this.monsterObjs.push(
+        this.add.rectangle(x, barY, barW, BAR_H, 0x1a1a1a).setDepth(16),
+        this.add.rectangle(x - barW / 2, barY, Math.max(1, barW * hpRatio), BAR_H, hpColor)
+          .setOrigin(0, 0.5).setDepth(17),
+        this.add.text(x, barY, `${mon.hp}/${mon.maxHp}`,
+          { fontFamily: "'PressStart2P',Arial", fontSize: '7px', color: '#ffffff',
+            stroke: '#000000', strokeThickness: 2 })
+          .setOrigin(0.5).setDepth(18)
+      );
+
+      // ── ATK / DEF ────────────────────────────────────────────────────────
+      this.monsterObjs.push(
+        this.add.text(x, statY, `ATK ${mon.atk}  DEF ${mon.def}`, TS.monStat)
+          .setOrigin(0.5).setDepth(16)
+      );
+
+      // ── ATTACK 힌트 + 히트 영역 ──────────────────────────────────────────
+      if (hasCombo) {
+        this.monsterObjs.push(
+          this.add.text(x, spriteY - imgH / 2 - 10, "ATTACK!", TS.monTarget)
+            .setOrigin(0.5, 1).setDepth(18)
+        );
+        const hitH = MON_BOTTOM - (spriteY - imgH / 2) + 10;
+        const hitCY = spriteY - imgH / 2 + hitH / 2;
+        const hit = this.add.rectangle(x, hitCY, imgW + 20, hitH, 0x000000, 0)
+          .setDepth(19).setInteractive();
+        hit.on("pointerdown", () => { if (!this.isDealing) this.attackMonster(idx); });
+        this.monsterObjs.push(hit);
+      }
+    });
+  }
+
+  // ── 아이템 패널 렌더 ─────────────────────────────────────────────────────
+  renderItemPanel() {
+    const IPX  = GW - ITEM_PANEL_W;
+    const IPCX = IPX + ITEM_PANEL_W / 2;
+    const items = this.player.items ?? [];
+
+    // 헤더
+    this.cardObjs.push(
+      this.add.text(IPCX, BATTLE_LOG_H / 2, "ITEMS", TS.panelLabel)
+        .setOrigin(0.5).setDepth(10)
+    );
+
+    if (items.length === 0) {
+      this.cardObjs.push(
+        this.add.text(IPCX, BATTLE_LOG_H + 50, "—", TS.infoLabel)
+          .setOrigin(0.5, 0).setDepth(10)
+      );
+      return;
+    }
+
+    // 2열 카드 그리드 (FIELD_CW × FIELD_CH)
+    const C_W  = FIELD_CW, C_H = FIELD_CH;
+    const GAP  = 8;
+    const PAD_L = Math.floor((ITEM_PANEL_W - C_W * 2 - GAP) / 2);
+    const startY = BATTLE_LOG_H + 46;
+
+    const RARITY_BG  = { common: 0x1a3a22, rare: 0x1a2a4a, epic: 0x2a1a3a };
+    const RARITY_BRD = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
+    const RARITY_LBL = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
+
+    items.forEach((item, i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const cx  = IPX + PAD_L + col * (C_W + GAP) + C_W / 2;
+      const cy  = startY + row * (C_H + GAP) + C_H / 2;
+
+      const bg_col  = RARITY_BG[item.rarity]  ?? RARITY_BG.common;
+      const brd_col = RARITY_BRD[item.rarity] ?? RARITY_BRD.common;
+      const lbl_col = RARITY_LBL[item.rarity] ?? RARITY_LBL.common;
+
+      // Container로 카드 전체를 하나의 오브젝트로 묶기
+      const container = this.add.container(cx, cy).setDepth(9);
+      container.setSize(C_W, C_H);
+      container.setInteractive();
+      this.input.setDraggable(container);
+
+      container.setData("itemIndex", i);
+      container.setData("origX", cx);
+      container.setData("origY", cy);
+
+      // 카드 배경
+      container.add(this.add.rectangle(0, 0, C_W, C_H, bg_col).setStrokeStyle(1, brd_col));
+
+      // name 띠
+      container.add(this.add.rectangle(0, -C_H / 2 + 6, C_W, 12, brd_col, 0.45));
+      container.add(this.add.text(0, -C_H / 2 + 6, item.name,
+        { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: lbl_col })
+        .setOrigin(0.5));
+
+      // 이미지
+      const imgKey = `item_${item.id}`;
+      const imgY   = -C_H / 2 + 12 + 20;
+      if (item.img && this.textures.exists(imgKey)) {
+        container.add(this.add.image(0, imgY, imgKey).setDisplaySize(36, 36));
+      } else {
+        container.add(this.add.rectangle(0, imgY, 36, 36, brd_col, 0.2).setStrokeStyle(1, brd_col));
+        container.add(this.add.text(0, imgY, '?',
+          { fontFamily: 'Arial', fontSize: '14px', color: lbl_col }).setOrigin(0.5));
+      }
+
+      // desc
+      container.add(this.add.text(0, C_H / 2 - 20, item.desc,
+        { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: '#cccccc',
+          wordWrap: { width: C_W - 8 } })
+        .setOrigin(0.5, 0));
+
+      // hover / click 확대
+      container.on("pointerover", () => {
+        if (!this.isDragging)
+          this.tweens.add({ targets: container, scaleX: 1.4, scaleY: 1.4, y: cy - 10, duration: 100 });
+        container.setDepth(25);
+      });
+      container.on("pointerout", () => {
+        if (!this.isDragging)
+          this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, y: cy, duration: 100 });
+        container.setDepth(9);
+      });
+
+      this.cardObjs.push(container);
+    });
+  }
+
+  // ── 족보 계산 헬퍼 ───────────────────────────────────────────────────────
+  _getSelectedCombo() {
+    if (this.selected.size === 0) return { score: 0, handName: "" };
+    return calculateScore([...this.selected].map(i => this.handData[i]), context);
+  }
+
+  updatePreview() {
+    const { score: cardScore, handName } = this._getSelectedCombo();
+    const score = cardScore > 0 ? cardScore + this.player.atk : 0;
+    if (score > 0) {
+      this.previewLabelTxt.setText(`${handName}  →`).setColor("#88ffaa");
+      this.previewScoreTxt.setText(`${score}점`).setColor("#ffdd66");
+    } else if (handName) {
+      this.previewLabelTxt.setText(handName).setColor("#ff9966");
+      this.previewScoreTxt.setText("");
+    } else {
+      this.previewLabelTxt.setText("");
+      this.previewScoreTxt.setText("");
+    }
+  }
+
+  refreshAttackCount() {
+    const used = this.attackCount;
+    const max  = this.player.attacksPerTurn;
+    this._attackTxt.setText(`ATK ${used}/${max}`);
+    this._attackTxt.setColor(used >= max ? '#ff6666' : '#aaffcc');
+  }
+
+  refreshPlayerStats() {
+    const p    = this.player;
+    const PW   = PLAYER_PANEL_W;
+    const barW = PW - 24;
+    this.playerHpTxt.setText(`${p.hp}/${p.maxHp}`);
+    this.playerDefTxt.setText(`${p.def}`);
+    this.playerAtkTxt?.setText(`${p.atk}`);
+    const ratio = Math.max(0, p.hp / p.maxHp);
+    this._hpBarFill.setDisplaySize(Math.max(1, barW * ratio), 7);
+    this._hpBarFill.setFillStyle(ratio > 0.5 ? 0x44cc44 : ratio > 0.25 ? 0xddaa00 : 0xdd3333);
+    this.refreshPlayerLevel();
+    this.goldTxt.setText(`${p.gold}`);
+    this._deckCountTxt?.setText(`${this.deckData?.length ?? 0}`);
+    this._dummyCountTxt?.setText(`${this.dummyData?.length ?? 0}`);
+  }
+
+  refreshPlayerLevel() {
+    const p   = this.player;
+    const req = getRequiredExp(p.level);
+    const xpFill = Math.max(1, Math.round((PLAYER_PANEL_W - 24) * Math.min(1, p.xp / req)));
+    this._playerLevelTxt.setText(String(p.level));
+    this._xpBarFill.setDisplaySize(xpFill, 5);
+    ['S', 'H', 'D', 'C'].forEach(s => {
+      this._attrTxts[s]?.setText(`Lv${p.attrs[s]}`);
+    });
+  }
+
+  addBattleLog(text) {
+    this._fullBattleLog.push(text);
+    this.battleLogLines.push(text);
+    if (this.battleLogLines.length > 4) this.battleLogLines.shift();
+    this.refreshBattleLog();
+  }
+
+  refreshBattleLog() {
+    this.logTxt.setText(this.battleLogLines.slice(-2).join("  |  "));
+  }
+
+  toggleHand(i) {
+    this._sfx("sfx_place");
+    this.selected.has(i) ? this.selected.delete(i) : this.selected.add(i);
+    this.render();
+  }
+
+  _flyToDummy(fromX, fromY, key = "card_back") {
+    this._sfx("sfx_fan");
+    const img = this.add.image(fromX, fromY, key).setDisplaySize(CW, CH).setDepth(200);
+    this.tweens.add({
+      targets: img, x: GW - ITEM_PANEL_W - 40, y: FIELD_Y,
+      displayWidth: CW * 0.3, displayHeight: CH * 0.3, alpha: 0,
+      duration: 380, ease: "Power2.In",
+      onComplete: () => img.destroy(),
+    });
+  }
+
+  _throwCardAtMonster(fromX, fromY, key, monX) {
+    this._sfx("sfx_fan");
+    const img = this.add.image(fromX, fromY, key).setDisplaySize(CW, CH).setDepth(200);
+    this.tweens.add({
+      targets: img, x: monX, y: MONSTER_IMG_Y,
+      displayWidth: CW * 0.5, displayHeight: CH * 0.5,
+      duration: 280, ease: "Power2.In",
+      onComplete: () => {
+        this.tweens.add({
+          targets: img, x: GW - ITEM_PANEL_W - 40, y: FIELD_Y,
+          displayWidth: CW * 0.15, displayHeight: CH * 0.15, alpha: 0,
+          duration: 220, ease: "Power2.In",
+          onComplete: () => img.destroy(),
+        });
+      },
+    });
+  }
+
+  _showMonsterAttack(monIdx, damage) {
+    const positions = this.calcMonsterPositions(this.monsters.length);
+    const mX        = positions[monIdx]?.x ?? GW / 2;
+
+    const monSprite = this._monsterSprites?.[monIdx];
+    const mon       = this.monsters[monIdx];
+    const attackKey = `mon_${mon?.mob?.id}_attack_anim`;
+    const idleKey   = `mon_${mon?.mob?.id}_idle_anim`;
+    if (monSprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(attackKey)) {
+      monSprite.play(attackKey);
+      monSprite.once('animationcomplete', () => {
+        if (this.anims.exists(idleKey)) monSprite.play(idleKey);
+      });
+    }
+
+    const flash = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0xcc0000, 0.22).setDepth(500);
+    this.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
+    this._sfx("sfx_chop");
+
+    const label   = damage > 0 ? `-${damage} HP` : "BLOCKED!";
+    const txtStyle = damage > 0 ? TS.damageHit : TS.damageBlocked;
+    const txt = this.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, txtStyle)
+      .setOrigin(0.5, 0).setDepth(501);
+    this.tweens.add({
+      targets: txt, y: 128, alpha: 0, duration: 480, delay: 80, ease: "Power1.In",
+      onComplete: () => txt.destroy(),
+    });
+  }
+
+  _applySortToHand() {
+    if (this.sortMode === null) { this.sortMode = "rank"; this.sortAsc = true; }
+    this.doSorting(this.sortMode);
+  }
+
+  sortBy(mode) {
+    this.sortMode === mode
+      ? (this.sortAsc = !this.sortAsc)
+      : (this.sortMode = mode, this.sortAsc = true);
+    this.doSorting(mode);
+    this.selected.clear();
+    this.render();
+  }
+
+  doSorting(mode) {
+    const suitCmp = (a, b) => {
+      const sd = SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit];
+      return sd !== 0
+        ? (this.sortAsc ? sd : -sd)
+        : (this.sortAsc ? RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank) : RANKS.indexOf(b.rank) - RANKS.indexOf(a.rank));
+    };
+    const rankCmp = (a, b) => {
+      const vd = RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank);
+      return vd !== 0
+        ? (this.sortAsc ? vd : -vd)
+        : (this.sortAsc ? SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit] : SUIT_ORDER[b.suit] - SUIT_ORDER[a.suit]);
+    };
+    const cmp = mode === "suit" ? suitCmp : rankCmp;
+
+    this.handData.sort(cmp);
+
+    if (this.fieldData?.length > 0) {
+      const slotXs = this.fieldData.map(c => c.slotX);
+      this.fieldData.sort(cmp);
+      slotXs.forEach((sx, i) => { this.fieldData[i].slotX = sx; });
+    }
+  }
+
+  // ── 몬스터 공격 ──────────────────────────────────────────────────────────
+  attackMonster(monIdx) {
+    const mon = this.monsters[monIdx];
+    if (!mon || mon.isDead || this.isDealing) return;
+
+    context.deckCount  = this.deckData.length;
+    context.dummyCount = this.dummyData.length;
+
+    const { score: cardScore, handName } = this._getSelectedCombo();
+    if (cardScore <= 0) return;
+    const score = cardScore + this.player.atk;
+
+    if (this.attackCount >= this.player.attacksPerTurn) {
+      this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
+      return;
+    }
+    this.attackCount++;
+
+    const suitCounts = { S: 0, H: 0, D: 0, C: 0 };
+    [...this.selected].forEach(i => { suitCounts[this.handData[i].suit]++; });
+    const suitEff = (s) => Math.floor(
+      this.player.attrs[s] * this.player.adaptability[s] * suitCounts[s]
+    );
+
+    if (suitCounts.S > 0) {
+      const eff = suitEff('S');
+      mon.def -= eff;
+      if (eff > 0) this.addBattleLog(`\u2660 적응: ${mon.mob.name} DEF -${eff}`);
+    }
+    if (suitCounts.C > 0) {
+      const eff     = suitEff('C');
+      const reduced = Math.min(eff, mon.atk);
+      mon.atk = Math.max(0, mon.atk - eff);
+      if (reduced > 0) this.addBattleLog(`\u2663 적응: ${mon.mob.name} ATK -${reduced}`);
+    }
+
+    const damage  = score - mon.def;
+    const prevHp  = mon.hp;
+    mon.hp = Math.max(0, mon.hp - Math.max(0, damage));
+    const overkill = Math.max(0, damage - prevHp);
+    this.player.score += score;
+
+    if (suitCounts.H > 0) {
+      const eff = suitEff('H');
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + eff);
+      if (eff > 0) this.addBattleLog(`\u2665 적응: HP +${eff}`);
+    }
+    if (suitCounts.D > 0) {
+      const eff = suitEff('D');
+      this.player.def += eff;
+      if (eff > 0) this.addBattleLog(`\u2666 적응: DEF +${eff}`);
+    }
+
+    this.addBattleLog(`${mon.mob.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
+    this._sfx("sfx_knifeSlice");
+
+    console.log(this._monsterSprites);
+    this.effects.hitLightning(mon);
+    //this.effects.hitExplosion(640, 360, this._monsterSprites);
+
+    const monX         = this.calcMonsterPositions(this.monsters.length)[monIdx].x;
+    const handPositions = this.calcHandPositions(this.handData.length);
+    [...this.selected].forEach(i => {
+      this._throwCardAtMonster(handPositions[i].x, HAND_Y - 22, this.handData[i].key, monX);
+    });
+    const usedCards = [...this.selected].sort((a, b) => b - a)
+      .map(i => this.handData.splice(i, 1)[0]);
+    this.dummyData.push(...usedCards);
+    this.selected.clear();
+
+    const monSprite  = this._monsterSprites?.[monIdx];
+    const damagedKey = `mon_${mon.mob.id}_damaged_anim`;
+    const idleKey    = `mon_${mon.mob.id}_idle_anim`;
+
+    if (monSprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(damagedKey)) {
+      this.isDealing = true;
+      monSprite.play(damagedKey);
+      monSprite.once('animationcomplete', () => {
+        this.isDealing = false;
+        this._afterAttack(mon, monIdx, overkill);
+      });
+    } else {
+      this._afterAttack(mon, monIdx, overkill);
+    }
+  }
+
+  _afterAttack(mon, monIdx, overkill = 0) {
+    if (mon.hp <= 0) {
+      mon.isDead = true;
+      const newLevels = this.player.addXp(mon.xp);
+      this.player.gold += mon.gold;
+      this.addBattleLog(`${mon.mob.name} 처치! +${mon.xp}XP +${mon.gold}G`);
+      if (newLevels.length > 0) {
+        this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
+        this._suitLevelUpCount += newLevels.length;
+      }
+      if (overkill > 0) {
+        this.isDealing = true;
+        this._applyOverkill(monIdx, overkill, () => {
+          this.isDealing = false;
+          this.render();
+          this._checkLevelUpThenProceed();
+        });
+      } else {
+        this.render();
+        this._checkLevelUpThenProceed();
+      }
+    } else {
+      this.render();
+    }
+  }
+
+  _applyOverkill(fromIdx, dmg, onDone) {
+    if (dmg <= 0) { onDone?.(); return; }
+
+    let idx = -1;
+    for (let i = fromIdx + 1; i < this.monsters.length; i++) {
+      if (!this.monsters[i].isDead) { idx = i; break; }
+    }
+    if (idx === -1) {
+      for (let i = 0; i < fromIdx; i++) {
+        if (!this.monsters[i].isDead) { idx = i; break; }
+      }
+    }
+    if (idx === -1) { onDone?.(); return; }
+
+    const positions = this.calcMonsterPositions(this.monsters.length);
+    const fromX = positions[fromIdx].x;
+    const toX   = positions[idx].x;
+
+    this.effects.hitLightning(this.monsters[idx]);
+    //this.effects.hitExplosion(640, 360, this._monsterSprites);
+
+    const img = this.add.image(fromX, MONSTER_IMG_Y, "card_back")
+      .setDisplaySize(CW * 0.5, CH * 0.5).setDepth(200);
+    this.tweens.add({
+      targets: img, x: toX, y: MONSTER_IMG_Y,
+      displayWidth: CW * 0.2, displayHeight: CH * 0.2, alpha: 0.6,
+      duration: 280, ease: "Power2.In",
+      onComplete: () => {
+        img.destroy();
+
+        const target    = this.monsters[idx];
+        const actualDmg = Math.max(0, dmg - target.def);
+        const prevHp    = target.hp;
+        target.hp = Math.max(0, target.hp - actualDmg);
+        const chain = Math.max(0, actualDmg - prevHp);
+
+        this.addBattleLog(`오버킬! ${target.mob.name}에게 ${actualDmg} 연쇄!`);
+        this._sfx("sfx_knifeSlice");
+
+        const monSprite  = this._monsterSprites?.[idx];
+        const damagedKey = `mon_${target.mob.id}_damaged_anim`;
+        const afterAnim  = () => {
+          if (target.hp <= 0 && !target.isDead) {
+            target.isDead = true;
+            const newLevels = this.player.addXp(target.xp);
+            this.player.gold += target.gold;
+            this.addBattleLog(`${target.mob.name} 연쇄 처치! +${target.xp}XP`);
+            if (newLevels.length > 0) {
+              this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
+              this._suitLevelUpCount += newLevels.length;
+            }
+            if (chain > 0) this._applyOverkill(idx, chain, onDone);
+            else onDone?.();
+          } else {
+            onDone?.();
+          }
+        };
+
+        if (monSprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(damagedKey)) {
+          monSprite.play(damagedKey);
+          monSprite.once('animationcomplete', afterAnim);
+        } else {
+          afterAnim();
+        }
+      },
+    });
+  }
+
+  // ── 턴 종료 ──────────────────────────────────────────────────────────────
+  onTurnEnd() {
+    this.isDealing = true;
+    const alive   = this.monsters.filter(m => !m.isDead);
+    const ATK_GAP = 650;
+
+    alive.forEach((m, localIdx) => {
+      const globalIdx = this.monsters.indexOf(m);
+      this.time.delayedCall(localIdx * ATK_GAP, () => {
+        const dmg = Math.max(0, m.atk - this.player.def);
+        this.player.hp = Math.max(0, this.player.hp - dmg);
+        this.addBattleLog(`${m.mob.name}의 공격! ${dmg} 데미지!`);
+        this._showMonsterAttack(globalIdx, dmg);
+        this.refreshPlayerStats();
+        this.refreshBattleLog();
+      });
+    });
+
+    this.time.delayedCall(alive.length * ATK_GAP + 300, () => {
+      try { this.render(); } catch (e) { console.error("[onTurnEnd render]", e); }
+      if (this.player.hp <= 0) {
+        this.time.delayedCall(500, () => this.showGameOver());
+        return;
+      }
+      if (this.deckData.length === 0) {
+        this.addBattleLog("덱 소진!");
+        this.refreshBattleLog();
+        this.time.delayedCall(500, () => this.showGameOver());
+        return;
+      }
+
+      this.fieldData.forEach(card => this._flyToDummy(card.slotX, FIELD_Y, card.key));
+      this.deck.endTurn();
+      this.dummyData = this.deck.dummyPile;
+
+      this.time.delayedCall(500, () => this.startTurn());
+    });
+  }
+
+  // ── 턴 시작 ──────────────────────────────────────────────────────────────
+  startTurn() {
+    this.time.delayedCall(420, () => {
+      try {
+        const slotPos  = this.calcFieldPositions(this.player.fieldSize);
+        const draw     = Math.min(this.player.fieldSize, this.deckData.length);
+        const newCards = Array.from({ length: draw }, () => this.deckData.pop());
+        this.deck.field = newCards;
+        this.fieldData  = newCards.map((c, k) => ({ ...c, slotX: slotPos[k].x }));
+
+        this.fieldPickCount = 0;
+        this.attackCount    = 0;
+        this.selected.clear();
+        this._applySortToHand();
+        this.render();
+        this._saveTurnState();
+      } catch (e) {
+        console.error("[startTurn timer]", e);
+      } finally {
+        this.isDealing = false;
+      }
+    });
+  }
+
+  // ── 배틀 클리어 ──────────────────────────────────────────────────────────
+  onBattleClear() {
+    this.isDealing  = true;
+    this.player.def = 0;
+
+    const g = this.add.graphics().setDepth(300);
+    g.fillStyle(0x000000, 0.6);
+    g.fillRect(0, 0, GW, GH);
+    const pw = 480, ph = 280, px = GW / 2 - 240, py = GH / 2 - 140;
+    g.fillStyle(0x0a2a10, 1);
+    g.fillRoundedRect(px, py, pw, ph, 20);
+    g.lineStyle(3, 0x44dd88);
+    g.strokeRoundedRect(px, py, pw, ph, 20);
+
+    const titleText = this.isBoss ? "ROUND CLEAR!" : "BATTLE CLEAR!";
+    const subText   = this.isBoss
+      ? `ROUND ${this.round} 완료  SCORE: ${this.player.score}`
+      : `${this.round}-${this.battleIndex + 1}  SCORE: ${this.player.score}`;
+    const noteText  = this.isBoss ? "다음 라운드로..." : "다음 전투로...";
+
+    this.add.text(GW / 2, py + 60,  titleText, TS.clearTitle).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 118, subText,   TS.clearSub).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 158, noteText,  TS.clearNote).setOrigin(0.5).setDepth(301);
+
+    const btn = this.add.rectangle(GW / 2, py + ph - 46, 180, 44, 0x1e4e99)
+      .setDepth(302).setInteractive();
+    this.add.text(GW / 2, py + ph - 46, "CONTINUE", TS.overlayBtn)
+      .setOrigin(0.5).setDepth(303);
+    btn.on("pointerover", () => btn.setFillStyle(0x2d66cc));
+    btn.on("pointerout",  () => btn.setFillStyle(0x1e4e99));
+    btn.on("pointerdown", () => {
+      // 모든 카드를 deck으로 모아 셔플 (permanent만 유지)
+      this.deck.resetForNextBattle();
+
+      if (this.isBoss) {
+        writeSave(this.round + 1, this.player.toData(), this.deck.getState());
+        this.scene.start("GameScene", {
+          round:  this.round + 1,
+          player: this.player.toData(),
+          deck:   this.deck.getState(),
+        });
+      } else {
+        this.scene.start("GameScene", {
+          round:        this.round,
+          player:       this.player.toData(),
+          deck:         this.deck.getState(),
+          phase:        'battle',
+          battleIndex:  this.battleIndex + 1,
+        });
+      }
+    });
+  }
+
+  // ── 레벨업 후 처리 ────────────────────────────────────────────────────────
+  _checkLevelUpThenProceed() {
+    const allDead = this.monsters.every(m => m.isDead);
+    if (this._suitLevelUpCount > 0) {
+      this.isDealing = true;
+      this._showLevelUpPopup(() => {
+        this.isDealing = false;
+        if (allDead) this.time.delayedCall(500, () => this.onBattleClear());
+      });
+    } else if (allDead) {
+      this.time.delayedCall(700, () => this.onBattleClear());
+    }
+  }
+
+  // ── 레벨업 suit 선택 팝업 ─────────────────────────────────────────────────
+  _showLevelUpPopup(onAllDone) {
+    const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
+    const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
+    const SUIT_DESCS  = { S: 'MON DEF\u2193', H: 'HP\u2191', D: 'MY DEF\u2191', C: 'MON ATK\u2193' };
+    const SUIT_KEYS   = ['S', 'H', 'D', 'C'];
+
+    const objs    = [];
+    const destroy = () => objs.forEach(o => o?.destroy());
+    const cx = GW / 2, cy = GH / 2;
+    const pw = 460, ph = 310;
+    const px = cx - pw / 2, py = cy - ph / 2;
+
+    const dim = this.add.rectangle(cx, cy, GW, GH, 0x000000, 0.72).setDepth(800).setInteractive();
+    objs.push(dim);
+
+    const pg = this.add.graphics().setDepth(801);
+    pg.fillStyle(0x082012);
+    pg.fillRoundedRect(px, py, pw, ph, 16);
+    pg.lineStyle(3, 0x44dd88);
+    pg.strokeRoundedRect(px, py, pw, ph, 16);
+    objs.push(pg);
+
+    objs.push(this.add.text(cx, py + 38,
+      `LEVEL UP!  Lv${this.player.level}`,
+      { fontFamily: "'PressStart2P', Arial", fontSize: '14px', color: '#ffdd44' })
+      .setOrigin(0.5).setDepth(802));
+
+    const remTxt = this.add.text(cx, py + 72,
+      `SUIT 선택 (${this._suitLevelUpCount}회 남음)`,
+      { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#aaffcc' })
+      .setOrigin(0.5).setDepth(802);
+    objs.push(remTxt);
+
+    const btnY = py + 160, btnW = 84, btnH = 68, btnGap = 100;
+    const btnX0 = cx - btnGap * 1.5;
+
+    SUIT_KEYS.forEach((suit, idx) => {
+      const bx = btnX0 + idx * btnGap;
+      const btnBg  = this.add.rectangle(bx, btnY, btnW, btnH, 0x1a4a2a).setDepth(802).setInteractive();
+      const symTxt = this.add.text(bx, btnY - 12, SUIT_SYMS[suit],
+        { fontFamily: 'Arial', fontSize: '24px', color: SUIT_COLORS[suit] }).setOrigin(0.5).setDepth(803);
+      const lvTxt  = this.add.text(bx, btnY + 10, `Lv${this.player.attrs[suit]}`,
+        { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: SUIT_COLORS[suit] }).setOrigin(0.5).setDepth(803);
+      const descTxt = this.add.text(bx, btnY + 26, SUIT_DESCS[suit],
+        { fontFamily: "'PressStart2P', Arial", fontSize: '7px', color: '#88aa88' }).setOrigin(0.5).setDepth(803);
+
+      btnBg.on('pointerdown', () => {
+        if (this._suitLevelUpCount <= 0) return;
+        this.player.attrs[suit]++;
+        this._suitLevelUpCount--;
+        this.addBattleLog(`${SUIT_SYMS[suit]} Lv${this.player.attrs[suit]}!`);
+        lvTxt.setText(`Lv${this.player.attrs[suit]}`);
+        remTxt.setText(`SUIT 선택 (${this._suitLevelUpCount}회 남음)`);
+        this.refreshPlayerLevel();
+        if (this._suitLevelUpCount <= 0) { destroy(); onAllDone?.(); }
+      });
+      btnBg.on('pointerover', () => btnBg.setFillStyle(0x2a6644));
+      btnBg.on('pointerout',  () => btnBg.setFillStyle(0x1a4a2a));
+      objs.push(btnBg, symTxt, lvTxt, descTxt);
+    });
+  }
+
+  // ── 카드 확대 미리보기 ────────────────────────────────────────────────────
+  _showCardPreview(key, srcX, srcY, depth = 500) {
+    this._hideCardPreview();
+    const PW = PLAYER_PANEL_W;
+    const PW_ = CW * 1.7, PH_ = CH * 1.7;
+    let px = srcX;
+    let py = srcY - FIELD_CH / 2 - PH_ / 2 - 10;
+    px = Phaser.Math.Clamp(px, PW + PW_ / 2 + 6, GW - PW_ / 2 - 6);
+    py = Phaser.Math.Clamp(py, PH_ / 2 + 6, GH - PH_ / 2 - 6);
+    this._cardPreviewObjs = [
+      this.add.rectangle(px, py, PW_ + 10, PH_ + 10, 0x000000, 0.75).setDepth(depth),
+      this.add.image(px, py, key).setDisplaySize(PW_, PH_).setDepth(depth + 1),
+    ];
+  }
+
+  _hideCardPreview() {
+    if (!this._cardPreviewObjs) return;
+    this._cardPreviewObjs.forEach(o => o?.destroy());
+    this._cardPreviewObjs = null;
+  }
+
+  // ── 턴 시작 세이브 ────────────────────────────────────────────────────────
+  _saveTurnState() {
+    writeSave(this.round, this.player.toData(), this.deck.getState(), {
+      isBoss:      this.isBoss,
+      battleIndex: this.battleIndex,
+      normalCount: this.normalCount,
+      monsterTier: this.monsterTier,
+      totalCost:   this.totalCost,
+      monsters:    this.monsters,
+    });
+  }
+
+  // ── 덱/더미 카드 목록 팝업 ────────────────────────────────────────────────
+  _showPilePopup(pileData, title) {
+    if (this._pilePopupObjs) return;
+    const objs = this._pilePopupObjs = [];
+
+    const RANK_LIST = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const CW_ = FIELD_CW, CH_ = FIELD_CH;
+    const GAP_X  = CW_ + 4, ROW_H = CH_ + 16, LABEL_W = 26, PAD = 20;
+    const panelX = PLAYER_PANEL_W + PAD;
+    const panelW = GW - PLAYER_PANEL_W - PAD * 2;
+
+    const bySuit = { S:[], H:[], D:[], C:[] };
+    for (const card of pileData) {
+      const s = card.key[0];
+      if (bySuit[s]) bySuit[s].push(card);
+    }
+    SUITS.forEach(s =>
+      bySuit[s].sort((a, b) =>
+        RANK_LIST.indexOf(a.key.slice(1)) - RANK_LIST.indexOf(b.key.slice(1))
+      )
+    );
+
+    const titleH  = 38, closeH = 40;
+    const panelH  = titleH + SUITS.length * ROW_H + closeH;
+    const panelTop = Math.max(BATTLE_LOG_H + 6, (GH - panelH) / 2);
+    const panelCX  = panelX + panelW / 2;
+
+    const dim = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x000000, 0.78)
+      .setDepth(600).setInteractive();
+    objs.push(dim);
+    objs.push(
+      this.add.rectangle(panelCX, panelTop + panelH / 2, panelW, panelH, 0x0a1e12, 0.97)
+        .setDepth(601).setStrokeStyle(1, 0x3a7a4a)
+    );
+    objs.push(
+      this.add.text(panelCX, panelTop + titleH / 2,
+        `${title}  (${pileData.length})`,
+        { fontFamily:"'PressStart2P',Arial", fontSize:'11px', color:'#ccffcc' }
+      ).setOrigin(0.5).setDepth(602)
+    );
+
+    const SUIT_SYMS   = { S:'♠', H:'♥', D:'♦', C:'♣' };
+    const SUIT_COLORS = { S:'#8888ff', H:'#ff6666', D:'#ff6666', C:'#8888ff' };
+    const rowsY = panelTop + titleH;
+
+    SUITS.forEach((suit, si) => {
+      const cy    = rowsY + si * ROW_H + CH_ / 2 + 8;
+      const cards = bySuit[suit];
+      objs.push(
+        this.add.text(panelX + LABEL_W / 2, cy, SUIT_SYMS[suit],
+          { fontFamily:'Arial', fontSize:'18px', color: SUIT_COLORS[suit] }
+        ).setOrigin(0.5).setDepth(602)
+      );
+      cards.forEach((card, ci) => {
+        const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
+        const img = this.add.image(cx, cy, card.key)
+          .setDisplaySize(CW_, CH_).setDepth(602).setInteractive();
+        img.on('pointerover', () => {
+          this.tweens.add({ targets: img, displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100 });
+          img.setDepth(650);
+        });
+        img.on('pointerout', () => {
+          this.tweens.add({ targets: img, displayWidth: CW_, displayHeight: CH_, duration: 100 });
+          img.setDepth(602);
+        });
+        objs.push(img);
+      });
+    });
+
+    const closeY  = rowsY + SUITS.length * ROW_H + closeH / 2;
+    const closeBg = this.add.rectangle(panelCX, closeY, 130, 28, 0x1a3a22)
+      .setDepth(602).setStrokeStyle(1, 0x4a9a5a);
+    const closeTxt = this.add.text(panelCX, closeY, 'CLOSE',
+      { fontFamily:"'PressStart2P',Arial", fontSize:'10px', color:'#aaffaa' }
+    ).setOrigin(0.5).setDepth(603).setInteractive();
+    closeTxt.on('pointerdown', () => this._closePilePopup());
+    dim.on('pointerdown', () => this._closePilePopup());
+    objs.push(closeBg, closeTxt);
+  }
+
+  _closePilePopup() {
+    if (!this._pilePopupObjs) return;
+    this._hideCardPreview();
+    this._pilePopupObjs.forEach(o => o.destroy());
+    this._pilePopupObjs = null;
+  }
+
+  // ── 배틀 로그 팝업 ────────────────────────────────────────────────────────
+  _showBattleLogPopup() {
+    if (this._logPopupObjs) return;
+    const objs = this._logPopupObjs = [];
+    const pw = GW - PLAYER_PANEL_W - ITEM_PANEL_W, ph = 430;
+    const px = PLAYER_PANEL_W, py = BATTLE_LOG_H;
+    const cx = px + pw / 2;
+
+    const dim = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x000000, 0.65)
+      .setDepth(700).setInteractive();
+    dim.on('pointerdown', () => this._closeBattleLogPopup());
+    objs.push(dim);
+
+    const pg = this.add.graphics().setDepth(701);
+    pg.fillStyle(0x0a1e12);
+    pg.fillRoundedRect(px, py, pw, ph, 14);
+    pg.lineStyle(2, 0x2d7a3a);
+    pg.strokeRoundedRect(px, py, pw, ph, 14);
+    objs.push(pg);
+
+    objs.push(this.add.text(cx, py + 22, 'BATTLE LOG',
+      { fontFamily: "'PressStart2P', Arial", fontSize: '13px', color: '#44ffaa' })
+      .setOrigin(0.5).setDepth(702));
+
+    const lines  = this._fullBattleLog.slice(-18);
+    const lineH  = 18;
+    const startY = py + 50;
+    lines.forEach((line, i) => {
+      const alpha = 0.5 + 0.5 * (i / Math.max(1, lines.length - 1));
+      objs.push(this.add.text(px + 16, startY + i * lineH, line,
+        { fontFamily: 'Arial', fontSize: '12px', color: '#ccffcc', alpha })
+        .setOrigin(0, 0).setDepth(702));
+    });
+
+    const closeBtn = this.add.rectangle(cx, py + ph - 28, 140, 34, 0x335544)
+      .setDepth(702).setInteractive();
+    objs.push(closeBtn,
+      this.add.text(cx, py + ph - 28, 'CLOSE',
+        { fontFamily: "'PressStart2P', Arial", fontSize: '10px', color: '#ffffff' })
+        .setOrigin(0.5).setDepth(703));
+    closeBtn.on('pointerdown', () => this._closeBattleLogPopup());
+    closeBtn.on('pointerover', () => closeBtn.setFillStyle(0x447766));
+    closeBtn.on('pointerout',  () => closeBtn.setFillStyle(0x335544));
+  }
+
+  _closeBattleLogPopup() {
+    if (!this._logPopupObjs) return;
+    this._logPopupObjs.forEach(o => o.destroy());
+    this._logPopupObjs = null;
+  }
+
+  // ── 게임 오버 ────────────────────────────────────────────────────────────
+  showGameOver() {
+    this.isDealing = true;
+    deleteSave();
+
+    const g = this.add.graphics().setDepth(300);
+    g.fillStyle(0x000000, 0.72);
+    g.fillRect(0, 0, GW, GH);
+    const pw = 500, ph = 320, px = GW / 2 - 250, py = GH / 2 - 160;
+    g.fillStyle(0x0d2b18, 1);
+    g.fillRoundedRect(px, py, pw, ph, 20);
+    g.lineStyle(3, 0xcc2200);
+    g.strokeRoundedRect(px, py, pw, ph, 20);
+
+    this.add.text(GW / 2, py + 72, "GAME OVER", TS.gameOverTitle).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 148, "FINAL SCORE", TS.gameOverScoreLabel).setOrigin(0.5).setDepth(301);
+    this.add.text(GW / 2, py + 182, `${this.player.score}`, TS.gameOverScore).setOrigin(0.5).setDepth(301);
+
+    const btnBg = this.add.rectangle(GW / 2, py + ph - 50, 220, 54, 0x1e4e99).setDepth(302).setInteractive();
+    this.add.text(GW / 2, py + ph - 50, "MAIN MENU", TS.overlayBtn).setOrigin(0.5).setDepth(303);
+    btnBg.on("pointerdown", () => this.scene.start("MainMenuScene"));
+    btnBg.on("pointerover", () => btnBg.setFillStyle(0x2d66cc));
+    btnBg.on("pointerout",  () => btnBg.setFillStyle(0x1e4e99));
+  }
+
+  showMsg(text, dur = 2000) {
+    this.msgTxt.setText(text);
+    if (this._mt) this._mt.remove();
+    this._mt = this.time.delayedCall(dur, () => this.msgTxt.setText(""));
+  }
+
+  // ── 인게임 옵션 오버레이 ─────────────────────────────────────────────────
+  _showOptions() {
+    if (this._optOverlayObjs) return;
+    this.isDealing = true;
+
+    const objs = this._optOverlayObjs = [];
+    const cx = GW / 2, cy = GH / 2;
+    const pw = 400, ph = 360;
+
+    const dim = this.add.rectangle(cx, cy, GW, GH, 0x000000, 0.65)
+      .setDepth(600).setInteractive();
+    objs.push(dim);
+
+    const panelG = this.add.graphics().setDepth(601);
+    panelG.fillStyle(0x0d2b18);
+    panelG.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
+    panelG.lineStyle(2, 0x2d7a3a);
+    panelG.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
+    objs.push(panelG);
+
+    objs.push(this.add.text(cx, cy - ph / 2 + 44, "OPTIONS", TS.optTitle).setOrigin(0.5).setDepth(602));
+
+    // BGM 볼륨
+    let bgm = this.registry.get("bgmVolume") ?? 7;
+    const bgmY = cy - 70;
+    objs.push(this.add.text(cx, bgmY - 28, "BGM", TS.optLabel).setOrigin(0.5).setDepth(602));
+
+    const bgmMinus = this.add.rectangle(cx - 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
+    objs.push(bgmMinus, this.add.text(cx - 80, bgmY, "-", TS.optBtn).setOrigin(0.5).setDepth(603));
+    const bgmTxt = this.add.text(cx, bgmY, String(bgm), TS.optValue).setOrigin(0.5).setDepth(602);
+    objs.push(bgmTxt);
+    const bgmPlus = this.add.rectangle(cx + 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
+    objs.push(bgmPlus, this.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
+    const bgmBarBg = this.add.rectangle(cx, bgmY + 28, 190, 7, 0x224433).setDepth(602);
+    const bgmBar   = this.add.rectangle(cx - 95, bgmY + 28, bgm * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
+    objs.push(bgmBarBg, bgmBar);
+    const updateBgm = (v) => {
+      bgm = Phaser.Math.Clamp(v, 0, 10);
+      this.registry.set("bgmVolume", bgm);
+      bgmTxt.setText(String(bgm));
+      bgmBar.setDisplaySize(Math.max(1, bgm * 19), 7);
+      saveOptionsByRegistry();
+    };
+    bgmMinus.on("pointerdown", () => updateBgm(bgm - 1));
+    bgmPlus.on("pointerdown",  () => updateBgm(bgm + 1));
+    bgmMinus.on("pointerover", () => bgmMinus.setFillStyle(0x447766));
+    bgmMinus.on("pointerout",  () => bgmMinus.setFillStyle(0x335544));
+    bgmPlus.on("pointerover",  () => bgmPlus.setFillStyle(0x447766));
+    bgmPlus.on("pointerout",   () => bgmPlus.setFillStyle(0x335544));
+
+    // SFX 볼륨
+    let sfx = this.registry.get("sfxVolume") ?? 7;
+    const sfxY = cy + 50;
+    objs.push(this.add.text(cx, sfxY - 28, "SFX", TS.optLabel).setOrigin(0.5).setDepth(602));
+
+    const sfxMinus = this.add.rectangle(cx - 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
+    objs.push(sfxMinus, this.add.text(cx - 80, sfxY, "-", TS.optBtn).setOrigin(0.5).setDepth(603));
+    const sfxTxt = this.add.text(cx, sfxY, String(sfx), TS.optValue).setOrigin(0.5).setDepth(602);
+    objs.push(sfxTxt);
+    const sfxPlus = this.add.rectangle(cx + 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
+    objs.push(sfxPlus, this.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
+    const sfxBarBg = this.add.rectangle(cx, sfxY + 28, 190, 7, 0x224433).setDepth(602);
+    const sfxBar   = this.add.rectangle(cx - 95, sfxY + 28, sfx * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
+    objs.push(sfxBarBg, sfxBar);
+    const updateSfx = (v) => {
+      sfx = Phaser.Math.Clamp(v, 0, 10);
+      this.registry.set("sfxVolume", sfx);
+      sfxTxt.setText(String(sfx));
+      sfxBar.setDisplaySize(Math.max(1, sfx * 19), 7);
+      saveOptionsByRegistry();
+    };
+    sfxMinus.on("pointerdown", () => updateSfx(sfx - 1));
+    sfxPlus.on("pointerdown",  () => updateSfx(sfx + 1));
+    sfxMinus.on("pointerover", () => sfxMinus.setFillStyle(0x447766));
+    sfxMinus.on("pointerout",  () => sfxMinus.setFillStyle(0x335544));
+    sfxPlus.on("pointerover",  () => sfxPlus.setFillStyle(0x447766));
+    sfxPlus.on("pointerout",   () => sfxPlus.setFillStyle(0x335544));
+
+    // MAIN MENU 버튼
+    const exitBtn = this.add.rectangle(cx - 80, cy + ph / 2 - 48, 140, 48, 0x882211)
+      .setDepth(602).setInteractive();
+    objs.push(exitBtn, this.add.text(cx - 80, cy + ph / 2 - 48, "MAIN MENU", TS.menuBtn).setOrigin(0.5).setDepth(603));
+    exitBtn.on("pointerdown", () => {
+      writeSave(this.round, this.player.toData(), this.deck.getState());
+      this.scene.start("MainMenuScene");
+    });
+    exitBtn.on("pointerover", () => exitBtn.setFillStyle(0xaa2222));
+    exitBtn.on("pointerout",  () => exitBtn.setFillStyle(0x882211));
+
+    // CLOSE 버튼
+    const closeBtn = this.add.rectangle(cx + 80, cy + ph / 2 - 48, 140, 48, 0x335544)
+      .setDepth(602).setInteractive();
+    objs.push(closeBtn, this.add.text(cx + 80, cy + ph / 2 - 48, "CLOSE", TS.menuBtn).setOrigin(0.5).setDepth(603));
+    closeBtn.on("pointerdown", () => this._closeOptions());
+    closeBtn.on("pointerover", () => closeBtn.setFillStyle(0x447766));
+    closeBtn.on("pointerout",  () => closeBtn.setFillStyle(0x335544));
+  }
+
+  _closeOptions() {
+    if (!this._optOverlayObjs) return;
+    this._optOverlayObjs.forEach(o => o.destroy());
+    this._optOverlayObjs = null;
+    this.isDealing = false;
+  }
+}
