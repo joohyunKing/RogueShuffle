@@ -190,7 +190,7 @@ export class BattleScene extends Phaser.Scene {
     this.createUI();
     this.createSortButton();
     this.setupDrag();
-    //this.startDealAnimation(); //애니메이션 이상해서 안쓴다.
+    this.startDealAnimation();
   }
 
   // ── 배경 & 패널 ──────────────────────────────────────────────────────────
