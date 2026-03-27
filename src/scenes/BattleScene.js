@@ -149,6 +149,7 @@ export class BattleScene extends Phaser.Scene {
     this._logExpandedLines = null;
     this._logScrollOffset = 0;
     this._logWheelHandler = null;
+    this._logPointerHandlers = null;
     this._pilePopupObjs = null;
     this._cardPreviewObjs = null;
 
@@ -354,8 +355,6 @@ export class BattleScene extends Phaser.Scene {
     const logHit = this.add.rectangle(faCX, BATTLE_LOG_H / 2, FAW_, BATTLE_LOG_H, 0xffffff, 0)
       .setDepth(15).setInteractive();
     logHit.on('pointerdown', () => this._toggleBattleLog());
-    logHit.on('pointerover', () => { this._logLine1.setAlpha(0.75); this._logLine2.setAlpha(0.75); });
-    logHit.on('pointerout',  () => { this._logLine1.setAlpha(0.55); this._logLine2.setAlpha(1.0);  });
 
     this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg)
       .setOrigin(0.5, 0).setDepth(100);
@@ -1844,46 +1843,64 @@ export class BattleScene extends Phaser.Scene {
     const CX   = PW + 10;
     const FAW_ = FAW - 20;
 
-    // 배경 (몬스터 영역과 같은 x/width, 하단만 radius)
+    const lineH = 20;
+    const maxLines = Math.floor((panelH - BATTLE_LOG_H - 8) / lineH);
+
+    // ── 패널 배경 ─────────────────────────────────────────────────────────
     const g = this.add.graphics().setDepth(500);
     g.fillStyle(0x050e08, 0.97);
     g.fillRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
     g.lineStyle(1, 0x4a7055);
     g.strokeRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
-    // 헤더 구분선
     g.lineStyle(1, 0x2a5a38);
     g.lineBetween(CX, BATTLE_LOG_H, CX + FAW_, BATTLE_LOG_H);
     this._logExpandedBg.push(g);
 
-    // 헤더 (collapsed 와 동일 스타일: TS.log)
-    const hdrTxt = this.add.text(cx, BATTLE_LOG_H / 2, '▲ BATTLE LOG  (클릭하여 닫기)', TS.log)
+    const hdrTxt = this.add.text(cx, BATTLE_LOG_H / 2, '▲ BATTLE LOG', TS.log)
       .setOrigin(0.5).setDepth(501).setColor('#44ffaa');
     this._logExpandedBg.push(hdrTxt);
 
-    // 헤더 히트영역 (닫기)
-    const hdrHit = this.add.rectangle(cx, BATTLE_LOG_H / 2, FAW_, BATTLE_LOG_H, 0xffffff, 0)
-      .setDepth(502).setInteractive();
-    hdrHit.on('pointerdown', () => this._hideExpandedLog());
-    this._logExpandedBg.push(hdrHit);
-
-    // 스크롤 오프셋 초기값: 최신이 맨 아래
-    const lineH = 16;
-    const maxLines = Math.floor((panelH - BATTLE_LOG_H - 12) / lineH);
+    // ── 스크롤 초기값 (최신 줄이 맨 아래) ────────────────────────────────
     this._logScrollOffset = Math.max(0, this._fullBattleLog.length - maxLines);
-
     this._updateExpandedLogLines();
 
-    // 휠 스크롤
-    this._logWheelHandler = (pointer, gameObjs, dx, dy) => {
-      const logs = this._fullBattleLog;
-      const lh = 16;
-      const ml = Math.floor((panelH - BATTLE_LOG_H - 12) / lh);
-      const maxOff = Math.max(0, logs.length - ml);
+    // ── 마우스 휠 스크롤 ──────────────────────────────────────────────────
+    this._logWheelHandler = (_p, _g, _dx, dy) => {
+      const maxOff = Math.max(0, this._fullBattleLog.length - maxLines);
       if (dy > 0) this._logScrollOffset = Math.min(maxOff, this._logScrollOffset + 3);
       else        this._logScrollOffset = Math.max(0, this._logScrollOffset - 3);
       this._updateExpandedLogLines();
     };
     this.input.on('wheel', this._logWheelHandler);
+
+    // ── 터치 드래그 스크롤 + 바깥 클릭 닫기 ──────────────────────────────
+    let dragStartY = null;
+    let dragStartOffset = 0;
+
+    const onDown = (pointer) => {
+      const inPanel = pointer.x >= CX && pointer.x <= CX + FAW_ &&
+                      pointer.y >= 0  && pointer.y <= panelH;
+      if (!inPanel) {
+        this._hideExpandedLog();
+        return;
+      }
+      dragStartY = pointer.y;
+      dragStartOffset = this._logScrollOffset;
+    };
+    const onMove = (pointer) => {
+      if (dragStartY === null || !pointer.isDown) return;
+      const deltaY = dragStartY - pointer.y;
+      const maxOff = Math.max(0, this._fullBattleLog.length - maxLines);
+      this._logScrollOffset = Math.max(0, Math.min(maxOff,
+        Math.round(dragStartOffset + deltaY / lineH)));
+      this._updateExpandedLogLines();
+    };
+    const onUp = () => { dragStartY = null; };
+
+    this.input.on('pointerdown', onDown);
+    this.input.on('pointermove', onMove);
+    this.input.on('pointerup',   onUp);
+    this._logPointerHandlers = { onDown, onMove, onUp };
   }
 
   _updateExpandedLogLines() {
@@ -1929,6 +1946,12 @@ export class BattleScene extends Phaser.Scene {
     if (this._logWheelHandler) {
       this.input.off('wheel', this._logWheelHandler);
       this._logWheelHandler = null;
+    }
+    if (this._logPointerHandlers) {
+      this.input.off('pointerdown', this._logPointerHandlers.onDown);
+      this.input.off('pointermove', this._logPointerHandlers.onMove);
+      this.input.off('pointerup',   this._logPointerHandlers.onUp);
+      this._logPointerHandlers = null;
     }
   }
 
