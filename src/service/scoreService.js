@@ -19,7 +19,7 @@ console.log(calculateScore(sample_cards, sample_context));
 
 */
 
-import { HAND_RANK, HAND_NAME } from "../constants.js";
+import { HAND_RANK, HAND_DATA } from "../constants.js";
 import relicData from '../data/relic.json';
 
 //최종 점수
@@ -32,7 +32,7 @@ export function calculateScore(cards, context) {
     const ctx = {
         ...context,
         handRank: handResult.rank,
-        handName: HAND_NAME[handResult.rank],
+        handName: HAND_DATA[handResult.rank].key,
         cards: handResult.cards // 실제 사용된 5장
     };
 
@@ -52,7 +52,7 @@ export function calculateScore(cards, context) {
         handName: ctx.handName,
         score,
         cards: ctx.cards,
-        aoe: handResult.aoe ?? false
+        aoe: ctx.handConfig?.[handResult.rank]?.aoe ?? handResult.aoe ?? false,
     };
 }
 
@@ -65,18 +65,8 @@ function calcHandScore(cards, ctx, relics) {
         total += calcCardScore(card, ctx, relics);
     }
 
-    switch (ctx.handRank) {
-        case HAND_RANK.FIVE_CARD: multiple = 8; break;
-        case HAND_RANK.STRAIGHT_FLUSH: multiple = 7; break;
-        case HAND_RANK.FOUR_OF_A_KIND: multiple = 6; break;
-        case HAND_RANK.FULL_HOUSE: multiple = 4; break;
-        case HAND_RANK.FLUSH: multiple = 4; break;
-        case HAND_RANK.STRAIGHT: multiple = 4; break;
-        case HAND_RANK.TWO_PAIR: multiple = 3; break;
-        case HAND_RANK.TRIPLE: multiple = 2; break;
-        case HAND_RANK.ONE_PAIR: multiple = 2; break;
-        default: multiple = 1;
-    }
+    // ctx.handConfig (player.handConfig) 우선, 없으면 1
+    multiple = ctx.handConfig?.[ctx.handRank]?.multi ?? 1;
 
     //console.log("handRank : " + ctx.handRank + " / total : " + total+ " / multiple : " + multiple);
 

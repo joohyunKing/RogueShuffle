@@ -34,18 +34,59 @@ export const HAND_RANK = {
     HIGH_CARD: 0
 };
 
-export const HAND_NAME = {
-    9: "FIVE_CARD",
-    8: "STRAIGHT_FLUSH",
-    7: "FOUR_OF_A_KIND",
-    6: "FULL_HOUSE",
-    5: "FLUSH",
-    4: "STRAIGHT",
-    3: "TWO_PAIR",
-    2: "TRIPLE",
-    1: "ONE_PAIR",
-    0: "HIGH_CARD"
-};
+export const HAND_DATA = {
+    9: {
+      key: "FIVE_CARD",
+      multi: 8,
+      aoe: true
+    },
+    8: {
+      key: "STRAIGHT_FLUSH",
+      multi: 7,
+      aoe: true
+    },
+    7: {
+      key: "FOUR_OF_A_KIND",
+      multi: 6,
+      aoe: true
+    },
+    6: {
+      key: "FULL_HOUSE",
+      multi: 4,
+      aoe: true
+    },
+    5: {
+      key: "FLUSH",
+      multi: 4,
+      aoe: true
+    },
+    4: {
+      key: "STRAIGHT",
+      multi: 4,
+      aoe: true
+    },
+    3: {
+      key: "TWO_PAIR",
+      multi: 3,
+      aoe: false
+    },
+    2: {
+      key: "TRIPLE",
+      multi: 2,
+      aoe: false
+    },
+    1: {
+      key: "ONE_PAIR",
+      multi: 2,
+      aoe: false
+    },
+    0: {
+      key: "HIGH_CARD",
+      multi: 1,
+      aoe: false
+    }
+  };
+
 
 // ─── context ──────────────────────────────────────────────────────────────
 export const context = {
@@ -79,3 +120,5 @@ export const HAND_Y  = 625;                   // 핸드 카드 중심  (패널: 
 export const HAND_TOP = HAND_Y - CH / 2 - 18; // 535 — 드롭 판정 기준
 
 export const DEAL_DELAY = 110;
+
+export const DEBUG_MODE = true;

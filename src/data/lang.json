@@ -1,0 +1,91 @@
+{
+    "en": {
+      "hand": {
+        "HIGH_CARD": {
+          "name": "High Card",
+          "desc": "No combo (highest card only)"
+        },
+        "ONE_PAIR": {
+          "name": "Pair",
+          "desc": "Two cards of the same rank"
+        },
+        "TWO_PAIR": {
+          "name": "Two Pair",
+          "desc": "Two different pairs"
+        },
+        "TRIPLE": {
+          "name": "Three",
+          "desc": "Three cards of the same rank"
+        },
+        "STRAIGHT": {
+          "name": "Straight",
+          "desc": "Five cards in sequence"
+        },
+        "FLUSH": {
+          "name": "Flush",
+          "desc": "Five cards of the same suit"
+        },
+        "FULL_HOUSE": {
+          "name": "Full House",
+          "desc": "Three of a kind + a pair"
+        },
+        "FOUR_OF_A_KIND": {
+          "name": "Four",
+          "desc": "Four cards of the same rank"
+        },
+        "STRAIGHT_FLUSH": {
+          "name": "STR Flush",
+          "desc": "Five sequential cards of the same suit"
+        },
+        "FIVE_CARD": {
+          "name": "Five Card",
+          "desc": "five cards of the same rank"
+        }
+      }
+    },
+  
+    "ko": {
+      "hand": {
+        "HIGH_CARD": {
+          "name": "하이카드",
+          "desc": "조합 없음 (가장 높은 카드 기준)"
+        },
+        "ONE_PAIR": {
+          "name": "페어",
+          "desc": "같은 숫자 카드 2장"
+        },
+        "TWO_PAIR": {
+          "name": "투 페어",
+          "desc": "같은 숫자 2장씩 2세트"
+        },
+        "TRIPLE": {
+          "name": "트리플",
+          "desc": "같은 숫자 카드 3장"
+        },
+        "STRAIGHT": {
+          "name": "스트레이트",
+          "desc": "숫자가 연속된 카드 5장"
+        },
+        "FLUSH": {
+          "name": "플러시",
+          "desc": "같은 무늬 카드 5장"
+        },
+        "FULL_HOUSE": {
+          "name": "풀하우스",
+          "desc": "트리플 + 페어 조합"
+        },
+        "FOUR_OF_A_KIND": {
+          "name": "포카드",
+          "desc": "같은 숫자 카드 4장"
+        },
+        "STRAIGHT_FLUSH": {
+          "name": "스트레이트 플러시",
+          "desc": "같은 무늬 + 연속된 5장"
+        },
+        "FIVE_CARD": {
+          "name": "파이브 카드",
+          "desc": "같은 숫자 카드 5장"
+        }
+      }
+    }
+  }

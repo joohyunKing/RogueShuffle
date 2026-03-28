@@ -1,6 +1,7 @@
-import { PLAYER_PANEL_W, GH } from "../constants.js";
+import { PLAYER_PANEL_W, GH, HAND_DATA } from "../constants.js";
 import { TS } from "../textStyles.js";
 import { getRequiredExp } from "../manager/playerManager.js";
+import langData from "../data/lang.json";
 
 const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
 const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
@@ -11,6 +12,18 @@ const SUIT_DESCS  = {
   C: ['♣ Clubs',  '적 ATK 감소', 'Lv × 적응 × ♣장'],
 };
 const SUIT_KEYS = ['S', 'H', 'D', 'C'];
+
+const DEF_TOOLTIP = ['DEF', '받는 피해를 감소시킵니다', '실제 피해 = max(0, 피해 - DEF)', '라운드 종료 시 0으로 초기화'];
+const ATK_TOOLTIP = ['ATK', '카드 점수에 합산됩니다', '공격력 = 카드 점수 + ATK', '레벨업 시 +1 증가'];
+
+// 높은 rank → 낮은 rank 순으로 표시
+const HAND_RANKS_DESC = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+
+/** lang.json에서 족보 표시 이름 가져오기 */
+function getHandName(rank, lang) {
+  const key = HAND_DATA[rank]?.key;
+  return langData[lang]?.hand?.[key]?.name ?? key ?? String(rank);
+}
 
 /**
  * PlayerUI — 좌측 플레이어 정보 패널 (200px)
@@ -30,6 +43,7 @@ export class PlayerUI {
     this.opts   = {
       round: 1, battleLabel: null,
       showAtk: false, showDeckCounts: false, showTooltips: false,
+      showHandConfig: false,
       depth: 12,
       ...opts,
     };
@@ -47,8 +61,8 @@ export class PlayerUI {
     this._attrTxts       = {};
     this._deckCountTxt   = null;
     this._dummyCountTxt  = null;
-    this._fieldCountTxt  = null;
-    this._handCountTxt   = null;
+    // handConfig 표시용 mutable refs (rank → { multiTxt, aoeDot })
+    this._handConfigRows = {};
   }
 
   _add(obj) { this._objs.push(obj); return obj; }
@@ -121,51 +135,79 @@ export class PlayerUI {
       scene.add.rectangle(px, ry, 1, 7, 0xdd3333).setOrigin(0, 0.5).setDepth(D + 1)
     );
 
-    // ── DEF ────────────────────────────────────────────────────────────────
+    // ── DEF + ATK (같은 행) ─────────────────────────────────────────────────
     ry += 16;
     this._add(scene.add.text(px, ry, "DEF", TS.infoLabel).setDepth(D));
     this.playerDefTxt = this._add(
-      scene.add.text(R, ry, "", TS.playerDef).setOrigin(1, 0).setDepth(D)
+      scene.add.text(PW / 2 - 8, ry, "", TS.playerDef).setOrigin(1, 0).setDepth(D)
     );
-
-    // ── ATK (선택) ──────────────────────────────────────────────────────────
     if (opts.showAtk) {
-      ry += ROW;
-      this._add(scene.add.text(px, ry, "ATK", TS.infoLabel).setDepth(D));
+      this._add(scene.add.text(PW / 2 + 4, ry, "ATK", TS.infoLabel).setDepth(D));
       this.playerAtkTxt = this._add(
         scene.add.text(R, ry, `${p.atk}`, TS.playerDef).setOrigin(1, 0).setDepth(D)
       );
     }
 
+    // DEF / ATK 툴팁 히트 영역 (rowY를 const로 고정해 클로저 캡처 오류 방지)
+    {
+      const rowY   = ry;
+      const hitH   = ROW;
+      const halfW  = PW / 2 - 8;
+      const defHit = this._add(
+        scene.add.rectangle(px + halfW / 2, rowY + hitH / 2, halfW, hitH, 0xffffff, 0)
+          .setDepth(D + 2).setInteractive()
+      );
+      defHit.on('pointerover', () => this._showTooltipAt(DEF_TOOLTIP, '#aaaadd', rowY));
+      defHit.on('pointerout',  () => this._hideTooltip());
+      defHit.on('pointerdown', () => this._showTooltipAt(DEF_TOOLTIP, '#aaaadd', rowY));
+
+      if (opts.showAtk) {
+        const atkHit = this._add(
+          scene.add.rectangle(PW / 2 + 4 + halfW / 2, rowY + hitH / 2, halfW, hitH, 0xffffff, 0)
+            .setDepth(D + 2).setInteractive()
+        );
+        atkHit.on('pointerover', () => this._showTooltipAt(ATK_TOOLTIP, '#ffdd44', rowY));
+        atkHit.on('pointerout',  () => this._hideTooltip());
+        atkHit.on('pointerdown', () => this._showTooltipAt(ATK_TOOLTIP, '#ffdd44', rowY));
+      }
+    }
+
     ry += ROW + 6;
     this._add(scene.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(D));
 
-    // ── Suit 레벨 ───────────────────────────────────────────────────────────
-    const SUIT_ROW = 30;
+    // ── Suit 레벨 (2×2 grid) ────────────────────────────────────────────────
+    const SUIT_ROW  = 30;
+    const SUIT_COLS = [['S', 'H'], ['D', 'C']];
+    const colX      = [px, PW / 2];
     ry += 12;
-    SUIT_KEYS.forEach((suit, idx) => {
-      const sy = ry + idx * SUIT_ROW;
-      this._add(scene.add.text(px, sy, SUIT_SYMS[suit],
-        { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }).setDepth(D));
-      this._attrTxts[suit] = this._add(scene.add.text(px + 26, sy + 2,
-        `Lv${p.attrs[suit]}`,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: SUIT_COLORS[suit] })
-        .setDepth(D));
+    SUIT_COLS.forEach((pair, rowIdx) => {
+      const sy = ry + rowIdx * SUIT_ROW;
+      pair.forEach((suit, colIdx) => {
+        const sx = colX[colIdx];
+        this._add(scene.add.text(sx, sy, SUIT_SYMS[suit],
+          { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }).setDepth(D));
+        this._attrTxts[suit] = this._add(scene.add.text(sx + 24, sy + 2,
+          `Lv${p.attrs[suit]}`,
+          { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: SUIT_COLORS[suit] })
+          .setDepth(D));
 
-      if (opts.showTooltips) {
-        const rowHit = this._add(
-          scene.add.rectangle(pcx, sy + 10, PW - 16, 26, 0xffffff, 0)
-            .setDepth(D + 2).setInteractive()
-        );
-        rowHit.on('pointerover', () => this._showTooltip(suit, sy));
-        rowHit.on('pointerout',  () => this._hideTooltip());
-        rowHit.on('pointerdown', () => this._showTooltip(suit, sy));
-      }
+        if (opts.showTooltips) {
+          const hitW = PW / 2 - 8;
+          const hitX = sx + hitW / 2;
+          const rowHit = this._add(
+            scene.add.rectangle(hitX, sy + 10, hitW, 26, 0xffffff, 0)
+              .setDepth(D + 2).setInteractive()
+          );
+          rowHit.on('pointerover', () => this._showTooltip(suit, sy));
+          rowHit.on('pointerout',  () => this._hideTooltip());
+          rowHit.on('pointerdown', () => this._showTooltip(suit, sy));
+        }
+      });
     });
 
-    // ── DECK / DUMMY / FIELD / HAND (선택) ──────────────────────────────────
+    // ── DECK / DUMMY (선택) ──────────────────────────────────────────────────
     if (opts.showDeckCounts) {
-      ry += SUIT_KEYS.length * SUIT_ROW + 8;
+      ry += 2 * SUIT_ROW + 8;
       this._add(scene.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(D));
       ry += 12;
 
@@ -179,34 +221,76 @@ export class PlayerUI {
       this._dummyCountTxt = this._add(
         scene.add.text(R, ry, "0", TS.levelValue).setOrigin(1, 0).setDepth(D)
       );
+    }
 
-      ry += ROW;
-      this._add(scene.add.text(px, ry, "FIELD", TS.infoLabel).setDepth(D));
-      this._fieldCountTxt = this._add(
-        scene.add.text(R, ry, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(D)
-      );
+    // ── 족보 배수 / AoE 목록 (선택) ─────────────────────────────────────────
+    if (opts.showHandConfig) {
+      const lineH  = 14;
+      const multiX = PW - 32;  // ×N 오른쪽 정렬
+      const aoeX   = R;        // ● 오른쪽 정렬
 
-      ry += ROW;
-      this._add(scene.add.text(px, ry, "HAND", TS.infoLabel).setDepth(D));
-      this._handCountTxt = this._add(
-        scene.add.text(R, ry, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(D)
-      );
+      // 섹션 높이 계산 후 추적
+      if (opts.showDeckCounts) ry += ROW + 6;
+      else                      ry += 2 * SUIT_ROW + 8;
+      this._add(scene.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(D));
+      ry += 8;
+      this._add(scene.add.text(px, ry, "HANDS", TS.infoLabel).setDepth(D));
+      ry += lineH + 2;
+
+      const lang = scene.registry?.get('lang') ?? 'ko';
+      HAND_RANKS_DESC.forEach(rank => {
+        const rowY   = ry;  // 클로저용 고정값
+        const cfg    = p.handConfig?.[rank] ?? { multi: 1, aoe: false };
+        const isAoe  = cfg.aoe;
+        const nameColor    = isAoe ? '#aaccaa' : '#666666';
+        const tooltipColor = isAoe ? '#aaccaa' : '#888888';
+        const handKey      = HAND_DATA[rank]?.key;
+        const desc         = langData[lang]?.hand?.[handKey]?.desc ?? '';
+
+        this._add(scene.add.text(px, rowY, getHandName(rank, lang),
+          { ...TS.handRank, color: nameColor }).setDepth(D));
+
+        const multiTxt = this._add(
+          scene.add.text(multiX, rowY, `x${cfg.multi}`, TS.handMulti)
+            .setOrigin(1, 0).setDepth(D)
+        );
+
+        const aoeDot = this._add(
+          scene.add.text(aoeX, rowY, isAoe ? '\u25cf' : '',
+            { fontFamily: 'Arial', fontSize: '10px', color: '#44ffaa' })
+            .setOrigin(1, 0).setDepth(D)
+        );
+
+        // 행 전체 툴팁 hit area
+        const rowHit = this._add(
+          scene.add.rectangle(pcx, rowY + lineH / 2, PW - 16, lineH, 0xffffff, 0)
+            .setDepth(D + 2).setInteractive()
+        );
+        rowHit.on('pointerover', () => this._showTooltipAt([getHandName(rank, lang), desc], tooltipColor, rowY));
+        rowHit.on('pointerout',  () => this._hideTooltip());
+        rowHit.on('pointerdown', () => this._showTooltipAt([getHandName(rank, lang), desc], tooltipColor, rowY));
+
+        this._handConfigRows[rank] = { multiTxt, aoeDot };
+        ry += lineH;
+      });
     }
 
     this.refresh();
     return this;
   }
 
-  // ── 슈트 툴팁 (내부) ──────────────────────────────────────────────────────
+  // ── 툴팁 (내부) ──────────────────────────────────────────────────────────
   _showTooltip(suit, rowY) {
+    this._showTooltipAt(SUIT_DESCS[suit], SUIT_COLORS[suit], rowY);
+  }
+
+  _showTooltipAt(lines, color, rowY) {
     this._hideTooltip();
     const { scene } = this;
     const PW     = PLAYER_PANEL_W;
-    const color  = SUIT_COLORS[suit];
-    const lines  = SUIT_DESCS[suit];
     const tx     = PW + 12;
-    const ty     = Math.min(rowY, GH - 80);
-    const tw     = 160, lineH = 16, pad = 10;
+    const ty     = Math.min(rowY, GH - 100);
+    const tw     = 170, lineH = 20, pad = 12;
     const th     = pad * 2 + lines.length * lineH;
     const colorN = parseInt(color.replace('#', ''), 16);
 
@@ -219,8 +303,8 @@ export class PlayerUI {
 
     lines.forEach((line, i) => {
       const style = i === 0
-        ? { fontFamily: "'PressStart2P', Arial", fontSize: '8px', color }
-        : { fontFamily: 'Arial', fontSize: '11px', color: '#aaccbb' };
+        ? { fontFamily: "'PressStart2P', Arial", fontSize: '13px', color }
+        : { fontFamily: 'Arial', fontSize: '16px', color: '#aaccbb' };
       this._tooltipObjs.push(
         scene.add.text(tx + pad, ty + pad + i * lineH, line, style)
           .setOrigin(0, 0).setDepth(301)
@@ -262,12 +346,25 @@ export class PlayerUI {
     return this;
   }
 
-  /** DECK/DUMMY/FIELD/HAND 카운트 갱신 (showDeckCounts=true 시) */
-  setDeckCounts({ deck = 0, dummy = 0, field = '0/0', hand = '0/0' } = {}) {
+  /** 족보 배수 / AoE 갱신 — 아이템 사용 후 호출 */
+  refreshHandConfig() {
+    const handConfig = this.player.handConfig;
+    HAND_RANKS_DESC.forEach(rank => {
+      const row = this._handConfigRows[rank];
+      if (!row) return;
+      const cfg   = handConfig?.[rank] ?? { multi: 1, aoe: false };
+      const isAoe = cfg.aoe;
+      row.multiTxt.setText(`x${cfg.multi}`);
+      row.multiTxt.setColor(isAoe ? '#ffdd44' : '#888888');
+      row.aoeDot.setText(isAoe ? '\u25cf' : '');
+    });
+    return this;
+  }
+
+  /** DECK/DUMMY 카운트 갱신 (showDeckCounts=true 시) */
+  setDeckCounts({ deck = 0, dummy = 0 } = {}) {
     this._deckCountTxt?.setText(`${deck}`);
     this._dummyCountTxt?.setText(`${dummy}`);
-    this._fieldCountTxt?.setText(field);
-    this._handCountTxt?.setText(hand);
     return this;
   }
 

@@ -6,8 +6,10 @@ import {
   PLAYER_PANEL_W, ITEM_PANEL_W,
   BATTLE_LOG_H, MONSTER_AREA_TOP, MONSTER_AREA_H, MONSTER_IMG_Y,
   FIELD_Y, HAND_Y, HAND_TOP, DEAL_DELAY,
+  HAND_DATA, DEBUG_MODE,
   context
 } from "../constants.js";
+import langData from "../data/lang.json";
 
 import { spawnMonsters, MONSTER_LIST } from "../service/monsterService.js";
 import { writeSave, deleteSave } from "../save.js";
@@ -21,6 +23,20 @@ import itemData from '../data/item.json';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
+
+// ─── 콤보 버튼 랭크별 스타일 ─────────────────────────────────────────────────
+const COMBO_BTN_STYLES = {
+  0: { fill: 0x141414, border: 0x444444, text: '#888888', sw: 1 },
+  1: { fill: 0x161e16, border: 0x336633, text: '#88aa88', sw: 1 },
+  2: { fill: 0x1a1a3a, border: 0x4444aa, text: '#8888ee', sw: 1 },
+  3: { fill: 0x1a2a3a, border: 0x4488aa, text: '#88ccee', sw: 2 },
+  4: { fill: 0x2a3a1a, border: 0x88aa44, text: '#ccee88', sw: 2 },
+  5: { fill: 0x2a3a1a, border: 0x88aa44, text: '#ccee88', sw: 2 },
+  6: { fill: 0x1a3a1a, border: 0x44bb44, text: '#88ff88', sw: 2 },
+  7: { fill: 0x330066, border: 0x9900ff, text: '#cc66ff', sw: 3 },
+  8: { fill: 0x002266, border: 0x0066ff, text: '#66ccff', sw: 3 },
+  9: { fill: 0x7a2200, border: 0xff6600, text: '#ffcc44', sw: 3 },
+};
 
 // ─── 씬 ──────────────────────────────────────────────────────────────────────
 export class BattleScene extends Phaser.Scene {
@@ -50,7 +66,9 @@ export class BattleScene extends Phaser.Scene {
     if (!this.textures.exists("ui_dummy")) this.load.image("ui_dummy", "/assets/images/ui/dummy.png");
     if (!this.textures.exists("ui_option")) this.load.image("ui_option", "/assets/images/ui/option_rembg.png");
     if (!this.textures.exists("ui_end_turn")) this.load.image("ui_end_turn", "/assets/images/ui/end_turn_rembg.png");
-    if (!this.textures.exists("ui_sort")) this.load.image("ui_sort", "/assets/images/ui/SuitRank_rembg.png");
+    if (!this.textures.exists("ui_sort"))   this.load.image("ui_sort",   "/assets/images/ui/SuitRank_rembg.png");
+    if (!this.textures.exists("ui_sword"))  this.load.image("ui_sword",  "/assets/images/ui/sword.png");
+    if (!this.textures.exists("ui_shield")) this.load.image("ui_shield", "/assets/images/ui/shield.png");
 
     // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
     MONSTER_LIST.forEach(m => {
@@ -130,8 +148,9 @@ export class BattleScene extends Phaser.Scene {
     this.deckData = this.deck.deckPile;
     this.dummyData = this.deck.dummyPile;
 
-    context.deckCount = this.deckData.length;
+    context.deckCount  = this.deckData.length;
     context.dummyCount = 0;
+    context.handConfig = this.player.handConfig;
 
     this.selected = new Set();
     this.cardObjs = [];
@@ -261,6 +280,7 @@ export class BattleScene extends Phaser.Scene {
       showAtk: true,
       showDeckCounts: true,
       showTooltips: true,
+      showHandConfig: true,
     });
     this.playerUI.create();
 
@@ -282,11 +302,33 @@ export class BattleScene extends Phaser.Scene {
     this._tooltipTxt = this.add.text(0, 0, "", { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffffff' })
       .setOrigin(0.5).setDepth(201).setVisible(false);
 
-    // ── 메시지 / 족보 프리뷰 ─────────────────────────────────────────────
-    const preY = HAND_Y + CH / 2 + 14;
+    // ── FIELD / HAND 카운트 (각 패널 우측 하단) ─────────────────────────
+    const cornerX    = GW - ITEM_PANEL_W - 16;
+    //const cornerStyle = { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#556655' };
+    this._fieldCountCornerTxt = this.add.text(cornerX, FIELD_Y + FIELD_CH / 2 + 10, "", TS.handRank).setOrigin(1, 1).setDepth(15);
+    this._handCountCornerTxt  = this.add.text(cornerX, HAND_Y + CH / 2 + 10, "", TS.handRank).setOrigin(1, 1).setDepth(15);
+
+    // ── 메시지 텍스트 ──────────────────────────────────────────────────────
     this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg).setOrigin(0.5, 0).setDepth(100);
-    this.previewLabelTxt = this.add.text(faCX - 10, preY, "", TS.comboLabel).setOrigin(1, 0).setDepth(50);
-    this.previewScoreTxt = this.add.text(faCX + 10, preY, "", TS.comboScore).setOrigin(0, 0).setDepth(50);
+
+    // ── 콤보 공격 버튼 (몬스터 영역과 필드 영역 사이) ──────────────────────
+    const comboBtnY = MONSTER_AREA_TOP + MONSTER_AREA_H + 8;
+    this._comboBtnBg = this.add.rectangle(faCX, comboBtnY, 240, 38, 0x141414)
+      .setStrokeStyle(1, 0x444444).setDepth(30).setVisible(false)
+      .setInteractive({ draggable: true });
+    this._comboBtnBg.setData("comboBtn", true);
+    this._comboBtnBg.setData("origX", faCX);
+    this._comboBtnBg.setData("origY", comboBtnY);
+    this._comboBtnText = this.add.text(faCX, comboBtnY, "",
+      { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: '#888888' })
+      .setOrigin(0.5).setDepth(31).setVisible(false);
+
+    // ── DEBUG: 점수 프리뷰 (몬스터 영역 우측 하단) ────────────────────────
+    this.previewScoreTxt = DEBUG_MODE
+      ? this.add.text(PW + FAW - 8, MONSTER_AREA_TOP + MONSTER_AREA_H - 8, "",
+          { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffdd44' })
+          .setOrigin(1, 1).setDepth(50)
+      : null;
 
     // ── OPT 버튼 — 아이템 패널 상단 ─────────────────────────────────────
     const optImg = this.add.image(IPCX, 30, "ui_option")
@@ -430,7 +472,9 @@ export class BattleScene extends Phaser.Scene {
       this._sfx("sfx_slide");
       this.isDragging = true;
       obj.setDepth(200);
-      if (obj.getData("itemIndex") !== undefined) {
+      if (obj.getData("comboBtn")) {
+        this._comboBtnText.setDepth(201);
+      } else if (obj.getData("itemIndex") !== undefined) {
         // 아이템 컨테이너
         this.tweens.killTweensOf(obj);
         this.tweens.add({ targets: obj, scaleX: 0.9, scaleY: 0.9, duration: 60 });
@@ -443,9 +487,47 @@ export class BattleScene extends Phaser.Scene {
     });
     this.input.on("drag", (pointer, obj, dragX, dragY) => {
       obj.x = dragX; obj.y = dragY;
+      if (obj.getData("comboBtn")) {
+        this._comboBtnText.x = dragX;
+        this._comboBtnText.y = dragY;
+      }
     });
     this.input.on("dragend", (pointer, obj) => {
       this.isDragging = false;
+
+      // ── 콤보 버튼 drag ────────────────────────────────────────────────
+      if (obj.getData("comboBtn")) {
+        obj.setDepth(30);
+        this._comboBtnText.setDepth(31);
+        const origX = obj.getData("origX");
+        const origY = obj.getData("origY");
+
+        const inMonsterArea = pointer.y >= MONSTER_AREA_TOP
+                           && pointer.y <= MONSTER_AREA_TOP + MONSTER_AREA_H;
+
+        if (!this.isDealing && inMonsterArea) {
+          const positions = this.calcMonsterPositions(this.monsters.length);
+          const monIdx = positions.reduce((best, _, i) =>
+            Math.abs(pointer.x - positions[i].x) < Math.abs(pointer.x - positions[best].x) ? i : best
+          , 0);
+
+          // 원위치 복귀 후 공격
+          obj.x = origX; obj.y = origY;
+          this._comboBtnText.x = origX; this._comboBtnText.y = origY;
+
+          if (!this.monsters[monIdx]?.isDead) {
+            this.attackMonster(monIdx);
+          }
+        } else {
+          // 스냅백
+          this.tweens.add({
+            targets: [obj, this._comboBtnText],
+            x: origX, y: origY,
+            duration: 220, ease: 'Back.Out',
+          });
+        }
+        return;
+      }
 
       // ── 아이템 drag ──────────────────────────────────────────────────
       if (obj.getData("itemIndex") !== undefined) {
@@ -815,10 +897,14 @@ export class BattleScene extends Phaser.Scene {
           .setOrigin(0.5).setDepth(18)
       );
 
-      // ── ATK / DEF ────────────────────────────────────────────────────────
+      // ── ATK / DEF (아이콘 + 수치) ────────────────────────────────────────
+      // sword.png: 320×912 → 비율 유지 시 height 14 → width ≈ 5px (세로형 이미지)
+      const statNumSty = { fontFamily: "'PressStart2P',Arial", fontSize: '8px', stroke: '#000000', strokeThickness: 2 };
       this.monsterObjs.push(
-        this.add.text(x, statY, `ATK ${mon.atk}  DEF ${mon.def}`, TS.monStat)
-          .setOrigin(0.5).setDepth(16)
+        this.add.image(x - 30, statY, "ui_sword" ).setDisplaySize(5, 14).setDepth(16),
+        this.add.text( x - 26, statY, `${mon.atk}`, { ...statNumSty, color: '#ffaaaa' }).setOrigin(0, 0.5).setDepth(17),
+        this.add.image(x +  6, statY, "ui_shield").setDisplaySize(12, 12).setDepth(16),
+        this.add.text( x + 14, statY, `${mon.def}`, { ...statNumSty, color: '#aaaaff' }).setOrigin(0, 0.5).setDepth(17)
       );
 
       // ── ATTACK 힌트 + 히트 영역 ──────────────────────────────────────────
@@ -845,18 +931,46 @@ export class BattleScene extends Phaser.Scene {
   }
 
   updatePreview() {
-    const { score: cardScore, handName } = this._getSelectedCombo();
+    const { score: cardScore, rank } = this._getSelectedCombo();
     const score = cardScore > 0 ? cardScore + this.player.atk : 0;
+
     if (score > 0) {
-      this.previewLabelTxt.setText(`${handName}  →`).setColor("#88ffaa");
-      this.previewScoreTxt.setText(`${score}점`).setColor("#ffdd66");
-    } else if (handName) {
-      this.previewLabelTxt.setText(handName).setColor("#ff9966");
-      this.previewScoreTxt.setText("");
+      const lang    = this.registry?.get('lang') ?? 'ko';
+      const key     = HAND_DATA[rank]?.key ?? '';
+      const name    = langData[lang]?.hand?.[key]?.name ?? key;
+      const st      = COMBO_BTN_STYLES[rank] ?? COMBO_BTN_STYLES[0];
+
+      this._comboBtnBg
+        .setFillStyle(st.fill)
+        .setStrokeStyle(st.sw, st.border)
+        .setVisible(true);
+      this._comboBtnText
+        .setText(name)
+        .setColor(st.text)
+        .setVisible(true);
+
+      // 고랭크 버튼 pulse tween (rank 7+, 중복 방지)
+      if (rank >= 7 && !this._comboBtnPulsing) {
+        this._comboBtnPulsing = true;
+        this.tweens.add({
+          targets: this._comboBtnBg,
+          alpha: { from: 1, to: 0.65 },
+          duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+        });
+      } else if (rank < 7) {
+        this.tweens.killTweensOf(this._comboBtnBg);
+        this._comboBtnBg.setAlpha(1);
+        this._comboBtnPulsing = false;
+      }
     } else {
-      this.previewLabelTxt.setText("");
-      this.previewScoreTxt.setText("");
+      this.tweens.killTweensOf(this._comboBtnBg);
+      this._comboBtnBg.setAlpha(1).setVisible(false);
+      this._comboBtnText.setVisible(false);
+      this._comboBtnPulsing = false;
     }
+
+    // DEBUG 점수 표시
+    this.previewScoreTxt?.setText(score > 0 ? `score: ${score}` : '');
   }
 
   refreshAttackCount() {
@@ -872,9 +986,9 @@ export class BattleScene extends Phaser.Scene {
     this.playerUI.setDeckCounts({
       deck:  this.deckData?.length  ?? 0,
       dummy: this.dummyData?.length ?? 0,
-      field: `${this.fieldData?.length ?? 0}/${p.fieldSize}`,
-      hand:  `${this.handData?.length  ?? 0}/${p.handSizeLimit}`,
     });
+    this._fieldCountCornerTxt?.setText(`${this.fieldData?.length ?? 0}/${p.fieldSize}`);
+    this._handCountCornerTxt?.setText(`${this.handData?.length  ?? 0}/${p.handSizeLimit}`);
   }
 
   refreshPlayerLevel() {
@@ -996,8 +1110,9 @@ export class BattleScene extends Phaser.Scene {
     const mon = this.monsters[monIdx];
     if (!mon || mon.isDead || this.isDealing) return;
 
-    context.deckCount = this.deckData.length;
+    context.deckCount  = this.deckData.length;
     context.dummyCount = this.dummyData.length;
+    context.handConfig = this.player.handConfig;
 
     const { score: cardScore, handName, aoe } = this._getSelectedCombo();
     if (cardScore <= 0) return;
@@ -1078,9 +1193,7 @@ export class BattleScene extends Phaser.Scene {
       aliveMonsters.forEach((m, _) => {
         const actualIdx = this.monsters.indexOf(m);
         const dmg = score - m.def;
-        const prevHp = m.hp;
         m.hp = Math.max(0, m.hp - Math.max(0, dmg));
-        const ok = Math.max(0, dmg - prevHp);
         this.addBattleLog(`${m.mob.name}에게 ${Math.max(0, dmg)} 데미지!`);
         if (m.hp <= 0) {
           m.isDead = true;

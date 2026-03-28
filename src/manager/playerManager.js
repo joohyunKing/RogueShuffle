@@ -3,6 +3,12 @@
  * 플레이어 상태 관리 클래스.
  * 씬 전환 시 player.toData() 로 직렬화하여 넘깁니다.
  */
+import { HAND_DATA } from "../constants.js";
+
+// HAND_DATA에서 { multi, aoe } 만 추출한 기본 handConfig
+const DEFAULT_HAND_CONFIG = Object.fromEntries(
+    Object.entries(HAND_DATA).map(([rank, d]) => [rank, { multi: d.multi, aoe: d.aoe }])
+);
 
 /**
  * 레벨업에 필요한 경험치를 반환합니다.
@@ -66,6 +72,11 @@ export class Player {
         this.fieldSize = data.fieldSize ?? lc.fieldSize;
         this.fieldSizeLimit = data.fieldSizeLimit ?? lc.fieldSizeLimit;
         this.fieldPickLimit = data.fieldPickLimit ?? lc.fieldPickLimit;
+
+        // ── 족보 설정 (배수 / AoE) — 아이템·유물로 변경 가능 ─────────────────────
+        this.handConfig = data.handConfig
+            ? JSON.parse(JSON.stringify(data.handConfig))
+            : JSON.parse(JSON.stringify(DEFAULT_HAND_CONFIG));
     }
 
     /** 현재 레벨에서 레벨업에 필요한 총 경험치 */
@@ -114,6 +125,7 @@ export class Player {
             fieldSizeLimit: this.fieldSizeLimit,
             fieldPickLimit: this.fieldPickLimit,
             items: [...this.items],
+            handConfig: JSON.parse(JSON.stringify(this.handConfig)),
         };
     }
 }

@@ -23,6 +23,9 @@ export const TS = {
   playerHp:          { fontFamily: F, fontSize: '14px', color: '#ff9999' },
   playerDef:         { fontFamily: F, fontSize: '14px', color: '#88ccff' },
 
+  handRank:           { fontFamily: F, fontSize: '11px', color: '#aaccaa'  },
+  handMulti:           { fontFamily: F, fontSize: '11px', color: '#ffdd44'  },
+
   // ── 족보 프리뷰 ────────────────────────────────────────────────────────────
   comboLabel:        { fontFamily: F, fontSize: '16px', color: '#88ffaa' },
   comboScore:        { fontFamily: F, fontSize: '16px', color: '#ffdd66' },

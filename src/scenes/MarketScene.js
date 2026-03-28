@@ -46,7 +46,10 @@ export class MarketScene extends Phaser.Scene {
     }
 
     // ── 플레이어 패널 (PlayerUI) ──────────────────────────────────────────
-    this.playerUI = new PlayerUI(this, this.player, { round: this.round });
+    this.playerUI = new PlayerUI(this, this.player, {
+      round: this.round,
+      showHandConfig: true,
+    });
     this.playerUI.create();
 
     // ── 샵 영역 (플레이어 패널과 아이템 패널 사이) ─────────────────────────
