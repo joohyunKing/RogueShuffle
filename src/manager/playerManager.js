@@ -48,7 +48,7 @@ export class Player {
         /** 구매한 아이템 목록 (최대 4개) */
         this.items = data.items ?? [];
         /** 보유 유물 ID 목록 (최대 15개) */
-        this.relics = (data.relics ?? (DEBUG_MODE ? _pickRandomRelicIds(3) : [])).slice(0, 15);
+        this.relics = (data.relics ?? (DEBUG_MODE ? _pickRandomRelicIds(1) : [])).slice(0, 6);
 
         // ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
         /** 직업 */
@@ -109,6 +109,18 @@ export class Player {
             gained.push(this.level);
         }
         return gained;
+    }
+
+    /**
+     * relic 추가 시도. 6개 미만이면 바로 추가하고 true 반환.
+     * 6개 이상이면 false 반환 (호출 측에서 showRelicPickPopup 사용).
+     */
+    tryAddRelic(relicId) {
+        if (this.relics.length < 6) {
+            this.relics.push(relicId);
+            return true;
+        }
+        return false;
     }
 
     /** 씬 전환용 직렬화 */

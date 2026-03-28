@@ -5,42 +5,45 @@ import relicData from "../data/relic.json";
 const RARITY_STRIP  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
 const RARITY_COLOR  = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
 
-// relic id → relic 객체
 const RELIC_MAP = Object.fromEntries(relicData.relics.map(r => [r.id, r]));
 
 /**
  * ItemUI — 우측 패널: Relic(위) + Item(아래)
  *
  * opts:
- *   panelX    {number}   패널 시작 x  (기본: GW - ITEM_PANEL_W)
- *   panelW    {number}   패널 폭       (기본: ITEM_PANEL_W)
- *   startY    {number}   콘텐츠 시작 y (기본: BATTLE_LOG_H + 19)
- *   cardW     {number}   아이템 카드 폭 (기본 80)
- *   cardH     {number}   아이템 카드 높이 (기본 116)
- *   draggable {boolean}  drag-to-use 여부 (기본 false)
- *   depth     {number}   기본 depth (기본 9)
+ *   panelX        {number}   패널 시작 x
+ *   panelW        {number}   패널 폭
+ *   startY        {number}   콘텐츠 시작 y
+ *   draggable     {boolean}  item drag-to-use 여부 (기본 false)
+ *   depth         {number}   기본 depth (기본 9)
+ *   onItemClick   {function} 아이템 클릭 콜백 (idx) => void
+ *   onRelicRemove {function} relic 드래그 제거 콜백 (relicId) => void
  */
 export class ItemUI {
   constructor(scene, player, opts = {}) {
     this.scene  = scene;
     this.player = player;
     this.opts   = {
-      panelX:      GW - ITEM_PANEL_W,
-      panelW:      ITEM_PANEL_W,
-      startY:      BATTLE_LOG_H + 19,
-      draggable:   false,
-      onItemClick: null,
-      depth:       9,
+      panelX:        GW - ITEM_PANEL_W,
+      panelW:        ITEM_PANEL_W,
+      startY:        BATTLE_LOG_H + 19,
+      draggable:     false,
+      onItemClick:   null,
+      onRelicRemove: null,
+      depth:         9,
       ...opts,
     };
     this._objs      = [];
     this._tipObjs   = [];
-    this._relicObjs = {}; // id → { objs: [], baseCX: number }
+    this._relicObjs = {};
+    this._dragGhost = null;
+    this._removeZone = null;
+    this._removeTxt  = null;
   }
 
   _add(obj) { this._objs.push(obj); return obj; }
 
-  // ── 툴팁 (패널 왼쪽에 표시) ────────────────────────────────────────────
+  // ── 툴팁 ────────────────────────────────────────────────────────────────
   _clearTip() {
     this._tipObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
     this._tipObjs = [];
@@ -77,13 +80,36 @@ export class ItemUI {
     );
   }
 
+  // ── REMOVE 존 표시/숨김 ─────────────────────────────────────────────────
+  _showRemoveZone() {
+    if (this._removeZone) {
+      this._removeZone.setVisible(true);
+      this._removeTxt?.setVisible(true);
+    }
+  }
+
+  _hideRemoveZone() {
+    if (this._removeZone) {
+      this._removeZone.setVisible(false);
+      this._removeTxt?.setVisible(false);
+    }
+  }
+
+  _isOverRemoveZone(x, y) {
+    if (!this._removeZone || !this._removeZone.visible) return false;
+    const r = this._removeZone;
+    return x >= r.x - r.width / 2 && x <= r.x + r.width / 2
+        && y >= r.y - r.height / 2 && y <= r.y + r.height / 2;
+  }
+
   // ── 메인 렌더 ──────────────────────────────────────────────────────────
   create() {
     const { scene, player, opts } = this;
-    const { panelX, panelW, startY, draggable, depth: D } = opts;
+    const { panelX, panelW, startY, depth: D } = opts;
     const ipcx   = panelX + panelW / 2;
     const relics = player.relics ?? [];
     const items  = player.items  ?? [];
+    const canRemoveRelic = !!opts.onRelicRemove;
 
     // ─── RELIC 섹션 ──────────────────────────────────────────────────────
     this._add(
@@ -100,7 +126,6 @@ export class ItemUI {
     const REL_ROW_H = REL_SZ + REL_GAPY;
 
     const relicContentY = startY + 20;
-    let relicRows = 0;
 
     if (relics.length === 0) {
       this._add(
@@ -108,7 +133,6 @@ export class ItemUI {
           .setOrigin(0.5, 0).setDepth(D + 1)
       );
     } else {
-      relicRows = Math.ceil(relics.length / REL_COLS);
       relics.forEach((relicId, i) => {
         const relic = RELIC_MAP[relicId];
         if (!relic) return;
@@ -118,15 +142,13 @@ export class ItemUI {
         const cx  = panelX + REL_PAD + col * (REL_SZ + REL_GAPX) + REL_SZ / 2;
         const cy  = relicContentY + row * REL_ROW_H + REL_SZ / 2;
 
-        const borderC = RARITY_STRIP[relic.rarity]  ?? RARITY_STRIP.common;
-        const tipC    = RARITY_COLOR[relic.rarity]   ?? RARITY_COLOR.common;
+        const borderC = RARITY_STRIP[relic.rarity] ?? RARITY_STRIP.common;
+        const tipC    = RARITY_COLOR[relic.rarity]  ?? RARITY_COLOR.common;
         const visObjs = [];
 
-        // 배경
         const relBg = scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0x0a1a0e).setDepth(D);
         this._add(relBg); visObjs.push(relBg);
 
-        // 이미지
         const imgKey = `relic_${relic.id}`;
         if (scene.textures.exists(imgKey)) {
           const img = scene.add.image(cx, cy, imgKey).setDisplaySize(REL_IMG, REL_IMG).setDepth(D + 1);
@@ -141,20 +163,83 @@ export class ItemUI {
 
         this._relicObjs[relic.id] = { objs: visObjs, baseCX: cx };
 
-        // hover 툴팁 (hit은 rattle 대상 아님)
+        // hit area
+        const hitConfig = canRemoveRelic ? { draggable: true } : true;
         const hit = this._add(
           scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0xffffff, 0)
-            .setDepth(D + 2).setInteractive()
+            .setDepth(D + 2).setInteractive(hitConfig)
         );
-        hit.on('pointerover', () => this._showTip(cy, relic.name, relic.description, tipC));
-        hit.on('pointerout',  () => this._clearTip());
+        hit.on('pointerover', () => {
+          if (!this._dragGhost) {
+            this._showTip(cy, relic.name, relic.description, tipC);
+            if (canRemoveRelic) hit.setFillStyle(0xff4444, 0.12);
+          }
+        });
+        hit.on('pointerout', () => {
+          hit.setFillStyle(0xffffff, 0);
+          this._clearTip();
+        });
+
+        if (canRemoveRelic) {
+          hit.on('dragstart', (pointer) => {
+            this._clearTip();
+            hit.setFillStyle(0xffffff, 0);
+            this._showRemoveZone();
+            // 드래그 고스트 생성
+            const ghost = scene.add.rectangle(pointer.x, pointer.y, REL_SZ, REL_SZ, borderC, 0.7)
+              .setDepth(D + 10).setStrokeStyle(2, borderC);
+            scene.add.text(pointer.x, pointer.y, relic.name.slice(0, 6),
+              { fontFamily: 'Arial', fontSize: '10px', color: '#fff' })
+              .setOrigin(0.5).setDepth(D + 11).setData('ghost', true);
+            this._dragGhost = ghost;
+          });
+          hit.on('drag', (pointer) => {
+            if (this._dragGhost) {
+              this._dragGhost.setPosition(pointer.x, pointer.y);
+              // ghost text도 이동
+              const texts = scene.children.list.filter(o => o.getData?.('ghost'));
+              texts.forEach(t => t.setPosition(pointer.x, pointer.y));
+              // REMOVE 존 색상 변경
+              const over = this._isOverRemoveZone(pointer.x, pointer.y);
+              this._removeZone?.setFillStyle(over ? 0xaa1111 : 0x661111);
+            }
+          });
+          hit.on('dragend', (pointer) => {
+            const over = this._isOverRemoveZone(pointer.x, pointer.y);
+            // 고스트 제거
+            if (this._dragGhost) { this._dragGhost.destroy(); this._dragGhost = null; }
+            scene.children.list
+              .filter(o => o.getData?.('ghost'))
+              .forEach(o => o.destroy());
+            this._hideRemoveZone();
+            this._removeZone?.setFillStyle(0x661111);
+            if (over) {
+              opts.onRelicRemove(relicId);
+            }
+          });
+        }
       });
     }
 
+    // ─── REMOVE 존 (relic 제거 drop target) ─────────────────────────────
+    const relicSectionH = 5 * REL_ROW_H;
+    const removeZoneY   = relicContentY + relicSectionH + 2;
+
+    if (canRemoveRelic) {
+      const rz = scene.add.rectangle(ipcx, removeZoneY, panelW - 16, 32, 0x661111)
+        .setDepth(D + 3).setVisible(false).setStrokeStyle(1, 0xff4444);
+      const rt = scene.add.text(ipcx, removeZoneY, "[ REMOVE ]",
+        { fontFamily: "'PressStart2P',Arial", fontSize: '9px', color: '#ff6666' })
+        .setOrigin(0.5).setDepth(D + 4).setVisible(false);
+      this._removeZone = rz;
+      this._removeTxt  = rt;
+      this._add(rz);
+      this._add(rt);
+    }
+
     // 구분선
-    //const relicSectionH = relicRows > 0 ? relicRows * REL_ROW_H : 26;
-    const relicSectionH = 5 * REL_ROW_H;  // item 늘 같은 위치에 보이는게 깔끔
-    const sepY = relicContentY + relicSectionH + 16;
+    const relicSectionH2 = 5 * REL_ROW_H;
+    const sepY = relicContentY + relicSectionH2 + (canRemoveRelic ? 42 : 16);
     this._add(
       scene.add.rectangle(ipcx, sepY, panelW - 16, 1, 0x2a4a3a).setDepth(D)
     );
@@ -193,35 +278,29 @@ export class ItemUI {
       const stripColor = RARITY_STRIP[item.rarity] ?? RARITY_STRIP.common;
       const tipColor   = RARITY_COLOR[item.rarity] ?? RARITY_COLOR.common;
 
-      // 배경 (rarity 테두리)
       this._add(
         scene.add.rectangle(cx, cy, ITM_SZ, ITM_SZ, 0x0c1a10)
           .setStrokeStyle(2, stripColor).setDepth(D)
       );
 
-      // 이미지 (없으면 red_portion fallback)
       const imgKey  = `item_${item.id}`;
-      const useKey  = scene.textures.exists(imgKey)            ? imgKey
+      const useKey  = scene.textures.exists(imgKey)             ? imgKey
                     : scene.textures.exists('item_heal_potion') ? 'item_heal_potion'
                     : null;
       if (useKey) {
         this._add(scene.add.image(cx, cy, useKey).setDisplaySize(ITM_IMG, ITM_IMG).setDepth(D + 1));
       } else {
-        this._add(
-          scene.add.rectangle(cx, cy, ITM_IMG, ITM_IMG, stripColor, 0.22).setDepth(D + 1)
-        );
+        this._add(scene.add.rectangle(cx, cy, ITM_IMG, ITM_IMG, stripColor, 0.22).setDepth(D + 1));
         this._add(
           scene.add.text(cx, cy, '?', { fontFamily: 'Arial', fontSize: '18px', color: tipColor })
             .setOrigin(0.5).setDepth(D + 2)
         );
       }
 
-      // 클릭/hover hit area
       const hit = this._add(
         scene.add.rectangle(cx, cy, ITM_SZ, ITM_SZ, 0xffffff, 0)
           .setDepth(D + 2).setInteractive()
       );
-      const idx = i;
       hit.on('pointerover', () => {
         hit.setFillStyle(0xffffff, 0.12);
         this._showTip(cy, item.name, item.desc ?? '', tipColor);
@@ -231,14 +310,14 @@ export class ItemUI {
         this._clearTip();
       });
       if (onItemClick) {
-        hit.on('pointerdown', () => { this._clearTip(); onItemClick(idx); });
+        hit.on('pointerdown', () => { this._clearTip(); onItemClick(i); });
       }
     });
 
     return this;
   }
 
-  /** 해당 relic id들만 달그락 애니메이션. 빈 배열이면 전체 정지 */
+  /** 해당 relic id들만 달그락 애니메이션 */
   rattleRelics(ids = []) {
     const idSet = new Set(ids);
     Object.entries(this._relicObjs).forEach(([id, { objs, baseCX }]) => {
@@ -258,8 +337,11 @@ export class ItemUI {
 
   destroy() {
     this._clearTip();
+    if (this._dragGhost) { try { this._dragGhost.destroy(); } catch(_) {} this._dragGhost = null; }
     this._objs.forEach(o => { try { o?.destroy(); } catch (_) {} });
     this._objs = [];
     this._relicObjs = {};
+    this._removeZone = null;
+    this._removeTxt  = null;
   }
 }

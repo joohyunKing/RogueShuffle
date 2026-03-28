@@ -326,6 +326,10 @@ export class BattleScene extends Phaser.Scene {
       panelX: IPX, panelW: IPW,
       startY: BATTLE_LOG_H + 38,
       onItemClick: (idx) => this._useItem(idx, null),
+      onRelicRemove: (relicId) => {
+        this.player.relics = this.player.relics.filter(id => id !== relicId);
+        this.itemUI.refresh();
+      },
     });
     this.itemUI.create();
 
