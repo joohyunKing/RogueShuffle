@@ -18,6 +18,7 @@ export class MarketScene extends Phaser.Scene {
   constructor() { super("MarketScene"); }
 
   preload() {
+    this.load.setBaseURL(import.meta.env.BASE_URL);
     const _round = this.scene.settings.data?.round ?? 1;
     const _bgFile = roundData.rounds.find(r => r.round === _round)?.bg ?? "01_forest_night.jpg";
     const _bgKey  = `bg_${_round}`;

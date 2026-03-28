@@ -48,6 +48,7 @@ export class BattleScene extends Phaser.Scene {
 
   // ── preload ──────────────────────────────────────────────────────────────
   preload() {
+    this.load.setBaseURL(import.meta.env.BASE_URL);
     //this.load.image("card_back", "/_card_back.png");
     this.load.image("card_back", "assets/images/ui/card_back.png");
     if (!this.textures.exists("card_back_deck"))

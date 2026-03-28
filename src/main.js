@@ -20,7 +20,6 @@ font.load().then(loaded => {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     dom: { createContainer: true },
-    loader: { baseURL: import.meta.env.BASE_URL },
     scene: [MainMenuScene, OptionsScene, GameScene, BattleScene, MarketScene],
   });
 });

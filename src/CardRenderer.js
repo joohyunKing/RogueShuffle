@@ -5,12 +5,11 @@
 
 import { CW, CH, SUITS, RANKS } from './constants.js';
 
-const _base = import.meta.env.BASE_URL;
 const SYM_URLS = {
-  S: `${_base}assets/images/symbol/spade_symbol.png`,
-  H: `${_base}assets/images/symbol/hearts_symbol.png`,
-  D: `${_base}assets/images/symbol/diamonds_symbol.png`,
-  C: `${_base}assets/images/symbol/clubs_symbol.png`,
+  S: 'assets/images/symbol/spade_symbol.png',
+  H: 'assets/images/symbol/hearts_symbol.png',
+  D: 'assets/images/symbol/diamonds_symbol.png',
+  C: 'assets/images/symbol/clubs_symbol.png',
 };
 
 // 숫자 카드 pip 배치 좌표 (카드 폭/높이 비율)
