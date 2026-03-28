@@ -1,8 +1,10 @@
 import Phaser from "phaser";
-import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W, FIELD_CW, FIELD_CH } from "../constants.js";
+import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W } from "../constants.js";
 import { TS } from "../textStyles.js";
-import { Player, getRequiredExp } from "../manager/playerManager.js";
+import { Player } from "../manager/playerManager.js";
 import itemData from '../data/item.json';
+import { PlayerUI } from '../ui/PlayerUI.js';
+import { ItemUI } from '../ui/ItemUI.js';
 
 const RARITY_COLORS = {
   common: { bg: 0x1a3a22, border: 0x4a9a5a, label: '#aaffaa' },
@@ -43,61 +45,12 @@ export class MarketScene extends Phaser.Scene {
       this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x0d2b18).setDepth(-1);
     }
 
-    // ── 플레이어 패널 (좌측) ──────────────────────────────────────────────
-    const PW = PLAYER_PANEL_W;
-    const g  = this.add.graphics().setDepth(0);
-    g.fillStyle(0x0a1810, 0.92);
-    g.fillRect(0, 0, PW - 4, GH);
-    g.lineStyle(1, 0x2a5a38);
-    g.strokeRect(0, 0, PW - 4, GH);
-
-    const px  = 10;
-    const pcx = PW / 2 - 2;
-    const p   = this.player;
-
-    this.add.text(pcx, 14, p.job.toUpperCase(),
-      { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffdd88' })
-      .setOrigin(0.5, 0).setDepth(12);
-
-    this._addLabel(px, 36, "ROUND", `${this.round}`);
-    this._addLabel(px, 54, "GOLD",  `${p.gold}`, '#ffdd44');
-    this._addLabel(px, 72, "LV",    String(p.level));
-
-    // XP 바
-    const req    = getRequiredExp(p.level);
-    const xpFill = Math.max(1, Math.round((PW - 24) * Math.min(1, p.xp / req)));
-    this.add.rectangle(px, 90, PW - 24, 5, 0x224433).setOrigin(0, 0.5).setDepth(12);
-    this.add.rectangle(px, 90, xpFill, 5, 0x44ddaa).setOrigin(0, 0.5).setDepth(13);
-
-    this.add.rectangle(pcx, 102, PW - 20, 1, 0x2a5a38).setDepth(12);
-
-    // HP
-    this.add.text(px, 110, "HP", TS.infoLabel).setDepth(12);
-    this.add.text(px + 22, 110, `${p.hp}/${p.maxHp}`, TS.playerHp).setDepth(12);
-    const barW   = PW - 24;
-    const hpRatio = Math.max(0, p.hp / p.maxHp);
-    this.add.rectangle(px, 128, barW, 7, 0x2a3a2a).setOrigin(0, 0.5).setDepth(12);
-    this.add.rectangle(px, 128, Math.max(1, barW * hpRatio), 7,
-      hpRatio > 0.5 ? 0x44cc44 : hpRatio > 0.25 ? 0xddaa00 : 0xdd3333)
-      .setOrigin(0, 0.5).setDepth(13);
-
-    this.add.text(px, 138, "DEF", TS.infoLabel).setDepth(12);
-    this.add.text(px + 32, 138, `${p.def}`, TS.playerDef).setDepth(12);
-
-    this.add.rectangle(pcx, 162, PW - 20, 1, 0x2a5a38).setDepth(12);
-
-    // 슈트 레벨
-    const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
-    const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
-    ['S','H','D','C'].forEach((suit, i) => {
-      const sy = 172 + i * 28;
-      this.add.text(px, sy, SUIT_SYMS[suit],
-        { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }).setDepth(12);
-      this.add.text(px + 26, sy + 2, `Lv${p.attrs[suit]}`,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: SUIT_COLORS[suit] }).setDepth(12);
-    });
+    // ── 플레이어 패널 (PlayerUI) ──────────────────────────────────────────
+    this.playerUI = new PlayerUI(this, this.player, { round: this.round });
+    this.playerUI.create();
 
     // ── 샵 영역 (플레이어 패널과 아이템 패널 사이) ─────────────────────────
+    const PW   = PLAYER_PANEL_W;
     const IPW  = ITEM_PANEL_W;
     const IPX  = GW - IPW;
     const FAW  = GW - PW - IPW;         // 샵 영역 폭 = 880
@@ -154,14 +107,14 @@ export class MarketScene extends Phaser.Scene {
     this.add.text(IPCX, 36, "전투 중 drag to use", TS.marketSub)
       .setOrigin(0.5, 0).setDepth(10);
 
-    this._drawOwnedItems(IPX, IPW);
-  }
-
-  _addLabel(x, y, label, value, valueColor = '#aaffcc') {
-    this.add.text(x, y, label, TS.infoLabel).setDepth(12);
-    this.add.text(PLAYER_PANEL_W - 14, y, value, {
-      ...TS.levelValue, color: valueColor,
-    }).setOrigin(1, 0).setDepth(12);
+    // ItemUI — 보유 아이템 2열 표시 (drag 없음)
+    this.itemUI = new ItemUI(this, this.player, {
+      panelX: IPX, panelW: IPW,
+      startY: 76,
+      cardW: 80, cardH: 116,
+      draggable: false,
+    });
+    this.itemUI.create();
   }
 
   _drawItemCard(cx, cy, w, h, item, idx) {
@@ -214,73 +167,6 @@ export class MarketScene extends Phaser.Scene {
         buyBtn.on("pointerout",  () => buyBtn.setFillStyle(0x2a6644));
       }
     }
-  }
-
-  _drawOwnedItems(IPX, IPW) {
-    const items = this.player.items ?? [];
-    const IPCX  = IPX + IPW / 2;
-
-    if (items.length === 0) {
-      this.add.text(IPCX, 80, "없음", TS.infoLabel).setOrigin(0.5, 0).setDepth(10);
-      return;
-    }
-
-    const RARITY_BG  = { common: 0x1a3a22, rare: 0x1a2a4a, epic: 0x2a1a3a };
-    const RARITY_BRD = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
-    const RARITY_LBL = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
-
-    const C_W  = FIELD_CW, C_H = FIELD_CH;
-    const GAP  = 8;
-    const PAD  = Math.floor((IPW - C_W * 2 - GAP) / 2);
-    const startY = 62;
-
-    items.forEach((item, i) => {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const cx  = IPX + PAD + col * (C_W + GAP) + C_W / 2;
-      const cy  = startY + row * (C_H + GAP) + C_H / 2;
-
-      const bg_col  = RARITY_BG[item.rarity]  ?? RARITY_BG.common;
-      const brd_col = RARITY_BRD[item.rarity] ?? RARITY_BRD.common;
-      const lbl_col = RARITY_LBL[item.rarity] ?? RARITY_LBL.common;
-
-      // 카드 배경 (hover/drag 히트 영역)
-      const bg = this.add.rectangle(cx, cy, C_W, C_H, bg_col)
-        .setDepth(9).setStrokeStyle(1, brd_col).setInteractive();
-
-      // name 띠
-      this.add.rectangle(cx, cy - C_H / 2 + 6, C_W, 12, brd_col, 0.45).setDepth(10);
-      this.add.text(cx, cy - C_H / 2 + 6, item.name,
-        { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: lbl_col })
-        .setOrigin(0.5).setDepth(11);
-
-      // 이미지
-      const imgKey = `item_${item.id}`;
-      const imgY   = cy - C_H / 2 + 12 + 20;
-      if (item.img && this.textures.exists(imgKey)) {
-        this.add.image(cx, imgY, imgKey).setDisplaySize(36, 36).setDepth(10);
-      } else {
-        this.add.rectangle(cx, imgY, 36, 36, brd_col, 0.2).setStrokeStyle(1, brd_col).setDepth(10);
-        this.add.text(cx, imgY, '?', { fontFamily: 'Arial', fontSize: '14px', color: lbl_col })
-          .setOrigin(0.5).setDepth(11);
-      }
-
-      // desc
-      this.add.text(cx, cy + C_H / 2 - 20, item.desc,
-        { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: '#cccccc',
-          wordWrap: { width: C_W - 8 } })
-        .setOrigin(0.5, 0).setDepth(10);
-
-      // hover 확대 (field 카드 방식)
-      bg.on("pointerover", () => {
-        this.tweens.add({ targets: bg, displayWidth: C_W * 1.4, displayHeight: C_H * 1.4, y: cy - 10, duration: 100 });
-        bg.setDepth(20);
-      });
-      bg.on("pointerout", () => {
-        this.tweens.add({ targets: bg, displayWidth: C_W, displayHeight: C_H, y: cy, duration: 100 });
-        bg.setDepth(9);
-      });
-    });
   }
 
   _buyItem(idx) {

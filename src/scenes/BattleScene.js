@@ -13,11 +13,14 @@ import { spawnMonsters, MONSTER_LIST } from "../service/monsterService.js";
 import { writeSave, deleteSave } from "../save.js";
 import { CardRenderer } from "../CardRenderer.js";
 import { TS } from "../textStyles.js";
-import { Player, getRequiredExp } from "../manager/playerManager.js";
+import { Player } from "../manager/playerManager.js";
 import { saveOptionsByRegistry } from "../manager/optionManager.js";
 import effectManager from '../manager/effectManager.js';
 import DeckManager from '../manager/deckManager.js';
 import itemData from '../data/item.json';
+import { PlayerUI } from '../ui/PlayerUI.js';
+import { BattleLogUI } from '../ui/BattleLogUI.js';
+import { ItemUI } from '../ui/ItemUI.js';
 
 // ─── 씬 ──────────────────────────────────────────────────────────────────────
 export class BattleScene extends Phaser.Scene {
@@ -144,12 +147,6 @@ export class BattleScene extends Phaser.Scene {
     this.sortAsc = true;
     this._fullBattleLog = data.battleLog ?? [];
     this._suitLevelUpCount = 0;
-    this._logExpanded = false;
-    this._logExpandedBg = null;
-    this._logExpandedLines = null;
-    this._logScrollOffset = 0;
-    this._logWheelHandler = null;
-    this._logPointerHandlers = null;
     this._pilePopupObjs = null;
     this._cardPreviewObjs = null;
 
@@ -210,12 +207,6 @@ export class BattleScene extends Phaser.Scene {
 
     const g = this.add.graphics().setDepth(0);
 
-    // 플레이어 패널
-    g.fillStyle(0x0a1810, 0.88);
-    g.fillRect(0, 0, PW - 4, GH);
-    g.lineStyle(1, 0x2a5a38);
-    g.strokeRect(0, 0, PW - 4, GH);
-
     // 배틀 로그 헤더 — 몬스터 영역과 동일한 x/width, 하단 radius만 0
     g.fillStyle(0x050e08, 0.88);
     g.fillRoundedRect(CX, 0, FAW_, BATTLE_LOG_H, { tl: 0, tr: 0, bl: 10, br: 10 });
@@ -255,157 +246,65 @@ export class BattleScene extends Phaser.Scene {
 
   // ── UI 생성 (한 번만) ─────────────────────────────────────────────────────
   createUI() {
-    const PW = PLAYER_PANEL_W;
-    const px = 10;
-    const pcx = PW / 2 - 2;
+    const PW   = PLAYER_PANEL_W;
+    const IPW  = ITEM_PANEL_W;
+    const IPX  = GW - IPW;
+    const IPCX = IPX + IPW / 2;
+    const FAW  = GW - PW - IPW;
+    const faCX = PW + FAW / 2;
 
-    this.add.text(pcx, 12, this.player.job.toUpperCase(), {
-      fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffdd88',
-    }).setOrigin(0.5, 0).setDepth(12);
-
-    // ── 기본 스탯 (라벨 왼쪽, 값 오른쪽 정렬) ─────────────────────────────
-    const R = PW - 10;   // 오른쪽 정렬 기준 x
-    const ROW = 22;      // 행 간격
-
+    // ── 플레이어 패널 (PlayerUI) ─────────────────────────────────────────
     const battleLabel = this.isBoss ? 'BOSS' : `${this.battleIndex + 1}`;
-    let ry = 36;
-    this.add.text(px, ry, "ROUND", TS.infoLabel).setDepth(12);
-    this.roundTxt = this.add.text(R, ry, `${this.round}-${battleLabel}`, TS.levelValue)
-      .setOrigin(1, 0).setDepth(12);
-
-    ry += ROW;
-    this.add.text(px, ry, "GOLD", TS.infoLabel).setDepth(12);
-    this.goldTxt = this.add.text(R, ry, `${this.player.gold}`, TS.levelValue)
-      .setOrigin(1, 0).setDepth(12);
-
-    ry += ROW;
-    this.add.text(px, ry, "LV", TS.infoLabel).setDepth(12);
-    this._playerLevelTxt = this.add.text(R, ry, String(this.player.level), TS.levelValue)
-      .setOrigin(1, 0).setDepth(12);
-
-    ry += ROW;
-    this._xpBarBg = this.add.rectangle(px, ry, PW - 24, 5, 0x224433).setOrigin(0, 0.5).setDepth(12);
-    this._xpBarFill = this.add.rectangle(px, ry, 1, 5, 0x44ddaa).setOrigin(0, 0.5).setDepth(13);
-
-    ry += 14;
-    this.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(12);
-
-    // ── HP / DEF / ATK (값 오른쪽 정렬) ──────────────────────────────────
-    ry += 14;
-    this.add.text(px, ry, "HP", TS.infoLabel).setDepth(12);
-    this.playerHpTxt = this.add.text(R, ry, "", TS.playerHp).setOrigin(1, 0).setDepth(12);
-
-    ry += ROW;
-    this._hpBarBg = this.add.rectangle(px, ry, PW - 24, 7, 0x2a3a2a).setOrigin(0, 0.5).setDepth(12);
-    this._hpBarFill = this.add.rectangle(px, ry, 1, 7, 0xdd3333).setOrigin(0, 0.5).setDepth(13);
-
-    ry += 16;
-    this.add.text(px, ry, "DEF", TS.infoLabel).setDepth(12);
-    this.playerDefTxt = this.add.text(R, ry, "", TS.playerDef).setOrigin(1, 0).setDepth(12);
-
-    ry += ROW;
-    this.add.text(px, ry, "ATK", TS.infoLabel).setDepth(12);
-    this.playerAtkTxt = this.add.text(R, ry, `${this.player.atk}`, TS.playerDef).setOrigin(1, 0).setDepth(12);
-
-    ry += ROW + 6;
-    this.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(12);
-
-    // ── Suit 레벨 ─────────────────────────────────────────────────────────
-    const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
-    const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
-    const SUIT_DESCS  = {
-      S: ['♠ Spade', '적 DEF 감소', 'Lv × 적응 × ♠장'],
-      H: ['♥ Hearts', '내 HP 회복',  'Lv × 적응 × ♥장'],
-      D: ['♦ Diamonds','내 DEF 증가', 'Lv × 적응 × ♦장'],
-      C: ['♣ Clubs',  '적 ATK 감소', 'Lv × 적응 × ♣장'],
-    };
-    const SUIT_KEYS = ['S', 'H', 'D', 'C'];
-    this._attrTxts  = {};
-    this._suitUpBtns = {};
-    this._suitTooltipObjs = [];
-
-    const SUIT_ROW = 30;
-    ry += 12;
-    SUIT_KEYS.forEach((suit, idx) => {
-      const sy = ry + idx * SUIT_ROW;
-      this.add.text(px, sy, SUIT_SYMS[suit],
-        { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }).setDepth(12);
-      this._attrTxts[suit] = this.add.text(px + 26, sy + 2,
-        `Lv${this.player.attrs[suit]}`,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: SUIT_COLORS[suit] })
-        .setDepth(12);
-
-      // hover / click → 툴팁
-      const rowHit = this.add.rectangle(pcx, sy + 10, PW - 16, 26, 0xffffff, 0)
-        .setDepth(14).setInteractive();
-      rowHit.on('pointerover', () => this._showSuitTooltip(suit, sy, SUIT_DESCS[suit], SUIT_COLORS[suit]));
-      rowHit.on('pointerout',  () => this._hideSuitTooltip());
-      rowHit.on('pointerdown', () => this._showSuitTooltip(suit, sy, SUIT_DESCS[suit], SUIT_COLORS[suit]));
+    this.playerUI = new PlayerUI(this, this.player, {
+      round: this.round,
+      battleLabel,
+      showAtk: true,
+      showDeckCounts: true,
+      showTooltips: true,
     });
+    this.playerUI.create();
 
-    // ── Deck / DUMMY / FIELD / HAND count ────────────────────────────────
-    ry += SUIT_KEYS.length * SUIT_ROW + 8;
-    this.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(12);
-    ry += 12;
-    this.add.text(px, ry, "DECK", TS.infoLabel).setDepth(12);
-    this._deckCountTxt = this.add.text(R, ry, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
-    ry += ROW;
-    this.add.text(px, ry, "DUMMY", TS.infoLabel).setDepth(12);
-    this._dummyCountTxt = this.add.text(R, ry, "0", TS.levelValue).setOrigin(1, 0).setDepth(12);
-    ry += ROW;
-    this.add.text(px, ry, "FIELD", TS.infoLabel).setDepth(12);
-    this._fieldCountTxt = this.add.text(R, ry, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(12);
-    ry += ROW;
-    this.add.text(px, ry, "HAND", TS.infoLabel).setDepth(12);
-    this._handCountTxt = this.add.text(R, ry, "0/0", TS.levelValue).setOrigin(1, 0).setDepth(12);
+    // ── 배틀 로그 (BattleLogUI) ──────────────────────────────────────────
+    this.battleLogUI = new BattleLogUI(this, this._fullBattleLog);
+    this.battleLogUI.create();
 
+    // ── 아이템 패널 (ItemUI) ─────────────────────────────────────────────
+    this.itemUI = new ItemUI(this, this.player, {
+      panelX: IPX, panelW: IPW,
+      startY: BATTLE_LOG_H + 38,
+      cardW: 80, cardH: 116,
+      draggable: true,
+    });
+    this.itemUI.create();
+
+    // ── 파일 hover 툴팁 ──────────────────────────────────────────────────
     this._tooltipBg = this.add.rectangle(0, 0, 70, 26, 0x000000, 0.85).setDepth(200).setVisible(false);
     this._tooltipTxt = this.add.text(0, 0, "", { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffffff' })
       .setOrigin(0.5).setDepth(201).setVisible(false);
 
-    // 필드 영역 중심 (아이템 패널 제외)
-    const FAW = GW - PW - ITEM_PANEL_W;   // 700
-    const IPX = GW - ITEM_PANEL_W;        // 1000
-    const IPCX = IPX + ITEM_PANEL_W / 2;  // 1140 — 아이템 패널 중심
-    const faCX = PW + FAW / 2;            // 650  — 필드 영역 중심
-
-    // 배틀 로그 2줄 (위: 오래된, 아래: 최신)
-    this._logLine1 = this.add.text(faCX, 18, "", TS.log)
-      .setOrigin(0.5, 0.5).setDepth(10).setAlpha(0.55);
-    this._logLine2 = this.add.text(faCX, 46, "", TS.log)
-      .setOrigin(0.5, 0.5).setDepth(10);
-
-    const FAW_ = FAW - 20;
-    const logHit = this.add.rectangle(faCX, BATTLE_LOG_H / 2, FAW_, BATTLE_LOG_H, 0xffffff, 0)
-      .setDepth(15).setInteractive();
-    logHit.on('pointerdown', () => this._toggleBattleLog());
-
-    this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg)
-      .setOrigin(0.5, 0).setDepth(100);
-
+    // ── 메시지 / 족보 프리뷰 ─────────────────────────────────────────────
     const preY = HAND_Y + CH / 2 + 14;
+    this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg).setOrigin(0.5, 0).setDepth(100);
     this.previewLabelTxt = this.add.text(faCX - 10, preY, "", TS.comboLabel).setOrigin(1, 0).setDepth(50);
     this.previewScoreTxt = this.add.text(faCX + 10, preY, "", TS.comboScore).setOrigin(0, 0).setDepth(50);
 
-    // OPT 버튼 — 아이템 패널 상단
+    // ── OPT 버튼 — 아이템 패널 상단 ─────────────────────────────────────
     const optImg = this.add.image(IPCX, 30, "ui_option")
       .setDisplaySize(100, 50).setDepth(60).setInteractive();
     optImg.on("pointerdown", () => this._showOptions());
     optImg.on("pointerover", () => optImg.setTint(0xaaddff));
     optImg.on("pointerout",  () => optImg.clearTint());
 
-    // TURN END 버튼 — 아이템 패널 하단
-    const turnBtnX = IPCX;
-    const turnBtnBottom = HAND_Y + CH / 2;
-    const turnBtnH = 30;
-    const turnBtnY = turnBtnBottom - turnBtnH / 2;
+    // ── TURN END 버튼 — 아이템 패널 하단 ────────────────────────────────
+    const turnBtnX      = IPCX;
+    const turnBtnY      = HAND_Y + CH / 2 - 15;
     this.turnEndBtn = this.add.image(turnBtnX, turnBtnY, "ui_end_turn")
       .setDisplaySize(100, 50).setDepth(60).setInteractive();
     this.turnEndBtn.on("pointerdown", () => { if (!this.isDealing) this.onTurnEnd(); });
     this.turnEndBtn.on("pointerover", () => this.turnEndBtn.setTint(0xffdd88));
     this.turnEndBtn.on("pointerout",  () => this.turnEndBtn.clearTint());
 
-    this._attackTxt = this.add.text(turnBtnX, turnBtnY - turnBtnH / 2 - 16, "", TS.infoLabel)
+    this._attackTxt = this.add.text(turnBtnX, turnBtnY - 40, "", TS.infoLabel)
       .setOrigin(0.5, 1).setDepth(61);
 
     this.refreshPlayerStats();
@@ -590,36 +489,6 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  _showSuitTooltip(suit, rowY, lines, color) {
-    this._hideSuitTooltip();
-    const PW = PLAYER_PANEL_W;
-    const tx = PW + 12;
-    const ty = Math.min(rowY, GH - 80);
-    const tw = 160, lineH = 16, pad = 10;
-    const th = pad * 2 + lines.length * lineH;
-
-    const g = this.add.graphics().setDepth(300);
-    g.fillStyle(0x0a1e12, 0.95);
-    g.fillRoundedRect(tx, ty, tw, th, 6);
-    g.lineStyle(1, Phaser.Display.Color.HexStringToColor(color).color);
-    g.strokeRoundedRect(tx, ty, tw, th, 6);
-    this._suitTooltipObjs.push(g);
-
-    lines.forEach((line, i) => {
-      const style = i === 0
-        ? { fontFamily: "'PressStart2P', Arial", fontSize: '8px', color }
-        : { fontFamily: 'Arial', fontSize: '11px', color: '#aaccbb' };
-      const t = this.add.text(tx + pad, ty + pad + i * lineH, line, style)
-        .setOrigin(0, 0).setDepth(301);
-      this._suitTooltipObjs.push(t);
-    });
-  }
-
-  _hideSuitTooltip() {
-    this._suitTooltipObjs.forEach(o => o.destroy());
-    this._suitTooltipObjs = [];
-  }
-
   _isValidItemDropZone(px, py) {
     if (px < PLAYER_PANEL_W || px > GW - ITEM_PANEL_W) return false;
     // 몬스터 영역
@@ -705,7 +574,7 @@ export class BattleScene extends Phaser.Scene {
     this.renderField();
     this.renderHand();
     this.renderMonsters();
-    this.renderItemPanel();
+    this.itemUI.refresh();
     this.updatePreview();
     this.refreshSortBtns();
     this.refreshPlayerStats();
@@ -969,100 +838,6 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // ── 아이템 패널 렌더 ─────────────────────────────────────────────────────
-  renderItemPanel() {
-    const IPX = GW - ITEM_PANEL_W;
-    const IPCX = IPX + ITEM_PANEL_W / 2;
-    const items = this.player.items ?? [];
-
-    // 헤더 (OPTIONS 버튼 아래)
-    const headerY = BATTLE_LOG_H + 19;
-    this.cardObjs.push(
-      this.add.text(IPCX, headerY, "ITEMS", TS.panelLabel)
-        .setOrigin(0.5).setDepth(10)
-    );
-
-    if (items.length === 0) {
-      this.cardObjs.push(
-        this.add.text(IPCX, headerY + 30, "—", TS.infoLabel)
-          .setOrigin(0.5, 0).setDepth(10)
-      );
-      return;
-    }
-
-    // 2열 카드 그리드 — 핸드 카드와 비슷한 비율 (80×116 ≈ CW:CH)
-    const C_W = 80, C_H = 116;
-    const NAME_H = 18;  // 이름 띠 높이
-    const GAP = 8;
-    const PAD_L = Math.floor((ITEM_PANEL_W - C_W * 2 - GAP) / 2);
-    const startY = headerY + 20;
-
-    const RARITY_BG  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
-    const RARITY_LBL = { common: '#ffffff', rare: '#ffffff', epic: '#ffffff' };
-
-    items.forEach((item, i) => {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const cx = IPX + PAD_L + col * (C_W + GAP) + C_W / 2;
-      const cy = startY + row * (C_H + GAP) + C_H / 2;
-
-      const stripColor = RARITY_BG[item.rarity] ?? RARITY_BG.common;
-      const lblColor   = RARITY_LBL[item.rarity] ?? RARITY_LBL.common;
-
-      const container = this.add.container(cx, cy).setDepth(9);
-      container.setSize(C_W, C_H);
-      container.setInteractive();
-      this.input.setDraggable(container);
-
-      container.setData("itemIndex", i);
-      container.setData("origX", cx);
-      container.setData("origY", cy);
-
-      // 흰색 카드 배경
-      container.add(this.add.rectangle(0, 0, C_W, C_H, 0xffffff).setStrokeStyle(1, 0xaaaaaa));
-
-      // 상단 이름 띠 (레어도 색)
-      const stripY = -C_H / 2 + NAME_H / 2;
-      container.add(this.add.rectangle(0, stripY, C_W, NAME_H, stripColor));
-      container.add(
-        this.add.text(0, stripY, item.name,
-          { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: lblColor })
-          .setOrigin(0.5)
-      );
-
-      // 이미지 or 플레이스홀더
-      const imgKey = `item_${item.id}`;
-      const imgY = -C_H / 2 + NAME_H + 28;
-      if (item.img && this.textures.exists(imgKey)) {
-        container.add(this.add.image(0, imgY, imgKey).setDisplaySize(40, 40));
-      } else {
-        container.add(this.add.rectangle(0, imgY, 40, 40, 0xdddddd).setStrokeStyle(1, 0xaaaaaa));
-        container.add(
-          this.add.text(0, imgY, '?',
-            { fontFamily: 'Arial', fontSize: '16px', color: '#888888' }).setOrigin(0.5)
-        );
-      }
-
-      // desc
-      container.add(
-        this.add.text(0, -C_H / 2 + NAME_H + 58, item.desc ?? "",
-          { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: '#444444', wordWrap: { width: C_W - 8 } })
-          .setOrigin(0.5, 0)
-      );
-
-      // hover 확대
-      container.on("pointerover", () => {
-        this.tweens.add({ targets: container, scaleX: 1.3, scaleY: 1.3, y: cy - 8, duration: 100 });
-        container.setDepth(25);
-      });
-      container.on("pointerout", () => {
-        this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, y: cy, duration: 100 });
-        container.setDepth(9);
-      });
-
-      this.cardObjs.push(container);
-    });
-  }
-
   // ── 족보 계산 헬퍼 ───────────────────────────────────────────────────────
   _getSelectedCombo() {
     if (this.selected.size === 0) return { score: 0, handName: "" };
@@ -1093,44 +868,25 @@ export class BattleScene extends Phaser.Scene {
 
   refreshPlayerStats() {
     const p = this.player;
-    const PW = PLAYER_PANEL_W;
-    const barW = PW - 24;
-    this.playerHpTxt.setText(`${p.hp}/${p.maxHp}`);
-    this.playerDefTxt.setText(`${p.def}`);
-    this.playerAtkTxt?.setText(`${p.atk}`);
-    const ratio = Math.max(0, p.hp / p.maxHp);
-    this._hpBarFill.setDisplaySize(Math.max(1, barW * ratio), 7);
-    this._hpBarFill.setFillStyle(ratio > 0.5 ? 0x44cc44 : ratio > 0.25 ? 0xddaa00 : 0xdd3333);
-    this.refreshPlayerLevel();
-    this.goldTxt.setText(`${p.gold}`);
-    this._deckCountTxt?.setText(`${this.deckData?.length ?? 0}`);
-    this._dummyCountTxt?.setText(`${this.dummyData?.length ?? 0}`);
-
-    this._fieldCountTxt?.setText(`${this.fieldData?.length ?? 0}/${p.fieldSize}`);
-    this._handCountTxt?.setText(`${this.handData?.length ?? 0}/${p.handSizeLimit}`);
-  }
-
-  refreshPlayerLevel() {
-    const p = this.player;
-    const req = getRequiredExp(p.level);
-    const xpFill = Math.max(1, Math.round((PLAYER_PANEL_W - 24) * Math.min(1, p.xp / req)));
-    this._playerLevelTxt.setText(String(p.level));
-    this._xpBarFill.setDisplaySize(xpFill, 5);
-    ['S', 'H', 'D', 'C'].forEach(s => {
-      this._attrTxts[s]?.setText(`Lv${p.attrs[s]}`);
+    this.playerUI.refresh();
+    this.playerUI.setDeckCounts({
+      deck:  this.deckData?.length  ?? 0,
+      dummy: this.dummyData?.length ?? 0,
+      field: `${this.fieldData?.length ?? 0}/${p.fieldSize}`,
+      hand:  `${this.handData?.length  ?? 0}/${p.handSizeLimit}`,
     });
   }
 
+  refreshPlayerLevel() {
+    this.playerUI.refreshLevel();
+  }
+
   addBattleLog(text) {
-    this._fullBattleLog.push(text);
-    this.refreshBattleLog();
-    if (this._logExpanded) this._updateExpandedLogLines();
+    this.battleLogUI.addLog(text);
   }
 
   refreshBattleLog() {
-    const logs = this._fullBattleLog;
-    this._logLine1?.setText(logs.length >= 2 ? logs[logs.length - 2] : "");
-    this._logLine2?.setText(logs.length >= 1 ? logs[logs.length - 1] : "");
+    this.battleLogUI.refresh();
   }
 
   toggleHand(i) {
@@ -1638,7 +1394,7 @@ export class BattleScene extends Phaser.Scene {
           round: this.round + 1,
           player: this.player.toData(),
           deck: this.deck.getState(),
-          battleLog: this._fullBattleLog,
+          battleLog: this.battleLogUI.logs,
         });
       } else {
         this.scene.start("GameScene", {
@@ -1647,7 +1403,7 @@ export class BattleScene extends Phaser.Scene {
           deck: this.deck.getState(),
           phase: 'battle',
           battleIndex: this.battleIndex + 1,
-          battleLog: this._fullBattleLog,
+          battleLog: this.battleLogUI.logs,
         });
       }
     });
@@ -1848,138 +1604,6 @@ export class BattleScene extends Phaser.Scene {
     this._hideCardPreview();
     this._pilePopupObjs.forEach(o => o.destroy());
     this._pilePopupObjs = null;
-  }
-
-  // ── 배틀 로그 확장 패널 ───────────────────────────────────────────────────
-  _toggleBattleLog() {
-    if (this._logExpanded) this._hideExpandedLog();
-    else this._showExpandedLog();
-  }
-
-  _showExpandedLog() {
-    if (this._logExpanded) return;
-    this._logExpanded = true;
-    this._logExpandedBg = [];
-    this._logExpandedLines = [];
-
-    const PW  = PLAYER_PANEL_W;
-    const FAW = GW - PW - ITEM_PANEL_W;
-    const cx  = PW + FAW / 2;
-    const panelH = MONSTER_AREA_TOP + MONSTER_AREA_H; // 몬스터 영역 하단까지
-
-    const CX   = PW + 10;
-    const FAW_ = FAW - 20;
-
-    const lineH = 20;
-    const maxLines = Math.floor((panelH - BATTLE_LOG_H - 8) / lineH);
-
-    // ── 패널 배경 ─────────────────────────────────────────────────────────
-    const g = this.add.graphics().setDepth(500);
-    g.fillStyle(0x050e08, 0.97);
-    g.fillRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
-    g.lineStyle(1, 0x4a7055);
-    g.strokeRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
-    g.lineStyle(1, 0x2a5a38);
-    g.lineBetween(CX, BATTLE_LOG_H, CX + FAW_, BATTLE_LOG_H);
-    this._logExpandedBg.push(g);
-
-    const hdrTxt = this.add.text(cx, BATTLE_LOG_H / 2, '▲ BATTLE LOG', TS.log)
-      .setOrigin(0.5).setDepth(501).setColor('#44ffaa');
-    this._logExpandedBg.push(hdrTxt);
-
-    // ── 스크롤 초기값 (최신 줄이 맨 아래) ────────────────────────────────
-    this._logScrollOffset = Math.max(0, this._fullBattleLog.length - maxLines);
-    this._updateExpandedLogLines();
-
-    // ── 마우스 휠 스크롤 ──────────────────────────────────────────────────
-    this._logWheelHandler = (_p, _g, _dx, dy) => {
-      const maxOff = Math.max(0, this._fullBattleLog.length - maxLines);
-      if (dy > 0) this._logScrollOffset = Math.min(maxOff, this._logScrollOffset + 3);
-      else        this._logScrollOffset = Math.max(0, this._logScrollOffset - 3);
-      this._updateExpandedLogLines();
-    };
-    this.input.on('wheel', this._logWheelHandler);
-
-    // ── 터치 드래그 스크롤 + 바깥 클릭 닫기 ──────────────────────────────
-    let dragStartY = null;
-    let dragStartOffset = 0;
-
-    const onDown = (pointer) => {
-      const inPanel = pointer.x >= CX && pointer.x <= CX + FAW_ &&
-                      pointer.y >= 0  && pointer.y <= panelH;
-      if (!inPanel) {
-        this._hideExpandedLog();
-        return;
-      }
-      dragStartY = pointer.y;
-      dragStartOffset = this._logScrollOffset;
-    };
-    const onMove = (pointer) => {
-      if (dragStartY === null || !pointer.isDown) return;
-      const deltaY = dragStartY - pointer.y;
-      const maxOff = Math.max(0, this._fullBattleLog.length - maxLines);
-      this._logScrollOffset = Math.max(0, Math.min(maxOff,
-        Math.round(dragStartOffset + deltaY / lineH)));
-      this._updateExpandedLogLines();
-    };
-    const onUp = () => { dragStartY = null; };
-
-    this.input.on('pointerdown', onDown);
-    this.input.on('pointermove', onMove);
-    this.input.on('pointerup',   onUp);
-    this._logPointerHandlers = { onDown, onMove, onUp };
-  }
-
-  _updateExpandedLogLines() {
-    this._logExpandedLines.forEach(o => o.destroy());
-    this._logExpandedLines = [];
-
-    const PW   = PLAYER_PANEL_W;
-    const FAW  = GW - PW - ITEM_PANEL_W;
-    const cx   = PW + FAW / 2;
-    const panelH  = MONSTER_AREA_TOP + MONSTER_AREA_H;
-    const lineH   = 20;
-    const maxLines = Math.floor((panelH - BATTLE_LOG_H - 8) / lineH);
-    const logs  = this._fullBattleLog;
-    const start = Math.max(0, Math.min(this._logScrollOffset, Math.max(0, logs.length - maxLines)));
-    const slice = logs.slice(start, start + maxLines);
-
-    slice.forEach((line, i) => {
-      const isLast = i === slice.length - 1;
-      const alpha = isLast ? 1.0 : 0.4 + 0.55 * (i / Math.max(1, slice.length - 1));
-      const txt = this.add.text(cx, BATTLE_LOG_H + 6 + i * lineH, line, TS.log)
-        .setColor(isLast ? '#ffff88' : '#ffcc44')
-        .setAlpha(alpha).setOrigin(0.5, 0).setDepth(503);
-      this._logExpandedLines.push(txt);
-    });
-
-    // 스크롤 위치 표시
-    if (logs.length > maxLines) {
-      const end = Math.min(start + maxLines, logs.length);
-      const indicator = this.add.text(cx, panelH - 6,
-        `${start + 1}-${end} / ${logs.length}`,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '7px', color: '#446655' })
-        .setOrigin(0.5, 1).setDepth(503);
-      this._logExpandedLines.push(indicator);
-    }
-  }
-
-  _hideExpandedLog() {
-    if (!this._logExpanded) return;
-    this._logExpanded = false;
-    [...(this._logExpandedBg ?? []), ...(this._logExpandedLines ?? [])].forEach(o => o.destroy());
-    this._logExpandedBg = null;
-    this._logExpandedLines = null;
-    if (this._logWheelHandler) {
-      this.input.off('wheel', this._logWheelHandler);
-      this._logWheelHandler = null;
-    }
-    if (this._logPointerHandlers) {
-      this.input.off('pointerdown', this._logPointerHandlers.onDown);
-      this.input.off('pointermove', this._logPointerHandlers.onMove);
-      this.input.off('pointerup',   this._logPointerHandlers.onUp);
-      this._logPointerHandlers = null;
-    }
   }
 
   // ── 게임 오버 ────────────────────────────────────────────────────────────
