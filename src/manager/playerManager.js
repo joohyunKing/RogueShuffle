@@ -3,12 +3,18 @@
  * 플레이어 상태 관리 클래스.
  * 씬 전환 시 player.toData() 로 직렬화하여 넘깁니다.
  */
-import { HAND_DATA } from "../constants.js";
+import { HAND_DATA, DEBUG_MODE } from "../constants.js";
+import relicData from '../data/relic.json';
 
 // HAND_DATA에서 { multi, aoe } 만 추출한 기본 handConfig
 const DEFAULT_HAND_CONFIG = Object.fromEntries(
     Object.entries(HAND_DATA).map(([rank, d]) => [rank, { multi: d.multi, aoe: d.aoe }])
 );
+
+function _pickRandomRelicIds(n) {
+    const ids = relicData.relics.map(r => r.id);
+    return [...ids].sort(() => Math.random() - 0.5).slice(0, Math.min(n, ids.length));
+}
 
 /**
  * 레벨업에 필요한 경험치를 반환합니다.
@@ -39,8 +45,10 @@ export class Player {
         this.atk = data.atk ?? 5;
         /** 슈트별 레벨 { S, H, D, C } */
         this.attrs = data.attrs ?? { S: 1, H: 1, D: 1, C: 1 };
-        /** 구매한 아이템 목록 */
+        /** 구매한 아이템 목록 (최대 4개) */
         this.items = data.items ?? [];
+        /** 보유 유물 ID 목록 (최대 15개) */
+        this.relics = (data.relics ?? (DEBUG_MODE ? _pickRandomRelicIds(3) : [])).slice(0, 15);
 
         // ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
         /** 직업 */
@@ -125,6 +133,7 @@ export class Player {
             fieldSizeLimit: this.fieldSizeLimit,
             fieldPickLimit: this.fieldPickLimit,
             items: [...this.items],
+            relics: [...this.relics],
             handConfig: JSON.parse(JSON.stringify(this.handConfig)),
         };
     }

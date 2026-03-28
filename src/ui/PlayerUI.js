@@ -242,10 +242,16 @@ export class PlayerUI {
         const rowY   = ry;  // 클로저용 고정값
         const cfg    = p.handConfig?.[rank] ?? { multi: 1, aoe: false };
         const isAoe  = cfg.aoe;
-        const nameColor    = isAoe ? '#aaccaa' : '#666666';
-        const tooltipColor = isAoe ? '#aaccaa' : '#888888';
+        const nameColor    = '#aaccaa'; //Aoe 아니어도 훌륭한 hand isAoe ? '#aaccaa' : '#666666';
+        const tooltipColor = '#aaccaa'; //Aoe 아니어도 훌륭한 hand isAoe ? '#aaccaa' : '#888888';
         const handKey      = HAND_DATA[rank]?.key;
         const desc         = langData[lang]?.hand?.[handKey]?.desc ?? '';
+
+        // 반짝 효과용 glow 배경 (fillAlpha=1, 오브젝트 alpha=0으로 초기 숨김)
+        const glowBg = this._add(
+          scene.add.rectangle(pcx, rowY + lineH / 2, PW - 16, lineH, 0xffdd44)
+            .setAlpha(0).setDepth(D - 1)
+        );
 
         this._add(scene.add.text(px, rowY, getHandName(rank, lang),
           { ...TS.handRank, color: nameColor }).setDepth(D));
@@ -270,7 +276,7 @@ export class PlayerUI {
         rowHit.on('pointerout',  () => this._hideTooltip());
         rowHit.on('pointerdown', () => this._showTooltipAt([getHandName(rank, lang), desc], tooltipColor, rowY));
 
-        this._handConfigRows[rank] = { multiTxt, aoeDot };
+        this._handConfigRows[rank] = { multiTxt, aoeDot, glowBg };
         ry += lineH;
       });
     }
@@ -359,6 +365,24 @@ export class PlayerUI {
       row.aoeDot.setText(isAoe ? '\u25cf' : '');
     });
     return this;
+  }
+
+  /** 족보 일치 행 반짝 효과. rank=null 이면 전체 해제 */
+  highlightHand(rank) {
+    HAND_RANKS_DESC.forEach(r => {
+      const row = this._handConfigRows[r];
+      if (!row?.glowBg) return;
+      this.scene.tweens.killTweensOf(row.glowBg);
+      row.glowBg.setAlpha(0);
+    });
+    if (rank == null) return;
+    const row = this._handConfigRows[rank];
+    if (!row?.glowBg) return;
+    this.scene.tweens.add({
+      targets: row.glowBg,
+      alpha: { from: 0.12, to: 0.52 },
+      duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
   }
 
   /** DECK/DUMMY 카운트 갱신 (showDeckCounts=true 시) */

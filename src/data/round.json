@@ -2,6 +2,7 @@
     "rounds": [
       {
         "round": 1,
+        "bg": "01_forest_night.jpg",
         "normalCount": 3,
         "monsterTier": [0],
         "totalCost": 3,
@@ -12,6 +13,7 @@
       },
       {
         "round": 2,
+        "bg": "02_village.jpg",
         "normalCount": 3,
         "monsterTier": [0, 1],
         "totalCost": 5,
@@ -22,6 +24,7 @@
       },
       {
         "round": 3,
+        "bg": "03_village_to_castle.jpg",
         "normalCount": 3,
         "monsterTier": [1, 2],
         "totalCost": 7,
@@ -32,6 +35,7 @@
       },
       {
         "round": 4,
+        "bg": "04_old_stone_castle.jpg",
         "normalCount": 3,
         "monsterTier": [2, 3],
         "totalCost": 10,
@@ -42,6 +46,62 @@
       },
       {
         "round": 5,
+        "bg": "05_old_stone_castle_2.jpg",
+        "normalCount": 3,
+        "monsterTier": [3, 4],
+        "totalCost": 14,
+        "boss": {
+          "monsterTier": [6],
+          "totalCost": 26
+        }
+      },
+      {
+        "round": 6,
+        "bg": "06_cave.jpg",
+        "normalCount": 3,
+        "monsterTier": [3, 4],
+        "totalCost": 14,
+        "boss": {
+          "monsterTier": [6],
+          "totalCost": 26
+        }
+      },
+      {
+        "round": 7,
+        "bg": "07_cave_to_hell.jpg",
+        "normalCount": 3,
+        "monsterTier": [3, 4],
+        "totalCost": 14,
+        "boss": {
+          "monsterTier": [6],
+          "totalCost": 26
+        }
+      },
+      {
+        "round": 8,
+        "bg": "08_hell.jpg",
+        "normalCount": 3,
+        "monsterTier": [3, 4],
+        "totalCost": 14,
+        "boss": {
+          "monsterTier": [6],
+          "totalCost": 26
+        }
+      },
+      {
+        "round": 9,
+        "bg": "09_hell_to_space.jpg",
+        "normalCount": 3,
+        "monsterTier": [3, 4],
+        "totalCost": 14,
+        "boss": {
+          "monsterTier": [6],
+          "totalCost": 26
+        }
+      },
+      {
+        "round": 10,
+        "bg": "10_space.jpg",
         "normalCount": 3,
         "monsterTier": [3, 4],
         "totalCost": 14,

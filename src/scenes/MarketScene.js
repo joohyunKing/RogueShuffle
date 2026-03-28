@@ -3,6 +3,8 @@ import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W } from "../constants.js";
 import { TS } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
 import itemData from '../data/item.json';
+import relicData from '../data/relic.json';
+import roundData from '../data/round.json';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 
@@ -16,10 +18,19 @@ export class MarketScene extends Phaser.Scene {
   constructor() { super("MarketScene"); }
 
   preload() {
-    this.load.image("bg", "/assets/images/bg/old_stone_castle.jpg");
+    const _round = this.scene.settings.data?.round ?? 1;
+    const _bgFile = roundData.rounds.find(r => r.round === _round)?.bg ?? "01_forest_night.jpg";
+    const _bgKey  = `bg_${_round}`;
+    if (!this.textures.exists(_bgKey))
+      this.load.image(_bgKey, `/assets/images/bg/${_bgFile}`);
+    this._bgKey = _bgKey;
     itemData.items.forEach(item => {
       if (item.img && !this.textures.exists(`item_${item.id}`))
         this.load.image(`item_${item.id}`, `/assets/images/item/${item.img}`);
+    });
+    relicData.relics.forEach(r => {
+      if (r.img && !this.textures.exists(`relic_${r.id}`))
+        this.load.image(`relic_${r.id}`, `/assets/images/relic/${r.img}`);
     });
   }
 
@@ -39,8 +50,9 @@ export class MarketScene extends Phaser.Scene {
     this.children.removeAll(true);
 
     // ── 배경 ──────────────────────────────────────────────────────────────
-    if (this.textures.exists("bg")) {
-      this.add.image(GW / 2, GH, "bg").setOrigin(0.5, 1).setDisplaySize(GW, GW).setDepth(-1);
+    const bgKey = this._bgKey ?? `bg_${this.round}`;
+    if (this.textures.exists(bgKey)) {
+      this.add.image(GW / 2, GH, bgKey).setOrigin(0.5, 1).setDisplaySize(GW, GW).setDepth(-1);
     } else {
       this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x0d2b18).setDepth(-1);
     }
@@ -101,28 +113,20 @@ export class MarketScene extends Phaser.Scene {
     ig.fillRect(IPX, 0, IPW, GH);
     ig.lineStyle(1, 0x2a4a5a);
     ig.strokeRect(IPX, 0, IPW, GH);
-    ig.lineStyle(1, 0x2a4a5a);
-    ig.strokeRect(IPX, 0, IPW, 54);  // 헤더 구분
-
-    const IPCX = IPX + IPW / 2;
-    this.add.text(IPCX, 14, "ITEMS", TS.marketTitle)
-      .setOrigin(0.5, 0).setDepth(10);
-    this.add.text(IPCX, 36, "전투 중 drag to use", TS.marketSub)
-      .setOrigin(0.5, 0).setDepth(10);
-
-    // ItemUI — 보유 아이템 2열 표시 (drag 없음)
+    // ItemUI — Relic + Item 표시 (drag 없음)
     this.itemUI = new ItemUI(this, this.player, {
       panelX: IPX, panelW: IPW,
-      startY: 76,
+      startY: 10,
       cardW: 80, cardH: 116,
       draggable: false,
+      depth: 10,
     });
     this.itemUI.create();
   }
 
   _drawItemCard(cx, cy, w, h, item, idx) {
     const rar    = RARITY_COLORS[item.rarity] ?? RARITY_COLORS.common;
-    const canBuy = !item.bought && this.player.gold >= item.cost;
+    const canBuy = !item.bought && this.player.gold >= item.cost && this.player.items.length < 4;
     const alpha  = item.bought ? 0.45 : 1;
 
     // 카드 배경
@@ -175,6 +179,7 @@ export class MarketScene extends Phaser.Scene {
   _buyItem(idx) {
     const item = this.shopItems[idx];
     if (item.bought || this.player.gold < item.cost) return;
+    if (this.player.items.length >= 4) return;  // 아이템 최대 4개
 
     this.player.gold -= item.cost;
     item.bought = true;

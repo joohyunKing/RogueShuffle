@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { calculateScore } from "../service/scoreService.js";
+import roundData from "../data/round.json";
 import {
   GW, GH, CW, CH, FIELD_CW, FIELD_CH, PILE_CW, PILE_CH,
   SUITS, RANKS, SUIT_ORDER,
@@ -10,6 +11,9 @@ import {
   context
 } from "../constants.js";
 import langData from "../data/lang.json";
+import relicData from "../data/relic.json";
+
+const _relicMap = Object.fromEntries(relicData.relics.map(r => [r.id, r]));
 
 import { spawnMonsters, MONSTER_LIST } from "../service/monsterService.js";
 import { writeSave, deleteSave } from "../save.js";
@@ -24,18 +28,18 @@ import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 
-// ─── 콤보 버튼 랭크별 스타일 ─────────────────────────────────────────────────
-const COMBO_BTN_STYLES = {
-  0: { fill: 0x141414, border: 0x444444, text: '#888888', sw: 1 },
-  1: { fill: 0x161e16, border: 0x336633, text: '#88aa88', sw: 1 },
-  2: { fill: 0x1a1a3a, border: 0x4444aa, text: '#8888ee', sw: 1 },
-  3: { fill: 0x1a2a3a, border: 0x4488aa, text: '#88ccee', sw: 2 },
-  4: { fill: 0x2a3a1a, border: 0x88aa44, text: '#ccee88', sw: 2 },
-  5: { fill: 0x2a3a1a, border: 0x88aa44, text: '#ccee88', sw: 2 },
-  6: { fill: 0x1a3a1a, border: 0x44bb44, text: '#88ff88', sw: 2 },
-  7: { fill: 0x330066, border: 0x9900ff, text: '#cc66ff', sw: 3 },
-  8: { fill: 0x002266, border: 0x0066ff, text: '#66ccff', sw: 3 },
-  9: { fill: 0x7a2200, border: 0xff6600, text: '#ffcc44', sw: 3 },
+// ─── 파이어볼 랭크별 스타일 ──────────────────────────────────────────────────
+const FIREBALL_STYLES = {
+  0: { size: 48, tint: 0x445544, textColor: '#556655' },
+  1: { size: 52, tint: 0x665533, textColor: '#887744' },
+  2: { size: 56, tint: 0x886644, textColor: '#998855' },
+  3: { size: 60, tint: 0xaa7733, textColor: '#ccaa55' },
+  4: { size: 64, tint: 0xcc8822, textColor: '#ddcc66' },
+  5: { size: 66, tint: 0xddaa00, textColor: '#eedd44' },
+  6: { size: 70, tint: 0xffcc00, textColor: '#ffee66' },
+  7: { size: 76, tint: 0xff8800, textColor: '#ffaa44' },
+  8: { size: 82, tint: 0xff4400, textColor: '#ff8833' },
+  9: { size: 90, tint: 0xff2200, textColor: '#ffcc44' },
 };
 
 // ─── 씬 ──────────────────────────────────────────────────────────────────────
@@ -50,7 +54,12 @@ export class BattleScene extends Phaser.Scene {
       this.load.image("card_back_deck", "/assets/images/ui/deck_rembg.png");
     if (!this.textures.exists("card_back_dummy"))
       this.load.image("card_back_dummy", "/assets/images/ui/dummy_rembg.png");
-    this.load.image("bg", "/assets/images/bg/old_stone_castle.jpg");
+    const _round = this.scene.settings.data?.round ?? 1;
+    const _bgFile = roundData.rounds.find(r => r.round === _round)?.bg ?? "01_forest_night.jpg";
+    const _bgKey  = `bg_${_round}`;
+    if (!this.textures.exists(_bgKey))
+      this.load.image(_bgKey, `/assets/images/bg/${_bgFile}`);
+    this._bgKey = _bgKey;
     itemData.items.forEach(item => {
       if (item.img && !this.textures.exists(`item_${item.id}`))
         this.load.image(`item_${item.id}`, `/assets/images/item/${item.img}`);
@@ -67,8 +76,14 @@ export class BattleScene extends Phaser.Scene {
     if (!this.textures.exists("ui_option")) this.load.image("ui_option", "/assets/images/ui/option_rembg.png");
     if (!this.textures.exists("ui_end_turn")) this.load.image("ui_end_turn", "/assets/images/ui/end_turn_rembg.png");
     if (!this.textures.exists("ui_sort"))   this.load.image("ui_sort",   "/assets/images/ui/SuitRank_rembg.png");
-    if (!this.textures.exists("ui_sword"))  this.load.image("ui_sword",  "/assets/images/ui/sword.png");
-    if (!this.textures.exists("ui_shield")) this.load.image("ui_shield", "/assets/images/ui/shield.png");
+    if (!this.textures.exists("ui_sword"))    this.load.image("ui_sword",    "/assets/images/ui/sword.png");
+    if (!this.textures.exists("ui_shield"))   this.load.image("ui_shield",   "/assets/images/ui/shield.png");
+    if (!this.textures.exists("ui_fireball")) this.load.spritesheet("ui_fireball", "/assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
+
+    relicData.relics.forEach(r => {
+      if (r.img && !this.textures.exists(`relic_${r.id}`))
+        this.load.image(`relic_${r.id}`, `/assets/images/relic/${r.img}`);
+    });
 
     // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
     MONSTER_LIST.forEach(m => {
@@ -151,6 +166,7 @@ export class BattleScene extends Phaser.Scene {
     context.deckCount  = this.deckData.length;
     context.dummyCount = 0;
     context.handConfig = this.player.handConfig;
+    context.relics     = this.player.relics ?? [];
 
     this.selected = new Set();
     this.cardObjs = [];
@@ -202,6 +218,16 @@ export class BattleScene extends Phaser.Scene {
       }
     });
 
+    // 파이어볼 애니메이션 등록 (1회)
+    if (!this.anims.exists('fireball_loop')) {
+      this.anims.create({
+        key: 'fireball_loop',
+        frames: this.anims.generateFrameNumbers('ui_fireball', { start: 0, end: 8 }),
+        frameRate: 12,
+        repeat: -1,
+      });
+    }
+
     this.drawBg();
     this.createUI();
     this.createSortButton();
@@ -218,9 +244,9 @@ export class BattleScene extends Phaser.Scene {
     const CX = PW + 10;
     const FAW_ = FAW - 20;            // 패널 내부 폭
 
-    if (this.textures.exists("bg")) {
-      // 정사각형 이미지를 가로(GW)에 맞추고, 아래에서부터 표시 (위쪽이 클리핑)
-      this.add.image(GW / 2, GH / 2, "bg")
+    const bgKey = this._bgKey ?? `bg_${this.round}`;
+    if (this.textures.exists(bgKey)) {
+      this.add.image(GW / 2, GH / 2, bgKey)
         .setOrigin(0.5, 0.5).setDisplaySize(GW, GH).setDepth(-1);
     }
 
@@ -311,17 +337,20 @@ export class BattleScene extends Phaser.Scene {
     // ── 메시지 텍스트 ──────────────────────────────────────────────────────
     this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg).setOrigin(0.5, 0).setDepth(100);
 
-    // ── 콤보 공격 버튼 (몬스터 영역과 필드 영역 사이) ──────────────────────
+    // ── 콤보 공격 버튼 → 파이어볼 스프라이트 ──────────────────────────────
     const comboBtnY = MONSTER_AREA_TOP + MONSTER_AREA_H + 8;
-    this._comboBtnBg = this.add.rectangle(faCX, comboBtnY, 240, 38, 0x141414)
-      .setStrokeStyle(1, 0x444444).setDepth(30).setVisible(false)
+    this._comboBtnSprite = this.add.sprite(faCX, comboBtnY, 'ui_fireball')
+      .setDisplaySize(60, Math.round(60 * 358 / 325))
+      .setDepth(30).setVisible(false)
       .setInteractive({ draggable: true });
-    this._comboBtnBg.setData("comboBtn", true);
-    this._comboBtnBg.setData("origX", faCX);
-    this._comboBtnBg.setData("origY", comboBtnY);
-    this._comboBtnText = this.add.text(faCX, comboBtnY, "",
+    this._comboBtnSprite.setData("comboBtn", true);
+    this._comboBtnSprite.setData("origX", faCX);
+    this._comboBtnSprite.setData("origY", comboBtnY);
+    this._comboBtnSprite.play('fireball_loop');
+
+    this._comboBtnText = this.add.text(faCX + 55, comboBtnY, "",
       { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: '#888888' })
-      .setOrigin(0.5).setDepth(31).setVisible(false);
+      .setOrigin(0, 0.5).setDepth(31).setVisible(false);
 
     // ── DEBUG: 점수 프리뷰 (몬스터 영역 우측 하단) ────────────────────────
     this.previewScoreTxt = DEBUG_MODE
@@ -474,6 +503,7 @@ export class BattleScene extends Phaser.Scene {
       obj.setDepth(200);
       if (obj.getData("comboBtn")) {
         this._comboBtnText.setDepth(201);
+        this.tweens.killTweensOf(obj);  // pulse 중단
       } else if (obj.getData("itemIndex") !== undefined) {
         // 아이템 컨테이너
         this.tweens.killTweensOf(obj);
@@ -488,7 +518,7 @@ export class BattleScene extends Phaser.Scene {
     this.input.on("drag", (pointer, obj, dragX, dragY) => {
       obj.x = dragX; obj.y = dragY;
       if (obj.getData("comboBtn")) {
-        this._comboBtnText.x = dragX;
+        this._comboBtnText.x = dragX + 55;
         this._comboBtnText.y = dragY;
       }
     });
@@ -511,9 +541,8 @@ export class BattleScene extends Phaser.Scene {
             Math.abs(pointer.x - positions[i].x) < Math.abs(pointer.x - positions[best].x) ? i : best
           , 0);
 
-          // 원위치 복귀 후 공격
           obj.x = origX; obj.y = origY;
-          this._comboBtnText.x = origX; this._comboBtnText.y = origY;
+          this._comboBtnText.x = origX + 55; this._comboBtnText.y = origY;
 
           if (!this.monsters[monIdx]?.isDead) {
             this.attackMonster(monIdx);
@@ -521,9 +550,13 @@ export class BattleScene extends Phaser.Scene {
         } else {
           // 스냅백
           this.tweens.add({
-            targets: [obj, this._comboBtnText],
+            targets: obj,
             x: origX, y: origY,
             duration: 220, ease: 'Back.Out',
+            onUpdate: () => {
+              this._comboBtnText.x = obj.x + 55;
+              this._comboBtnText.y = obj.y;
+            },
           });
         }
         return;
@@ -924,6 +957,26 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // ── 아이템 패널 렌더 ─────────────────────────────────────────────────────
+  // ── 현재 선택에서 효과 받는 relic id 목록 ──────────────────────────────
+  _getApplicableRelicIds(rank) {
+    const handName      = HAND_DATA[rank]?.key;
+    const deckCount     = this.deckData?.length ?? 0;
+    const selectedCards = [...this.selected].map(i => this.handData[i]);
+    return (this.player.relics ?? []).filter(id => {
+      const relic = _relicMap[id];
+      if (!relic) return false;
+      return relic.effects.some(eff => {
+        const cond = eff.condition;
+        if (!cond) return true;
+        if (cond.handName     && cond.handName !== handName) return false;
+        if (cond.deckCountGte && deckCount < cond.deckCountGte) return false;
+        if (cond.suit  && !selectedCards.some(c => c.suit  === cond.suit))  return false;
+        if (cond.rank  && !selectedCards.some(c => c.rank  === cond.rank))  return false;
+        return true;
+      });
+    });
+  }
+
   // ── 족보 계산 헬퍼 ───────────────────────────────────────────────────────
   _getSelectedCombo() {
     if (this.selected.size === 0) return { score: 0, handName: "" };
@@ -935,38 +988,48 @@ export class BattleScene extends Phaser.Scene {
     const score = cardScore > 0 ? cardScore + this.player.atk : 0;
 
     if (score > 0) {
-      const lang    = this.registry?.get('lang') ?? 'ko';
-      const key     = HAND_DATA[rank]?.key ?? '';
-      const name    = langData[lang]?.hand?.[key]?.name ?? key;
-      const st      = COMBO_BTN_STYLES[rank] ?? COMBO_BTN_STYLES[0];
+      const lang = this.registry?.get('lang') ?? 'ko';
+      const key  = HAND_DATA[rank]?.key ?? '';
+      const name = langData[lang]?.hand?.[key]?.name ?? key;
+      const fb   = FIREBALL_STYLES[rank] ?? FIREBALL_STYLES[0];
+      const fbH  = Math.round(fb.size * 358 / 325);
 
-      this._comboBtnBg
-        .setFillStyle(st.fill)
-        .setStrokeStyle(st.sw, st.border)
+      this.tweens.killTweensOf(this._comboBtnSprite);
+      this._comboBtnPulsing = false;
+
+      this._comboBtnSprite
+        .setDisplaySize(fb.size, fbH)
+        .setTint(fb.tint)
         .setVisible(true);
       this._comboBtnText
         .setText(name)
-        .setColor(st.text)
+        .setColor(fb.textColor)
         .setVisible(true);
 
-      // 고랭크 버튼 pulse tween (rank 7+, 중복 방지)
-      if (rank >= 7 && !this._comboBtnPulsing) {
+      // 고랭크 pulse (rank 7+)
+      if (rank >= 7) {
         this._comboBtnPulsing = true;
+        const sx = this._comboBtnSprite.scaleX;
+        const sy = this._comboBtnSprite.scaleY;
         this.tweens.add({
-          targets: this._comboBtnBg,
-          alpha: { from: 1, to: 0.65 },
-          duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+          targets: this._comboBtnSprite,
+          scaleX: { from: sx, to: sx * 1.15 },
+          scaleY: { from: sy, to: sy * 1.15 },
+          duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
         });
-      } else if (rank < 7) {
-        this.tweens.killTweensOf(this._comboBtnBg);
-        this._comboBtnBg.setAlpha(1);
-        this._comboBtnPulsing = false;
       }
+
+      // PlayerUI hand 반짝 + ItemUI relic 달그락
+      this.playerUI?.highlightHand(rank);
+      this.itemUI?.rattleRelics(this._getApplicableRelicIds(rank));
     } else {
-      this.tweens.killTweensOf(this._comboBtnBg);
-      this._comboBtnBg.setAlpha(1).setVisible(false);
+      this.tweens.killTweensOf(this._comboBtnSprite);
+      this._comboBtnSprite.setVisible(false);
       this._comboBtnText.setVisible(false);
       this._comboBtnPulsing = false;
+
+      this.playerUI?.highlightHand(null);
+      this.itemUI?.rattleRelics([]);
     }
 
     // DEBUG 점수 표시
