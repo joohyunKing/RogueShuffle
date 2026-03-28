@@ -49,40 +49,40 @@ export class BattleScene extends Phaser.Scene {
   // ── preload ──────────────────────────────────────────────────────────────
   preload() {
     //this.load.image("card_back", "/_card_back.png");
-    this.load.image("card_back", "/assets/images/ui/card_back.png");
+    this.load.image("card_back", "assets/images/ui/card_back.png");
     if (!this.textures.exists("card_back_deck"))
-      this.load.image("card_back_deck", "/assets/images/ui/deck_rembg.png");
+      this.load.image("card_back_deck", "assets/images/ui/deck_rembg.png");
     if (!this.textures.exists("card_back_dummy"))
-      this.load.image("card_back_dummy", "/assets/images/ui/dummy_rembg.png");
+      this.load.image("card_back_dummy", "assets/images/ui/dummy_rembg.png");
     const _round = this.scene.settings.data?.round ?? 1;
     const _bgFile = roundData.rounds.find(r => r.round === _round)?.bg ?? "01_forest_night.jpg";
     const _bgKey  = `bg_${_round}`;
     if (!this.textures.exists(_bgKey))
-      this.load.image(_bgKey, `/assets/images/bg/${_bgFile}`);
+      this.load.image(_bgKey, `assets/images/bg/${_bgFile}`);
     this._bgKey = _bgKey;
     itemData.items.forEach(item => {
       if (item.img && !this.textures.exists(`item_${item.id}`))
-        this.load.image(`item_${item.id}`, `/assets/images/item/${item.img}`);
+        this.load.image(`item_${item.id}`, `assets/images/item/${item.img}`);
     });
     CardRenderer.preload(this);
-    this.load.audio("sfx_shuffle", "/assets/audio/sfx/card-shuffle.ogg");
-    this.load.audio("sfx_fan", "/assets/audio/sfx/card-fan-1.ogg");
-    this.load.audio("sfx_slide", "/assets/audio/sfx/card-slide-5.ogg");
-    this.load.audio("sfx_place", "/assets/audio/sfx/card-place-1.ogg");
-    this.load.audio("sfx_chop", "/assets/audio/sfx/chop.ogg");
-    this.load.audio("sfx_knifeSlice", "/assets/audio/sfx/knifeSlice.ogg");
-    if (!this.textures.exists("ui_deck")) this.load.image("ui_deck", "/assets/images/ui/deck.png");
-    if (!this.textures.exists("ui_dummy")) this.load.image("ui_dummy", "/assets/images/ui/dummy.png");
-    if (!this.textures.exists("ui_option")) this.load.image("ui_option", "/assets/images/ui/option_rembg.png");
-    if (!this.textures.exists("ui_end_turn")) this.load.image("ui_end_turn", "/assets/images/ui/end_turn_rembg.png");
-    if (!this.textures.exists("ui_sort"))   this.load.image("ui_sort",   "/assets/images/ui/SuitRank_rembg.png");
-    if (!this.textures.exists("ui_sword"))    this.load.image("ui_sword",    "/assets/images/ui/sword.png");
-    if (!this.textures.exists("ui_shield"))   this.load.image("ui_shield",   "/assets/images/ui/shield.png");
-    if (!this.textures.exists("ui_fireball")) this.load.spritesheet("ui_fireball", "/assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
+    this.load.audio("sfx_shuffle", "assets/audio/sfx/card-shuffle.ogg");
+    this.load.audio("sfx_fan", "assets/audio/sfx/card-fan-1.ogg");
+    this.load.audio("sfx_slide", "assets/audio/sfx/card-slide-5.ogg");
+    this.load.audio("sfx_place", "assets/audio/sfx/card-place-1.ogg");
+    this.load.audio("sfx_chop", "assets/audio/sfx/chop.ogg");
+    this.load.audio("sfx_knifeSlice", "assets/audio/sfx/knifeSlice.ogg");
+    if (!this.textures.exists("ui_deck")) this.load.image("ui_deck", "assets/images/ui/deck.png");
+    if (!this.textures.exists("ui_dummy")) this.load.image("ui_dummy", "assets/images/ui/dummy.png");
+    if (!this.textures.exists("ui_option")) this.load.image("ui_option", "assets/images/ui/option_rembg.png");
+    if (!this.textures.exists("ui_end_turn")) this.load.image("ui_end_turn", "assets/images/ui/end_turn_rembg.png");
+    if (!this.textures.exists("ui_sort"))   this.load.image("ui_sort",   "assets/images/ui/SuitRank_rembg.png");
+    if (!this.textures.exists("ui_sword"))    this.load.image("ui_sword",    "assets/images/ui/sword.png");
+    if (!this.textures.exists("ui_shield"))   this.load.image("ui_shield",   "assets/images/ui/shield.png");
+    if (!this.textures.exists("ui_fireball")) this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
 
     relicData.relics.forEach(r => {
       if (r.img && !this.textures.exists(`relic_${r.id}`))
-        this.load.image(`relic_${r.id}`, `/assets/images/relic/${r.img}`);
+        this.load.image(`relic_${r.id}`, `assets/images/relic/${r.img}`);
     });
 
     // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
@@ -246,8 +246,14 @@ export class BattleScene extends Phaser.Scene {
 
     const bgKey = this._bgKey ?? `bg_${this.round}`;
     if (this.textures.exists(bgKey)) {
+      this.add.image(GW / 2, GH / 3, bgKey)
+        .setOrigin(0.5, 0.5).setDisplaySize(GH * 1.5, GH * 1.5).setDepth(-1);
+
+        /*
+        원본
       this.add.image(GW / 2, GH / 2, bgKey)
         .setOrigin(0.5, 0.5).setDisplaySize(GW, GH).setDepth(-1);
+        */
     }
 
     const g = this.add.graphics().setDepth(0);
@@ -318,8 +324,7 @@ export class BattleScene extends Phaser.Scene {
     this.itemUI = new ItemUI(this, this.player, {
       panelX: IPX, panelW: IPW,
       startY: BATTLE_LOG_H + 38,
-      cardW: 80, cardH: 116,
-      draggable: true,
+      onItemClick: (idx) => this._useItem(idx, null),
     });
     this.itemUI.create();
 
@@ -854,7 +859,7 @@ export class BattleScene extends Phaser.Scene {
     const positions = this.calcMonsterPositions(this.monsters.length);
     const hasCombo = this._getSelectedCombo().score > 0
       && this.attackCount < this.player.attacksPerTurn;
-    const imgW = 120, imgH = 120;
+    const imgW = 156, imgH = 156;
 
     // 하단 기준 레이아웃
     const MON_BOTTOM = MONSTER_AREA_TOP + MONSTER_AREA_H - 4;  // 400
@@ -915,7 +920,7 @@ export class BattleScene extends Phaser.Scene {
       */
 
       // ── HP 바 (텍스트 포함) ──────────────────────────────────────────────
-      const barW = 110;
+      const barW = 88;
       const hpRatio = Math.max(0, mon.hp / mon.maxHp);
       const hpColor = hpRatio > 0.5 ? 0x44cc44 : hpRatio > 0.25 ? 0xddaa00 : 0xdd3333;
       this.monsterObjs.push(
@@ -970,8 +975,12 @@ export class BattleScene extends Phaser.Scene {
         if (!cond) return true;
         if (cond.handName     && cond.handName !== handName) return false;
         if (cond.deckCountGte && deckCount < cond.deckCountGte) return false;
-        if (cond.suit  && !selectedCards.some(c => c.suit  === cond.suit))  return false;
-        if (cond.rank  && !selectedCards.some(c => c.rank  === cond.rank))  return false;
+        if (cond.suit || cond.rank) {
+          if (!selectedCards.some(c =>
+            (!cond.suit || c.suit === cond.suit) &&
+            (!cond.rank || c.rank === cond.rank)
+          )) return false;
+        }
         return true;
       });
     });
@@ -1179,7 +1188,7 @@ export class BattleScene extends Phaser.Scene {
 
     const { score: cardScore, handName, aoe } = this._getSelectedCombo();
     if (cardScore <= 0) return;
-    const score = cardScore + this.player.atk;
+    const score = Math.floor(cardScore + this.player.atk);
 
     if (this.attackCount >= this.player.attacksPerTurn) {
       this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
@@ -1255,9 +1264,9 @@ export class BattleScene extends Phaser.Scene {
       let lastDeadIdx = monIdx;
       aliveMonsters.forEach((m, _) => {
         const actualIdx = this.monsters.indexOf(m);
-        const dmg = score - m.def;
-        m.hp = Math.max(0, m.hp - Math.max(0, dmg));
-        this.addBattleLog(`${m.mob.name}에게 ${Math.max(0, dmg)} 데미지!`);
+        const dmg = Math.floor(Math.max(0, score - m.def));
+        m.hp = Math.max(0, m.hp - dmg);
+        this.addBattleLog(`${m.mob.name}에게 ${dmg} 데미지!`);
         if (m.hp <= 0) {
           m.isDead = true;
           lastDeadIdx = actualIdx;
@@ -1288,9 +1297,9 @@ export class BattleScene extends Phaser.Scene {
         if (reduced > 0) this.addBattleLog(`♣ 적응: ${mon.mob.name} ATK -${reduced}`);
       }
 
-      const damage = score - mon.def;
+      const damage = Math.floor(Math.max(0, score - mon.def));
       const prevHp = mon.hp;
-      mon.hp = Math.max(0, mon.hp - Math.max(0, damage));
+      mon.hp = Math.max(0, mon.hp - damage);
       const overkill = Math.max(0, damage - prevHp);
       const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
       this.player.score += score;

@@ -25,13 +25,12 @@ export class ItemUI {
     this.scene  = scene;
     this.player = player;
     this.opts   = {
-      panelX:    GW - ITEM_PANEL_W,
-      panelW:    ITEM_PANEL_W,
-      startY:    BATTLE_LOG_H + 19,
-      cardW:     80,
-      cardH:     116,
-      draggable: false,
-      depth:     9,
+      panelX:      GW - ITEM_PANEL_W,
+      panelW:      ITEM_PANEL_W,
+      startY:      BATTLE_LOG_H + 19,
+      draggable:   false,
+      onItemClick: null,
+      depth:       9,
       ...opts,
     };
     this._objs      = [];
@@ -81,7 +80,7 @@ export class ItemUI {
   // ── 메인 렌더 ──────────────────────────────────────────────────────────
   create() {
     const { scene, player, opts } = this;
-    const { panelX, panelW, startY, cardW, cardH, draggable, depth: D } = opts;
+    const { panelX, panelW, startY, draggable, depth: D } = opts;
     const ipcx   = panelX + panelW / 2;
     const relics = player.relics ?? [];
     const items  = player.items  ?? [];
@@ -177,65 +176,63 @@ export class ItemUI {
       return this;
     }
 
-    const GAP    = 8;
-    const PAD_L  = Math.floor((panelW - cardW * 2 - GAP) / 2);
-    const NAME_H = 18;
+    const ITM_SZ   = 56;
+    const ITM_IMG  = 44;
+    const ITM_COLS = 3;
+    const ITM_GAPX = 8;
+    const ITM_GAPY = 8;
+    const ITM_PAD  = Math.floor((panelW - ITM_COLS * ITM_SZ - (ITM_COLS - 1) * ITM_GAPX) / 2);
+    const onItemClick = opts.onItemClick ?? null;
 
     items.forEach((item, i) => {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const cx  = panelX + PAD_L + col * (cardW + GAP) + cardW / 2;
-      const cy  = itemStartY + row * (cardH + GAP) + cardH / 2;
+      const col = i % ITM_COLS;
+      const row = Math.floor(i / ITM_COLS);
+      const cx  = panelX + ITM_PAD + col * (ITM_SZ + ITM_GAPX) + ITM_SZ / 2;
+      const cy  = itemStartY + row * (ITM_SZ + ITM_GAPY) + ITM_SZ / 2;
 
       const stripColor = RARITY_STRIP[item.rarity] ?? RARITY_STRIP.common;
+      const tipColor   = RARITY_COLOR[item.rarity] ?? RARITY_COLOR.common;
 
-      const container = scene.add.container(cx, cy).setDepth(D);
-      container.setSize(cardW, cardH);
-      container.setInteractive();
-      if (draggable) scene.input.setDraggable(container);
-      container.setData("itemIndex", i);
-      container.setData("origX", cx);
-      container.setData("origY", cy);
-
-      container.add(scene.add.rectangle(0, 0, cardW, cardH, 0xffffff).setStrokeStyle(1, 0xaaaaaa));
-
-      const stripY = -cardH / 2 + NAME_H / 2;
-      container.add(scene.add.rectangle(0, stripY, cardW, NAME_H, stripColor));
-      container.add(
-        scene.add.text(0, stripY, item.name,
-          { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: '#ffffff' })
-          .setOrigin(0.5)
+      // 배경 (rarity 테두리)
+      this._add(
+        scene.add.rectangle(cx, cy, ITM_SZ, ITM_SZ, 0x0c1a10)
+          .setStrokeStyle(2, stripColor).setDepth(D)
       );
 
-      const imgKey = `item_${item.id}`;
-      const imgY   = -cardH / 2 + NAME_H + 28;
-      if (item.img && scene.textures.exists(imgKey)) {
-        container.add(scene.add.image(0, imgY, imgKey).setDisplaySize(40, 40));
+      // 이미지 (없으면 red_portion fallback)
+      const imgKey  = `item_${item.id}`;
+      const useKey  = scene.textures.exists(imgKey)            ? imgKey
+                    : scene.textures.exists('item_heal_potion') ? 'item_heal_potion'
+                    : null;
+      if (useKey) {
+        this._add(scene.add.image(cx, cy, useKey).setDisplaySize(ITM_IMG, ITM_IMG).setDepth(D + 1));
       } else {
-        container.add(scene.add.rectangle(0, imgY, 40, 40, 0xdddddd).setStrokeStyle(1, 0xaaaaaa));
-        container.add(
-          scene.add.text(0, imgY, '?',
-            { fontFamily: 'Arial', fontSize: '16px', color: '#888888' }).setOrigin(0.5)
+        this._add(
+          scene.add.rectangle(cx, cy, ITM_IMG, ITM_IMG, stripColor, 0.22).setDepth(D + 1)
+        );
+        this._add(
+          scene.add.text(cx, cy, '?', { fontFamily: 'Arial', fontSize: '18px', color: tipColor })
+            .setOrigin(0.5).setDepth(D + 2)
         );
       }
 
-      container.add(
-        scene.add.text(0, -cardH / 2 + NAME_H + 58, item.desc ?? "",
-          { fontFamily: "'PressStart2P',Arial", fontSize: '5px', color: '#444444',
-            wordWrap: { width: cardW - 8 } })
-          .setOrigin(0.5, 0)
+      // 클릭/hover hit area
+      const hit = this._add(
+        scene.add.rectangle(cx, cy, ITM_SZ, ITM_SZ, 0xffffff, 0)
+          .setDepth(D + 2).setInteractive()
       );
-
-      container.on("pointerover", () => {
-        scene.tweens.add({ targets: container, scaleX: 1.3, scaleY: 1.3, y: cy - 8, duration: 100 });
-        container.setDepth(25);
+      const idx = i;
+      hit.on('pointerover', () => {
+        hit.setFillStyle(0xffffff, 0.12);
+        this._showTip(cy, item.name, item.desc ?? '', tipColor);
       });
-      container.on("pointerout", () => {
-        scene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, y: cy, duration: 100 });
-        container.setDepth(D);
+      hit.on('pointerout', () => {
+        hit.setFillStyle(0xffffff, 0);
+        this._clearTip();
       });
-
-      this._add(container);
+      if (onItemClick) {
+        hit.on('pointerdown', () => { this._clearTip(); onItemClick(idx); });
+      }
     });
 
     return this;

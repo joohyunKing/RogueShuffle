@@ -22,15 +22,15 @@ export class MarketScene extends Phaser.Scene {
     const _bgFile = roundData.rounds.find(r => r.round === _round)?.bg ?? "01_forest_night.jpg";
     const _bgKey  = `bg_${_round}`;
     if (!this.textures.exists(_bgKey))
-      this.load.image(_bgKey, `/assets/images/bg/${_bgFile}`);
+      this.load.image(_bgKey, `assets/images/bg/${_bgFile}`);
     this._bgKey = _bgKey;
     itemData.items.forEach(item => {
       if (item.img && !this.textures.exists(`item_${item.id}`))
-        this.load.image(`item_${item.id}`, `/assets/images/item/${item.img}`);
+        this.load.image(`item_${item.id}`, `assets/images/item/${item.img}`);
     });
     relicData.relics.forEach(r => {
       if (r.img && !this.textures.exists(`relic_${r.id}`))
-        this.load.image(`relic_${r.id}`, `/assets/images/relic/${r.img}`);
+        this.load.image(`relic_${r.id}`, `assets/images/relic/${r.img}`);
     });
   }
 
@@ -126,7 +126,7 @@ export class MarketScene extends Phaser.Scene {
 
   _drawItemCard(cx, cy, w, h, item, idx) {
     const rar    = RARITY_COLORS[item.rarity] ?? RARITY_COLORS.common;
-    const canBuy = !item.bought && this.player.gold >= item.cost && this.player.items.length < 4;
+    const canBuy = !item.bought && this.player.gold >= item.cost && this.player.items.length < 6;
     const alpha  = item.bought ? 0.45 : 1;
 
     // 카드 배경
@@ -179,7 +179,7 @@ export class MarketScene extends Phaser.Scene {
   _buyItem(idx) {
     const item = this.shopItems[idx];
     if (item.bought || this.player.gold < item.cost) return;
-    if (this.player.items.length >= 4) return;  // 아이템 최대 4개
+    if (this.player.items.length >= 6) return;  // 아이템 최대 6개
 
     this.player.gold -= item.cost;
     item.bought = true;

@@ -14,7 +14,7 @@ function _resolveSprite(sprite) {
   if (!sprite || typeof sprite !== 'object') return null;
   const result = {};
   for (const [state, file] of Object.entries(sprite)) {
-    result[state] = `/assets/images/monster/${file}`;
+    result[state] = `${import.meta.env.BASE_URL}assets/images/monster/${file}`;
   }
   return result;
 }
