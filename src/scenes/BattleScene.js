@@ -1856,15 +1856,15 @@ export class BattleScene extends Phaser.Scene {
     objs.push(bgmTxt);
     const bgmPlus = this.add.rectangle(cx + 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
     objs.push(bgmPlus, this.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const bgmBarBg = this.add.rectangle(cx, bgmY + 28, 190, 7, 0x224433).setDepth(602);
-    const bgmBar = this.add.rectangle(cx - 95, bgmY + 28, bgm * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
+    const bgmBarBg = this.add.rectangle(cx, bgmY + 28, 204, 7, 0x224433).setDepth(602);
+    const bgmBar = this.add.rectangle(cx - 102, bgmY + 28, bgm * 20.4, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
     objs.push(bgmBarBg, bgmBar);
     const updateBgm = (v) => {
       bgm = Phaser.Math.Clamp(v, 0, 10);
       this.registry.set("bgmVolume", bgm);
       bgmTxt.setText(String(bgm));
-      bgmBar.setDisplaySize(Math.max(1, bgm * 19), 7);
-      saveOptionsByRegistry();
+      bgmBar.setDisplaySize(Math.max(1, bgm * 20.4), 7);
+      saveOptionsByRegistry(this.registry);
     };
     bgmMinus.on("pointerdown", () => updateBgm(bgm - 1));
     bgmPlus.on("pointerdown", () => updateBgm(bgm + 1));
@@ -1884,15 +1884,15 @@ export class BattleScene extends Phaser.Scene {
     objs.push(sfxTxt);
     const sfxPlus = this.add.rectangle(cx + 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
     objs.push(sfxPlus, this.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const sfxBarBg = this.add.rectangle(cx, sfxY + 28, 190, 7, 0x224433).setDepth(602);
-    const sfxBar = this.add.rectangle(cx - 95, sfxY + 28, sfx * 19, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
+    const sfxBarBg = this.add.rectangle(cx, sfxY + 28, 204, 7, 0x224433).setDepth(602);
+    const sfxBar = this.add.rectangle(cx - 102, sfxY + 28, sfx * 20.4, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
     objs.push(sfxBarBg, sfxBar);
     const updateSfx = (v) => {
       sfx = Phaser.Math.Clamp(v, 0, 10);
       this.registry.set("sfxVolume", sfx);
       sfxTxt.setText(String(sfx));
-      sfxBar.setDisplaySize(Math.max(1, sfx * 19), 7);
-      saveOptionsByRegistry();
+      sfxBar.setDisplaySize(Math.max(1, sfx * 20.4), 7);
+      saveOptionsByRegistry(this.registry);
     };
     sfxMinus.on("pointerdown", () => updateSfx(sfx - 1));
     sfxPlus.on("pointerdown", () => updateSfx(sfx + 1));

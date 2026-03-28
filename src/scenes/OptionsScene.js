@@ -29,7 +29,7 @@ export class OptionsScene extends Phaser.Scene {
     const options = loadOptions();
     this.registry.set("bgmVolume", options.bgmVolume);
     this.registry.set("sfxVolume", options.sfxVolume);
-    this.registry.set("lang", options.language);
+    this.registry.set("lang", options.lang);
   }
 
   _drawBg() {
@@ -57,8 +57,8 @@ export class OptionsScene extends Phaser.Scene {
     const plusBg = this.add.rectangle(GW / 2 + 90, rowY, 50, 50, 0x335544).setInteractive();
     this.add.text(GW / 2 + 90, rowY, "+", TS.optBtn).setOrigin(0.5);
 
-    this._bgmBarBg = this.add.rectangle(GW / 2, rowY + 40, 200, 8, 0x224433);
-    this._bgmBar = this.add.rectangle(GW / 2 - 100, rowY + 40, this._bgm * 20, 8, 0x44dd88).setOrigin(0, 0.5);
+    this._bgmBarBg = this.add.rectangle(GW / 2, rowY + 40, 230, 8, 0x224433);
+    this._bgmBar = this.add.rectangle(GW / 2 - 115, rowY + 40, this._bgm * 23, 8, 0x44dd88).setOrigin(0, 0.5);
     this._updateBgmBar();
 
     minusBg.on("pointerdown", () => this._changeBgm(-1));
@@ -74,12 +74,12 @@ export class OptionsScene extends Phaser.Scene {
     this.registry.set("bgmVolume", this._bgm);
     this._bgmTxt.setText(String(this._bgm));
     this._updateBgmBar();
-    saveOptionsByRegistry();
+    saveOptionsByRegistry(this.registry);
     // BGM 사운드가 있으면 여기서 볼륨 적용
   }
 
   _updateBgmBar() {
-    this._bgmBar.setDisplaySize(Math.max(1, this._bgm * 20), 8);
+    this._bgmBar.setDisplaySize(Math.max(1, this._bgm * 23), 8);
   }
 
   // ── SFX 볼륨 ─────────────────────────────────────────────────────────────
@@ -95,8 +95,8 @@ export class OptionsScene extends Phaser.Scene {
     const plusBg = this.add.rectangle(GW / 2 + 90, rowY, 50, 50, 0x335544).setInteractive();
     this.add.text(GW / 2 + 90, rowY, "+", TS.optBtn).setOrigin(0.5);
 
-    this._sfxBarBg = this.add.rectangle(GW / 2, rowY + 40, 200, 8, 0x224433);
-    this._sfxBar = this.add.rectangle(GW / 2 - 100, rowY + 40, this._sfx * 20, 8, 0x44dd88).setOrigin(0, 0.5);
+    this._sfxBarBg = this.add.rectangle(GW / 2, rowY + 40, 230, 8, 0x224433);
+    this._sfxBar = this.add.rectangle(GW / 2 - 115, rowY + 40, this._sfx * 23, 8, 0x44dd88).setOrigin(0, 0.5);
     this._updateSfxBar();
 
     minusBg.on("pointerdown", () => this._changeSfx(-1));
@@ -116,11 +116,11 @@ export class OptionsScene extends Phaser.Scene {
     if (this._sfx > 0 && this.cache.audio.exists("sfx_place")) {
       this.sound.play("sfx_place", { volume: (this._sfx / 10) * 0.6 });
     }
-    saveOptionsByRegistry();
+    saveOptionsByRegistry(this.registry);
   }
 
   _updateSfxBar() {
-    this._sfxBar.setDisplaySize(Math.max(1, this._sfx * 20), 8);
+    this._sfxBar.setDisplaySize(Math.max(1, this._sfx * 23), 8);
   }
 
   // ── 언어 ─────────────────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ export class OptionsScene extends Phaser.Scene {
     this._lang = lang;
     this.registry.set("lang", lang);
     this._refreshLangBtns();
-    saveOptionsByRegistry();
+    saveOptionsByRegistry(this.registry);
   }
 
   _refreshLangBtns() {

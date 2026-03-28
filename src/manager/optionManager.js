@@ -20,10 +20,10 @@ export function saveOptions(options) {
     localStorage.setItem(OPTION_KEY, JSON.stringify(options));
 }
 
-export function saveOptionsByRegistry() {
+export function saveOptionsByRegistry(registry) {
     localStorage.setItem(OPTION_KEY, JSON.stringify({
-        bgmVolume: this.registry.get("bgmVolume"),
-        sfxVolume: this.registry.get("sfxVolume"),
-        lang: this.registry.get("lang")
+        bgmVolume: registry.get("bgmVolume"),
+        sfxVolume: registry.get("sfxVolume"),
+        lang: registry.get("lang")
     }));
 }
