@@ -70,12 +70,21 @@ export class DebuffManager {
     expired.forEach(id => this._removeEffect(id));
   }
 
+  // ── 배틀 종료 시 전체 디버프 해제 ──────────────────────────────────────────
+  clearAll() {
+    for (const active of this.activeDebuffs) {
+      this._removeEffect(active.id, true);
+    }
+    this.activeDebuffs = [];
+    this.disabledCardUids.clear();
+  }
+
   // ── 디버프 효과 해제 ─────────────────────────────────────────────────────────
-  _removeEffect(debuffId) {
+  _removeEffect(debuffId, silent = false) {
     const { scene } = this;
     const def = debuffMap[debuffId];
     if (!def) return;
-    scene.addBattleLog(`${def.name} 디버프 해제`);
+    if (!silent) scene.addBattleLog(`${def.name} 디버프 해제`);
     switch (def.type) {
       case '공격력감소':
         scene.player.atk += def.value;

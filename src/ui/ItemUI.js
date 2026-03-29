@@ -55,9 +55,9 @@ export class ItemUI {
     this._clearTip();
     const { scene } = this;
     const { panelX } = this.opts;
-    const tw = 164, pad = 10, titleH = 18, descLineH = 18;
-    const descLines = Math.max(1, Math.ceil(desc.length / 13));
-    const th = pad * 2 + titleH + descLines * descLineH;
+    const tw = 210, pad = 12, lineH = 20;
+    const descLines = desc ? Math.max(1, Math.ceil(desc.length / 18)) : 0;
+    const th = pad * 2 + lineH + descLines * lineH;
     const tx = panelX - tw - 8;
     const ty = Math.max(BATTLE_LOG_H + 4, Math.min(nearY - th / 2, GH - th - 10));
     const colorN = parseInt(color.replace('#', ''), 16);
@@ -74,12 +74,14 @@ export class ItemUI {
         { fontFamily: "'PressStart2P', Arial", fontSize: '10px', color })
         .setOrigin(0, 0).setDepth(301)
     );
-    this._tipObjs.push(
-      scene.add.text(tx + pad, ty + pad + titleH, desc,
-        { fontFamily: 'Arial', fontSize: '14px', color: '#aaccbb',
-          wordWrap: { width: tw - pad * 2 } })
-        .setOrigin(0, 0).setDepth(301)
-    );
+    if (desc) {
+      this._tipObjs.push(
+        scene.add.text(tx + pad, ty + pad + lineH, desc,
+          { fontFamily: 'Arial', fontSize: '14px', color: '#aaccbb',
+            wordWrap: { width: tw - pad * 2 } })
+          .setOrigin(0, 0).setDepth(301)
+      );
+    }
   }
 
   // ── REMOVE 존 표시/숨김 ─────────────────────────────────────────────────
@@ -285,8 +287,7 @@ export class ItemUI {
       const tipColor   = RARITY_COLOR[item.rarity] ?? RARITY_COLOR.common;
 
       this._add(
-        scene.add.rectangle(cx, cy, ITM_SZ, ITM_SZ, 0x0c1a10)
-          .setStrokeStyle(2, stripColor).setDepth(D)
+        scene.add.rectangle(cx, cy, ITM_SZ, ITM_SZ, 0x0c1a10).setDepth(D)
       );
 
       const imgKey  = `item_${item.id}`;

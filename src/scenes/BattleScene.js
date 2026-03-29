@@ -149,6 +149,7 @@ export class BattleScene extends Phaser.Scene {
     this.monsterObjs = [];
     this._monsterSprites = [];
     this._debuffObjs    = [];
+    this._debuffTipObjs = [];
     this.debuffManager  = new DebuffManager(this);
     this.monsterManager = new MonsterManager(this);
     this.animObjs = [];
@@ -609,7 +610,7 @@ export class BattleScene extends Phaser.Scene {
           break;
         case 'maxHp':
           this.player.maxHp += eff.value;
-          this.player.hp += eff.value;
+          //this.player.hp += eff.value;  //최대 체력만 올린다
           this.addBattleLog(`[${item.name}] 최대 HP +${eff.value}`);
           break;
         case 'def':
@@ -973,6 +974,7 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 디버프 아이콘 렌더 (몬스터 영역 좌상단) ──────────────────────────────
   renderDebuffIcons() {
+    this._hideDebuffTip();
     this._debuffObjs.forEach(o => o.destroy());
     this._debuffObjs = [];
     if (!this.debuffManager.activeDebuffs.length) return;
@@ -1011,20 +1013,45 @@ export class BattleScene extends Phaser.Scene {
         .setDepth(23).setInteractive();
       hit.on('pointerover', () => {
         const durStr = active.turnsLeft > 0 ? `남은 턴: ${active.turnsLeft}` : '배틀 종료 시 제거';
-        const lines  = `${def.name}\n${def.description}\n${durStr}`;
-        this._tooltipTxt.setText(lines);
-        const tw = this._tooltipTxt.width + 20;
-        const th = this._tooltipTxt.height + 12;
-        const ty = iconY - SIZE / 2 - th / 2 - 4;
-        this._tooltipBg.setPosition(x, ty).setDisplaySize(tw, th).setVisible(true);
-        this._tooltipTxt.setPosition(x, ty).setVisible(true);
+        this._showDebuffTip(def, durStr, x, iconY + SIZE / 2 + 6);
       });
-      hit.on('pointerout', () => {
-        this._tooltipBg.setVisible(false);
-        this._tooltipTxt.setVisible(false);
-      });
+      hit.on('pointerout', () => this._hideDebuffTip());
       this._debuffObjs.push(hit);
     });
+  }
+
+  // ── 디버프 툴팁 (PlayerUI 스타일 통일) ───────────────────────────────────
+  _showDebuffTip(def, durStr, tipX, tipY) {
+    this._hideDebuffTip();
+    const TIER_COLORS = { 1: '#44cc88', 2: '#4488ff', 3: '#aa44ff' };
+    const color  = TIER_COLORS[def.tier] ?? '#44cc88';
+    const colorN = parseInt(color.replace('#', ''), 16);
+    const lines  = [def.name, def.description, durStr];
+    const tw = 210, pad = 12, lineH = 20;
+    const th = pad * 2 + lines.length * lineH;
+    const tx = Math.min(tipX, GW - ITEM_PANEL_W - tw - 4);
+
+    const g = this.add.graphics().setDepth(300);
+    g.fillStyle(0x0a1e12, 0.95);
+    g.fillRoundedRect(tx, tipY, tw, th, 6);
+    g.lineStyle(1, colorN);
+    g.strokeRoundedRect(tx, tipY, tw, th, 6);
+    this._debuffTipObjs.push(g);
+
+    lines.forEach((line, i) => {
+      const style = i === 0
+        ? { fontFamily: "'PressStart2P', Arial", fontSize: '10px', color }
+        : { fontFamily: 'Arial', fontSize: '14px', color: '#aaccbb' };
+      this._debuffTipObjs.push(
+        this.add.text(tx + pad, tipY + pad + i * lineH, line, style)
+          .setOrigin(0, 0).setDepth(301)
+      );
+    });
+  }
+
+  _hideDebuffTip() {
+    this._debuffTipObjs.forEach(o => o.destroy());
+    this._debuffTipObjs = [];
   }
 
   // ── context 갱신 (ATK 레벨업 등 mid-battle 변경 반영) ────────────────────
@@ -1210,7 +1237,7 @@ export class BattleScene extends Phaser.Scene {
     alive.forEach((m, localIdx) => {
       const globalIdx = this.monsters.indexOf(m);
       this.time.delayedCall(localIdx * ATK_GAP, () => {
-        const useSkill = m.mob.skill && Math.random() < 1 / 3;
+        const useSkill = m.mob.skill && Math.random() < (DEBUG_MODE?3:1) / 3;
         if (useSkill) {
           this.monsterManager._useMonsterSkill(globalIdx, m);
         } else {
@@ -1273,6 +1300,7 @@ export class BattleScene extends Phaser.Scene {
   // ── 배틀 클리어 ──────────────────────────────────────────────────────────
   onBattleClear() {
     this.isDealing = true;
+    this.debuffManager.clearAll();
     this.player.def = 0;
 
     const g = this.add.graphics().setDepth(300);
