@@ -102,6 +102,7 @@ for (const [id, d] of Object.entries(monsterData)) {
     hp: d.hp,
     atk: d.atk,
     def: d.def,
+    skill: d.skill ?? null,
   });
 }
 
