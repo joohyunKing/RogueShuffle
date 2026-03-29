@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { calculateScore } from "../service/scoreService.js";
+import { calculateScore, getScoreDetails } from "../service/scoreService.js";
 import roundData from "../data/round.json";
 import {
   GW, GH, CW, CH, FIELD_CW, FIELD_CH, PILE_CW, PILE_CH,
@@ -524,7 +524,8 @@ export class BattleScene extends Phaser.Scene {
           , 0);
 
           obj.x = origX; obj.y = origY;
-          this._comboBtnText.x = origX + 55; this._comboBtnText.y = origY;
+          this._comboBtnText.x = origX;// + 55;
+          this._comboBtnText.y = origY;
 
           if (!this.monsters[monIdx]?.isDead) {
             this.monsterManager.attackMonster(monIdx);
@@ -536,7 +537,7 @@ export class BattleScene extends Phaser.Scene {
             x: origX, y: origY,
             duration: 220, ease: 'Back.Out',
             onUpdate: () => {
-              this._comboBtnText.x = obj.x + 55;
+              this._comboBtnText.x = obj.x;// + 55;
               this._comboBtnText.y = obj.y;
             },
           });
@@ -1173,22 +1174,146 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  _throwCardAtMonster(fromX, fromY, key, monX) {
-    this._sfx("sfx_fan");
-    const img = this.add.image(fromX, fromY, key).setDisplaySize(CW, CH).setDepth(200);
-    this.tweens.add({
-      targets: img, x: monX, y: MONSTER_IMG_Y,
-      displayWidth: CW * 0.5, displayHeight: CH * 0.5,
-      duration: 280, ease: "Power2.In",
-      onComplete: () => {
+  /**
+   * 공격 점수 계산 애니메이션.
+   * @param {ReturnType<getScoreDetails>} details
+   * @param {{fromX,fromY,key,scoringDetail}[]} cardFlyInfo - 왼쪽→오른쪽 순
+   * @param {function} onComplete
+   */
+  _playAttackAnimation(details, cardFlyInfo, onComplete) {
+    const PW   = PLAYER_PANEL_W;
+    const FAW  = GW - PW - ITEM_PANEL_W;
+    const cX   = PW + FAW / 2;
+    const scoreY = MONSTER_AREA_TOP + 14;
+
+    const tmpObjs = [];
+    let currentScore = 0;
+
+    // ── 점수 텍스트 ────────────────────────────────────────────────────────
+    const scoreTxt = this.add.text(cX, scoreY, '0', {
+      fontFamily: "'PressStart2P', Arial",
+      fontSize: '30px', color: '#ffdd44',
+      stroke: '#000000', strokeThickness: 5,
+    }).setOrigin(0.5, 0).setDepth(400);
+    tmpObjs.push(scoreTxt);
+
+    // ── 카운팅 업 ─────────────────────────────────────────────────────────
+    const countUp = (target, duration, onDone) => {
+      const tweenObj = { val: currentScore };
+      this.tweens.add({
+        targets: tweenObj, val: target, duration, ease: 'Linear',
+        onUpdate: () => { scoreTxt.setText(String(Math.floor(tweenObj.val))); },
+        onComplete: () => {
+          currentScore = target;
+          scoreTxt.setText(String(Math.floor(target)));
+          onDone?.();
+        },
+      });
+    };
+
+    // ── 단계 큐 ───────────────────────────────────────────────────────────
+    const queue = [];
+
+    // 1. ATK 적용
+    if (details.atk > 0) {
+      queue.push(next => {
+        this.playerUI?.pulseAtk();
+        this.time.delayedCall(200, () => countUp(currentScore + details.atk, 280, next));
+      });
+    }
+
+    // 2. 각 카드 (선택된 순서 — 이미 왼쪽→오른쪽 정렬)
+    const cardCY = MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
+    const n = cardFlyInfo.length;
+    const flyObjs = [];
+
+    cardFlyInfo.forEach((info, idx) => {
+      const offsetX = n > 1 ? (idx - (n - 1) / 2) * 28 : 0;
+
+      queue.push(next => {
+        const img = this.add.image(info.fromX, info.fromY, info.key)
+          .setDisplaySize(CW, CH).setDepth(300 + idx);
+        tmpObjs.push(img);
+        flyObjs.push(img);
+        this._sfx("sfx_fan");
         this.tweens.add({
-          targets: img, x: GW - ITEM_PANEL_W - 40, y: FIELD_Y,
-          displayWidth: CW * 0.15, displayHeight: CH * 0.15, alpha: 0,
-          duration: 220, ease: "Power2.In",
-          onComplete: () => img.destroy(),
+          targets: img,
+          x: cX + offsetX, y: cardCY,
+          displayWidth: CW * 0.7, displayHeight: CH * 0.7,
+          duration: 220, ease: 'Power2.Out',
+          onComplete: next,
         });
-      },
+      });
+
+      if (info.scoringDetail) {
+        const cd = info.scoringDetail;
+        queue.push(next => countUp(currentScore + cd.baseScore, 250, next));
+
+        cd.cardRelicDeltas.forEach(({ relicId, delta }) => {
+          queue.push(next => {
+            this.itemUI?.pulseRelic(relicId);
+            this.time.delayedCall(160, () => countUp(currentScore + delta, 200, next));
+          });
+        });
+      }
     });
+
+    // 3. 족보 배수 적용 — multi > 1 이거나 hand row 표시용으로 항상 pulse
+    queue.push(next => {
+      this.playerUI?.pulseHandRow(details.handRank);
+      if (details.multi !== 1) {
+        this.time.delayedCall(220, () => {
+          const afterMulti = currentScore * details.multi;
+          countUp(afterMulti, 350, next);
+        });
+      } else {
+        this.time.delayedCall(260, next);
+      }
+    });
+
+    // 4. hand scope 렐릭
+    details.handRelicDeltas.forEach(({ relicId, delta }) => {
+      queue.push(next => {
+        this.itemUI?.pulseRelic(relicId);
+        this.time.delayedCall(160, () => countUp(currentScore + delta, 200, next));
+      });
+    });
+
+    // 5. final scope 렐릭
+    details.finalRelicDeltas.forEach(({ relicId, delta }) => {
+      queue.push(next => {
+        this.itemUI?.pulseRelic(relicId);
+        this.time.delayedCall(160, () => countUp(currentScore + delta, 200, next));
+      });
+    });
+
+    // 6. 최종 점수 강조 후 페이드아웃
+    queue.push(next => {
+      this.tweens.add({
+        targets: scoreTxt,
+        scaleX: { from: 1, to: 1.45 }, scaleY: { from: 1, to: 1.45 },
+        duration: 200, yoyo: true, ease: 'Back.easeOut',
+      });
+      this.time.delayedCall(420, next);
+    });
+
+    queue.push(next => {
+      this.tweens.add({
+        targets: tmpObjs, alpha: 0, duration: 180,
+        onComplete: () => {
+          tmpObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
+          tmpObjs.length = 0;
+          next();
+        },
+      });
+    });
+
+    // ── 큐 실행 ──────────────────────────────────────────────────────────
+    const runNext = () => {
+      if (queue.length === 0) { onComplete?.(); return; }
+      queue.shift()(runNext);
+    };
+    runNext();
   }
 
   _applySortToHand() {

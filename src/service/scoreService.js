@@ -158,6 +158,118 @@ function applyEffect(score, effect, card, ctx) {
 }
 
 
+/**
+ * 점수 계산 단계별 내역 반환 (공격 애니메이션용)
+ * @returns {{
+ *   atk: number,
+ *   cardDetails: Array<{card, baseScore, cardRelicDeltas: {relicId,delta}[], total}>,
+ *   multi: number,
+ *   handRank: number,
+ *   handName: string,
+ *   handRelicDeltas: {relicId,delta}[],
+ *   finalRelicDeltas: {relicId,delta}[],
+ *   totalScore: number,
+ *   aoe: boolean,
+ * }}
+ */
+export function getScoreDetails(cards, context) {
+    const relics = getRelicsFromContext(context);
+
+    const enabledHands = context.enabledHands
+        ?? new Set(Object.entries(HAND_DATA).filter(([,d]) => d.enabled !== false).map(([k]) => Number(k)));
+    const handResult = evaluateHand(cards, enabledHands, context.suitAliases ?? null);
+
+    const ctx = {
+        ...context,
+        handRank: handResult.rank,
+        handName: HAND_DATA[handResult.rank].key,
+        cards: handResult.cards,
+    };
+
+    const atk   = ctx.atk ?? 0;
+    const multi = ctx.handConfig?.[ctx.handRank]?.multi ?? 1;
+
+    // ── per-card breakdown ────────────────────────────────────────────────
+    const cardDetails = ctx.cards.map(card => {
+        const baseScore = card.baseScore;
+        const cardRelicDeltas = [];
+        let runCard = baseScore;
+        for (const relic of relics) {
+            let delta = 0;
+            for (const effect of relic.effects) {
+                if (effect.scope !== "card") continue;
+                const before = runCard;
+                runCard = applyEffect(runCard, effect, card, ctx);
+                delta += runCard - before;
+            }
+            if (delta !== 0) cardRelicDeltas.push({ relicId: relic.id, delta });
+        }
+        return { card, baseScore, cardRelicDeltas, total: runCard };
+    });
+
+    // ── running total ─────────────────────────────────────────────────────
+    let running = cardDetails.reduce((s, d) => s + d.total, 0) + atk;
+    running *= multi;
+
+    // ── hand-scope relics (add first, multiply second) ────────────────────
+    const handRelicDeltas = [];
+    for (const relic of relics) {
+        let delta = 0;
+        for (const effect of relic.effects) {
+            if (effect.scope !== "hand" || effect.type !== "add") continue;
+            const before = running;
+            running = applyEffect(running, effect, null, ctx);
+            delta += running - before;
+        }
+        if (delta !== 0) handRelicDeltas.push({ relicId: relic.id, delta });
+    }
+    for (const relic of relics) {
+        let delta = 0;
+        for (const effect of relic.effects) {
+            if (effect.scope !== "hand" || effect.type !== "multiply") continue;
+            const before = running;
+            running = applyEffect(running, effect, null, ctx);
+            delta += running - before;
+        }
+        if (delta !== 0) handRelicDeltas.push({ relicId: relic.id, delta });
+    }
+
+    // ── final-scope relics (add first, multiply second) ───────────────────
+    const finalRelicDeltas = [];
+    for (const relic of relics) {
+        let delta = 0;
+        for (const effect of relic.effects) {
+            if (effect.scope !== "final" || effect.type !== "add") continue;
+            const before = running;
+            running = applyEffect(running, effect, null, ctx);
+            delta += running - before;
+        }
+        if (delta !== 0) finalRelicDeltas.push({ relicId: relic.id, delta });
+    }
+    for (const relic of relics) {
+        let delta = 0;
+        for (const effect of relic.effects) {
+            if (effect.scope !== "final" || effect.type !== "multiply") continue;
+            const before = running;
+            running = applyEffect(running, effect, null, ctx);
+            delta += running - before;
+        }
+        if (delta !== 0) finalRelicDeltas.push({ relicId: relic.id, delta });
+    }
+
+    return {
+        atk,
+        cardDetails,
+        multi,
+        handRank: ctx.handRank,
+        handName: ctx.handName,
+        handRelicDeltas,
+        finalRelicDeltas,
+        totalScore: Math.floor(running),
+        aoe: ctx.handConfig?.[handResult.rank]?.aoe ?? handResult.aoe ?? false,
+    };
+}
+
 //족보판별
 function evaluateHand(cards, enabledHands, suitAliases) {
     if (!enabledHands) {

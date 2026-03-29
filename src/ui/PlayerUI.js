@@ -387,6 +387,43 @@ export class PlayerUI {
     });
   }
 
+  /** ATK 텍스트 한 번 pulse (공격 애니메이션용) */
+  pulseAtk() {
+    if (!this.playerAtkTxt) return;
+    const txt = this.playerAtkTxt;
+    this.scene.tweens.killTweensOf(txt);
+    this.scene.tweens.add({
+      targets: txt,
+      scaleX: { from: 1, to: 1.8 },
+      scaleY: { from: 1, to: 1.8 },
+      duration: 200, yoyo: true, ease: 'Back.easeOut',
+    });
+  }
+
+  /** 특정 족보 행 한 번 pulse (공격 애니메이션용) */
+  pulseHandRow(rank) {
+    const row = this._handConfigRows[rank];
+    if (!row) return;
+    if (row.glowBg) {
+      this.scene.tweens.killTweensOf(row.glowBg);
+      this.scene.tweens.add({
+        targets: row.glowBg,
+        alpha: { from: 0, to: 0.65 },
+        duration: 220, yoyo: true, ease: 'Sine.easeOut',
+      });
+    }
+    const textTargets = [row.multiTxt, row.aoeDot].filter(Boolean);
+    if (textTargets.length > 0) {
+      this.scene.tweens.killTweensOf(textTargets);
+      this.scene.tweens.add({
+        targets: textTargets,
+        scaleX: { from: 1, to: 1.5 },
+        scaleY: { from: 1, to: 1.5 },
+        duration: 220, yoyo: true, ease: 'Back.easeOut',
+      });
+    }
+  }
+
   /** DECK/DUMMY 카운트 갱신 (showDeckCounts=true 시) */
   setDeckCounts({ deck = 0, dummy = 0 } = {}) {
     this._deckCountTxt?.setText(`${deck}`);

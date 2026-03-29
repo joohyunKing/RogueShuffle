@@ -55,7 +55,7 @@ export class ItemUI {
     this._clearTip();
     const { scene } = this;
     const { panelX } = this.opts;
-    const tw = 210, pad = 12, lineH = 20;
+    const tw = 210, pad = 12, lineH = 24;
     const descLines = desc ? Math.max(1, Math.ceil(desc.length / 18)) : 0;
     const th = pad * 2 + lineH + descLines * lineH;
     const tx = panelX - tw - 8;
@@ -71,7 +71,7 @@ export class ItemUI {
 
     this._tipObjs.push(
       scene.add.text(tx + pad, ty + pad, title,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '10px', color })
+        { fontFamily: "'PressStart2P', Arial", fontSize: '15px', color })
         .setOrigin(0, 0).setDepth(301)
     );
     if (desc) {
@@ -322,6 +322,22 @@ export class ItemUI {
     });
 
     return this;
+  }
+
+  /** 특정 relic 한 번 pulse — 10% 커졌다 원상복귀 (공격 애니메이션용) */
+  pulseRelic(relicId) {
+    const entry = this._relicObjs[relicId];
+    if (!entry) return;
+    entry.objs.forEach(o => {
+      this.scene.tweens.killTweensOf(o);
+      this.scene.tweens.add({
+        targets: o,
+        scaleX: { from: 1, to: 1.15 },
+        scaleY: { from: 1, to: 1.15 },
+        duration: 160, yoyo: true, ease: 'Back.easeOut',
+        onComplete: () => { try { o.setScale(1); } catch (_) {} },
+      });
+    });
   }
 
   /** 해당 relic id들만 달그락 애니메이션 */

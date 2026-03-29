@@ -3,9 +3,10 @@ import {
   GW, GH, CW, CH,
   PLAYER_PANEL_W, ITEM_PANEL_W,
   MONSTER_AREA_TOP, MONSTER_AREA_H, MONSTER_IMG_Y,
-  HAND_Y,
+  HAND_Y, context,
 } from "../constants.js";
 import { TS } from "../textStyles.js";
+import { getScoreDetails } from "../service/scoreService.js";
 
 export class MonsterManager {
   constructor(scene) {
@@ -62,151 +63,167 @@ export class MonsterManager {
 
     scene._refreshContext();
 
-    const { score: cardScore, handName, aoe } = scene._getSelectedCombo();
-    if (cardScore <= 0) return;
-    const score = Math.floor(cardScore);
+    // 점수 내역 계산 (애니메이션 + 데미지 모두 사용)
+    const selectedCards = [...scene.selected].map(i => scene.handData[i]);
+    const details = getScoreDetails(selectedCards, context);
+    if (details.totalScore <= 0) return;
 
     if (scene.attackCount >= scene.player.attacksPerTurn) {
       scene.addBattleLog(`이번 턴 공격 횟수 초과! (${scene.player.attacksPerTurn}회)`);
       return;
     }
+
+    const score    = details.totalScore;
+    const handName = details.handName;
+    const aoe      = details.aoe;
+
+    // 카드 위치 · 슈트 카운트 캡처 (제거 전)
+    const selectedIndices = [...scene.selected].sort((a, b) => a - b);
+    const handPositions   = scene.calcHandPositions(scene.handData.length);
+    const suitCounts      = { S: 0, H: 0, D: 0, C: 0 };
+    selectedIndices.forEach(i => { suitCounts[scene.handData[i].suit]++; });
+
+    const cardFlyInfo = selectedIndices.map(i => {
+      const card = scene.handData[i];
+      return {
+        fromX: handPositions[i].x,
+        fromY: HAND_Y - 22,
+        key: card.key,
+        scoringDetail: details.cardDetails.find(cd => cd.card.uid === card.uid) ?? null,
+      };
+    });
+
     scene.attackCount++;
 
-    const suitCounts = { S: 0, H: 0, D: 0, C: 0 };
-    [...scene.selected].forEach(i => { suitCounts[scene.handData[i].suit]++; });
-    const suitEff = (s) => Math.floor(
-      scene.player.attrs[s] * scene.player.adaptability[s] * suitCounts[s]
-    );
-
-    // 카드 애니메이션 & 더미 처리
-    const positions     = this.calcMonsterPositions(scene.monsters.length);
-    const handPositions = scene.calcHandPositions(scene.handData.length);
-    const targetX       = positions[monIdx].x;
-    [...scene.selected].forEach(i => {
-      scene._throwCardAtMonster(handPositions[i].x, HAND_Y - 22, scene.handData[i].key, targetX);
-    });
-    const usedCards = [...scene.selected].sort((a, b) => b - a)
+    // 카드를 핸드에서 제거 (애니메이션 전, 핸드가 즉시 갱신되도록)
+    const usedCards = [...selectedIndices].sort((a, b) => b - a)
       .map(i => scene.handData.splice(i, 1)[0]);
     scene.dummyData.push(...usedCards);
     scene.selected.clear();
+    scene.render();
 
-    if (aoe) {
-      // ── 광역 공격 ──────────────────────────────────────────────────────
-      const aliveMonsters = scene.monsters.filter(m => !m.isDead);
-      const aliveSprites  = scene._monsterSprites?.filter((_, i) => !scene.monsters[i]?.isDead) ?? [];
+    scene.isDealing = true;
 
-      if (suitCounts.S > 0) {
-        const eff = suitEff('S');
-        if (eff > 0) {
-          aliveMonsters.forEach(m => { m.def -= eff; });
-          scene.addBattleLog(`♠ 적응: 전체 DEF -${eff}`);
+    const positions = this.calcMonsterPositions(scene.monsters.length);
+    const suitEff   = (s) => Math.floor(
+      scene.player.attrs[s] * scene.player.adaptability[s] * suitCounts[s]
+    );
+
+    scene._playAttackAnimation(details, cardFlyInfo, () => {
+      if (aoe) {
+        // ── 광역 공격 ────────────────────────────────────────────────────
+        const aliveMonsters = scene.monsters.filter(m => !m.isDead);
+        const aliveSprites  = scene._monsterSprites?.filter((_, i) => !scene.monsters[i]?.isDead) ?? [];
+
+        if (suitCounts.S > 0) {
+          const eff = suitEff('S');
+          if (eff > 0) { aliveMonsters.forEach(m => { m.def -= eff; }); scene.addBattleLog(`♠ 적응: 전체 DEF -${eff}`); }
         }
-      }
-      if (suitCounts.C > 0) {
-        const eff = suitEff('C');
-        if (eff > 0) {
-          aliveMonsters.forEach(m => {
-            const reduced = Math.min(eff, m.atk);
-            m.atk = Math.max(0, m.atk - eff);
-            if (reduced > 0) scene.addBattleLog(`♣ 적응: ${m.mob.name} ATK -${reduced}`);
-          });
-        }
-      }
-      if (suitCounts.H > 0) {
-        const eff = suitEff('H');
-        scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
-        if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
-      }
-      if (suitCounts.D > 0) {
-        const eff = suitEff('D');
-        scene.player.def += eff;
-        if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
-      }
-
-      scene.player.score += score;
-      scene.addBattleLog(`${handName}! 전체에 ${score}점 광역 공격!`);
-      scene._sfx("sfx_knifeSlice");
-
-      const aoeX = positions.length > 0
-        ? positions.reduce((s, p) => s + p.x, 0) / positions.length
-        : GW / 2;
-      const aoeY = MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
-      scene.effects.hitExplosion(aoeX, aoeY, aliveSprites);
-
-      aliveMonsters.forEach(m => {
-        const actualIdx = scene.monsters.indexOf(m);
-        const dmg = Math.floor(Math.max(0, score - m.def));
-        m.hp = Math.max(0, m.hp - dmg);
-        scene.addBattleLog(`${m.mob.name}에게 ${dmg} 데미지!`);
-        if (m.hp <= 0) {
-          m.isDead = true;
-          const newLevels = scene.player.addXp(m.xp);
-          scene.player.gold += m.gold;
-          scene.addBattleLog(`${m.mob.name} 처치! +${m.xp}XP +${m.gold}G`);
-          if (newLevels.length > 0) {
-            scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
-            scene._suitLevelUpCount += newLevels.length;
+        if (suitCounts.C > 0) {
+          const eff = suitEff('C');
+          if (eff > 0) {
+            aliveMonsters.forEach(m => {
+              const reduced = Math.min(eff, m.atk);
+              m.atk = Math.max(0, m.atk - eff);
+              if (reduced > 0) scene.addBattleLog(`♣ 적응: ${m.mob.name} ATK -${reduced}`);
+            });
           }
         }
-      });
+        if (suitCounts.H > 0) {
+          const eff = suitEff('H');
+          scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
+          if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
+        }
+        if (suitCounts.D > 0) {
+          const eff = suitEff('D');
+          scene.player.def += eff;
+          if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
+        }
 
-      scene.render();
-      scene._checkLevelUpThenProceed();
+        scene.player.score += score;
+        scene.addBattleLog(`${handName}! 전체에 ${score}점 광역 공격!`);
+        scene._sfx("sfx_knifeSlice");
 
-    } else {
-      // ── 단일 타겟 공격 ────────────────────────────────────────────────
-      if (suitCounts.S > 0) {
-        const eff = suitEff('S');
-        mon.def -= eff;
-        if (eff > 0) scene.addBattleLog(`♠ 적응: ${mon.mob.name} DEF -${eff}`);
-      }
-      if (suitCounts.C > 0) {
-        const eff = suitEff('C');
-        const reduced = Math.min(eff, mon.atk);
-        mon.atk = Math.max(0, mon.atk - eff);
-        if (reduced > 0) scene.addBattleLog(`♣ 적응: ${mon.mob.name} ATK -${reduced}`);
-      }
+        const aoeX = positions.length > 0
+          ? positions.reduce((s, p) => s + p.x, 0) / positions.length
+          : GW / 2;
+        scene.effects.hitExplosion(aoeX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, aliveSprites);
 
-      const damage  = Math.floor(Math.max(0, score - mon.def));
-      const prevHp  = mon.hp;
-      mon.hp        = Math.max(0, mon.hp - damage);
-      const overkill = Math.max(0, damage - prevHp);
-      const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
-      scene.player.score += score;
+        aliveMonsters.forEach(m => {
+          const dmg = Math.floor(Math.max(0, score - m.def));
+          m.hp = Math.max(0, m.hp - dmg);
+          scene.addBattleLog(`${m.mob.name}에게 ${dmg} 데미지!`);
+          if (m.hp <= 0) {
+            m.isDead = true;
+            const newLevels = scene.player.addXp(m.xp);
+            scene.player.gold += m.gold;
+            scene.addBattleLog(`${m.mob.name} 처치! +${m.xp}XP +${m.gold}G`);
+            if (newLevels.length > 0) {
+              scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
+              scene._suitLevelUpCount += newLevels.length;
+            }
+          }
+        });
 
-      if (suitCounts.H > 0) {
-        const eff = suitEff('H');
-        scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
-        if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
-      }
-      if (suitCounts.D > 0) {
-        const eff = suitEff('D');
-        scene.player.def += eff;
-        if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
-      }
+        scene.isDealing = false;
+        scene.render();
+        scene._checkLevelUpThenProceed();
 
-      scene.addBattleLog(`${mon.mob.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
-      scene._sfx("sfx_knifeSlice");
+      } else {
+        // ── 단일 타겟 공격 ────────────────────────────────────────────────
+        if (suitCounts.S > 0) {
+          const eff = suitEff('S');
+          mon.def -= eff;
+          if (eff > 0) scene.addBattleLog(`♠ 적응: ${mon.mob.name} DEF -${eff}`);
+        }
+        if (suitCounts.C > 0) {
+          const eff = suitEff('C');
+          const reduced = Math.min(eff, mon.atk);
+          mon.atk = Math.max(0, mon.atk - eff);
+          if (reduced > 0) scene.addBattleLog(`♣ 적응: ${mon.mob.name} ATK -${reduced}`);
+        }
 
-      scene.effects.hitExplosion(
-        positions[monIdx].x, MONSTER_AREA_TOP + MONSTER_AREA_H / 2,
-        [scene._monsterSprites?.[monIdx]].filter(Boolean)
-      );
+        const damage   = Math.floor(Math.max(0, score - mon.def));
+        const prevHp   = mon.hp;
+        mon.hp         = Math.max(0, mon.hp - damage);
+        const overkill = Math.max(0, damage - prevHp);
+        const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
+        scene.player.score += score;
 
-      const monSprite   = scene._monsterSprites?.[monIdx];
-      const damagedKey  = `mon_${mon.mob.id}_damaged_anim`;
+        if (suitCounts.H > 0) {
+          const eff = suitEff('H');
+          scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
+          if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
+        }
+        if (suitCounts.D > 0) {
+          const eff = suitEff('D');
+          scene.player.def += eff;
+          if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
+        }
 
-      if (monSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
-        scene.isDealing = true;
-        monSprite.play(damagedKey);
-        monSprite.once('animationcomplete', () => {
+        scene.addBattleLog(`${mon.mob.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
+        scene._sfx("sfx_knifeSlice");
+
+        scene.effects.hitExplosion(
+          positions[monIdx].x, MONSTER_AREA_TOP + MONSTER_AREA_H / 2,
+          [scene._monsterSprites?.[monIdx]].filter(Boolean)
+        );
+
+        const monSprite  = scene._monsterSprites?.[monIdx];
+        const damagedKey = `mon_${mon.mob.id}_damaged_anim`;
+
+        if (monSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
+          monSprite.play(damagedKey);
+          monSprite.once('animationcomplete', () => {
+            scene.isDealing = false;
+            this._afterAttack(mon, monIdx, overkill, bullseye);
+          });
+        } else {
           scene.isDealing = false;
           this._afterAttack(mon, monIdx, overkill, bullseye);
-        });
-      } else {
-        this._afterAttack(mon, monIdx, overkill, bullseye);
+        }
       }
-    }
+    });
   }
 
   // ── 공격 후 처리 ──────────────────────────────────────────────────────────
@@ -377,7 +394,7 @@ export class MonsterManager {
       const raw = skill.value ?? 0;
       const dmg = Math.max(0, raw - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
-      scene.addBattleLog(`${m.mob.name}의 스킬! ${dmg} 데미지!`);
+      scene.addBattleLog(`${m.mob.name}의 ${skill.name}! ${dmg} 데미지!`);
 
       const positions = this.calcMonsterPositions(scene.monsters.length);
       const mX = positions[monIdx]?.x ?? GW / 2;
