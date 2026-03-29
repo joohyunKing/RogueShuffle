@@ -1,3 +1,5 @@
+import { PLAYER_PANEL_W, ITEM_PANEL_W, GW, MONSTER_AREA_TOP, MONSTER_AREA_H } from '../constants.js';
+
 export default class effectManager {
     constructor(scene) {
         this.scene = scene;
@@ -7,7 +9,6 @@ export default class effectManager {
     hitSlash(monster) {
         const { x, y } = monster;
 
-        // 칼 궤적
         const g = this.scene.add.graphics()
             .setDepth(9999)
             .setBlendMode(Phaser.BlendModes.ADD);
@@ -27,136 +28,194 @@ export default class effectManager {
             onComplete: () => g.destroy()
         });
 
-        // 피격 반응
         this._hitReaction(monster, 0xffaaaa);
         this.scene.cameras.main.shake(120, 0.01);
     }
 
-    // ⚡ 번개 공격
-    hitLightning(monster) {
-        const { x, y } = monster;
+    // ⚡ 번개 — scoreTxt 위치에서 몬스터에 번개 타격
+    hitLightning(toX, toY, monsterSprite) {
+        const scene = this.scene;
+        const fromX = PLAYER_PANEL_W + (GW - PLAYER_PANEL_W - ITEM_PANEL_W) / 2;
+        const fromY = MONSTER_AREA_TOP + 20;
 
-        const g = this.scene.add.graphics()
-            .setDepth(9999)
-            .setBlendMode(Phaser.BlendModes.ADD);
+        // 지그재그 경로 생성 (매번 새로운 랜덤)
+        const makePts = () => {
+            const pts = [{ x: fromX, y: fromY }];
+            const NUM_SEG = 10;
+            for (let i = 1; i < NUM_SEG; i++) {
+                const t = i / NUM_SEG;
+                const bx = fromX + (toX - fromX) * t;
+                const by = fromY + (toY - fromY) * t;
+                const jitter = Math.sin(t * Math.PI) * 24;
+                pts.push({
+                    x: bx + Phaser.Math.Between(-jitter, jitter),
+                    y: by + Phaser.Math.Between(-6, 6),
+                });
+            }
+            pts.push({ x: toX, y: toY });
+            return pts;
+        };
 
-        g.lineStyle(4, 0x99ccff, 1);
+        const gGlow = scene.add.graphics().setDepth(9998).setBlendMode(Phaser.BlendModes.ADD);
+        const gCore = scene.add.graphics().setDepth(9999).setBlendMode(Phaser.BlendModes.ADD);
 
-        let cx = x;
-        let cy = y - 120;
+        const redraw = () => {
+            const pts = makePts();
+            gGlow.clear();
+            gGlow.lineStyle(10, 0x4488ff, 0.5);
+            gGlow.beginPath();
+            gGlow.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => gGlow.lineTo(p.x, p.y));
+            gGlow.strokePath();
 
-        g.beginPath();
-        g.moveTo(cx, cy);
+            gCore.clear();
+            gCore.lineStyle(3, 0xeeeeff, 1.0);
+            gCore.beginPath();
+            gCore.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => gCore.lineTo(p.x, p.y));
+            gCore.strokePath();
+        };
 
-        for (let i = 0; i < 6; i++) {
-            cx += Phaser.Math.Between(-10, 10);
-            cy += 25;
-            g.lineTo(cx, cy);
-        }
-
-        g.strokePath();
-
-        this.scene.tweens.add({
-            targets: g,
-            alpha: { from: 0, to: 1 },
-            duration: 80,
-            yoyo: true,
-            repeat: 1,
-            onComplete: () => g.destroy()
+        // 1st flash
+        redraw();
+        // 2nd flash (flickering)
+        scene.time.delayedCall(70, () => {
+            if (gCore.active) redraw();
         });
 
-        this.scene.cameras.main.flash(120, 200, 200, 255);
+        // 발사 지점 글로우
+        const origin = scene.add.circle(fromX, fromY, 8, 0x88bbff, 0.9)
+            .setDepth(9999).setBlendMode(Phaser.BlendModes.ADD);
+        scene.tweens.add({
+            targets: origin, scale: 3, alpha: 0, duration: 200, ease: 'Expo.easeOut',
+            onComplete: () => origin.destroy(),
+        });
 
-        this._hitReaction(monster, 0xaaaaff);
+        // 타격 지점 임팩트 스파크
+        const spark = scene.add.circle(toX, toY, 14, 0xffffff, 1)
+            .setDepth(9999).setBlendMode(Phaser.BlendModes.ADD);
+        scene.tweens.add({
+            targets: spark, scale: 3.5, alpha: 0, duration: 220, ease: 'Expo.easeOut',
+            onComplete: () => spark.destroy(),
+        });
+        // 타격점 파편 4개
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            const frag = scene.add.circle(toX, toY, 4, 0x88ccff, 1)
+                .setDepth(9998).setBlendMode(Phaser.BlendModes.ADD);
+            scene.tweens.add({
+                targets: frag,
+                x: toX + Math.cos(angle) * 28,
+                y: toY + Math.sin(angle) * 28,
+                alpha: 0, duration: 200,
+                onComplete: () => frag.destroy(),
+            });
+        }
+
+        scene.tweens.add({
+            targets: [gGlow, gCore], alpha: 0, delay: 160, duration: 120,
+            onComplete: () => { gGlow.destroy(); gCore.destroy(); },
+        });
+
+        scene.cameras.main.flash(130, 80, 120, 255);
+        scene.cameras.main.shake(150, 0.013);
+
+        if (monsterSprite) this._hitReaction(monsterSprite, 0xaaaaff);
     }
 
-    // 💣 폭발 (AOE)
+    // 💥 폭발 (AOE) — 콰콰쾅
     hitExplosion(centerX, centerY, monsters) {
-        // 💥 폭발 코어
-        const core = this.scene.add.circle(centerX, centerY, 20, 0xffaa00, 1)
-            .setDepth(9999)
-            .setBlendMode(Phaser.BlendModes.ADD);
+        const scene = this.scene;
 
-        this.scene.tweens.add({
-            targets: core,
-            scale: 4,
-            alpha: 0,
-            duration: 300,
-            ease: 'Cubic.easeOut',
-            onComplete: () => core.destroy()
+        // 1. 순간 화이트 플래시 코어
+        const flash = scene.add.circle(centerX, centerY, 22, 0xffffff, 1)
+            .setDepth(10000).setBlendMode(Phaser.BlendModes.ADD);
+        scene.tweens.add({
+            targets: flash, scale: 10, alpha: 0, duration: 260, ease: 'Expo.easeOut',
+            onComplete: () => flash.destroy(),
         });
 
-        // 🌊 충격파 링
-        const ring = this.scene.add.circle(centerX, centerY, 10)
-            .setStrokeStyle(4, 0xffffff)
-            .setDepth(9999)
-            .setBlendMode(Phaser.BlendModes.ADD);
-
-        this.scene.tweens.add({
-            targets: ring,
-            scale: 6,
-            alpha: 0,
-            duration: 400,
-            ease: 'Expo.easeOut',
-            onComplete: () => ring.destroy()
+        // 2. 메인 폭발 코어 (오렌지)
+        const core = scene.add.circle(centerX, centerY, 32, 0xff5500, 1)
+            .setDepth(9999).setBlendMode(Phaser.BlendModes.ADD);
+        scene.tweens.add({
+            targets: core, scale: 6, alpha: 0, duration: 420, ease: 'Cubic.easeOut',
+            onComplete: () => core.destroy(),
         });
 
-        // ✨ 파편
-        for (let i = 0; i < 8; i++) {
-            const dot = this.scene.add.circle(centerX, centerY, 3, 0xffcc00)
-                .setDepth(9999);
+        // 3. 충격파 링 3개 (순차)
+        [[0, 18, 6, 0xffcc44], [80, 12, 4, 0xff8822], [160, 8, 2.5, 0xff4400]].forEach(([delay, r, lw, col]) => {
+            scene.time.delayedCall(delay, () => {
+                const ring = scene.add.circle(centerX, centerY, r)
+                    .setStrokeStyle(lw, col)
+                    .setDepth(9997).setBlendMode(Phaser.BlendModes.ADD);
+                scene.tweens.add({
+                    targets: ring, scale: 9, alpha: 0,
+                    duration: 520, ease: 'Expo.easeOut',
+                    onComplete: () => ring.destroy(),
+                });
+            });
+        });
 
-            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-
-            this.scene.tweens.add({
+        // 4. 파편 22개 방사형
+        for (let i = 0; i < 22; i++) {
+            const angle = (i / 22) * Math.PI * 2 + Phaser.Math.FloatBetween(-0.1, 0.1);
+            const dist  = Phaser.Math.FloatBetween(90, 170);
+            const size  = Phaser.Math.Between(3, 9);
+            const colors = [0xffee44, 0xff8800, 0xff4422, 0xffffff, 0xffcc00];
+            const dot = scene.add.circle(centerX, centerY, size, colors[i % colors.length], 1)
+                .setDepth(9998).setBlendMode(Phaser.BlendModes.ADD);
+            scene.tweens.add({
                 targets: dot,
-                x: centerX + Math.cos(angle) * 80,
-                y: centerY + Math.sin(angle) * 80,
-                alpha: 0,
-                duration: 400,
-                onComplete: () => dot.destroy()
+                x: centerX + Math.cos(angle) * dist,
+                y: centerY + Math.sin(angle) * dist,
+                alpha: 0, scale: 0.2,
+                duration: Phaser.Math.Between(340, 620),
+                ease: 'Quad.easeOut',
+                onComplete: () => dot.destroy(),
             });
         }
 
-        // 📸 카메라 효과
-        this.scene.cameras.main.shake(200, 0.02);
-        this.scene.cameras.main.flash(150, 255, 200, 100);
+        // 5. 각 몬스터에 미니 폭발 + 파편
+        monsters.forEach((sprite, i) => {
+            scene.time.delayedCall(60 + i * 60, () => {
+                const sx = sprite.x, sy = sprite.y - 40;
 
-        // 🧟 몬스터 반응
-        monsters.forEach(monster => {
-            const angle = Phaser.Math.Angle.Between(centerX, centerY, monster.x, monster.y);
+                const mini = scene.add.circle(sx, sy, 12, 0xff7700, 1)
+                    .setDepth(9998).setBlendMode(Phaser.BlendModes.ADD);
+                scene.tweens.add({
+                    targets: mini, scale: 5, alpha: 0, duration: 300, ease: 'Expo.easeOut',
+                    onComplete: () => mini.destroy(),
+                });
 
-            this.scene.tweens.add({
-                targets: monster,
-                x: monster.x + Math.cos(angle) * 30,
-                y: monster.y + Math.sin(angle) * 30,
-                duration: 150,
-                yoyo: true,
-                ease: 'Quad.easeOut'
+                for (let j = 0; j < 8; j++) {
+                    const a = (j / 8) * Math.PI * 2;
+                    const d = Phaser.Math.FloatBetween(30, 80);
+                    const frag = scene.add.circle(sx, sy, Phaser.Math.Between(2, 6), 0xffaa44, 1)
+                        .setDepth(9997).setBlendMode(Phaser.BlendModes.ADD);
+                    scene.tweens.add({
+                        targets: frag,
+                        x: sx + Math.cos(a) * d,
+                        y: sy + Math.sin(a) * d,
+                        alpha: 0, duration: Phaser.Math.Between(280, 400), ease: 'Quad.easeOut',
+                        onComplete: () => frag.destroy(),
+                    });
+                }
             });
 
-            this._hitReaction(monster, 0xff8844);
+            this._hitReaction(sprite, 0xff8844);
         });
 
-        /*
-        // 🛑 히트 스톱
-        this.scene.time.delayedCall(0, () => {
-          this.scene.scene.pause();
-          this.scene.time.delayedCall(60, () => {
-            this.scene.scene.resume();
-          });
-        });
-        */
+        // 카메라 (강화)
+        scene.cameras.main.shake(300, 0.03);
+        scene.cameras.main.flash(220, 255, 160, 60);
     }
 
     // 🔧 공통 피격 반응
     _hitReaction(monster, color) {
         try {
             monster.setTint(color);
-        } catch(ex) {
-            console.log(monster);
-            //console.log(ex);
-        }
+        } catch(ex) {}
 
         this.scene.tweens.add({
             targets: monster,

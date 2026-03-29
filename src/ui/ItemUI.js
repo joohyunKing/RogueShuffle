@@ -165,7 +165,7 @@ export class ItemUI {
           visObjs.push(ph, phTxt);
         }
 
-        this._relicObjs[relic.id] = { objs: visObjs, baseCX: cx };
+        this._relicObjs[relic.id] = { objs: visObjs, baseCX: cx, baseCY: cy };
 
         // hit area (hover + drag)
         const hit = this._add(
@@ -329,13 +329,14 @@ export class ItemUI {
     const entry = this._relicObjs[relicId];
     if (!entry) return;
     entry.objs.forEach(o => {
+      const baseScale = o.scaleX;
       this.scene.tweens.killTweensOf(o);
       this.scene.tweens.add({
         targets: o,
-        scaleX: { from: 1, to: 1.15 },
-        scaleY: { from: 1, to: 1.15 },
-        duration: 160, yoyo: true, ease: 'Back.easeOut',
-        onComplete: () => { try { o.setScale(1); } catch (_) {} },
+        scaleX: baseScale * 1.1,
+        scaleY: baseScale * 1.1,
+        duration: 120, yoyo: true, ease: 'Sine.easeInOut',
+        onComplete: () => { try { o.setScale(baseScale); } catch (_) {} },
       });
     });
   }

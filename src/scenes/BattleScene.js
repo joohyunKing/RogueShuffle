@@ -662,6 +662,7 @@ export class BattleScene extends Phaser.Scene {
   render() {
     this.cardObjs.forEach(o => o.destroy());
     this.cardObjs = [];
+    this.handCardObjs = [];
     this.monsterObjs.forEach(o => o.destroy());
     this.monsterObjs = [];
     this._monsterSprites.forEach(s => s?.destroy());
@@ -830,6 +831,7 @@ export class BattleScene extends Phaser.Scene {
       }
 
       this.cardObjs.push(img);
+      this.handCardObjs.push(img);
 
       if (inCombo) {
         this.tweens.add({
@@ -1177,10 +1179,11 @@ export class BattleScene extends Phaser.Scene {
   /**
    * 공격 점수 계산 애니메이션.
    * @param {ReturnType<getScoreDetails>} details
-   * @param {{fromX,fromY,key,scoringDetail}[]} cardFlyInfo - 왼쪽→오른쪽 순
+   * @param {{fromX,fromY,key,scoringDetail}[]} cardFlyInfo - 왼쪽→오른쪽 순 (원래 위치에서 pulse)
+   * @param {function} onCardsConsumed - 카드 펄스 완료 후 호출 (핸드 제거 + render)
    * @param {function} onComplete
    */
-  _playAttackAnimation(details, cardFlyInfo, onComplete) {
+  _playAttackAnimation(details, cardFlyInfo, onCardsConsumed, onComplete) {
     const PW   = PLAYER_PANEL_W;
     const FAW  = GW - PW - ITEM_PANEL_W;
     const cX   = PW + FAW / 2;
@@ -1197,11 +1200,61 @@ export class BattleScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setDepth(400);
     tmpObjs.push(scoreTxt);
 
+    // ── 구슬 던지기 (source → scoreTxt) ──────────────────────────────────
+    const orbTargetX = cX;
+    const orbTargetY = scoreY + 15;
+
+    // orb는 fire-and-forget — 발사 후 독립 실행, next()는 countUp이 담당
+    const throwOrb = (fromX, fromY, color) => {
+      const orb  = this.add.circle(fromX, fromY, 10, color, 1.0).setDepth(420);
+      const glow = this.add.circle(fromX, fromY, 18, color, 0.35).setDepth(419);
+      tmpObjs.push(orb, glow);
+
+      const cpX = (fromX + orbTargetX) / 2;
+      const cpY = Math.min(fromY, orbTargetY) - 60;
+      const t = { v: 0 };
+
+      this.tweens.add({
+        targets: t, v: 1, duration: 220, ease: 'Sine.easeIn',
+        onUpdate: () => {
+          const s = t.v, r = 1 - s;
+          const x = r * r * fromX + 2 * r * s * cpX + s * s * orbTargetX;
+          const y = r * r * fromY + 2 * r * s * cpY + s * s * orbTargetY;
+          orb.setPosition(x, y);
+          glow.setPosition(x, y);
+        },
+        onComplete: () => {
+          this.tweens.add({
+            targets: [orb, glow],
+            scaleX: 3.5, scaleY: 3.5, alpha: 0,
+            duration: 130, ease: 'Sine.easeOut',
+          });
+        },
+      });
+    };
+
+    // orb 발사 후 이 딜레이 뒤에 countUp 시작 (orb 비행 중 겹침)
+    const ORB_LAG = 110;
+
+    // 렐릭 위치 헬퍼
+    const relicPos = (relicId) => {
+      const r = this.itemUI?._relicObjs?.[relicId];
+      return r ? { x: r.baseCX, y: r.baseCY } : { x: GW - ITEM_PANEL_W / 2, y: 200 };
+    };
+
     // ── 카운팅 업 ─────────────────────────────────────────────────────────
     const countUp = (target, duration, onDone) => {
       const tweenObj = { val: currentScore };
+      this.tweens.killTweensOf(scoreTxt);
+      scoreTxt.y = scoreY;
       this.tweens.add({
-        targets: tweenObj, val: target, duration, ease: 'Linear',
+        targets: scoreTxt,
+        y: scoreY - 12,
+        duration: Math.min(140, duration * 0.4),
+        yoyo: true, ease: 'Sine.easeOut',
+      });
+      this.tweens.add({
+        targets: tweenObj, val: target, duration, ease: 'Circular.In',
         onUpdate: () => { scoreTxt.setText(String(Math.floor(tweenObj.val))); },
         onComplete: () => {
           currentScore = target;
@@ -1218,56 +1271,62 @@ export class BattleScene extends Phaser.Scene {
     if (details.atk > 0) {
       queue.push(next => {
         this.playerUI?.pulseAtk();
-        this.time.delayedCall(200, () => countUp(currentScore + details.atk, 280, next));
+        const atk = this.playerUI?.playerAtkTxt;
+        throwOrb(atk ? atk.x : PW * 0.75, atk ? atk.y : 168, 0xff8833);
+        this.time.delayedCall(ORB_LAG, () => countUp(currentScore + details.atk, 200, next));
       });
     }
 
     // 2. 각 카드 (선택된 순서 — 이미 왼쪽→오른쪽 정렬)
-    const cardCY = MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
-    const n = cardFlyInfo.length;
-    const flyObjs = [];
-
     cardFlyInfo.forEach((info, idx) => {
-      const offsetX = n > 1 ? (idx - (n - 1) / 2) * 28 : 0;
-
       queue.push(next => {
-        const img = this.add.image(info.fromX, info.fromY, info.key)
-          .setDisplaySize(CW, CH).setDepth(300 + idx);
-        tmpObjs.push(img);
-        flyObjs.push(img);
-        this._sfx("sfx_fan");
+        const obj = info.obj;
+        if (!obj?.active) { next(); return; }
+        this.tweens.killTweensOf(obj);
+        const bx = obj.scaleX, by = obj.scaleY;
         this.tweens.add({
-          targets: img,
-          x: cX + offsetX, y: cardCY,
-          displayWidth: CW * 0.7, displayHeight: CH * 0.7,
-          duration: 220, ease: 'Power2.Out',
-          onComplete: next,
+          targets: obj,
+          scaleX: bx * 1.1,
+          scaleY: by * 1.1,
+          duration: 160, yoyo: true, ease: 'Sine.easeInOut',
+          onComplete: () => { try { obj.setScale(bx, by); } catch (_) {} next(); },
         });
       });
 
       if (info.scoringDetail) {
         const cd = info.scoringDetail;
-        queue.push(next => countUp(currentScore + cd.baseScore, 250, next));
+        queue.push(next => {
+          throwOrb(info.fromX, info.fromY, 0xffdd44);
+          this.time.delayedCall(ORB_LAG, () => countUp(currentScore + cd.baseScore, 200, next));
+        });
 
         cd.cardRelicDeltas.forEach(({ relicId, delta }) => {
           queue.push(next => {
             this.itemUI?.pulseRelic(relicId);
-            this.time.delayedCall(160, () => countUp(currentScore + delta, 200, next));
+            const rp = relicPos(relicId);
+            throwOrb(rp.x, rp.y, 0xcc88ff);
+            this.time.delayedCall(ORB_LAG, () => countUp(currentScore + delta, 240, next));
           });
         });
       }
     });
 
+    // 카드 펄스 완료 후 핸드에서 제거
+    if (cardFlyInfo.length > 0) {
+      queue.push(next => { onCardsConsumed?.(); next(); });
+    }
+
     // 3. 족보 배수 적용 — multi > 1 이거나 hand row 표시용으로 항상 pulse
     queue.push(next => {
       this.playerUI?.pulseHandRow(details.handRank);
       if (details.multi !== 1) {
-        this.time.delayedCall(220, () => {
-          const afterMulti = currentScore * details.multi;
-          countUp(afterMulti, 350, next);
+        const rankRow = this.playerUI?._handConfigRows?.[details.handRank];
+        throwOrb(rankRow?.multiTxt?.x ?? PW / 2, rankRow?.multiTxt?.y ?? 400, 0x44eeff);
+        this.time.delayedCall(ORB_LAG, () => {
+          countUp(currentScore * details.multi, 420, next);
         });
       } else {
-        this.time.delayedCall(260, next);
+        this.time.delayedCall(120, next);
       }
     });
 
@@ -1275,7 +1334,9 @@ export class BattleScene extends Phaser.Scene {
     details.handRelicDeltas.forEach(({ relicId, delta }) => {
       queue.push(next => {
         this.itemUI?.pulseRelic(relicId);
-        this.time.delayedCall(160, () => countUp(currentScore + delta, 200, next));
+        const rp = relicPos(relicId);
+        throwOrb(rp.x, rp.y, 0xcc88ff);
+        this.time.delayedCall(ORB_LAG, () => countUp(currentScore + delta, 240, next));
       });
     });
 
@@ -1283,7 +1344,9 @@ export class BattleScene extends Phaser.Scene {
     details.finalRelicDeltas.forEach(({ relicId, delta }) => {
       queue.push(next => {
         this.itemUI?.pulseRelic(relicId);
-        this.time.delayedCall(160, () => countUp(currentScore + delta, 200, next));
+        const rp = relicPos(relicId);
+        throwOrb(rp.x, rp.y, 0xee66ff);
+        this.time.delayedCall(ORB_LAG, () => countUp(currentScore + delta, 240, next));
       });
     });
 

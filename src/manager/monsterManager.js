@@ -89,27 +89,28 @@ export class MonsterManager {
         fromX: handPositions[i].x,
         fromY: HAND_Y - 22,
         key: card.key,
+        obj: scene.handCardObjs?.[i] ?? null,
         scoringDetail: details.cardDetails.find(cd => cd.card.uid === card.uid) ?? null,
       };
     });
 
     scene.attackCount++;
-
-    // 카드를 핸드에서 제거 (애니메이션 전, 핸드가 즉시 갱신되도록)
-    const usedCards = [...selectedIndices].sort((a, b) => b - a)
-      .map(i => scene.handData.splice(i, 1)[0]);
-    scene.dummyData.push(...usedCards);
-    scene.selected.clear();
-    scene.render();
-
     scene.isDealing = true;
+
+    // 카드 제거 콜백 — 펄스 애니메이션 완료 후 dummy로 이동
+    const removeCards = () => {
+      scene.selected.clear();
+      [...selectedIndices].sort((a, b) => b - a)
+        .forEach(i => { scene.dummyData.push(...scene.handData.splice(i, 1)); });
+      scene.render();
+    };
 
     const positions = this.calcMonsterPositions(scene.monsters.length);
     const suitEff   = (s) => Math.floor(
       scene.player.attrs[s] * scene.player.adaptability[s] * suitCounts[s]
     );
 
-    scene._playAttackAnimation(details, cardFlyInfo, () => {
+    scene._playAttackAnimation(details, cardFlyInfo, removeCards, () => {
       if (aoe) {
         // ── 광역 공격 ────────────────────────────────────────────────────
         const aliveMonsters = scene.monsters.filter(m => !m.isDead);
@@ -204,12 +205,12 @@ export class MonsterManager {
         scene.addBattleLog(`${mon.mob.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
         scene._sfx("sfx_knifeSlice");
 
-        scene.effects.hitExplosion(
-          positions[monIdx].x, MONSTER_AREA_TOP + MONSTER_AREA_H / 2,
-          [scene._monsterSprites?.[monIdx]].filter(Boolean)
-        );
-
         const monSprite  = scene._monsterSprites?.[monIdx];
+        scene.effects.hitLightning(
+          monSprite?.x ?? positions[monIdx].x,
+          monSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
+          monSprite ?? null
+        );
         const damagedKey = `mon_${mon.mob.id}_damaged_anim`;
 
         if (monSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
@@ -262,7 +263,7 @@ export class MonsterManager {
     }
   }
 
-  // ── 불세이 광역 ──────────────────────────────────────────────────────────
+  // ── 불스아이 BullsEye 광역 ──────────────────────────────────────────────────────────
   _applyBullseye(fromIdx, dmg, onDone) {
     const { scene } = this;
     if (dmg <= 0) { onDone?.(); return; }
@@ -321,16 +322,34 @@ export class MonsterManager {
     const fromX     = positions[fromIdx].x;
     const toX       = positions[idx].x;
 
-    scene.effects.hitLightning(scene.monsters[idx]);
+    const monSprite = scene._monsterSprites?.[idx];
+    scene.effects.hitLightning(
+      monSprite?.x ?? positions[idx].x,
+      monSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
+      monSprite ?? null
+    );
 
-    const img = scene.add.image(fromX, MONSTER_IMG_Y, "card_back")
-      .setDisplaySize(CW * 0.5, CH * 0.5).setDepth(200);
+    const orbY  = MONSTER_IMG_Y - 80;
+    const cpX   = (fromX + toX) / 2;
+    const cpY   = orbY - 60;
+    const orb   = scene.add.circle(fromX, orbY, 10, 0xff4422, 1.0).setDepth(420);
+    const glow  = scene.add.circle(fromX, orbY, 18, 0xff4422, 0.35).setDepth(419);
+    const t = { v: 0 };
     scene.tweens.add({
-      targets: img, x: toX, y: MONSTER_IMG_Y,
-      displayWidth: CW * 0.2, displayHeight: CH * 0.2, alpha: 0.6,
-      duration: 280, ease: "Power2.In",
+      targets: t, v: 1, duration: 260, ease: 'Sine.easeIn',
+      onUpdate: () => {
+        const s = t.v, r = 1 - s;
+        const x = r * r * fromX + 2 * r * s * cpX + s * s * toX;
+        const y = r * r * orbY   + 2 * r * s * cpY + s * s * orbY;
+        orb.setPosition(x, y);
+        glow.setPosition(x, y);
+      },
       onComplete: () => {
-        img.destroy();
+        scene.tweens.add({
+          targets: [orb, glow], scaleX: 3.5, scaleY: 3.5, alpha: 0,
+          duration: 130, ease: 'Sine.easeOut',
+          onComplete: () => { orb.destroy(); glow.destroy(); },
+        });
 
         const target     = scene.monsters[idx];
         const actualDmg  = Math.max(0, dmg - target.def);

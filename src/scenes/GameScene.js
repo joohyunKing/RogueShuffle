@@ -28,6 +28,22 @@ export class GameScene extends Phaser.Scene {
     const rd      = rounds[rdIdx];
     const normalCount = rd.normalCount;
 
+    // 1라운드 신규 시작 — 골드 없으므로 마켓 스킵, 바로 배틀
+    if (phase === 'market' && round === 1 && !player) {
+      this.scene.start('BattleScene', {
+        round,
+        player: null,
+        deck:   null,
+        isBoss:      false,
+        battleIndex: 0,
+        normalCount,
+        monsterTier: rd.monsterTier,
+        totalCost:   rd.totalCost,
+        battleLog:   [],
+      });
+      return;
+    }
+
     if (phase === 'market') {
       this.scene.start('MarketScene', { round, player, deck });
     } else {

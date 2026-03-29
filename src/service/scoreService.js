@@ -99,6 +99,9 @@ function calcHandScore(cards, ctx, relics) {
 //카드 점수
 function calcCardScore(card, ctx, relics) {
     let score = card.baseScore;
+    for (const enh of (card.enhancements ?? [])) {
+        if (enh.type === 'add') score += enh.value;
+    }
 
     for (const relic of relics) {
         for (const effect of relic.effects) {
@@ -191,7 +194,10 @@ export function getScoreDetails(cards, context) {
 
     // ── per-card breakdown ────────────────────────────────────────────────
     const cardDetails = ctx.cards.map(card => {
-        const baseScore = card.baseScore;
+        let baseScore = card.baseScore;
+        for (const enh of (card.enhancements ?? [])) {
+            if (enh.type === 'add') baseScore += enh.value;
+        }
         const cardRelicDeltas = [];
         let runCard = baseScore;
         for (const relic of relics) {

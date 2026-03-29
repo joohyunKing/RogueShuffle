@@ -13,9 +13,20 @@ const DEFAULT_HAND_CONFIG = Object.fromEntries(
     Object.entries(HAND_DATA).map(([rank, d]) => [rank, { multi: d.multi, aoe: d.aoe }])
 );
 
-function _pickRandomRelicIds(n) {
-    const ids = relicData.relics.map(r => r.id);
-    return [...ids].sort(() => Math.random() - 0.5).slice(0, Math.min(n, ids.length));
+// rarity 가중치: common 우선
+const RARITY_WEIGHT = { common: 60, rare: 30, epic: 10 };
+
+function _pickStartingRelicIds(n) {
+    const pool = relicData.relics.map(r => ({ id: r.id, w: RARITY_WEIGHT[r.rarity] ?? 10 }));
+    const result = [];
+    const avail  = [...pool];
+    while (result.length < n && avail.length > 0) {
+        const total = avail.reduce((s, r) => s + r.w, 0);
+        let rand = Math.random() * total;
+        const idx = avail.findIndex(r => (rand -= r.w) <= 0) ?? avail.length - 1;
+        result.push(avail.splice(Math.max(0, idx), 1)[0].id);
+    }
+    return result;
 }
 
 /**
@@ -50,7 +61,7 @@ export class Player {
         /** 구매한 아이템 목록 (최대 4개) */
         this.items = data.items ?? [];
         /** 보유 유물 ID 목록 (최대 15개) */
-        this.relics = (data.relics ?? (DEBUG_MODE ? _pickRandomRelicIds(6) : [])).slice(0, 6);
+        this.relics = (data.relics ?? _pickStartingRelicIds(DEBUG_MODE ? 3 : 1)).slice(0, 6);
 
         // ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
         /** 직업 */
