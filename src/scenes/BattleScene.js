@@ -53,6 +53,7 @@ export class BattleScene extends Phaser.Scene {
   // ── preload ──────────────────────────────────────────────────────────────
   preload() {
     this.load.setBaseURL(import.meta.env.BASE_URL);
+    this.load.on('loaderror', () => {});  // 미존재 에셋 에러 suppress
     //this.load.image("card_back", "/_card_back.png");
     this.load.image("card_back", "assets/images/ui/card_back.png");
     if (!this.textures.exists("card_back_deck"))
@@ -90,8 +91,8 @@ export class BattleScene extends Phaser.Scene {
         this.load.image(`relic_${r.id}`, `assets/images/relic/${r.img}`);
     });
     debuffData.debuffs.forEach(d => {
-      if (d.img && !this.textures.exists(`debuff_${d.id}`))
-        this.load.image(`debuff_${d.id}`, `assets/images/debuff/${d.img}`);
+      if (d.img && !this.textures.exists(d.id))
+        this.load.image(d.id, `assets/images/debuff/${d.img}`);
     });
 
     // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
@@ -995,7 +996,7 @@ export class BattleScene extends Phaser.Scene {
       this._debuffObjs.push(bg);
 
       // 아이콘 이미지 or 텍스트 폴백
-      const imgKey = `debuff_${active.id}`;
+      const imgKey = active.id;
       const icon = this.textures.exists(imgKey)
         ? this.add.image(x, iconY, imgKey).setDisplaySize(SIZE - 4, SIZE - 4).setDepth(21)
         : this.add.text(x, iconY, def.name[0], { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#cc88ff' }).setOrigin(0.5).setDepth(21);
