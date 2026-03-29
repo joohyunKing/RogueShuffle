@@ -1,5 +1,6 @@
 import debuffData from '../data/debuff.json';
 
+export { debuffData };
 export const debuffMap = Object.fromEntries(debuffData.debuffs.map(d => [d.id, d]));
 
 export class DebuffManager {

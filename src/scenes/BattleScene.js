@@ -24,7 +24,8 @@ import { saveOptionsByRegistry } from "../manager/optionManager.js";
 import effectManager from '../manager/effectManager.js';
 import DeckManager from '../manager/deckManager.js';
 import itemData from '../data/item.json';
-import { DebuffManager, debuffMap as _debuffMap } from '../manager/debuffManager.js';
+import { DebuffManager, debuffData, debuffMap as _debuffMap } from '../manager/debuffManager.js';
+import { MonsterManager } from '../manager/monsterManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
@@ -113,36 +114,6 @@ export class BattleScene extends Phaser.Scene {
     this.sound.play(key, { volume: sfxVol * 0.6 });
   }
 
-  // ── 스프라이트시트에서 실제 유효 프레임 수 감지 ────────────────────────────
-  _countValidFrames(texKey) {
-    const tex = this.textures.get(texKey);
-    const total = tex.frameTotal - 1;
-    const srcImg = tex.getSourceImage();
-    const FW = 384, FH = 384, COLS = 3;
-
-    const cvs = document.createElement('canvas');
-    cvs.width = FW; cvs.height = FH;
-    const ctx = cvs.getContext('2d', { willReadFrequently: true });
-
-    for (let i = 0; i < total; i++) {
-      const col = i % COLS;
-      const row = Math.floor(i / COLS);
-      ctx.clearRect(0, 0, FW, FH);
-      ctx.drawImage(srcImg, col * FW, row * FH, FW, FH, 0, 0, FW, FH);
-
-      const data = ctx.getImageData(0, 0, FW, FH).data;
-      const step = Math.floor(FW / 10);
-      let hasPixel = false;
-      outer: for (let py = step >> 1; py < FH; py += step) {
-        for (let px = step >> 1; px < FW; px += step) {
-          if (data[(py * FW + px) * 4 + 3] > 10) { hasPixel = true; break outer; }
-        }
-      }
-      if (!hasPixel) return i;
-    }
-    return total;
-  }
-
   // ── create ───────────────────────────────────────────────────────────────
   create() {
     const data = this.scene.settings.data || {};
@@ -177,8 +148,9 @@ export class BattleScene extends Phaser.Scene {
     this.cardObjs = [];
     this.monsterObjs = [];
     this._monsterSprites = [];
-    this._debuffObjs  = [];
-    this.debuffManager = new DebuffManager(this);
+    this._debuffObjs    = [];
+    this.debuffManager  = new DebuffManager(this);
+    this.monsterManager = new MonsterManager(this);
     this.animObjs = [];
     this._optOverlayObjs = null;
     this.isDragging = false;
@@ -214,7 +186,7 @@ export class BattleScene extends Phaser.Scene {
         const texKey = `mon_${m.id}_${state}`;
         const animKey = `${texKey}_anim`;
         if (!this.textures.exists(texKey) || this.anims.exists(animKey)) continue;
-        const validFrames = this._countValidFrames(texKey);
+        const validFrames = this.monsterManager._countValidFrames(texKey);
         if (validFrames === 0) continue;
         this.anims.create({
           key: animKey,
@@ -502,17 +474,6 @@ export class BattleScene extends Phaser.Scene {
     return Array.from({ length: count }, (_, i) => ({ x: x0 + i * spacing, y: HAND_Y }));
   }
 
-  calcMonsterPositions(count) {
-    const PW = PLAYER_PANEL_W;
-    const FAW = GW - PW - ITEM_PANEL_W;   // 880
-    const cx = PW + FAW / 2;
-    if (count <= 1) return [{ x: cx }];
-    const margin = 100;
-    const gap = Math.min(130, Math.floor((FAW - margin * 2) / (count - 1)));
-    const x0 = Math.round(cx - gap * (count - 1) / 2);
-    return Array.from({ length: count }, (_, i) => ({ x: x0 + i * gap }));
-  }
-
   // ── 드래그 ───────────────────────────────────────────────────────────────
   setupDrag() {
     this.input.on("dragstart", (pointer, obj) => {
@@ -555,7 +516,7 @@ export class BattleScene extends Phaser.Scene {
                            && pointer.y <= MONSTER_AREA_TOP + MONSTER_AREA_H;
 
         if (!this.isDealing && inMonsterArea) {
-          const positions = this.calcMonsterPositions(this.monsters.length);
+          const positions = this.monsterManager.calcMonsterPositions(this.monsters.length);
           const monIdx = positions.reduce((best, _, i) =>
             Math.abs(pointer.x - positions[i].x) < Math.abs(pointer.x - positions[best].x) ? i : best
           , 0);
@@ -564,7 +525,7 @@ export class BattleScene extends Phaser.Scene {
           this._comboBtnText.x = origX + 55; this._comboBtnText.y = origY;
 
           if (!this.monsters[monIdx]?.isDead) {
-            this.attackMonster(monIdx);
+            this.monsterManager.attackMonster(monIdx);
           }
         } else {
           // 스냅백
@@ -879,7 +840,7 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 몬스터 렌더 ──────────────────────────────────────────────────────────
   renderMonsters() {
-    const positions = this.calcMonsterPositions(this.monsters.length);
+    const positions = this.monsterManager.calcMonsterPositions(this.monsters.length);
     const hasCombo = this._getSelectedCombo().score > 0
       && this.attackCount < this.player.attacksPerTurn;
     const imgW = 156, imgH = 156;
@@ -910,7 +871,7 @@ export class BattleScene extends Phaser.Scene {
             }
             this.time.delayedCall(1500, () => { mon.deathAnimDone = true; });
           } else {
-            const lastFrame = this._countValidFrames(dieTexKey) - 1;
+            const lastFrame = this.monsterManager._countValidFrames(dieTexKey) - 1;
             monObj.setFrame(Math.max(0, lastFrame));
           }
         }
@@ -978,7 +939,7 @@ export class BattleScene extends Phaser.Scene {
         const hitCY = spriteY - imgH / 2 + hitH / 2;
         const hit = this.add.rectangle(x, hitCY, imgW + 20, hitH, 0x000000, 0)
           .setDepth(19).setInteractive();
-        hit.on("pointerdown", () => { if (!this.isDealing) this.attackMonster(idx); });
+        hit.on("pointerdown", () => { if (!this.isDealing) this.monsterManager.attackMonster(idx); });
         this.monsterObjs.push(hit);
       }
     });
@@ -1202,84 +1163,6 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  _useMonsterSkill(monIdx, m) {
-    const skill      = m.mob.skill;
-    const monSprite  = this._monsterSprites?.[monIdx];
-    const skillTexKey  = `mon_${m.mob.id}_skill`;
-    const skillAnimKey = `${skillTexKey}_anim`;
-    const idleKey      = `mon_${m.mob.id}_idle_anim`;
-
-    // skill 스프라이트 재생 (없으면 attack 애니메이션 폴백)
-    if (monSprite instanceof Phaser.GameObjects.Sprite) {
-      const playKey = this.anims.exists(skillAnimKey) ? skillAnimKey
-                    : `mon_${m.mob.id}_attack_anim`;
-      if (this.anims.exists(playKey)) {
-        monSprite.play(playKey);
-        monSprite.once('animationcomplete', () => {
-          if (this.anims.exists(idleKey)) monSprite.play(idleKey);
-        });
-      }
-    }
-
-    if (skill.type === 'damage') {
-      const raw = skill.value ?? 0;
-      const dmg = Math.max(0, raw - this.player.def);
-      this.player.hp = Math.max(0, this.player.hp - dmg);
-      this.addBattleLog(`${m.mob.name}의 스킬! ${dmg} 데미지!`);
-
-      // 보라색 플래시
-      const positions = this.calcMonsterPositions(this.monsters.length);
-      const mX = positions[monIdx]?.x ?? GW / 2;
-      const flash = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x880088, 0.25).setDepth(500);
-      this.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
-      this._sfx("sfx_knifeSlice");
-      const label = dmg > 0 ? `-${dmg} HP` : 'BLOCKED!';
-      const txt = this.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, TS.damageHit)
-        .setOrigin(0.5, 0).setDepth(501).setTint(0xee44ff);
-      this.tweens.add({ targets: txt, y: 128, alpha: 0, duration: 480, delay: 80, ease: 'Power1.In',
-        onComplete: () => txt.destroy() });
-
-    } else if (skill.type === 'debuff') {
-      const debuffId = skill.debuffId ?? skill.value;
-      this.debuffManager.applyDebuff(debuffId, m.mob.name);
-      this.render();
-
-      // 보라색 플래시 (디버프용)
-      const flash = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x440044, 0.20).setDepth(500);
-      this.tweens.add({ targets: flash, alpha: 0, duration: 600, onComplete: () => flash.destroy() });
-      this._sfx("sfx_chop");
-    }
-  }
-
-  _showMonsterAttack(monIdx, damage) {
-    const positions = this.calcMonsterPositions(this.monsters.length);
-    const mX = positions[monIdx]?.x ?? GW / 2;
-
-    const monSprite = this._monsterSprites?.[monIdx];
-    const mon = this.monsters[monIdx];
-    const attackKey = `mon_${mon?.mob?.id}_attack_anim`;
-    const idleKey = `mon_${mon?.mob?.id}_idle_anim`;
-    if (monSprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(attackKey)) {
-      monSprite.play(attackKey);
-      monSprite.once('animationcomplete', () => {
-        if (this.anims.exists(idleKey)) monSprite.play(idleKey);
-      });
-    }
-
-    const flash = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0xcc0000, 0.22).setDepth(500);
-    this.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
-    this._sfx("sfx_chop");
-
-    const label = damage > 0 ? `-${damage} HP` : "BLOCKED!";
-    const txtStyle = damage > 0 ? TS.damageHit : TS.damageBlocked;
-    const txt = this.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, txtStyle)
-      .setOrigin(0.5, 0).setDepth(501);
-    this.tweens.add({
-      targets: txt, y: 128, alpha: 0, duration: 480, delay: 80, ease: "Power1.In",
-      onComplete: () => txt.destroy(),
-    });
-  }
-
   _applySortToHand() {
     if (this.sortMode === null) { this.sortMode = "rank"; this.sortAsc = true; }
     this.doSorting(this.sortMode);
@@ -1318,303 +1201,6 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  // ── 몬스터 공격 ──────────────────────────────────────────────────────────
-  attackMonster(monIdx) {
-    const mon = this.monsters[monIdx];
-    if (!mon || mon.isDead || this.isDealing) return;
-
-    this._refreshContext();
-
-    const { score: cardScore, handName, aoe } = this._getSelectedCombo();
-    if (cardScore <= 0) return;
-    const score = Math.floor(cardScore);
-
-    if (this.attackCount >= this.player.attacksPerTurn) {
-      this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
-      return;
-    }
-    this.attackCount++;
-
-    const suitCounts = { S: 0, H: 0, D: 0, C: 0 };
-    [...this.selected].forEach(i => { suitCounts[this.handData[i].suit]++; });
-    const suitEff = (s) => Math.floor(
-      this.player.attrs[s] * this.player.adaptability[s] * suitCounts[s]
-    );
-
-    // 카드 애니메이션 & 더미 처리
-    const positions = this.calcMonsterPositions(this.monsters.length);
-    const handPositions = this.calcHandPositions(this.handData.length);
-    const targetX = positions[monIdx].x;
-    [...this.selected].forEach(i => {
-      this._throwCardAtMonster(handPositions[i].x, HAND_Y - 22, this.handData[i].key, targetX);
-    });
-    const usedCards = [...this.selected].sort((a, b) => b - a)
-      .map(i => this.handData.splice(i, 1)[0]);
-    this.dummyData.push(...usedCards);
-    this.selected.clear();
-
-    if (aoe) {
-      // ── 광역 공격 ────────────────────────────────────────────────────────
-      const aliveMonsters = this.monsters.filter(m => !m.isDead);
-      const aliveSprites = this._monsterSprites?.filter((_, i) => !this.monsters[i]?.isDead) ?? [];
-
-      // S/C 적응 — 모든 살아있는 몬스터에 적용
-      if (suitCounts.S > 0) {
-        const eff = suitEff('S');
-        if (eff > 0) {
-          aliveMonsters.forEach(m => { m.def -= eff; });
-          this.addBattleLog(`♠ 적응: 전체 DEF -${eff}`);
-        }
-      }
-      if (suitCounts.C > 0) {
-        const eff = suitEff('C');
-        if (eff > 0) {
-          aliveMonsters.forEach(m => {
-            const reduced = Math.min(eff, m.atk);
-            m.atk = Math.max(0, m.atk - eff);
-            if (reduced > 0) this.addBattleLog(`♣ 적응: ${m.mob.name} ATK -${reduced}`);
-          });
-        }
-      }
-
-      // H/D 적응 — 플레이어에게 한 번
-      if (suitCounts.H > 0) {
-        const eff = suitEff('H');
-        this.player.hp = Math.min(this.player.maxHp, this.player.hp + eff);
-        if (eff > 0) this.addBattleLog(`♥ 적응: HP +${eff}`);
-      }
-      if (suitCounts.D > 0) {
-        const eff = suitEff('D');
-        this.player.def += eff;
-        if (eff > 0) this.addBattleLog(`♦ 적응: DEF +${eff}`);
-      }
-
-      // 전체 데미지
-      this.player.score += score;
-      this.addBattleLog(`${handName}! 전체에 ${score}점 광역 공격!`);
-      this._sfx("sfx_knifeSlice");
-
-      const aoeX = positions.length > 0
-        ? positions.reduce((s, p) => s + p.x, 0) / positions.length
-        : GW / 2;
-      const aoeY = MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
-      this.effects.hitExplosion(aoeX, aoeY, aliveSprites);
-
-      let lastDeadIdx = monIdx;
-      aliveMonsters.forEach((m, _) => {
-        const actualIdx = this.monsters.indexOf(m);
-        const dmg = Math.floor(Math.max(0, score - m.def));
-        m.hp = Math.max(0, m.hp - dmg);
-        this.addBattleLog(`${m.mob.name}에게 ${dmg} 데미지!`);
-        if (m.hp <= 0) {
-          m.isDead = true;
-          lastDeadIdx = actualIdx;
-          const newLevels = this.player.addXp(m.xp);
-          this.player.gold += m.gold;
-          this.addBattleLog(`${m.mob.name} 처치! +${m.xp}XP +${m.gold}G`);
-          if (newLevels.length > 0) {
-            this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
-            this._suitLevelUpCount += newLevels.length;
-          }
-        }
-      });
-
-      this.render();
-      this._checkLevelUpThenProceed();
-
-    } else {
-      // ── 단일 타겟 공격 ───────────────────────────────────────────────────
-      if (suitCounts.S > 0) {
-        const eff = suitEff('S');
-        mon.def -= eff;
-        if (eff > 0) this.addBattleLog(`♠ 적응: ${mon.mob.name} DEF -${eff}`);
-      }
-      if (suitCounts.C > 0) {
-        const eff = suitEff('C');
-        const reduced = Math.min(eff, mon.atk);
-        mon.atk = Math.max(0, mon.atk - eff);
-        if (reduced > 0) this.addBattleLog(`♣ 적응: ${mon.mob.name} ATK -${reduced}`);
-      }
-
-      const damage = Math.floor(Math.max(0, score - mon.def));
-      const prevHp = mon.hp;
-      mon.hp = Math.max(0, mon.hp - damage);
-      const overkill = Math.max(0, damage - prevHp);
-      const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
-      this.player.score += score;
-
-      if (suitCounts.H > 0) {
-        const eff = suitEff('H');
-        this.player.hp = Math.min(this.player.maxHp, this.player.hp + eff);
-        if (eff > 0) this.addBattleLog(`♥ 적응: HP +${eff}`);
-      }
-      if (suitCounts.D > 0) {
-        const eff = suitEff('D');
-        this.player.def += eff;
-        if (eff > 0) this.addBattleLog(`♦ 적응: DEF +${eff}`);
-      }
-
-      this.addBattleLog(`${mon.mob.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
-      this._sfx("sfx_knifeSlice");
-
-      this.effects.hitExplosion(positions[monIdx].x, MONSTER_AREA_TOP + MONSTER_AREA_H / 2,
-        [this._monsterSprites?.[monIdx]].filter(Boolean));
-
-      const monSprite = this._monsterSprites?.[monIdx];
-      const damagedKey = `mon_${mon.mob.id}_damaged_anim`;
-
-      if (monSprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(damagedKey)) {
-        this.isDealing = true;
-        monSprite.play(damagedKey);
-        monSprite.once('animationcomplete', () => {
-          this.isDealing = false;
-          this._afterAttack(mon, monIdx, overkill, bullseye);
-        });
-      } else {
-        this._afterAttack(mon, monIdx, overkill, bullseye);
-      }
-    }
-  }
-
-  _afterAttack(mon, monIdx, overkill = 0, bullseye = false) {
-    if (mon.hp <= 0) {
-      mon.isDead = true;
-      const newLevels = this.player.addXp(mon.xp);
-      this.player.gold += mon.gold;
-      this.addBattleLog(`${mon.mob.name} 처치! +${mon.xp}XP +${mon.gold}G`);
-      if (newLevels.length > 0) {
-        this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
-        this._suitLevelUpCount += newLevels.length;
-      }
-      if (overkill > 0) {
-        this.isDealing = true;
-        this._applyOverkill(monIdx, overkill, () => {
-          this.isDealing = false;
-          this.render();
-          this._checkLevelUpThenProceed();
-        });
-      } else if (bullseye) {
-        this.isDealing = true;
-        this.addBattleLog(`BULLSEYE! ${mon.mob.name} 최대 체력(${mon.maxHp})으로 광역!`);
-        this._applyBullseye(monIdx, mon.maxHp, () => {
-          this.isDealing = false;
-          this.render();
-          this._checkLevelUpThenProceed();
-        });
-      } else {
-        this.render();
-        this._checkLevelUpThenProceed();
-      }
-    } else {
-      this.render();
-    }
-  }
-
-  _applyBullseye(fromIdx, dmg, onDone) {
-    if (dmg <= 0) { onDone?.(); return; }
-
-    const aliveTargets = this.monsters
-      .map((m, i) => ({ m, i }))
-      .filter(({ m, i }) => !m.isDead && i !== fromIdx);
-
-    if (aliveTargets.length === 0) { onDone?.(); return; }
-
-    const positions = this.calcMonsterPositions(this.monsters.length);
-    const aoeX = positions[fromIdx].x;
-    const aoeY = MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
-    const aliveSprites = aliveTargets
-      .map(({ i }) => this._monsterSprites?.[i])
-      .filter(Boolean);
-
-    this.effects.hitExplosion(aoeX, aoeY, aliveSprites);
-
-    aliveTargets.forEach(({ m }) => {
-      const actualDmg = Math.max(0, dmg - m.def);
-      m.hp = Math.max(0, m.hp - actualDmg);
-      this.addBattleLog(`BULLSEYE 연쇄! ${m.mob.name}에게 ${actualDmg} 데미지!`);
-      if (m.hp <= 0 && !m.isDead) {
-        m.isDead = true;
-        const newLevels = this.player.addXp(m.xp);
-        this.player.gold += m.gold;
-        this.addBattleLog(`${m.mob.name} 처치! +${m.xp}XP +${m.gold}G`);
-        if (newLevels.length > 0) {
-          this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
-          this._suitLevelUpCount += newLevels.length;
-        }
-      }
-    });
-
-    onDone?.();
-  }
-
-  _applyOverkill(fromIdx, dmg, onDone) {
-    if (dmg <= 0) { onDone?.(); return; }
-
-    let idx = -1;
-    for (let i = fromIdx + 1; i < this.monsters.length; i++) {
-      if (!this.monsters[i].isDead) { idx = i; break; }
-    }
-    if (idx === -1) {
-      for (let i = 0; i < fromIdx; i++) {
-        if (!this.monsters[i].isDead) { idx = i; break; }
-      }
-    }
-    if (idx === -1) { onDone?.(); return; }
-
-    const positions = this.calcMonsterPositions(this.monsters.length);
-    const fromX = positions[fromIdx].x;
-    const toX = positions[idx].x;
-
-    this.effects.hitLightning(this.monsters[idx]);
-    //this.effects.hitExplosion(640, 360, this._monsterSprites);
-
-    const img = this.add.image(fromX, MONSTER_IMG_Y, "card_back")
-      .setDisplaySize(CW * 0.5, CH * 0.5).setDepth(200);
-    this.tweens.add({
-      targets: img, x: toX, y: MONSTER_IMG_Y,
-      displayWidth: CW * 0.2, displayHeight: CH * 0.2, alpha: 0.6,
-      duration: 280, ease: "Power2.In",
-      onComplete: () => {
-        img.destroy();
-
-        const target = this.monsters[idx];
-        const actualDmg = Math.max(0, dmg - target.def);
-        const prevHp = target.hp;
-        target.hp = Math.max(0, target.hp - actualDmg);
-        const chain = Math.max(0, actualDmg - prevHp);
-
-        this.addBattleLog(`오버킬! ${target.mob.name}에게 ${actualDmg} 연쇄!`);
-        this._sfx("sfx_knifeSlice");
-
-        const monSprite = this._monsterSprites?.[idx];
-        const damagedKey = `mon_${target.mob.id}_damaged_anim`;
-        const afterAnim = () => {
-          if (target.hp <= 0 && !target.isDead) {
-            target.isDead = true;
-            const newLevels = this.player.addXp(target.xp);
-            this.player.gold += target.gold;
-            this.addBattleLog(`${target.mob.name} 연쇄 처치! +${target.xp}XP`);
-            if (newLevels.length > 0) {
-              this.addBattleLog(`LEVEL UP! Lv${this.player.level}`);
-              this._suitLevelUpCount += newLevels.length;
-            }
-            if (chain > 0) this._applyOverkill(idx, chain, onDone);
-            else onDone?.();
-          } else {
-            onDone?.();
-          }
-        };
-
-        if (monSprite instanceof Phaser.GameObjects.Sprite && this.anims.exists(damagedKey)) {
-          monSprite.play(damagedKey);
-          monSprite.once('animationcomplete', afterAnim);
-        } else {
-          afterAnim();
-        }
-      },
-    });
-  }
-
   // ── 턴 종료 ──────────────────────────────────────────────────────────────
   onTurnEnd() {
     this.isDealing = true;
@@ -1626,12 +1212,12 @@ export class BattleScene extends Phaser.Scene {
       this.time.delayedCall(localIdx * ATK_GAP, () => {
         const useSkill = m.mob.skill && Math.random() < 1 / 3;
         if (useSkill) {
-          this._useMonsterSkill(globalIdx, m);
+          this.monsterManager._useMonsterSkill(globalIdx, m);
         } else {
           const dmg = Math.max(0, m.atk - this.player.def);
           this.player.hp = Math.max(0, this.player.hp - dmg);
           this.addBattleLog(`${m.mob.name}의 공격! ${dmg} 데미지!`);
-          this._showMonsterAttack(globalIdx, dmg);
+          this.monsterManager._showMonsterAttack(globalIdx, dmg);
         }
         this.refreshPlayerStats();
         this.refreshBattleLog();
