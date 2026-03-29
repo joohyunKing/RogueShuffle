@@ -6,18 +6,18 @@ import langData from "../data/lang.json";
 const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
 const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
 const SUIT_DESCS  = {
-  S: ['♠ Spade', '적 DEF 감소', 'Lv × 적응 × ♠장'],
-  H: ['♥ Hearts', '내 HP 회복',  'Lv × 적응 × ♥장'],
-  D: ['♦ Diamonds', '내 DEF 증가', 'Lv × 적응 × ♦장'],
-  C: ['♣ Clubs',  '적 ATK 감소', 'Lv × 적응 × ♣장'],
+  S: ['♠ Spade', '적 DEF 감소', 'Lv × ♠장'],
+  H: ['♥ Hearts', '내 HP 회복',  'Lv × ♥장'],
+  D: ['♦ Diamonds', '내 DEF 증가', 'Lv × ♦장'],
+  C: ['♣ Clubs',  '적 ATK 감소', 'Lv × ♣장'],
 };
 const SUIT_KEYS = ['S', 'H', 'D', 'C'];
 
-const DEF_TOOLTIP = ['DEF', '받는 피해를 감소시킵니다', '실제 피해 = max(0, 피해 - DEF)', '라운드 종료 시 0으로 초기화'];
-const ATK_TOOLTIP = ['ATK', '카드 점수에 합산됩니다', '공격력 = 카드 점수 + ATK', '레벨업 시 +1 증가'];
+const DEF_TOOLTIP = ['DEF', '받는 피해를 감소시킵니다', '라운드 종료 시 0으로 초기화']; //, '실제 피해 = max(0, 피해 - DEF)'
+const ATK_TOOLTIP = ['ATK', '카드 점수에 합산됩니다', '레벨업 시 +1 증가'];             //, '공격력 = 카드 점수 + ATK'
 
 // 높은 rank → 낮은 rank 순으로 표시
-const HAND_RANKS_DESC = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+const HAND_RANKS_DESC = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
 
 /** lang.json에서 족보 표시 이름 가져오기 */
 function getHandName(rank, lang) {
@@ -237,10 +237,12 @@ export class PlayerUI {
       this._add(scene.add.text(px, ry, "HANDS", TS.infoLabel).setDepth(D));
       ry += lineH + 2;
 
-      const lang = scene.registry?.get('lang') ?? 'ko';
-      HAND_RANKS_DESC.forEach(rank => {
+      const lang         = scene.registry?.get('lang') ?? 'ko';
+      const enabledHands = p.getEnabledHands?.() ?? new Set(HAND_RANKS_DESC);
+      const effHandCfg   = p.getEffectiveHandConfig?.() ?? p.handConfig;
+      HAND_RANKS_DESC.filter(rank => enabledHands.has(rank)).forEach(rank => {
         const rowY   = ry;  // 클로저용 고정값
-        const cfg    = p.handConfig?.[rank] ?? { multi: 1, aoe: false };
+        const cfg    = effHandCfg?.[rank] ?? { multi: 1, aoe: false };
         const isAoe  = cfg.aoe;
         const nameColor    = '#aaccaa'; //Aoe 아니어도 훌륭한 hand isAoe ? '#aaccaa' : '#666666';
         const tooltipColor = '#aaccaa'; //Aoe 아니어도 훌륭한 hand isAoe ? '#aaccaa' : '#888888';
@@ -272,9 +274,9 @@ export class PlayerUI {
           scene.add.rectangle(pcx, rowY + lineH / 2, PW - 16, lineH, 0xffffff, 0)
             .setDepth(D + 2).setInteractive()
         );
-        rowHit.on('pointerover', () => this._showTooltipAt([getHandName(rank, lang), desc], tooltipColor, rowY));
+        rowHit.on('pointerover', () => this._showTooltipAt([getHandName(rank, lang), desc], tooltipColor, rowY, 285));
         rowHit.on('pointerout',  () => this._hideTooltip());
-        rowHit.on('pointerdown', () => this._showTooltipAt([getHandName(rank, lang), desc], tooltipColor, rowY));
+        rowHit.on('pointerdown', () => this._showTooltipAt([getHandName(rank, lang), desc], tooltipColor, rowY, 285));
 
         this._handConfigRows[rank] = { multiTxt, aoeDot, glowBg };
         ry += lineH;
@@ -290,13 +292,13 @@ export class PlayerUI {
     this._showTooltipAt(SUIT_DESCS[suit], SUIT_COLORS[suit], rowY);
   }
 
-  _showTooltipAt(lines, color, rowY) {
+  _showTooltipAt(lines, color, rowY, tooltipW = 210) {
     this._hideTooltip();
     const { scene } = this;
     const PW     = PLAYER_PANEL_W;
     const tx     = PW + 12;
     const ty     = Math.min(rowY, GH - 100);
-    const tw     = 170, lineH = 20, pad = 12;
+    const tw     = tooltipW, lineH = 20, pad = 12;
     const th     = pad * 2 + lines.length * lineH;
     const colorN = parseInt(color.replace('#', ''), 16);
 
@@ -354,7 +356,7 @@ export class PlayerUI {
 
   /** 족보 배수 / AoE 갱신 — 아이템 사용 후 호출 */
   refreshHandConfig() {
-    const handConfig = this.player.handConfig;
+    const handConfig = this.player.getEffectiveHandConfig?.() ?? this.player.handConfig;
     HAND_RANKS_DESC.forEach(rank => {
       const row = this._handConfigRows[rank];
       if (!row) return;

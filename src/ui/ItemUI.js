@@ -33,12 +33,14 @@ export class ItemUI {
       depth:         9,
       ...opts,
     };
-    this._objs      = [];
-    this._tipObjs   = [];
-    this._relicObjs = {};
-    this._dragGhost = null;
-    this._removeZone = null;
-    this._removeTxt  = null;
+    this._objs         = [];
+    this._tipObjs      = [];
+    this._relicObjs    = {};
+    this._isDragging   = false;
+    this._dragGhost    = null;
+    this._dragGhostTxt = null;
+    this._removeZone   = null;
+    this._removeTxt    = null;
   }
 
   _add(obj) { this._objs.push(obj); return obj; }
@@ -163,59 +165,63 @@ export class ItemUI {
 
         this._relicObjs[relic.id] = { objs: visObjs, baseCX: cx };
 
-        // hit area
-        const hitConfig = canRemoveRelic ? { draggable: true } : true;
+        // hit area (hover + drag)
         const hit = this._add(
           scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0xffffff, 0)
-            .setDepth(D + 2).setInteractive(hitConfig)
+            .setDepth(D + 2).setInteractive()
         );
         hit.on('pointerover', () => {
-          if (!this._dragGhost) {
+          if (!this._isDragging) {
             this._showTip(cy, relic.name, relic.description, tipC);
             if (canRemoveRelic) hit.setFillStyle(0xff4444, 0.12);
           }
         });
         hit.on('pointerout', () => {
-          hit.setFillStyle(0xffffff, 0);
-          this._clearTip();
+          if (!this._isDragging) {
+            hit.setFillStyle(0xffffff, 0);
+            this._clearTip();
+          }
         });
 
         if (canRemoveRelic) {
-          hit.on('dragstart', (pointer) => {
+          hit.on('pointerdown', (pointer) => {
+            this._isDragging = true;
             this._clearTip();
             hit.setFillStyle(0xffffff, 0);
             this._showRemoveZone();
-            // 드래그 고스트 생성
-            const ghost = scene.add.rectangle(pointer.x, pointer.y, REL_SZ, REL_SZ, borderC, 0.7)
+
+            this._dragGhost = scene.add.rectangle(pointer.x, pointer.y, REL_SZ, REL_SZ, borderC, 0.7)
               .setDepth(D + 10).setStrokeStyle(2, borderC);
-            scene.add.text(pointer.x, pointer.y, relic.name.slice(0, 6),
-              { fontFamily: 'Arial', fontSize: '10px', color: '#fff' })
-              .setOrigin(0.5).setDepth(D + 11).setData('ghost', true);
-            this._dragGhost = ghost;
-          });
-          hit.on('drag', (pointer) => {
-            if (this._dragGhost) {
-              this._dragGhost.setPosition(pointer.x, pointer.y);
-              // ghost text도 이동
-              const texts = scene.children.list.filter(o => o.getData?.('ghost'));
-              texts.forEach(t => t.setPosition(pointer.x, pointer.y));
-              // REMOVE 존 색상 변경
-              const over = this._isOverRemoveZone(pointer.x, pointer.y);
+            this._dragGhostTxt = scene.add.text(pointer.x, pointer.y, relic.name,
+              { fontFamily: 'Arial', fontSize: '10px', color: '#fff',
+                wordWrap: { width: REL_SZ - 4 } })
+              .setOrigin(0.5).setDepth(D + 11);
+
+            const onMove = (ptr) => {
+              if (!this._isDragging) return;
+              this._dragGhost?.setPosition(ptr.x, ptr.y);
+              this._dragGhostTxt?.setPosition(ptr.x, ptr.y);
+              const over = this._isOverRemoveZone(ptr.x, ptr.y);
               this._removeZone?.setFillStyle(over ? 0xaa1111 : 0x661111);
-            }
-          });
-          hit.on('dragend', (pointer) => {
-            const over = this._isOverRemoveZone(pointer.x, pointer.y);
-            // 고스트 제거
-            if (this._dragGhost) { this._dragGhost.destroy(); this._dragGhost = null; }
-            scene.children.list
-              .filter(o => o.getData?.('ghost'))
-              .forEach(o => o.destroy());
-            this._hideRemoveZone();
-            this._removeZone?.setFillStyle(0x661111);
-            if (over) {
-              opts.onRelicRemove(relicId);
-            }
+            };
+
+            const onUp = (ptr) => {
+              scene.input.off('pointermove', onMove);
+              scene.input.off('pointerup',   onUp);
+
+              const over = this._isOverRemoveZone(ptr.x, ptr.y);
+              this._isDragging = false;
+              if (this._dragGhost)    { this._dragGhost.destroy();    this._dragGhost    = null; }
+              if (this._dragGhostTxt) { this._dragGhostTxt.destroy(); this._dragGhostTxt = null; }
+              this._hideRemoveZone();
+              this._removeZone?.setFillStyle(0x661111);
+              hit.setFillStyle(0xffffff, 0);
+
+              if (over) scene.time.delayedCall(0, () => opts.onRelicRemove(relicId));
+            };
+
+            scene.input.on('pointermove', onMove);
+            scene.input.on('pointerup',   onUp);
           });
         }
       });
@@ -337,7 +343,9 @@ export class ItemUI {
 
   destroy() {
     this._clearTip();
-    if (this._dragGhost) { try { this._dragGhost.destroy(); } catch(_) {} this._dragGhost = null; }
+    this._isDragging = false;
+    if (this._dragGhost)    { try { this._dragGhost.destroy();    } catch(_) {} this._dragGhost    = null; }
+    if (this._dragGhostTxt) { try { this._dragGhostTxt.destroy(); } catch(_) {} this._dragGhostTxt = null; }
     this._objs.forEach(o => { try { o?.destroy(); } catch (_) {} });
     this._objs = [];
     this._relicObjs = {};

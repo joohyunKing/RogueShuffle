@@ -22,12 +22,14 @@ export const RANKS = ["A", "2", "3", "4", "5"];
 
 // ─── hand rank  ──────────────────────────────────────────────────────────────
 export const HAND_RANK = {
-    FIVE_CARD: 9,        // 파이브카드 (같은 숫자 5장)
-    STRAIGHT_FLUSH: 8,
-    FOUR_OF_A_KIND: 7,
-    FULL_HOUSE: 6,
-    FLUSH: 5,
-    STRAIGHT: 4,
+    FIVE_CARD: 11,        // 파이브카드 (같은 숫자 5장)
+    STRAIGHT_FLUSH: 10,
+    FOUR_OF_A_KIND: 9,
+    FULL_HOUSE: 8,
+    FLUSH: 7,
+    STRAIGHT: 6,
+    FLUSH_DRAW: 5,
+    STRAIGHT_DRAW: 4,
     TWO_PAIR: 3,
     TRIPLE: 2,
     ONE_PAIR: 1,
@@ -35,56 +37,18 @@ export const HAND_RANK = {
 };
 
 export const HAND_DATA = {
-    9: {
-      key: "FIVE_CARD",
-      multi: 8,
-      aoe: true
-    },
-    8: {
-      key: "STRAIGHT_FLUSH",
-      multi: 7,
-      aoe: true
-    },
-    7: {
-      key: "FOUR_OF_A_KIND",
-      multi: 6,
-      aoe: true
-    },
-    6: {
-      key: "FULL_HOUSE",
-      multi: 4,
-      aoe: true
-    },
-    5: {
-      key: "FLUSH",
-      multi: 4,
-      aoe: true
-    },
-    4: {
-      key: "STRAIGHT",
-      multi: 4,
-      aoe: true
-    },
-    3: {
-      key: "TWO_PAIR",
-      multi: 3,
-      aoe: false
-    },
-    2: {
-      key: "TRIPLE",
-      multi: 2,
-      aoe: false
-    },
-    1: {
-      key: "ONE_PAIR",
-      multi: 2,
-      aoe: false
-    },
-    0: {
-      key: "HIGH_CARD",
-      multi: 1,
-      aoe: false
-    }
+    11: { key: "FIVE_CARD",      multi: 8,   aoe: true,  enabled: true  },
+    10: { key: "STRAIGHT_FLUSH", multi: 7,   aoe: true,  enabled: true  },
+    9:  { key: "FOUR_OF_A_KIND", multi: 6,   aoe: true,  enabled: true  },
+    8:  { key: "FULL_HOUSE",     multi: 4,   aoe: true,  enabled: true  },
+    7:  { key: "FLUSH",          multi: 4,   aoe: true,  enabled: true  },
+    6:  { key: "STRAIGHT",       multi: 4,   aoe: true,  enabled: true  },
+    5:  { key: "FLUSH_DRAW",     multi: 3.5, aoe: false, enabled: false },
+    4:  { key: "STRAIGHT_DRAW",  multi: 3.5, aoe: false, enabled: false },
+    3:  { key: "TWO_PAIR",       multi: 3,   aoe: false, enabled: true  },
+    2:  { key: "TRIPLE",         multi: 2,   aoe: false, enabled: true  },
+    1:  { key: "ONE_PAIR",       multi: 2,   aoe: false, enabled: true  },
+    0:  { key: "HIGH_CARD",      multi: 1,   aoe: false, enabled: true  },
   };
 
 

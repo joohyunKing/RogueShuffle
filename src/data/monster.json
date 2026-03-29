@@ -3,8 +3,8 @@
     "name": "스켈레톤 전사",
     "tier": 0,
     "race": "undead",
-    "hp":  [24, 27],
-    "atk": [3,  5],
+    "hp":  [40, 43],
+    "atk": [5,  7],
     "def": [1,  3],
     "cost": 1,
     "sprite": {
@@ -18,10 +18,14 @@
     "name": "스켈레톤 궁수",
     "tier": 0,
     "race": "undead",
-    "hp":  [20, 23],
-    "atk": [6,  8],
+    "hp":  [37, 40],
+    "atk": [8,  10],
     "def": [0,  1],
     "cost": 1,
+    "skill":{
+      "type":"debuff",
+      "debuffId": "debuff_weakness"
+    },
     "sprite": {
       "idle": "skell_archer_idle.png",
       "attack": "skell_archer_Attack.png",
@@ -33,10 +37,14 @@
     "name": "언데드 랜서",
     "tier": 1,
     "race": "undead",
-    "hp":  [34, 37],
-    "atk": [6,  8],
-    "def": [2,  3],
+    "hp":  [45, 48],
+    "atk": [8,  11],
+    "def": [2,  4],
     "cost": 2,
+    "skill":{
+      "type":"debuff",
+      "debuffId": "debuff_small_field"
+    },
     "sprite": {
       "idle": "undead_lance_idle.png",
       "attack": "undead_lance_Attack.png",
@@ -48,10 +56,10 @@
     "name": "오크 전사",
     "tier": 2,
     "race": "undead",
-    "hp":  [35, 38],
-    "atk": [8,  10],
-    "def": [3,  5],
-    "cost": 2,
+    "hp":  [52, 58],
+    "atk": [11,  13],
+    "def": [4,  7],
+    "cost": 3,
     "sprite": {
       "idle": "orc_warrior_idle.png",
       "attack": "orc_warrior_Attack.png",
@@ -63,12 +71,13 @@
     "name": "언데드 메이지",
     "tier": 2,
     "race": "undead",
-    "hp":  [30, 33],
-    "atk": [8,  10],
+    "hp":  [50, 55],
+    "atk": [16,  20],
     "def": [1,  3],
-    "cost": 3,
+    "cost": 4,
     "skill":{
       "type":"damage",
+      "name" : "fireball",
       "value":15
     },
     "sprite": {
@@ -83,12 +92,13 @@
     "name": "언데드 전사",
     "tier": 3,
     "race": "undead",
-    "hp":  [34, 37],
-    "atk": [6,  8],
-    "def": [2,  3],
-    "cost": 4,
+    "hp":  [60, 66],
+    "atk": [22,  26],
+    "def": [11,  15],
+    "cost": 5,
     "skill":{
       "type":"damage",
+      "name" : "bash",
       "value":20
     },
     "sprite": {
@@ -103,10 +113,14 @@
     "name": "언데드 기사",
     "tier": 4,
     "race": "undead",
-    "hp":  [40, 46],
-    "atk": [12,  14],
-    "def": [5,  7],
+    "hp":  [80, 88],
+    "atk": [28,  32],
+    "def": [16,  19],
     "cost": 7,
+    "skill":{
+      "type":"debuff",
+      "value":"debuff_confusion"
+    },
     "sprite": {
       "idle": "undead_knight_idle.png",
       "attack": "undead_knight_attack.png",

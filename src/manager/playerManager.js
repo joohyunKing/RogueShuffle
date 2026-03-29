@@ -6,6 +6,8 @@
 import { HAND_DATA, DEBUG_MODE } from "../constants.js";
 import relicData from '../data/relic.json';
 
+const RELIC_MAP = Object.fromEntries(relicData.relics.map(r => [r.id, r]));
+
 // HAND_DATA에서 { multi, aoe } 만 추출한 기본 handConfig
 const DEFAULT_HAND_CONFIG = Object.fromEntries(
     Object.entries(HAND_DATA).map(([rank, d]) => [rank, { multi: d.multi, aoe: d.aoe }])
@@ -48,7 +50,7 @@ export class Player {
         /** 구매한 아이템 목록 (최대 4개) */
         this.items = data.items ?? [];
         /** 보유 유물 ID 목록 (최대 15개) */
-        this.relics = (data.relics ?? (DEBUG_MODE ? _pickRandomRelicIds(1) : [])).slice(0, 6);
+        this.relics = (data.relics ?? (DEBUG_MODE ? _pickRandomRelicIds(6) : [])).slice(0, 6);
 
         // ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
         /** 직업 */
@@ -115,6 +117,83 @@ export class Player {
      * relic 추가 시도. 6개 미만이면 바로 추가하고 true 반환.
      * 6개 이상이면 false 반환 (호출 측에서 showRelicPickPopup 사용).
      */
+    /**
+     * 현재 활성화된 족보 Set<number> 반환.
+     * 기본 HAND_DATA.enabled + 보유 relic의 enableHand 효과.
+     */
+    getEnabledHands() {
+        const enabled = new Set(
+            Object.entries(HAND_DATA)
+                .filter(([, d]) => d.enabled !== false)
+                .map(([k]) => Number(k))
+        );
+        for (const relicId of this.relics) {
+            const relic = RELIC_MAP[relicId];
+            if (!relic) continue;
+            for (const eff of relic.effects ?? []) {
+                if (eff.type === 'enableHand' && eff.handRank != null)
+                    enabled.add(Number(eff.handRank));
+            }
+        }
+        return enabled;
+    }
+
+    /**
+     * relic 효과를 반영한 handConfig 반환.
+     * setHandAoe, multiplyHandMulti 효과를 player.handConfig 위에 적용.
+     * 반환값은 매번 새 객체 (this.handConfig 불변).
+     */
+    getEffectiveHandConfig() {
+        const cfg = JSON.parse(JSON.stringify(this.handConfig));
+        for (const relicId of this.relics) {
+            const relic = RELIC_MAP[relicId];
+            if (!relic) continue;
+            for (const eff of relic.effects ?? []) {
+                const rank = String(eff.handRank);
+                if (cfg[rank] == null) continue;
+                if (eff.type === 'setHandAoe')
+                    cfg[rank].aoe = eff.value;
+                else if (eff.type === 'multiplyHandMulti')
+                    cfg[rank].multi *= eff.value;
+            }
+        }
+        return cfg;
+    }
+
+    /**
+     * relic suitAlias 효과를 반영한 suit 별칭 맵 반환.
+     * 예: { H: "D" } → Hearts를 Diamonds로 취급.
+     * 효과 없으면 null 반환.
+     */
+    getEffectiveSuitAliases() {
+        const aliases = {};
+        for (const relicId of this.relics) {
+            const relic = RELIC_MAP[relicId];
+            if (!relic) continue;
+            for (const eff of relic.effects ?? []) {
+                if (eff.type === 'suitAlias' && eff.suit && eff.aliasTo)
+                    aliases[eff.suit] = eff.aliasTo;
+            }
+        }
+        return Object.keys(aliases).length > 0 ? aliases : null;
+    }
+
+    /**
+     * relic 제거 시 적용할 효과 (price 환급 + onRemove 이펙트).
+     * relics 배열에서 제거하기 전에 호출해야 함.
+     */
+    applyRelicOnRemove(relicId) {
+        const relic = RELIC_MAP[relicId];
+        if (!relic) return;
+        // onRemove scope 효과 먼저 적용 (환급 전 골드 기준)
+        for (const eff of relic.effects ?? []) {
+            if (eff.scope !== 'onRemove') continue;
+            if (eff.type === 'multiplyGold') this.gold = Math.floor(this.gold * eff.value);
+        }
+        // price 환급 (1/3, 소수점 버림) — 효과 적용 후 추가
+        if (relic.price) this.gold += Math.trunc(relic.price / 3);
+    }
+
     tryAddRelic(relicId) {
         if (this.relics.length < 6) {
             this.relics.push(relicId);

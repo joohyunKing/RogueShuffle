@@ -7,7 +7,7 @@ import {
   PLAYER_PANEL_W, ITEM_PANEL_W,
   BATTLE_LOG_H, MONSTER_AREA_TOP, MONSTER_AREA_H, MONSTER_IMG_Y,
   FIELD_Y, HAND_Y, HAND_TOP, DEAL_DELAY,
-  HAND_DATA, DEBUG_MODE,
+  HAND_DATA, HAND_RANK, DEBUG_MODE,
   context
 } from "../constants.js";
 import langData from "../data/lang.json";
@@ -24,22 +24,25 @@ import { saveOptionsByRegistry } from "../manager/optionManager.js";
 import effectManager from '../manager/effectManager.js';
 import DeckManager from '../manager/deckManager.js';
 import itemData from '../data/item.json';
+import { DebuffManager, debuffMap as _debuffMap } from '../manager/debuffManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 
 // ─── 파이어볼 랭크별 스타일 ──────────────────────────────────────────────────
 const FIREBALL_STYLES = {
-  0: { size: 48, tint: 0x445544, textColor: '#556655' },
-  1: { size: 52, tint: 0x665533, textColor: '#887744' },
-  2: { size: 56, tint: 0x886644, textColor: '#998855' },
-  3: { size: 60, tint: 0xaa7733, textColor: '#ccaa55' },
-  4: { size: 64, tint: 0xcc8822, textColor: '#ddcc66' },
-  5: { size: 66, tint: 0xddaa00, textColor: '#eedd44' },
-  6: { size: 70, tint: 0xffcc00, textColor: '#ffee66' },
-  7: { size: 76, tint: 0xff8800, textColor: '#ffaa44' },
-  8: { size: 82, tint: 0xff4400, textColor: '#ff8833' },
-  9: { size: 90, tint: 0xff2200, textColor: '#ffcc44' },
+  0:  { size: 48, tint: 0xffffff, textColor: '#ccddcc' },
+  1:  { size: 52, tint: 0xffffff, textColor: '#ffee88' },
+  2:  { size: 56, tint: 0xffffff, textColor: '#ffdd66' },
+  3:  { size: 60, tint: 0xffffff, textColor: '#ffcc55' },
+  4:  { size: 64, tint: 0xffcc00, textColor: '#ffdd44' },
+  5:  { size: 66, tint: 0xffcc00, textColor: '#eedd44' },
+  6:  { size: 70, tint: 0xffcc00, textColor: '#ffee66' },
+  7:  { size: 76, tint: 0xff8800, textColor: '#ffaa44' },
+  8:  { size: 82, tint: 0xff4400, textColor: '#ff8833' },
+  9:  { size: 90, tint: 0xff2200, textColor: '#ffcc44' },
+  10: { size: 96, tint: 0xff1100, textColor: '#ffcc44' },
+  11: { size: 100, tint: 0xff0000, textColor: '#ffcc44' },
 };
 
 // ─── 씬 ──────────────────────────────────────────────────────────────────────
@@ -84,6 +87,10 @@ export class BattleScene extends Phaser.Scene {
     relicData.relics.forEach(r => {
       if (r.img && !this.textures.exists(`relic_${r.id}`))
         this.load.image(`relic_${r.id}`, `assets/images/relic/${r.img}`);
+    });
+    debuffData.debuffs.forEach(d => {
+      if (d.img && !this.textures.exists(`debuff_${d.id}`))
+        this.load.image(`debuff_${d.id}`, `assets/images/debuff/${d.img}`);
     });
 
     // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
@@ -164,15 +171,14 @@ export class BattleScene extends Phaser.Scene {
     this.deckData = this.deck.deckPile;
     this.dummyData = this.deck.dummyPile;
 
-    context.deckCount  = this.deckData.length;
-    context.dummyCount = 0;
-    context.handConfig = this.player.handConfig;
-    context.relics     = this.player.relics ?? [];
+    this._refreshContext();
 
     this.selected = new Set();
     this.cardObjs = [];
     this.monsterObjs = [];
     this._monsterSprites = [];
+    this._debuffObjs  = [];
+    this.debuffManager = new DebuffManager(this);
     this.animObjs = [];
     this._optOverlayObjs = null;
     this.isDragging = false;
@@ -324,11 +330,14 @@ export class BattleScene extends Phaser.Scene {
     // ── 아이템 패널 (ItemUI) ─────────────────────────────────────────────
     this.itemUI = new ItemUI(this, this.player, {
       panelX: IPX, panelW: IPW,
-      startY: BATTLE_LOG_H + 38,
+      startY: BATTLE_LOG_H,
       onItemClick: (idx) => this._useItem(idx, null),
       onRelicRemove: (relicId) => {
+        this.player.applyRelicOnRemove(relicId);
         this.player.relics = this.player.relics.filter(id => id !== relicId);
         this.itemUI.refresh();
+        this.playerUI?.refresh();
+        this.playerUI?.refreshHandConfig();
       },
     });
     this.itemUI.create();
@@ -699,6 +708,7 @@ export class BattleScene extends Phaser.Scene {
     this.renderField();
     this.renderHand();
     this.renderMonsters();
+    this.renderDebuffIcons();
     this.itemUI.refresh();
     this.updatePreview();
     this.refreshSortBtns();
@@ -804,7 +814,7 @@ export class BattleScene extends Phaser.Scene {
     const positions = this.calcHandPositions(this.handData.length);
     const combo = this._getSelectedCombo();
     const comboCardSet = new Set(combo.cards ?? []);
-    const hasValidCombo = combo.score > 0;
+    const hasValidCombo = (combo.rank ?? 0);
 
     const count = this.handData.length;
     // 기본 크기: CW * 0.95, 9장 이상이면 추가 축소
@@ -823,10 +833,17 @@ export class BattleScene extends Phaser.Scene {
       const selOffset = Math.round(22 * scale);
       const y = sel ? HAND_Y - selOffset : HAND_Y;
 
+      const isDisabled = this.debuffManager.disabledCardUids.has(card.uid);
       const img = this.add.image(x, y, card.key)
-        .setDisplaySize(cardW, cardH).setDepth(sel ? 32 : 30).setInteractive();
+        .setDisplaySize(cardW, cardH).setDepth(sel ? 32 : 30).setInteractive()
+        .setAlpha(isDisabled ? 0.35 : 1);
 
-      if (canPick) {
+      if (isDisabled) {
+        this.add.text(x, y, '✕', { fontFamily: 'Arial', fontSize: `${Math.round(cardW * 0.6)}px`, color: '#ff4444' })
+          .setOrigin(0.5).setDepth(33);
+      }
+
+      if (canPick && !isDisabled) {
 
         img.on("pointerdown", () => { if (!this.isDragging && !this.isDealing) this.toggleHand(i); });
         img.on("pointerover", () => {
@@ -843,7 +860,8 @@ export class BattleScene extends Phaser.Scene {
         });
       } else {
         img.on("pointerdown", () => {
-          this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
+          if (isDisabled) this.addBattleLog(`디버프로 사용 불가 카드입니다!`);
+          else this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
         });
       }
 
@@ -969,16 +987,17 @@ export class BattleScene extends Phaser.Scene {
   // ── 아이템 패널 렌더 ─────────────────────────────────────────────────────
   // ── 현재 선택에서 효과 받는 relic id 목록 ──────────────────────────────
   _getApplicableRelicIds(rank) {
-    const handName      = HAND_DATA[rank]?.key;
     const deckCount     = this.deckData?.length ?? 0;
     const selectedCards = [...this.selected].map(i => this.handData[i]);
     return (this.player.relics ?? []).filter(id => {
       const relic = _relicMap[id];
       if (!relic) return false;
+      const SCORE_SCOPES = new Set(['card', 'hand', 'final']);
       return relic.effects.some(eff => {
+        if (!SCORE_SCOPES.has(eff.scope)) return false;
         const cond = eff.condition;
         if (!cond) return true;
-        if (cond.handName     && cond.handName !== handName) return false;
+        if (cond.handRank != null && cond.handRank !== rank) return false;
         if (cond.deckCountGte && deckCount < cond.deckCountGte) return false;
         if (cond.suit || cond.rank) {
           if (!selectedCards.some(c =>
@@ -991,6 +1010,73 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  // ── 디버프 아이콘 렌더 (몬스터 영역 좌상단) ──────────────────────────────
+  renderDebuffIcons() {
+    this._debuffObjs.forEach(o => o.destroy());
+    this._debuffObjs = [];
+    if (!this.debuffManager.activeDebuffs.length) return;
+
+    const SIZE   = 28;
+    const GAP    = 34;
+    const startX = PLAYER_PANEL_W + 10 + SIZE / 2;
+    const iconY  = MONSTER_AREA_TOP + 8 + SIZE / 2;
+
+    this.debuffManager.activeDebuffs.forEach((active, idx) => {
+      const def = _debuffMap[active.id];
+      if (!def) return;
+      const x = startX + idx * GAP;
+
+      // 배경
+      const bg = this.add.rectangle(x, iconY, SIZE, SIZE, 0x1a0a2e, 0.88)
+        .setDepth(20).setStrokeStyle(1, 0xaa44ff);
+      this._debuffObjs.push(bg);
+
+      // 아이콘 이미지 or 텍스트 폴백
+      const imgKey = `debuff_${active.id}`;
+      const icon = this.textures.exists(imgKey)
+        ? this.add.image(x, iconY, imgKey).setDisplaySize(SIZE - 4, SIZE - 4).setDepth(21)
+        : this.add.text(x, iconY, def.name[0], { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#cc88ff' }).setOrigin(0.5).setDepth(21);
+      this._debuffObjs.push(icon);
+
+      // 남은 턴 / B 표시
+      const durLabel = active.turnsLeft > 0 ? `${active.turnsLeft}` : 'B';
+      const dur = this.add.text(x + SIZE / 2 - 1, iconY + SIZE / 2 - 1, durLabel,
+        { fontFamily: "'PressStart2P', Arial", fontSize: '7px', color: '#ffff44' })
+        .setOrigin(1, 1).setDepth(22);
+      this._debuffObjs.push(dur);
+
+      // 히트 영역 + 툴팁
+      const hit = this.add.rectangle(x, iconY, SIZE + 4, SIZE + 4, 0xffffff, 0)
+        .setDepth(23).setInteractive();
+      hit.on('pointerover', () => {
+        const durStr = active.turnsLeft > 0 ? `남은 턴: ${active.turnsLeft}` : '배틀 종료 시 제거';
+        const lines  = `${def.name}\n${def.description}\n${durStr}`;
+        this._tooltipTxt.setText(lines);
+        const tw = this._tooltipTxt.width + 20;
+        const th = this._tooltipTxt.height + 12;
+        const ty = iconY - SIZE / 2 - th / 2 - 4;
+        this._tooltipBg.setPosition(x, ty).setDisplaySize(tw, th).setVisible(true);
+        this._tooltipTxt.setPosition(x, ty).setVisible(true);
+      });
+      hit.on('pointerout', () => {
+        this._tooltipBg.setVisible(false);
+        this._tooltipTxt.setVisible(false);
+      });
+      this._debuffObjs.push(hit);
+    });
+  }
+
+  // ── context 갱신 (ATK 레벨업 등 mid-battle 변경 반영) ────────────────────
+  _refreshContext() {
+    context.deckCount    = this.deckData?.length ?? 0;
+    context.dummyCount   = this.dummyData?.length ?? 0;
+    context.handConfig   = this.player.getEffectiveHandConfig();
+    context.relics       = this.player.relics ?? [];
+    context.enabledHands = this.player.getEnabledHands();
+    context.suitAliases  = this.player.getEffectiveSuitAliases();
+    context.atk          = this.player.atk;
+  }
+
   // ── 족보 계산 헬퍼 ───────────────────────────────────────────────────────
   _getSelectedCombo() {
     if (this.selected.size === 0) return { score: 0, handName: "" };
@@ -998,8 +1084,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   updatePreview() {
+    this._refreshContext();
     const { score: cardScore, rank } = this._getSelectedCombo();
-    const score = cardScore > 0 ? cardScore + this.player.atk : 0;
+    const score = cardScore > 0 ? Math.floor(cardScore) : 0;
 
     if (score > 0) {
       const lang = this.registry?.get('lang') ?? 'ko';
@@ -1115,6 +1202,55 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  _useMonsterSkill(monIdx, m) {
+    const skill      = m.mob.skill;
+    const monSprite  = this._monsterSprites?.[monIdx];
+    const skillTexKey  = `mon_${m.mob.id}_skill`;
+    const skillAnimKey = `${skillTexKey}_anim`;
+    const idleKey      = `mon_${m.mob.id}_idle_anim`;
+
+    // skill 스프라이트 재생 (없으면 attack 애니메이션 폴백)
+    if (monSprite instanceof Phaser.GameObjects.Sprite) {
+      const playKey = this.anims.exists(skillAnimKey) ? skillAnimKey
+                    : `mon_${m.mob.id}_attack_anim`;
+      if (this.anims.exists(playKey)) {
+        monSprite.play(playKey);
+        monSprite.once('animationcomplete', () => {
+          if (this.anims.exists(idleKey)) monSprite.play(idleKey);
+        });
+      }
+    }
+
+    if (skill.type === 'damage') {
+      const raw = skill.value ?? 0;
+      const dmg = Math.max(0, raw - this.player.def);
+      this.player.hp = Math.max(0, this.player.hp - dmg);
+      this.addBattleLog(`${m.mob.name}의 스킬! ${dmg} 데미지!`);
+
+      // 보라색 플래시
+      const positions = this.calcMonsterPositions(this.monsters.length);
+      const mX = positions[monIdx]?.x ?? GW / 2;
+      const flash = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x880088, 0.25).setDepth(500);
+      this.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
+      this._sfx("sfx_knifeSlice");
+      const label = dmg > 0 ? `-${dmg} HP` : 'BLOCKED!';
+      const txt = this.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, TS.damageHit)
+        .setOrigin(0.5, 0).setDepth(501).setTint(0xee44ff);
+      this.tweens.add({ targets: txt, y: 128, alpha: 0, duration: 480, delay: 80, ease: 'Power1.In',
+        onComplete: () => txt.destroy() });
+
+    } else if (skill.type === 'debuff') {
+      const debuffId = skill.debuffId ?? skill.value;
+      this.debuffManager.applyDebuff(debuffId, m.mob.name);
+      this.render();
+
+      // 보라색 플래시 (디버프용)
+      const flash = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x440044, 0.20).setDepth(500);
+      this.tweens.add({ targets: flash, alpha: 0, duration: 600, onComplete: () => flash.destroy() });
+      this._sfx("sfx_chop");
+    }
+  }
+
   _showMonsterAttack(monIdx, damage) {
     const positions = this.calcMonsterPositions(this.monsters.length);
     const mX = positions[monIdx]?.x ?? GW / 2;
@@ -1187,13 +1323,11 @@ export class BattleScene extends Phaser.Scene {
     const mon = this.monsters[monIdx];
     if (!mon || mon.isDead || this.isDealing) return;
 
-    context.deckCount  = this.deckData.length;
-    context.dummyCount = this.dummyData.length;
-    context.handConfig = this.player.handConfig;
+    this._refreshContext();
 
     const { score: cardScore, handName, aoe } = this._getSelectedCombo();
     if (cardScore <= 0) return;
-    const score = Math.floor(cardScore + this.player.atk);
+    const score = Math.floor(cardScore);
 
     if (this.attackCount >= this.player.attacksPerTurn) {
       this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
@@ -1490,10 +1624,15 @@ export class BattleScene extends Phaser.Scene {
     alive.forEach((m, localIdx) => {
       const globalIdx = this.monsters.indexOf(m);
       this.time.delayedCall(localIdx * ATK_GAP, () => {
-        const dmg = Math.max(0, m.atk - this.player.def);
-        this.player.hp = Math.max(0, this.player.hp - dmg);
-        this.addBattleLog(`${m.mob.name}의 공격! ${dmg} 데미지!`);
-        this._showMonsterAttack(globalIdx, dmg);
+        const useSkill = m.mob.skill && Math.random() < 1 / 3;
+        if (useSkill) {
+          this._useMonsterSkill(globalIdx, m);
+        } else {
+          const dmg = Math.max(0, m.atk - this.player.def);
+          this.player.hp = Math.max(0, this.player.hp - dmg);
+          this.addBattleLog(`${m.mob.name}의 공격! ${dmg} 데미지!`);
+          this._showMonsterAttack(globalIdx, dmg);
+        }
         this.refreshPlayerStats();
         this.refreshBattleLog();
       });
@@ -1530,6 +1669,7 @@ export class BattleScene extends Phaser.Scene {
         this.deck.field = newCards;
         this.fieldData = newCards.map((c, k) => ({ ...c, slotX: slotPos[k].x }));
 
+        this.debuffManager.tick();
         this.fieldPickCount = 0;
         this.attackCount = 0;
         this.selected.clear();

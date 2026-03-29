@@ -27,7 +27,9 @@ export function calculateScore(cards, context) {
     const relics = getRelicsFromContext(context);
 
     // 1. 족보 계산
-    const handResult = evaluateHand(cards);
+    const enabledHands = context.enabledHands
+        ?? new Set(Object.entries(HAND_DATA).filter(([,d]) => d.enabled !== false).map(([k]) => Number(k)));
+    const handResult = evaluateHand(cards, enabledHands, context.suitAliases ?? null);
 
     const ctx = {
         ...context,
@@ -39,10 +41,16 @@ export function calculateScore(cards, context) {
     // 2. 기본 점수
     let score = calcHandScore(ctx.cards, ctx, relics);
 
-    // 3. final scope 적용
+    // 3. final scope: add 먼저, multiply 나중
     for (const relic of relics) {
         for (const effect of relic.effects) {
-            if (effect.scope !== "final") continue;
+            if (effect.scope !== "final" || effect.type !== "add") continue;
+            score = applyEffect(score, effect, null, ctx);
+        }
+    }
+    for (const relic of relics) {
+        for (const effect of relic.effects) {
+            if (effect.scope !== "final" || effect.type !== "multiply") continue;
             score = applyEffect(score, effect, null, ctx);
         }
     }
@@ -59,23 +67,28 @@ export function calculateScore(cards, context) {
 //핸드 점수
 function calcHandScore(cards, ctx, relics) {
     let total = 0;
-    let multiple = 1;
 
     for (const card of cards) {
         total += calcCardScore(card, ctx, relics);
     }
 
-    // ctx.handConfig (player.handConfig) 우선, 없으면 1
-    multiple = ctx.handConfig?.[ctx.handRank]?.multi ?? 1;
+    // atk을 multi 적용 전에 합산
+    total += ctx.atk ?? 0;
 
-    //console.log("handRank : " + ctx.handRank + " / total : " + total+ " / multiple : " + multiple);
-
+    // multi 적용
+    const multiple = ctx.handConfig?.[ctx.handRank]?.multi ?? 1;
     total = total * multiple;
 
-    // hand scope 적용
+    // hand scope: add 먼저, multiply 나중
     for (const relic of relics) {
         for (const effect of relic.effects) {
-            if (effect.scope !== "hand") continue;
+            if (effect.scope !== "hand" || effect.type !== "add") continue;
+            total = applyEffect(total, effect, null, ctx);
+        }
+    }
+    for (const relic of relics) {
+        for (const effect of relic.effects) {
+            if (effect.scope !== "hand" || effect.type !== "multiply") continue;
             total = applyEffect(total, effect, null, ctx);
         }
     }
@@ -112,12 +125,16 @@ function getRelicsFromContext(context) {
 function checkCondition(cond, card, ctx) {
     if (!cond) return true;
 
-    // 카드 조건
-    if (cond.suit && card?.suit !== cond.suit) return false;
+    // 카드 조건 (suitAlias 정규화 적용)
+    if (cond.suit) {
+        const cardSuit = ctx.suitAliases?.[card?.suit] ?? card?.suit;
+        const condSuit = ctx.suitAliases?.[cond.suit] ?? cond.suit;
+        if (cardSuit !== condSuit) return false;
+    }
     if (cond.rank && card?.rank !== cond.rank) return false;
 
     // 핸드 조건
-    if (cond.handName && ctx.handName !== cond.handName) return false;
+    if (cond.handRank != null && ctx.handRank !== cond.handRank) return false;
 
     // 덱 조건
     if (cond.deckCountGte && ctx.deckCount < cond.deckCountGte) return false;
@@ -142,19 +159,26 @@ function applyEffect(score, effect, card, ctx) {
 
 
 //족보판별
-function evaluateHand(cards) {
-    const sorted = [...cards].sort((a, b) => b.val - a.val);
+function evaluateHand(cards, enabledHands, suitAliases) {
+    if (!enabledHands) {
+        enabledHands = new Set(Object.entries(HAND_DATA).filter(([,d]) => d.enabled !== false).map(([k]) => Number(k)));
+    }
+
+    // suit 정규화 (alias 적용). 원본 카드는 _orig 로 보존
+    const evalCards = cards.map(c =>
+        suitAliases ? { ...c, suit: suitAliases[c.suit] ?? c.suit, _orig: c } : { ...c, _orig: c }
+    );
+
+    const sorted = [...evalCards].sort((a, b) => b.val - a.val);
 
     const valueMap = groupBy(sorted, c => c.val);
-    const suitMap = groupBy(sorted, c => c.suit);
+    const suitMap  = groupBy(sorted, c => c.suit);
 
     const straightCards = getStraightCards(sorted);
-    const flushSuit = Object.keys(suitMap).find(s => suitMap[s].length >= 5);
+    const flushSuit  = Object.keys(suitMap).find(s => suitMap[s].length >= 5);
     const flushCards = flushSuit ? suitMap[flushSuit].slice(0, 5) : null;
 
     const groups = Object.values(valueMap).sort((a, b) => b.length - a.length);
-
-    let aoe = false;
 
     let bestCards = [];
     let rank = HAND_RANK.HIGH_CARD;
@@ -163,96 +187,81 @@ function evaluateHand(cards) {
     if (groups[0].length === 5) {
         rank = HAND_RANK.FIVE_CARD;
         bestCards = groups[0];
-        aoe = true;
     }
-
     // Straight Flush
     else if (flushSuit && straightCards) {
         const flushSet = new Set(suitMap[flushSuit].map(c => c.val));
         const sf = straightCards.filter(c => flushSet.has(c.val));
-
         if (sf.length >= 5) {
             rank = HAND_RANK.STRAIGHT_FLUSH;
             bestCards = sf.slice(0, 5);
-            aoe = true;
         }
     }
-
     // Four of a kind
     else if (groups[0].length === 4) {
         rank = HAND_RANK.FOUR_OF_A_KIND;
-        bestCards = [
-            ...groups[0]
-            //,...getKickers(sorted, groups[0], 1)
-        ];
-        aoe = true;
+        bestCards = [...groups[0]];
     }
-
     // Full house
     else if (groups[0].length === 3 && groups[1]?.length >= 2) {
         rank = HAND_RANK.FULL_HOUSE;
-        bestCards = [
-            ...groups[0],
-            ...groups[1].slice(0, 2)
-        ];
-        aoe = true;
+        bestCards = [...groups[0], ...groups[1].slice(0, 2)];
     }
-
     // Flush
     else if (flushSuit) {
         rank = HAND_RANK.FLUSH;
         bestCards = flushCards;
-        aoe = true;
     }
-
     // Straight
     else if (straightCards) {
         rank = HAND_RANK.STRAIGHT;
         bestCards = straightCards.slice(0, 5);
-        aoe = true;
     }
 
-    // Two pair
-    else if (groups[0].length === 2 && groups[1]?.length === 2) {
-        rank = HAND_RANK.TWO_PAIR;
-        bestCards = [
-            ...groups[0],
-            ...groups[1],
-            ...getKickers(sorted, [...groups[0], ...groups[1]], 1)
-        ];
+    // Flush Draw (4장 동일 슈트, enabled 일 때만) — 별도 if (chain 분리)
+    if (rank === HAND_RANK.HIGH_CARD && enabledHands.has(HAND_RANK.FLUSH_DRAW)) {
+        const fdSuit = Object.keys(suitMap).find(s => suitMap[s].length >= 4);
+        if (fdSuit) {
+            rank = HAND_RANK.FLUSH_DRAW;
+            bestCards = suitMap[fdSuit].slice(0, 4);
+        }
     }
 
-    // TRIPLE
-    else if (groups[0].length === 3) {
-        rank = HAND_RANK.TRIPLE;
-        bestCards = [
-            ...groups[0]
-            //,...getKickers(sorted, groups[0], 2)
-        ];
+    // Straight Draw (4연속, enabled 일 때만)
+    if (rank === HAND_RANK.HIGH_CARD && enabledHands.has(HAND_RANK.STRAIGHT_DRAW)) {
+        const sdCards = getStraightDrawCards(sorted);
+        if (sdCards) {
+            rank = HAND_RANK.STRAIGHT_DRAW;
+            bestCards = sdCards;
+        }
     }
 
-    // One pair
-    else if (groups[0].length === 2) {
-        rank = HAND_RANK.ONE_PAIR;
-        bestCards = [
-            ...groups[0]
-            //,...getKickers(sorted, groups[0], 3)
-        ];
+    // Two pair / Triple / One pair / High card — rank가 아직 HIGH_CARD일 때만
+    if (rank === HAND_RANK.HIGH_CARD) {
+        if (groups[0].length === 2 && groups[1]?.length === 2) {
+            rank = HAND_RANK.TWO_PAIR;
+            bestCards = [
+                ...groups[0],
+                ...groups[1],
+                ...getKickers(sorted, [...groups[0], ...groups[1]], 1)
+            ];
+        } else if (groups[0].length === 3) {
+            rank = HAND_RANK.TRIPLE;
+            bestCards = [...groups[0]];
+        } else if (groups[0].length === 2) {
+            rank = HAND_RANK.ONE_PAIR;
+            bestCards = [...groups[0]];
+        } else {
+            bestCards = sorted.slice(0, 1);
+        }
     }
 
-    // High card
-    else {
-        bestCards = sorted.slice(0, 1);
-    }
+    // 원본 카드로 복원 (suit 정규화 이전 카드)
+    const origCards = bestCards.map(c => c._orig ?? c);
+    const aoe = HAND_DATA[rank]?.aoe ?? false;
+    const score = origCards.reduce((sum, c) => sum + c.baseScore, 0);
 
-    const score = bestCards.reduce((sum, c) => sum + c.baseScore, 0);
-
-    return {
-        rank,
-        score,
-        aoe,
-        cards: bestCards
-    };
+    return { rank, score, aoe, cards: origCards };
 }
 
 function groupBy(arr, keyFn) {
@@ -268,6 +277,26 @@ function groupBy(arr, keyFn) {
 function getKickers(sorted, usedCards, count) {
     const usedSet = new Set(usedCards);
     return sorted.filter(c => !usedSet.has(c)).slice(0, count);
+}
+
+function getStraightDrawCards(cards) {
+    let values = [...new Set(cards.map(c => c.val))];
+    if (values.includes(14)) values.push(1);
+    values.sort((a, b) => a - b);
+
+    let seq = [];
+    for (let i = 0; i < values.length; i++) {
+        if (i === 0 || values[i] === values[i - 1] + 1) {
+            seq.push(values[i]);
+        } else {
+            seq = [values[i]];
+        }
+        if (seq.length >= 4) {
+            const needed = seq.slice(-4);
+            return needed.map(v => cards.find(c => c.val === v || (v === 1 && c.val === 14)));
+        }
+    }
+    return null;
 }
 
 function getStraightCards(cards) {
