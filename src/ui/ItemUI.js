@@ -16,7 +16,7 @@ const RELIC_MAP = Object.fromEntries(relicData.relics.map(r => [r.id, r]));
  *   startY        {number}   콘텐츠 시작 y
  *   draggable     {boolean}  item drag-to-use 여부 (기본 false)
  *   depth         {number}   기본 depth (기본 9)
- *   onItemClick   {function} 아이템 클릭 콜백 (idx) => void
+ *   onItemClick   {function} 아이템 사용 콜백 (idx) => void
  *   onRelicRemove {function} relic 드래그 제거 콜백 (relicId) => void
  */
 export class ItemUI {
@@ -41,6 +41,8 @@ export class ItemUI {
     this._dragGhostTxt = null;
     this._removeZone   = null;
     this._removeTxt    = null;
+    this._tipPinned    = false;
+    this._pinnedId     = null;
   }
 
   _add(obj) { this._objs.push(obj); return obj; }
@@ -48,11 +50,14 @@ export class ItemUI {
   // ── 툴팁 ────────────────────────────────────────────────────────────────
   _clearTip() {
     this._tipObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
-    this._tipObjs = [];
+    this._tipObjs   = [];
+    this._tipPinned = false;
+    this._pinnedId  = null;
   }
 
   _showTip(nearY, title, desc, color) {
-    this._clearTip();
+    this._tipObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
+    this._tipObjs = [];
     const { scene } = this;
     const { panelX } = this.opts;
     const tw = 210, pad = 12, lineH = 24;
@@ -71,17 +76,64 @@ export class ItemUI {
 
     this._tipObjs.push(
       scene.add.text(tx + pad, ty + pad, title,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '15px', color })
+        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color })
         .setOrigin(0, 0).setDepth(301)
     );
     if (desc) {
       this._tipObjs.push(
         scene.add.text(tx + pad, ty + pad + lineH, desc,
-          { fontFamily: 'Arial', fontSize: '14px', color: '#aaccbb',
+          { fontFamily: 'Arial', fontSize: '13px', color: '#aaccbb',
             wordWrap: { width: tw - pad * 2 } })
           .setOrigin(0, 0).setDepth(301)
       );
     }
+  }
+
+  // 사용 버튼이 포함된 아이템 툴팁
+  _showItemTip(nearY, item, color, onUse) {
+    this._tipObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
+    this._tipObjs = [];
+    const { scene } = this;
+    const { panelX } = this.opts;
+    const tw = 210, pad = 12, lineH = 22, btnH = 34;
+    const descLines = item.desc ? Math.max(1, Math.ceil(item.desc.length / 18)) : 0;
+    const th = pad * 2 + lineH + descLines * lineH + 10 + btnH + 6;
+    const tx = panelX - tw - 8;
+    const ty = Math.max(BATTLE_LOG_H + 4, Math.min(nearY - th / 2, GH - th - 10));
+    const colorN = parseInt(color.replace('#', ''), 16);
+
+    const g = scene.add.graphics().setDepth(300);
+    g.fillStyle(0x0a1e12, 0.97);
+    g.fillRoundedRect(tx, ty, tw, th, 6);
+    g.lineStyle(1, colorN);
+    g.strokeRoundedRect(tx, ty, tw, th, 6);
+    this._tipObjs.push(g);
+
+    this._tipObjs.push(
+      scene.add.text(tx + pad, ty + pad, item.name,
+        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color })
+        .setOrigin(0, 0).setDepth(301)
+    );
+    if (item.desc) {
+      this._tipObjs.push(
+        scene.add.text(tx + pad, ty + pad + lineH, item.desc,
+          { fontFamily: 'Arial', fontSize: '13px', color: '#aaccbb',
+            wordWrap: { width: tw - pad * 2 } })
+          .setOrigin(0, 0).setDepth(301)
+      );
+    }
+
+    // 사용 버튼
+    const btnY = ty + th - pad - btnH / 2;
+    const btn = scene.add.rectangle(tx + tw / 2, btnY, tw - pad * 2, btnH, 0x1a5533)
+      .setDepth(301).setStrokeStyle(1, 0x44dd88).setInteractive();
+    const btnTxt = scene.add.text(tx + tw / 2, btnY, '사 용',
+      { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#aaffaa' })
+      .setOrigin(0.5).setDepth(302);
+    btn.on('pointerdown', () => { this._clearTip(); onUse(); });
+    btn.on('pointerover',  () => btn.setFillStyle(0x2a7744));
+    btn.on('pointerout',   () => btn.setFillStyle(0x1a5533));
+    this._tipObjs.push(btn, btnTxt);
   }
 
   // ── REMOVE 존 표시/숨김 ─────────────────────────────────────────────────
@@ -104,6 +156,49 @@ export class ItemUI {
     const r = this._removeZone;
     return x >= r.x - r.width / 2 && x <= r.x + r.width / 2
         && y >= r.y - r.height / 2 && y <= r.y + r.height / 2;
+  }
+
+  // ── 릴릭 드래그 시작 (lazy — 이동 감지 후 호출) ──────────────────────────
+  _startRelicDrag(startPointer, relic, relicId, hit, borderC, D) {
+    const { scene, opts } = this;
+    const REL_SZ = 52;
+    this._isDragging = true;
+    this._clearTip();
+    hit.setFillStyle(0xffffff, 0);
+    this._showRemoveZone();
+
+    this._dragGhost = scene.add.rectangle(startPointer.x, startPointer.y, REL_SZ, REL_SZ, borderC, 0.7)
+      .setDepth(D + 10).setStrokeStyle(2, borderC);
+    this._dragGhostTxt = scene.add.text(startPointer.x, startPointer.y, relic.name,
+      { fontFamily: 'Arial', fontSize: '10px', color: '#fff',
+        wordWrap: { width: REL_SZ - 4 } })
+      .setOrigin(0.5).setDepth(D + 11);
+
+    const onMove = (ptr) => {
+      if (!this._isDragging) return;
+      this._dragGhost?.setPosition(ptr.x, ptr.y);
+      this._dragGhostTxt?.setPosition(ptr.x, ptr.y);
+      const over = this._isOverRemoveZone(ptr.x, ptr.y);
+      this._removeZone?.setFillStyle(over ? 0xaa1111 : 0x661111);
+    };
+
+    const onUp = (ptr) => {
+      scene.input.off('pointermove', onMove);
+      scene.input.off('pointerup',   onUp);
+
+      const over = this._isOverRemoveZone(ptr.x, ptr.y);
+      this._isDragging = false;
+      if (this._dragGhost)    { this._dragGhost.destroy();    this._dragGhost    = null; }
+      if (this._dragGhostTxt) { this._dragGhostTxt.destroy(); this._dragGhostTxt = null; }
+      this._hideRemoveZone();
+      this._removeZone?.setFillStyle(0x661111);
+      hit.setFillStyle(0xffffff, 0);
+
+      if (over) scene.time.delayedCall(0, () => opts.onRelicRemove(relicId));
+    };
+
+    scene.input.on('pointermove', onMove);
+    scene.input.on('pointerup',   onUp);
   }
 
   // ── 메인 렌더 ──────────────────────────────────────────────────────────
@@ -167,65 +262,61 @@ export class ItemUI {
 
         this._relicObjs[relic.id] = { objs: visObjs, baseCX: cx, baseCY: cy };
 
-        // hit area (hover + drag)
+        // hit area (hover + lazy drag + tap-to-tip)
         const hit = this._add(
           scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0xffffff, 0)
             .setDepth(D + 2).setInteractive()
         );
+
         hit.on('pointerover', () => {
-          if (!this._isDragging) {
+          if (this._isDragging) return;
+          if (!this._tipPinned) {
             this._showTip(cy, relic.name, relic.description, tipC);
             if (canRemoveRelic) hit.setFillStyle(0xff4444, 0.12);
           }
         });
         hit.on('pointerout', () => {
-          if (!this._isDragging) {
-            hit.setFillStyle(0xffffff, 0);
-            this._clearTip();
-          }
+          if (this._isDragging) return;
+          hit.setFillStyle(0xffffff, 0);
+          if (!this._tipPinned) this._clearTip();
         });
 
-        if (canRemoveRelic) {
-          hit.on('pointerdown', (pointer) => {
-            this._isDragging = true;
-            this._clearTip();
-            hit.setFillStyle(0xffffff, 0);
-            this._showRemoveZone();
+        // pointerdown: lazy drag (canRemoveRelic) or just tap detection
+        hit.on('pointerdown', (pointer) => {
+          if (this._isDragging) return;
+          const startX = pointer.x, startY = pointer.y;
+          let moved = false;
 
-            this._dragGhost = scene.add.rectangle(pointer.x, pointer.y, REL_SZ, REL_SZ, borderC, 0.7)
-              .setDepth(D + 10).setStrokeStyle(2, borderC);
-            this._dragGhostTxt = scene.add.text(pointer.x, pointer.y, relic.name,
-              { fontFamily: 'Arial', fontSize: '10px', color: '#fff',
-                wordWrap: { width: REL_SZ - 4 } })
-              .setOrigin(0.5).setDepth(D + 11);
-
-            const onMove = (ptr) => {
-              if (!this._isDragging) return;
-              this._dragGhost?.setPosition(ptr.x, ptr.y);
-              this._dragGhostTxt?.setPosition(ptr.x, ptr.y);
-              const over = this._isOverRemoveZone(ptr.x, ptr.y);
-              this._removeZone?.setFillStyle(over ? 0xaa1111 : 0x661111);
-            };
-
-            const onUp = (ptr) => {
+          const onMove = (ptr) => {
+            if (moved) return;
+            if (Math.abs(ptr.x - startX) > 8 || Math.abs(ptr.y - startY) > 8) {
+              moved = true;
               scene.input.off('pointermove', onMove);
-              scene.input.off('pointerup',   onUp);
+              scene.input.off('pointerup',   onUpCheck);
+              if (canRemoveRelic) {
+                this._startRelicDrag(pointer, relic, relicId, hit, borderC, D);
+              }
+            }
+          };
 
-              const over = this._isOverRemoveZone(ptr.x, ptr.y);
-              this._isDragging = false;
-              if (this._dragGhost)    { this._dragGhost.destroy();    this._dragGhost    = null; }
-              if (this._dragGhostTxt) { this._dragGhostTxt.destroy(); this._dragGhostTxt = null; }
-              this._hideRemoveZone();
-              this._removeZone?.setFillStyle(0x661111);
-              hit.setFillStyle(0xffffff, 0);
+          const onUpCheck = () => {
+            scene.input.off('pointermove', onMove);
+            scene.input.off('pointerup',   onUpCheck);
+            if (!moved) {
+              // 탭: 툴팁 토글
+              if (this._tipPinned && this._pinnedId === relicId) {
+                this._clearTip();
+              } else {
+                this._tipPinned = true;
+                this._pinnedId  = relicId;
+                this._showTip(cy, relic.name, relic.description, tipC);
+              }
+            }
+          };
 
-              if (over) scene.time.delayedCall(0, () => opts.onRelicRemove(relicId));
-            };
-
-            scene.input.on('pointermove', onMove);
-            scene.input.on('pointerup',   onUp);
-          });
-        }
+          scene.input.on('pointermove', onMove);
+          scene.input.on('pointerup',   onUpCheck);
+        });
       });
     }
 
@@ -285,6 +376,7 @@ export class ItemUI {
 
       const stripColor = RARITY_STRIP[item.rarity] ?? RARITY_STRIP.common;
       const tipColor   = RARITY_COLOR[item.rarity] ?? RARITY_COLOR.common;
+      const itemKey    = `item_${i}`;
 
       this._add(
         scene.add.rectangle(cx, cy, ITM_SZ, ITM_SZ, 0x0c1a10).setDepth(D)
@@ -310,15 +402,28 @@ export class ItemUI {
       );
       hit.on('pointerover', () => {
         hit.setFillStyle(0xffffff, 0.12);
-        this._showTip(cy, item.name, item.desc ?? '', tipColor);
+        if (!this._tipPinned) {
+          this._showTip(cy, item.name, item.desc ?? '', tipColor);
+        }
       });
       hit.on('pointerout', () => {
         hit.setFillStyle(0xffffff, 0);
-        this._clearTip();
+        if (!this._tipPinned) this._clearTip();
       });
-      if (onItemClick) {
-        hit.on('pointerdown', () => { this._clearTip(); onItemClick(i); });
-      }
+      // 클릭: 사용 버튼 있는 툴팁 표시 (즉시 사용 대신)
+      hit.on('pointerdown', () => {
+        if (this._tipPinned && this._pinnedId === itemKey) {
+          this._clearTip();
+          return;
+        }
+        this._tipPinned = true;
+        this._pinnedId  = itemKey;
+        if (onItemClick) {
+          this._showItemTip(cy, item, tipColor, () => onItemClick(i));
+        } else {
+          this._showTip(cy, item.name, item.desc ?? '', tipColor);
+        }
+      });
     });
 
     return this;
