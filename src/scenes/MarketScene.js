@@ -8,7 +8,8 @@ import relicData from '../data/relic.json';
 import roundData from '../data/round.json';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
-import { loadOptions, saveOptionsByRegistry } from "../manager/optionManager.js";
+import { OptionUI } from '../ui/OptionUI.js';
+import { loadOptions } from "../manager/optionManager.js";
 
 const RARITY_WEIGHT = { common: 60, rare: 30, epic: 10 };
 const RARITY_COLORS = {
@@ -61,6 +62,7 @@ export class MarketScene extends Phaser.Scene {
 
   preload() {
     this.load.setBaseURL(import.meta.env.BASE_URL);
+    /*
     const _round  = this.scene.settings.data?.round ?? 1;
     const _bgFile = roundData.rounds.find(r => r.round === _round)?.bg ?? "01_forest_night.jpg";
     const _bgKey  = `bg_${_round}`;
@@ -77,6 +79,7 @@ export class MarketScene extends Phaser.Scene {
     });
     if (!this.textures.exists("ui_option"))
       this.load.image("ui_option", "assets/images/ui/option_rembg.png");
+    */
   }
 
   create() {
@@ -102,10 +105,12 @@ export class MarketScene extends Phaser.Scene {
 
     this._deckOpsUsed      = 0;
     this._deckSelectedCard = null;
-    this._tipObjs          = [];
-    this._tipPinned        = false;
-    this._optOverlayObjs   = null;
-    this._deckPopupObjs    = null;
+    this._tipObjs       = [];
+    this._tipPinned     = false;
+    this._optionUI      = new OptionUI(this, {
+      onMainMenu: () => this.scene.start("MainMenuScene"),
+    });
+    this._deckPopupObjs = null;
 
     this._drawScene();
   }
@@ -189,10 +194,9 @@ export class MarketScene extends Phaser.Scene {
   // ── 씬 전체 그리기 ──────────────────────────────────────────────────────
   _drawScene() {
     this.children.removeAll(true);
-    this._tipObjs        = [];
-    this._tipPinned      = false;
-    this._optOverlayObjs = null;
-    this._deckPopupObjs  = null;
+    this._tipObjs       = [];
+    this._tipPinned     = false;
+    this._deckPopupObjs = null;
 
     // 배경
     const bgKey = this._bgKey ?? `bg_${this.round}`;
@@ -774,97 +778,8 @@ export class MarketScene extends Phaser.Scene {
   }
 
   // ── 옵션 오버레이 ─────────────────────────────────────────────────────────
-  _showOptions() {
-    if (this._optOverlayObjs) return;
-    const objs = this._optOverlayObjs = [];
-    const cx = GW / 2, cy = GH / 2;
-    const pw = 400, ph = 320;
-
-    const dim = this.add.rectangle(cx, cy, GW, GH, 0x000000, 0.65)
-      .setDepth(600).setInteractive();
-    objs.push(dim);
-
-    const panelG = this.add.graphics().setDepth(601);
-    panelG.fillStyle(0x0d2b18);
-    panelG.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
-    panelG.lineStyle(2, 0x2d7a3a);
-    panelG.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
-    objs.push(panelG);
-
-    objs.push(this.add.text(cx, cy - ph / 2 + 44, "OPTIONS", TS.optTitle).setOrigin(0.5).setDepth(602));
-
-    let bgm = this.registry.get("bgmVolume") ?? 7;
-    const bgmY = cy - 60;
-    objs.push(this.add.text(cx, bgmY - 28, "BGM", TS.optLabel).setOrigin(0.5).setDepth(602));
-    const bgmMinus = this.add.rectangle(cx - 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
-    objs.push(bgmMinus, this.add.text(cx - 80, bgmY, "-", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const bgmTxt = this.add.text(cx, bgmY, String(bgm), TS.optValue).setOrigin(0.5).setDepth(602);
-    objs.push(bgmTxt);
-    const bgmPlus = this.add.rectangle(cx + 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
-    objs.push(bgmPlus, this.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const bgmBarBg = this.add.rectangle(cx, bgmY + 28, 204, 7, 0x224433).setDepth(602);
-    const bgmBar   = this.add.rectangle(cx - 102, bgmY + 28, bgm * 20.4, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
-    objs.push(bgmBarBg, bgmBar);
-    const updateBgm = (v) => {
-      bgm = Phaser.Math.Clamp(v, 0, 10);
-      this.registry.set("bgmVolume", bgm);
-      bgmTxt.setText(String(bgm));
-      bgmBar.setDisplaySize(Math.max(1, bgm * 20.4), 7);
-      saveOptionsByRegistry(this.registry);
-    };
-    bgmMinus.on("pointerdown", () => updateBgm(bgm - 1));
-    bgmPlus.on("pointerdown",  () => updateBgm(bgm + 1));
-    bgmMinus.on("pointerover", () => bgmMinus.setFillStyle(0x447766));
-    bgmMinus.on("pointerout",  () => bgmMinus.setFillStyle(0x335544));
-    bgmPlus.on("pointerover",  () => bgmPlus.setFillStyle(0x447766));
-    bgmPlus.on("pointerout",   () => bgmPlus.setFillStyle(0x335544));
-
-    let sfx = this.registry.get("sfxVolume") ?? 7;
-    const sfxY = cy + 50;
-    objs.push(this.add.text(cx, sfxY - 28, "SFX", TS.optLabel).setOrigin(0.5).setDepth(602));
-    const sfxMinus = this.add.rectangle(cx - 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
-    objs.push(sfxMinus, this.add.text(cx - 80, sfxY, "-", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const sfxTxt = this.add.text(cx, sfxY, String(sfx), TS.optValue).setOrigin(0.5).setDepth(602);
-    objs.push(sfxTxt);
-    const sfxPlus = this.add.rectangle(cx + 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
-    objs.push(sfxPlus, this.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const sfxBarBg = this.add.rectangle(cx, sfxY + 28, 204, 7, 0x224433).setDepth(602);
-    const sfxBar   = this.add.rectangle(cx - 102, sfxY + 28, sfx * 20.4, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
-    objs.push(sfxBarBg, sfxBar);
-    const updateSfx = (v) => {
-      sfx = Phaser.Math.Clamp(v, 0, 10);
-      this.registry.set("sfxVolume", sfx);
-      sfxTxt.setText(String(sfx));
-      sfxBar.setDisplaySize(Math.max(1, sfx * 20.4), 7);
-      saveOptionsByRegistry(this.registry);
-    };
-    sfxMinus.on("pointerdown", () => updateSfx(sfx - 1));
-    sfxPlus.on("pointerdown",  () => updateSfx(sfx + 1));
-    sfxMinus.on("pointerover", () => sfxMinus.setFillStyle(0x447766));
-    sfxMinus.on("pointerout",  () => sfxMinus.setFillStyle(0x335544));
-    sfxPlus.on("pointerover",  () => sfxPlus.setFillStyle(0x447766));
-    sfxPlus.on("pointerout",   () => sfxPlus.setFillStyle(0x335544));
-
-    const exitBtn = this.add.rectangle(cx - 80, cy + ph / 2 - 44, 140, 46, 0x882211)
-      .setDepth(602).setInteractive();
-    objs.push(exitBtn, this.add.text(cx - 80, cy + ph / 2 - 44, "MAIN MENU", TS.menuBtn).setOrigin(0.5).setDepth(603));
-    exitBtn.on("pointerdown", () => this.scene.start("MainMenuScene"));
-    exitBtn.on("pointerover", () => exitBtn.setFillStyle(0xaa2222));
-    exitBtn.on("pointerout",  () => exitBtn.setFillStyle(0x882211));
-
-    const closeBtn = this.add.rectangle(cx + 80, cy + ph / 2 - 44, 140, 46, 0x335544)
-      .setDepth(602).setInteractive();
-    objs.push(closeBtn, this.add.text(cx + 80, cy + ph / 2 - 44, "CLOSE", TS.menuBtn).setOrigin(0.5).setDepth(603));
-    closeBtn.on("pointerdown", () => this._closeOptions());
-    closeBtn.on("pointerover", () => closeBtn.setFillStyle(0x447766));
-    closeBtn.on("pointerout",  () => closeBtn.setFillStyle(0x335544));
-  }
-
-  _closeOptions() {
-    if (!this._optOverlayObjs) return;
-    this._optOverlayObjs.forEach(o => o.destroy());
-    this._optOverlayObjs = null;
-  }
+  _showOptions()  { this._optionUI.show(); }
+  _closeOptions() { this._optionUI.close(); }
 
   _proceed() {
     this.scene.start('GameScene', {

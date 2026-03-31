@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { calculateScore, getScoreDetails } from "../service/scoreService.js";
-import roundData from "../data/round.json";
+import roundData from "../data/rounds.json";
 import {
   GW, GH, CW, CH, FIELD_CW, FIELD_CH, PILE_CW, PILE_CH,
   SUITS, RANKS, SUIT_ORDER,
@@ -29,22 +29,8 @@ import { MonsterManager } from '../manager/monsterManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
+import { OptionUI } from '../ui/OptionUI.js';
 
-// ─── 파이어볼 랭크별 스타일 ──────────────────────────────────────────────────
-const FIREBALL_STYLES = {
-  0:  { size: 48, tint: 0xffffff, textColor: '#ccddcc' },
-  1:  { size: 52, tint: 0xffffff, textColor: '#ffee88' },
-  2:  { size: 56, tint: 0xffffff, textColor: '#ffdd66' },
-  3:  { size: 60, tint: 0xffffff, textColor: '#ffcc55' },
-  4:  { size: 64, tint: 0xffcc00, textColor: '#ffdd44' },
-  5:  { size: 66, tint: 0xffcc00, textColor: '#eedd44' },
-  6:  { size: 70, tint: 0xffcc00, textColor: '#ffee66' },
-  7:  { size: 76, tint: 0xff8800, textColor: '#ffaa44' },
-  8:  { size: 82, tint: 0xff4400, textColor: '#ff8833' },
-  9:  { size: 90, tint: 0xff2200, textColor: '#ffcc44' },
-  10: { size: 96, tint: 0xff1100, textColor: '#ffcc44' },
-  11: { size: 100, tint: 0xff0000, textColor: '#ffcc44' },
-};
 
 // ─── 씬 ──────────────────────────────────────────────────────────────────────
 export class BattleScene extends Phaser.Scene {
@@ -54,46 +40,12 @@ export class BattleScene extends Phaser.Scene {
   preload() {
     this.load.setBaseURL(import.meta.env.BASE_URL);
     this.load.on('loaderror', () => {});  // 미존재 에셋 에러 suppress
-    //this.load.image("card_back", "/_card_back.png");
-    this.load.image("card_back", "assets/images/ui/card_back.png");
-    if (!this.textures.exists("card_back_deck"))
-      this.load.image("card_back_deck", "assets/images/ui/deck_rembg.png");
-    if (!this.textures.exists("card_back_dummy"))
-      this.load.image("card_back_dummy", "assets/images/ui/dummy_rembg.png");
-    const _round = this.scene.settings.data?.round ?? 1;
-    const _bgFile = roundData.rounds.find(r => r.round === _round)?.bg ?? "01_forest_night.jpg";
-    const _bgKey  = `bg_${_round}`;
-    if (!this.textures.exists(_bgKey))
-      this.load.image(_bgKey, `assets/images/bg/${_bgFile}`);
-    this._bgKey = _bgKey;
-    itemData.items.forEach(item => {
-      if (item.img && !this.textures.exists(`item_${item.id}`))
-        this.load.image(`item_${item.id}`, `assets/images/item/${item.img}`);
-    });
-    CardRenderer.preload(this);
-    this.load.audio("sfx_shuffle", "assets/audio/sfx/card-shuffle.ogg");
-    this.load.audio("sfx_fan", "assets/audio/sfx/card-fan-1.ogg");
-    this.load.audio("sfx_slide", "assets/audio/sfx/card-slide-5.ogg");
-    this.load.audio("sfx_place", "assets/audio/sfx/card-place-1.ogg");
-    this.load.audio("sfx_chop", "assets/audio/sfx/chop.ogg");
-    this.load.audio("sfx_knifeSlice", "assets/audio/sfx/knifeSlice.ogg");
-    if (!this.textures.exists("ui_deck")) this.load.image("ui_deck", "assets/images/ui/deck.png");
-    if (!this.textures.exists("ui_dummy")) this.load.image("ui_dummy", "assets/images/ui/dummy.png");
-    if (!this.textures.exists("ui_option")) this.load.image("ui_option", "assets/images/ui/option_rembg.png");
-    if (!this.textures.exists("ui_end_turn")) this.load.image("ui_end_turn", "assets/images/ui/end_turn_rembg.png");
-    if (!this.textures.exists("ui_sort"))   this.load.image("ui_sort",   "assets/images/ui/SuitRank_rembg.png");
-    if (!this.textures.exists("ui_sword"))    this.load.image("ui_sword",    "assets/images/ui/sword.png");
-    if (!this.textures.exists("ui_shield"))   this.load.image("ui_shield",   "assets/images/ui/shield.png");
-    if (!this.textures.exists("ui_fireball")) this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
 
-    relicData.relics.forEach(r => {
-      if (r.img && !this.textures.exists(`relic_${r.id}`))
-        this.load.image(`relic_${r.id}`, `assets/images/relic/${r.img}`);
-    });
-    debuffData.debuffs.forEach(d => {
-      if (d.img && !this.textures.exists(d.id))
-        this.load.image(d.id, `assets/images/debuff/${d.img}`);
-    });
+    //round 정보  
+    const _round = this.scene.settings.data?.round ?? 1;
+    this._bgKey =  `bg_${_round}`;
+
+    CardRenderer.preload(this);
 
     // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
     MONSTER_LIST.forEach(m => {
@@ -123,6 +75,9 @@ export class BattleScene extends Phaser.Scene {
     this.isBoss = data.isBoss ?? false;
     this.battleIndex = data.battleIndex ?? 0;
     this.normalCount = data.normalCount ?? 3;
+
+    //round 정보
+    this.roundInfo = data.roundInfo ?? roundData.rounds[0];
     this.monsterTier = data.monsterTier ?? [0];
     this.totalCost = data.totalCost ?? 3;
 
@@ -154,7 +109,14 @@ export class BattleScene extends Phaser.Scene {
     this.debuffManager  = new DebuffManager(this);
     this.monsterManager = new MonsterManager(this);
     this.animObjs = [];
-    this._optOverlayObjs = null;
+    this._optionUI = new OptionUI(this, {
+      onOpen:     () => { this.isDealing = true; },
+      onClose:    () => { this.isDealing = false; },
+      onMainMenu: () => {
+        writeSave(this.round, this.player.toData(), this.deck.getState());
+        this.scene.start("MainMenuScene");
+      },
+    });
     this.isDragging = false;
     this.isDealing = true;
     this.fieldPickCount = 0;
@@ -198,16 +160,6 @@ export class BattleScene extends Phaser.Scene {
         });
       }
     });
-
-    // 파이어볼 애니메이션 등록 (1회)
-    if (!this.anims.exists('fireball_loop')) {
-      this.anims.create({
-        key: 'fireball_loop',
-        frames: this.anims.generateFrameNumbers('ui_fireball', { start: 0, end: 8 }),
-        frameRate: 12,
-        repeat: -1,
-      });
-    }
 
     this.drawBg();
     this.createUI();
@@ -330,18 +282,9 @@ export class BattleScene extends Phaser.Scene {
     // ── 메시지 텍스트 ──────────────────────────────────────────────────────
     this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg).setOrigin(0.5, 0).setDepth(100);
 
-    // ── 콤보 공격 버튼 → 파이어볼 스프라이트 ──────────────────────────────
-    const comboBtnY = MONSTER_AREA_TOP + MONSTER_AREA_H + 8;
-    this._comboBtnSprite = this.add.sprite(faCX, comboBtnY, 'ui_fireball')
-      .setDisplaySize(60, Math.round(60 * 358 / 325))
-      .setDepth(30).setVisible(false)
-      .setInteractive({ draggable: true });
-    this._comboBtnSprite.setData("comboBtn", true);
-    this._comboBtnSprite.setData("origX", faCX);
-    this._comboBtnSprite.setData("origY", comboBtnY);
-    this._comboBtnSprite.play('fireball_loop');
-
-    this._comboBtnText = this.add.text(faCX + 55, comboBtnY, "",
+    // ── 핸드 이름 ──────────────────────────────
+    const handTextY = MONSTER_AREA_TOP + MONSTER_AREA_H + 8;
+    this._handText = this.add.text(faCX, handTextY, "",
       { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: '#888888' })
       .setOrigin(0, 0.5).setDepth(31).setVisible(false);
 
@@ -483,10 +426,7 @@ export class BattleScene extends Phaser.Scene {
       this._sfx("sfx_slide");
       this.isDragging = true;
       obj.setDepth(200);
-      if (obj.getData("comboBtn")) {
-        this._comboBtnText.setDepth(201);
-        this.tweens.killTweensOf(obj);  // pulse 중단
-      } else if (obj.getData("itemIndex") !== undefined) {
+      if (obj.getData("itemIndex") !== undefined) {
         // 아이템 컨테이너
         this.tweens.killTweensOf(obj);
         this.tweens.add({ targets: obj, scaleX: 0.9, scaleY: 0.9, duration: 60 });
@@ -497,53 +437,9 @@ export class BattleScene extends Phaser.Scene {
         if (idx !== -1) this.cardObjs.splice(idx, 1);
       }
     });
-    this.input.on("drag", (pointer, obj, dragX, dragY) => {
-      obj.x = dragX; obj.y = dragY;
-      if (obj.getData("comboBtn")) {
-        this._comboBtnText.x = dragX + 55;
-        this._comboBtnText.y = dragY;
-      }
-    });
+
     this.input.on("dragend", (pointer, obj) => {
       this.isDragging = false;
-
-      // ── 콤보 버튼 drag ────────────────────────────────────────────────
-      if (obj.getData("comboBtn")) {
-        obj.setDepth(30);
-        this._comboBtnText.setDepth(31);
-        const origX = obj.getData("origX");
-        const origY = obj.getData("origY");
-
-        const inMonsterArea = pointer.y >= MONSTER_AREA_TOP
-                           && pointer.y <= MONSTER_AREA_TOP + MONSTER_AREA_H;
-
-        if (!this.isDealing && inMonsterArea) {
-          const positions = this.monsterManager.calcMonsterPositions(this.monsters.length);
-          const monIdx = positions.reduce((best, _, i) =>
-            Math.abs(pointer.x - positions[i].x) < Math.abs(pointer.x - positions[best].x) ? i : best
-          , 0);
-
-          obj.x = origX; obj.y = origY;
-          this._comboBtnText.x = origX;// + 55;
-          this._comboBtnText.y = origY;
-
-          if (!this.monsters[monIdx]?.isDead) {
-            this.monsterManager.attackMonster(monIdx);
-          }
-        } else {
-          // 스냅백
-          this.tweens.add({
-            targets: obj,
-            x: origX, y: origY,
-            duration: 220, ease: 'Back.Out',
-            onUpdate: () => {
-              this._comboBtnText.x = obj.x;// + 55;
-              this._comboBtnText.y = obj.y;
-            },
-          });
-        }
-        return;
-      }
 
       // ── 아이템 drag ──────────────────────────────────────────────────
       if (obj.getData("itemIndex") !== undefined) {
@@ -1084,42 +980,18 @@ export class BattleScene extends Phaser.Scene {
       const lang = this.registry?.get('lang') ?? 'ko';
       const key  = HAND_DATA[rank]?.key ?? '';
       const name = langData[lang]?.hand?.[key]?.name ?? key;
-      const fb   = FIREBALL_STYLES[rank] ?? FIREBALL_STYLES[0];
-      const fbH  = Math.round(fb.size * 358 / 325);
 
-      this.tweens.killTweensOf(this._comboBtnSprite);
-      this._comboBtnPulsing = false;
-
-      this._comboBtnSprite
-        .setDisplaySize(fb.size, fbH)
-        .setTint(fb.tint)
-        .setVisible(true);
-      this._comboBtnText
+      //hand name
+      this._handText
         .setText(name)
-        .setColor(fb.textColor)
+        .setColor('#ccddcc')
         .setVisible(true);
-
-      // 고랭크 pulse (rank 7+)
-      if (rank >= 7) {
-        this._comboBtnPulsing = true;
-        const sx = this._comboBtnSprite.scaleX;
-        const sy = this._comboBtnSprite.scaleY;
-        this.tweens.add({
-          targets: this._comboBtnSprite,
-          scaleX: { from: sx, to: sx * 1.15 },
-          scaleY: { from: sy, to: sy * 1.15 },
-          duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-        });
-      }
 
       // PlayerUI hand 반짝 + ItemUI relic 달그락
       this.playerUI?.highlightHand(rank);
       this.itemUI?.rattleRelics(this._getApplicableRelicIds(rank));
     } else {
-      this.tweens.killTweensOf(this._comboBtnSprite);
-      this._comboBtnSprite.setVisible(false);
-      this._comboBtnText.setVisible(false);
-      this._comboBtnPulsing = false;
+      this._handText.setVisible(false);
 
       this.playerUI?.highlightHand(null);
       this.itemUI?.rattleRelics([]);
@@ -1771,107 +1643,6 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // ── 인게임 옵션 오버레이 ─────────────────────────────────────────────────
-  _showOptions() {
-    if (this._optOverlayObjs) return;
-    this.isDealing = true;
-
-    const objs = this._optOverlayObjs = [];
-    const cx = GW / 2, cy = GH / 2;
-    const pw = 400, ph = 360;
-
-    const dim = this.add.rectangle(cx, cy, GW, GH, 0x000000, 0.65)
-      .setDepth(600).setInteractive();
-    objs.push(dim);
-
-    const panelG = this.add.graphics().setDepth(601);
-    panelG.fillStyle(0x0d2b18);
-    panelG.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
-    panelG.lineStyle(2, 0x2d7a3a);
-    panelG.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
-    objs.push(panelG);
-
-    objs.push(this.add.text(cx, cy - ph / 2 + 44, "OPTIONS", TS.optTitle).setOrigin(0.5).setDepth(602));
-
-    // BGM 볼륨
-    let bgm = this.registry.get("bgmVolume") ?? 7;
-    const bgmY = cy - 70;
-    objs.push(this.add.text(cx, bgmY - 28, "BGM", TS.optLabel).setOrigin(0.5).setDepth(602));
-
-    const bgmMinus = this.add.rectangle(cx - 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
-    objs.push(bgmMinus, this.add.text(cx - 80, bgmY, "-", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const bgmTxt = this.add.text(cx, bgmY, String(bgm), TS.optValue).setOrigin(0.5).setDepth(602);
-    objs.push(bgmTxt);
-    const bgmPlus = this.add.rectangle(cx + 80, bgmY, 44, 44, 0x335544).setDepth(602).setInteractive();
-    objs.push(bgmPlus, this.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const bgmBarBg = this.add.rectangle(cx, bgmY + 28, 204, 7, 0x224433).setDepth(602);
-    const bgmBar = this.add.rectangle(cx - 102, bgmY + 28, bgm * 20.4, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
-    objs.push(bgmBarBg, bgmBar);
-    const updateBgm = (v) => {
-      bgm = Phaser.Math.Clamp(v, 0, 10);
-      this.registry.set("bgmVolume", bgm);
-      bgmTxt.setText(String(bgm));
-      bgmBar.setDisplaySize(Math.max(1, bgm * 20.4), 7);
-      saveOptionsByRegistry(this.registry);
-    };
-    bgmMinus.on("pointerdown", () => updateBgm(bgm - 1));
-    bgmPlus.on("pointerdown", () => updateBgm(bgm + 1));
-    bgmMinus.on("pointerover", () => bgmMinus.setFillStyle(0x447766));
-    bgmMinus.on("pointerout", () => bgmMinus.setFillStyle(0x335544));
-    bgmPlus.on("pointerover", () => bgmPlus.setFillStyle(0x447766));
-    bgmPlus.on("pointerout", () => bgmPlus.setFillStyle(0x335544));
-
-    // SFX 볼륨
-    let sfx = this.registry.get("sfxVolume") ?? 7;
-    const sfxY = cy + 50;
-    objs.push(this.add.text(cx, sfxY - 28, "SFX", TS.optLabel).setOrigin(0.5).setDepth(602));
-
-    const sfxMinus = this.add.rectangle(cx - 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
-    objs.push(sfxMinus, this.add.text(cx - 80, sfxY, "-", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const sfxTxt = this.add.text(cx, sfxY, String(sfx), TS.optValue).setOrigin(0.5).setDepth(602);
-    objs.push(sfxTxt);
-    const sfxPlus = this.add.rectangle(cx + 80, sfxY, 44, 44, 0x335544).setDepth(602).setInteractive();
-    objs.push(sfxPlus, this.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(603));
-    const sfxBarBg = this.add.rectangle(cx, sfxY + 28, 204, 7, 0x224433).setDepth(602);
-    const sfxBar = this.add.rectangle(cx - 102, sfxY + 28, sfx * 20.4, 7, 0x44dd88).setOrigin(0, 0.5).setDepth(603);
-    objs.push(sfxBarBg, sfxBar);
-    const updateSfx = (v) => {
-      sfx = Phaser.Math.Clamp(v, 0, 10);
-      this.registry.set("sfxVolume", sfx);
-      sfxTxt.setText(String(sfx));
-      sfxBar.setDisplaySize(Math.max(1, sfx * 20.4), 7);
-      saveOptionsByRegistry(this.registry);
-    };
-    sfxMinus.on("pointerdown", () => updateSfx(sfx - 1));
-    sfxPlus.on("pointerdown", () => updateSfx(sfx + 1));
-    sfxMinus.on("pointerover", () => sfxMinus.setFillStyle(0x447766));
-    sfxMinus.on("pointerout", () => sfxMinus.setFillStyle(0x335544));
-    sfxPlus.on("pointerover", () => sfxPlus.setFillStyle(0x447766));
-    sfxPlus.on("pointerout", () => sfxPlus.setFillStyle(0x335544));
-
-    // MAIN MENU 버튼
-    const exitBtn = this.add.rectangle(cx - 80, cy + ph / 2 - 48, 140, 48, 0x882211)
-      .setDepth(602).setInteractive();
-    objs.push(exitBtn, this.add.text(cx - 80, cy + ph / 2 - 48, "MAIN MENU", TS.menuBtn).setOrigin(0.5).setDepth(603));
-    exitBtn.on("pointerdown", () => {
-      writeSave(this.round, this.player.toData(), this.deck.getState());
-      this.scene.start("MainMenuScene");
-    });
-    exitBtn.on("pointerover", () => exitBtn.setFillStyle(0xaa2222));
-    exitBtn.on("pointerout", () => exitBtn.setFillStyle(0x882211));
-
-    // CLOSE 버튼
-    const closeBtn = this.add.rectangle(cx + 80, cy + ph / 2 - 48, 140, 48, 0x335544)
-      .setDepth(602).setInteractive();
-    objs.push(closeBtn, this.add.text(cx + 80, cy + ph / 2 - 48, "CLOSE", TS.menuBtn).setOrigin(0.5).setDepth(603));
-    closeBtn.on("pointerdown", () => this._closeOptions());
-    closeBtn.on("pointerover", () => closeBtn.setFillStyle(0x447766));
-    closeBtn.on("pointerout", () => closeBtn.setFillStyle(0x335544));
-  }
-
-  _closeOptions() {
-    if (!this._optOverlayObjs) return;
-    this._optOverlayObjs.forEach(o => o.destroy());
-    this._optOverlayObjs = null;
-    this.isDealing = false;
-  }
+  _showOptions()  { this._optionUI.show(); }
+  _closeOptions() { this._optionUI.close(); }
 }
