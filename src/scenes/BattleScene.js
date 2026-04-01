@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import { calculateScore, getScoreDetails } from "../service/scoreService.js";
-import roundData from "../data/rounds.json";
 import {
   GW, GH, CW, CH, FIELD_CW, FIELD_CH, PILE_CW, PILE_CH,
   SUITS, RANKS, SUIT_ORDER,
@@ -15,22 +14,25 @@ import relicData from "../data/relic.json";
 
 const _relicMap = Object.fromEntries(relicData.relics.map(r => [r.id, r]));
 
-import { spawnMonsters, MONSTER_LIST } from "../service/monsterService.js";
 import { writeSave, deleteSave } from "../save.js";
 import { CardRenderer } from "../CardRenderer.js";
 import { TS } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
-import { saveOptionsByRegistry } from "../manager/optionManager.js";
 import effectManager from '../manager/effectManager.js';
 import DeckManager from '../manager/deckManager.js';
 import itemData from '../data/item.json';
 import { DebuffManager, debuffData, debuffMap as _debuffMap } from '../manager/debuffManager.js';
-import { MonsterManager } from '../manager/monsterManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 import { OptionUI } from '../ui/OptionUI.js';
 
+
+import { MonsterManager } from '../manager/monsterManager.js';
+
+import { roundManager } from "../manager/roundManager.js";
+import { spawnManager } from '../manager/spawnManager.js';
+import MonsterView from '../ui/MonsterView.js';
 
 // ─── 씬 ──────────────────────────────────────────────────────────────────────
 export class BattleScene extends Phaser.Scene {
@@ -38,26 +40,7 @@ export class BattleScene extends Phaser.Scene {
 
   // ── preload ──────────────────────────────────────────────────────────────
   preload() {
-    this.load.setBaseURL(import.meta.env.BASE_URL);
-    this.load.on('loaderror', () => {});  // 미존재 에셋 에러 suppress
-
-    //round 정보  
-    const _round = this.scene.settings.data?.round ?? 1;
-    this._bgKey =  `bg_${_round}`;
-
     CardRenderer.preload(this);
-
-    // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
-    MONSTER_LIST.forEach(m => {
-      if (!m.sprite) return;
-      for (const [state, url] of Object.entries(m.sprite)) {
-        const key = `mon_${m.id}_${state}`;
-        if (!this.textures.exists(key)) {
-          this.load.spritesheet(key, url, { frameWidth: 384, frameHeight: 384 });
-        }
-      }
-    });
-
     this.deck = new DeckManager();
     this.effects = new effectManager(this);
   }
@@ -75,11 +58,6 @@ export class BattleScene extends Phaser.Scene {
     this.isBoss = data.isBoss ?? false;
     this.battleIndex = data.battleIndex ?? 0;
     this.normalCount = data.normalCount ?? 3;
-
-    //round 정보
-    this.roundInfo = data.roundInfo ?? roundData.rounds[0];
-    this.monsterTier = data.monsterTier ?? [0];
-    this.totalCost = data.totalCost ?? 3;
 
     this.player = new Player(data.player ?? {});
     this.deck = new DeckManager(data.deck ?? {}, this.player);
@@ -102,16 +80,14 @@ export class BattleScene extends Phaser.Scene {
 
     this.selected = new Set();
     this.cardObjs = [];
-    this.monsterObjs = [];
-    this._monsterSprites = [];
-    this._debuffObjs    = [];
+    this._debuffObjs = [];
     this._debuffTipObjs = [];
-    this.debuffManager  = new DebuffManager(this);
+    this.debuffManager = new DebuffManager(this);
     this.monsterManager = new MonsterManager(this);
     this.animObjs = [];
     this._optionUI = new OptionUI(this, {
-      onOpen:     () => { this.isDealing = true; },
-      onClose:    () => { this.isDealing = false; },
+      onOpen: () => { this.isDealing = true; },
+      onClose: () => { this.isDealing = false; },
       onMainMenu: () => {
         writeSave(this.round, this.player.toData(), this.deck.getState());
         this.scene.start("MainMenuScene");
@@ -128,44 +104,41 @@ export class BattleScene extends Phaser.Scene {
     this._pilePopupObjs = null;
     this._cardPreviewObjs = null;
 
-    // 세이브에서 몬스터 복원, 없으면 새로 스폰
-    this.monsters = data.monsters
-      ? data.monsters
-      : spawnMonsters(this.monsterTier, this.totalCost);
-
     CardRenderer.createAll(this);
-
-    // 몬스터 PNG 애니메이션 등록
-    const ANIM_CFGS = {
-      idle: { frameRate: 8, repeat: -1 },
-      attack: { frameRate: 10, repeat: 0 },
-      damaged: { frameRate: 10, repeat: 0 },
-      die: { frameRate: 8, repeat: 0 },
-      skill: { frameRate: 10, repeat: 0 },
-    };
-    MONSTER_LIST.forEach(m => {
-      if (!m.sprite) return;
-      for (const [state, cfg] of Object.entries(ANIM_CFGS)) {
-        if (!m.sprite[state]) continue;
-        const texKey = `mon_${m.id}_${state}`;
-        const animKey = `${texKey}_anim`;
-        if (!this.textures.exists(texKey) || this.anims.exists(animKey)) continue;
-        const validFrames = this.monsterManager._countValidFrames(texKey);
-        if (validFrames === 0) continue;
-        this.anims.create({
-          key: animKey,
-          frames: this.anims.generateFrameNumbers(texKey, { start: 0, end: validFrames - 1 }),
-          frameRate: cfg.frameRate,
-          repeat: cfg.repeat,
-        });
-      }
-    });
 
     this.drawBg();
     this.createUI();
     this.createSortButton();
     this.setupDrag();
     this.startDealAnimation();
+
+    //monster
+
+    this.monsterObjs = [];
+    this._monsterSprites = [];
+
+    // 세이브에서 몬스터 복원, 없으면 새로 스폰
+    const roundData = roundManager.getRoundData(this.round, this.battleIndex);
+    this.monsters = data.monsters
+      ? data.monsters
+      : spawnManager.generate(roundData);
+
+    // 👉 manager에 주입
+    this.monsterManager.setMonsters(this.monsters);
+
+    const positions = this.monsterManager.calcMonsterPositions(this.monsterManager.monsters.length);
+
+    this.monsterViews = this.monsterManager.monsters.map((mon, idx) => {
+      const { x, y } = positions[idx];
+
+      return new MonsterView(this, mon, idx, x, y, (i) => {
+        if (!this.isDealing) this.monsterManager.attackMonster(i);
+      });
+    });
+
+    this._monsterSprites = this.monsterViews.map(v => v.sprite);
+
+
   }
 
   // ── 배경 & 패널 ──────────────────────────────────────────────────────────
@@ -182,11 +155,11 @@ export class BattleScene extends Phaser.Scene {
       this.add.image(GW / 2, GH / 3, bgKey)
         .setOrigin(0.5, 0.5).setDisplaySize(GH * 1.5, GH * 1.5).setDepth(-1);
 
-        /*
-        원본
-      this.add.image(GW / 2, GH / 2, bgKey)
-        .setOrigin(0.5, 0.5).setDisplaySize(GW, GH).setDepth(-1);
-        */
+      /*
+      원본
+    this.add.image(GW / 2, GH / 2, bgKey)
+      .setOrigin(0.5, 0.5).setDisplaySize(GW, GH).setDepth(-1);
+      */
     }
 
     const g = this.add.graphics().setDepth(0);
@@ -230,11 +203,11 @@ export class BattleScene extends Phaser.Scene {
 
   // ── UI 생성 (한 번만) ─────────────────────────────────────────────────────
   createUI() {
-    const PW   = PLAYER_PANEL_W;
-    const IPW  = ITEM_PANEL_W;
-    const IPX  = GW - IPW;
+    const PW = PLAYER_PANEL_W;
+    const IPW = ITEM_PANEL_W;
+    const IPX = GW - IPW;
     const IPCX = IPX + IPW / 2;
-    const FAW  = GW - PW - IPW;
+    const FAW = GW - PW - IPW;
     const faCX = PW + FAW / 2;
 
     // ── 플레이어 패널 (PlayerUI) ─────────────────────────────────────────
@@ -274,10 +247,10 @@ export class BattleScene extends Phaser.Scene {
       .setOrigin(0.5).setDepth(201).setVisible(false);
 
     // ── FIELD / HAND 카운트 (각 패널 우측 하단) ─────────────────────────
-    const cornerX    = GW - ITEM_PANEL_W - 16;
+    const cornerX = GW - ITEM_PANEL_W - 16;
     //const cornerStyle = { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#556655' };
     this._fieldCountCornerTxt = this.add.text(cornerX, FIELD_Y + FIELD_CH / 2 + 10, "", TS.handRank).setOrigin(1, 1).setDepth(15);
-    this._handCountCornerTxt  = this.add.text(cornerX, HAND_Y + CH / 2 + 10, "", TS.handRank).setOrigin(1, 1).setDepth(15);
+    this._handCountCornerTxt = this.add.text(cornerX, HAND_Y + CH / 2 + 10, "", TS.handRank).setOrigin(1, 1).setDepth(15);
 
     // ── 메시지 텍스트 ──────────────────────────────────────────────────────
     this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg).setOrigin(0.5, 0).setDepth(100);
@@ -291,8 +264,8 @@ export class BattleScene extends Phaser.Scene {
     // ── DEBUG: 점수 프리뷰 (몬스터 영역 우측 하단) ────────────────────────
     this.previewScoreTxt = DEBUG_MODE
       ? this.add.text(PW + FAW - 8, MONSTER_AREA_TOP + MONSTER_AREA_H - 8, "",
-          { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffdd44' })
-          .setOrigin(1, 1).setDepth(50)
+        { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffdd44' })
+        .setOrigin(1, 1).setDepth(50)
       : null;
 
     // ── OPT 버튼 — 아이템 패널 상단 ─────────────────────────────────────
@@ -300,16 +273,16 @@ export class BattleScene extends Phaser.Scene {
       .setDisplaySize(100, 50).setDepth(60).setInteractive();
     optImg.on("pointerdown", () => this._showOptions());
     optImg.on("pointerover", () => optImg.setTint(0xaaddff));
-    optImg.on("pointerout",  () => optImg.clearTint());
+    optImg.on("pointerout", () => optImg.clearTint());
 
     // ── TURN END 버튼 — 아이템 패널 하단 ────────────────────────────────
-    const turnBtnX      = IPCX;
-    const turnBtnY      = HAND_Y + CH / 2 - 15;
+    const turnBtnX = IPCX;
+    const turnBtnY = HAND_Y + CH / 2 - 15;
     this.turnEndBtn = this.add.image(turnBtnX, turnBtnY, "ui_end_turn")
       .setDisplaySize(100, 50).setDepth(60).setInteractive();
     this.turnEndBtn.on("pointerdown", () => { if (!this.isDealing) this.onTurnEnd(); });
     this.turnEndBtn.on("pointerover", () => this.turnEndBtn.setTint(0xffdd88));
-    this.turnEndBtn.on("pointerout",  () => this.turnEndBtn.clearTint());
+    this.turnEndBtn.on("pointerout", () => this.turnEndBtn.clearTint());
 
     this._attackTxt = this.add.text(turnBtnX, turnBtnY - 40, "", TS.infoLabel)
       .setOrigin(0.5, 1).setDepth(61);
@@ -330,12 +303,12 @@ export class BattleScene extends Phaser.Scene {
       this.sortBy(this.sortMode === "suit" ? "rank" : "suit");
     });
     this.sortBg.on("pointerover", () => this.sortBg.setTint(0xaaffcc));
-    this.sortBg.on("pointerout",  () => this.refreshSortBtns());
+    this.sortBg.on("pointerout", () => this.refreshSortBtns());
   }
 
   refreshSortBtns() {
     if (this.sortMode) this.sortBg?.setTint(0x88ffaa);
-    else               this.sortBg?.clearTint();
+    else this.sortBg?.clearTint();
   }
 
   // ── 딜링 애니메이션 ──────────────────────────────────────────────────────
@@ -436,6 +409,11 @@ export class BattleScene extends Phaser.Scene {
         const idx = this.cardObjs.indexOf(obj);
         if (idx !== -1) this.cardObjs.splice(idx, 1);
       }
+    });
+
+    this.input.on("drag", (pointer, obj, dragX, dragY) => {
+      obj.x = dragX;
+      obj.y = dragY;
     });
 
     this.input.on("dragend", (pointer, obj) => {
@@ -559,10 +537,9 @@ export class BattleScene extends Phaser.Scene {
     this.cardObjs.forEach(o => o.destroy());
     this.cardObjs = [];
     this.handCardObjs = [];
+
     this.monsterObjs.forEach(o => o.destroy());
     this.monsterObjs = [];
-    this._monsterSprites.forEach(s => s?.destroy());
-    this._monsterSprites = [];
 
     this.renderDeckPile();
     this.renderDummyPile();
@@ -741,7 +718,9 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 몬스터 렌더 ──────────────────────────────────────────────────────────
   renderMonsters() {
-    const positions = this.monsterManager.calcMonsterPositions(this.monsters.length);
+    const mons = this.monsterManager.monsters;
+    const positions = this.monsterManager.calcMonsterPositions(mons.length);
+
     const hasCombo = this._getSelectedCombo().score > 0
       && this.attackCount < this.player.attacksPerTurn;
     const imgW = 156, imgH = 156;
@@ -754,102 +733,17 @@ export class BattleScene extends Phaser.Scene {
     const statY = MON_BOTTOM - STAT_H / 2;                 // ATK/DEF 중심
     const spriteY = barY - BAR_H / 2 - 8 - imgH / 2;        // 스프라이트 중심
 
-    this.monsters.forEach((mon, idx) => {
-      const x = positions[idx].x;
-      let monObj;
-      const mobId = mon.mob.id;
-
-      if (mon.isDead) {
-        const dieTexKey = `mon_${mobId}_die`;
-        const dieAnimKey = `${dieTexKey}_anim`;
-        if (this.textures.exists(dieTexKey)) {
-          monObj = this.add.sprite(x, spriteY, dieTexKey)
-            .setDisplaySize(imgW, imgH).setDepth(15).setAlpha(0.7);
-          if (!mon.deathAnimDone) {
-            if (this.anims.exists(dieAnimKey)) {
-              monObj.play(dieAnimKey);
-              monObj.once('animationcomplete', () => { mon.deathAnimDone = true; });
-            }
-            this.time.delayedCall(1500, () => { mon.deathAnimDone = true; });
-          } else {
-            const lastFrame = this.monsterManager._countValidFrames(dieTexKey) - 1;
-            monObj.setFrame(Math.max(0, lastFrame));
-          }
-        }
-      } else {
-        const idleTexKey = `mon_${mobId}_idle`;
-        const idleAnimKey = `${idleTexKey}_anim`;
-        if (this.textures.exists(idleTexKey)) {
-          monObj = this.add.sprite(x, spriteY, idleTexKey)
-            .setDisplaySize(imgW, imgH).setDepth(15);
-          if (this.anims.exists(idleAnimKey)) monObj.play(idleAnimKey);
-        }
-      }
-
-      if (!monObj) {
-        monObj = this.add.rectangle(
-          x, spriteY, imgW, imgH,
-          [0x886622, 0x226688, 0x662288, 0x228866][idx % 4]
-        ).setDepth(15);
-      }
-      this._monsterSprites[idx] = monObj;
-
-      /*
-      if (mon.isDead) {
-        this.monsterObjs.push(
-          this.add.rectangle(x, spriteY, imgW + 4, imgH + 4, 0x000000, 0.45).setDepth(16),
-          this.add.text(x, spriteY, "X", TS.monDead).setOrigin(0.5).setDepth(17)
-        );
-        return;
-      }
-      */
-
-      // ── HP 바 (텍스트 포함) ──────────────────────────────────────────────
-      const barW = 88;
-      const hpRatio = Math.max(0, mon.hp / mon.maxHp);
-      const hpColor = hpRatio > 0.5 ? 0x44cc44 : hpRatio > 0.25 ? 0xddaa00 : 0xdd3333;
-      this.monsterObjs.push(
-        this.add.rectangle(x, barY, barW, BAR_H, 0x1a1a1a).setDepth(16),
-        this.add.rectangle(x - barW / 2, barY, Math.max(1, barW * hpRatio), BAR_H, hpColor)
-          .setOrigin(0, 0.5).setDepth(17),
-        this.add.text(x, barY, `${mon.hp}/${mon.maxHp}`,
-          {
-            fontFamily: "'PressStart2P',Arial", fontSize: '7px', color: '#ffffff',
-            stroke: '#000000', strokeThickness: 2
-          })
-          .setOrigin(0.5).setDepth(18)
-      );
-
-      // ── ATK / DEF (아이콘 + 수치) ────────────────────────────────────────
-      // sword.png: 320×912 → 비율 유지 시 height 14 → width ≈ 5px (세로형 이미지)
-      const statNumSty = { fontFamily: "'PressStart2P',Arial", fontSize: '8px', stroke: '#000000', strokeThickness: 2 };
-      this.monsterObjs.push(
-        this.add.image(x - 30, statY, "ui_sword" ).setDisplaySize(5, 14).setDepth(16),
-        this.add.text( x - 26, statY, `${mon.atk}`, { ...statNumSty, color: '#ffaaaa' }).setOrigin(0, 0.5).setDepth(17),
-        this.add.image(x +  6, statY, "ui_shield").setDisplaySize(12, 12).setDepth(16),
-        this.add.text( x + 14, statY, `${mon.def}`, { ...statNumSty, color: '#aaaaff' }).setOrigin(0, 0.5).setDepth(17)
-      );
-
-      // ── ATTACK 힌트 + 히트 영역 ──────────────────────────────────────────
-      if (hasCombo) {
-        this.monsterObjs.push(
-          this.add.text(x, spriteY - imgH / 2 - 10, "ATTACK!", TS.monTarget)
-            .setOrigin(0.5, 1).setDepth(18)
-        );
-        const hitH = MON_BOTTOM - (spriteY - imgH / 2) + 10;
-        const hitCY = spriteY - imgH / 2 + hitH / 2;
-        const hit = this.add.rectangle(x, hitCY, imgW + 20, hitH, 0x000000, 0)
-          .setDepth(19).setInteractive();
-        hit.on("pointerdown", () => { if (!this.isDealing) this.monsterManager.attackMonster(idx); });
-        this.monsterObjs.push(hit);
-      }
+    mons.forEach((mon, idx) => {
+      this.monsterViews[idx].update(mon, positions[idx].x, hasCombo && !mon.isDead);
     });
+
+    this._monsterSprites = this.monsterViews.map(v => v.sprite);
   }
 
   // ── 아이템 패널 렌더 ─────────────────────────────────────────────────────
   // ── 현재 선택에서 효과 받는 relic id 목록 ──────────────────────────────
   _getApplicableRelicIds(rank) {
-    const deckCount     = this.deckData?.length ?? 0;
+    const deckCount = this.deckData?.length ?? 0;
     const selectedCards = [...this.selected].map(i => this.handData[i]);
     return (this.player.relics ?? []).filter(id => {
       const relic = _relicMap[id];
@@ -879,10 +773,10 @@ export class BattleScene extends Phaser.Scene {
     this._debuffObjs = [];
     if (!this.debuffManager.activeDebuffs.length) return;
 
-    const SIZE   = 28;
-    const GAP    = 34;
+    const SIZE = 28;
+    const GAP = 34;
     const startX = PLAYER_PANEL_W + 10 + SIZE / 2;
-    const iconY  = MONSTER_AREA_TOP + 8 + SIZE / 2;
+    const iconY = MONSTER_AREA_TOP + 8 + SIZE / 2;
 
     this.debuffManager.activeDebuffs.forEach((active, idx) => {
       const def = _debuffMap[active.id];
@@ -924,9 +818,9 @@ export class BattleScene extends Phaser.Scene {
   _showDebuffTip(def, durStr, tipX, tipY) {
     this._hideDebuffTip();
     const TIER_COLORS = { 1: '#44cc88', 2: '#4488ff', 3: '#aa44ff' };
-    const color  = TIER_COLORS[def.tier] ?? '#44cc88';
+    const color = TIER_COLORS[def.tier] ?? '#44cc88';
     const colorN = parseInt(color.replace('#', ''), 16);
-    const lines  = [def.name, def.description, durStr];
+    const lines = [def.name, def.description, durStr];
     const tw = 210, pad = 12, lineH = 20;
     const th = pad * 2 + lines.length * lineH;
     const tx = Math.min(tipX, GW - ITEM_PANEL_W - tw - 4);
@@ -956,13 +850,13 @@ export class BattleScene extends Phaser.Scene {
 
   // ── context 갱신 (ATK 레벨업 등 mid-battle 변경 반영) ────────────────────
   _refreshContext() {
-    context.deckCount    = this.deckData?.length ?? 0;
-    context.dummyCount   = this.dummyData?.length ?? 0;
-    context.handConfig   = this.player.getEffectiveHandConfig();
-    context.relics       = this.player.relics ?? [];
+    context.deckCount = this.deckData?.length ?? 0;
+    context.dummyCount = this.dummyData?.length ?? 0;
+    context.handConfig = this.player.getEffectiveHandConfig();
+    context.relics = this.player.relics ?? [];
     context.enabledHands = this.player.getEnabledHands();
-    context.suitAliases  = this.player.getEffectiveSuitAliases();
-    context.atk          = this.player.atk;
+    context.suitAliases = this.player.getEffectiveSuitAliases();
+    context.atk = this.player.atk;
   }
 
   // ── 족보 계산 헬퍼 ───────────────────────────────────────────────────────
@@ -978,7 +872,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (score > 0) {
       const lang = this.registry?.get('lang') ?? 'ko';
-      const key  = HAND_DATA[rank]?.key ?? '';
+      const key = HAND_DATA[rank]?.key ?? '';
       const name = langData[lang]?.hand?.[key]?.name ?? key;
 
       //hand name
@@ -1012,11 +906,11 @@ export class BattleScene extends Phaser.Scene {
     const p = this.player;
     this.playerUI.refresh();
     this.playerUI.setDeckCounts({
-      deck:  this.deckData?.length  ?? 0,
+      deck: this.deckData?.length ?? 0,
       dummy: this.dummyData?.length ?? 0,
     });
     this._fieldCountCornerTxt?.setText(`${this.fieldData?.length ?? 0}/${p.fieldSize}`);
-    this._handCountCornerTxt?.setText(`${this.handData?.length  ?? 0}/${p.handSizeLimit}`);
+    this._handCountCornerTxt?.setText(`${this.handData?.length ?? 0}/${p.handSizeLimit}`);
   }
 
   refreshPlayerLevel() {
@@ -1056,9 +950,9 @@ export class BattleScene extends Phaser.Scene {
    * @param {function} onComplete
    */
   _playAttackAnimation(details, cardFlyInfo, onCardsConsumed, onComplete) {
-    const PW   = PLAYER_PANEL_W;
-    const FAW  = GW - PW - ITEM_PANEL_W;
-    const cX   = PW + FAW / 2;
+    const PW = PLAYER_PANEL_W;
+    const FAW = GW - PW - ITEM_PANEL_W;
+    const cX = PW + FAW / 2;
     const scoreY = MONSTER_AREA_TOP + 14;
 
     const tmpObjs = [];
@@ -1078,7 +972,7 @@ export class BattleScene extends Phaser.Scene {
 
     // orb는 fire-and-forget — 발사 후 독립 실행, next()는 countUp이 담당
     const throwOrb = (fromX, fromY, color) => {
-      const orb  = this.add.circle(fromX, fromY, 10, color, 1.0).setDepth(420);
+      const orb = this.add.circle(fromX, fromY, 10, color, 1.0).setDepth(420);
       const glow = this.add.circle(fromX, fromY, 18, color, 0.35).setDepth(419);
       tmpObjs.push(orb, glow);
 
@@ -1161,7 +1055,7 @@ export class BattleScene extends Phaser.Scene {
           scaleX: bx * 1.1,
           scaleY: by * 1.1,
           duration: 160, yoyo: true, ease: 'Sine.easeInOut',
-          onComplete: () => { try { obj.setScale(bx, by); } catch (_) {} next(); },
+          onComplete: () => { try { obj.setScale(bx, by); } catch (_) { } next(); },
         });
       });
 
@@ -1236,7 +1130,7 @@ export class BattleScene extends Phaser.Scene {
       this.tweens.add({
         targets: tmpObjs, alpha: 0, duration: 180,
         onComplete: () => {
-          tmpObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
+          tmpObjs.forEach(o => { try { o?.destroy(); } catch (_) { } });
           tmpObjs.length = 0;
           next();
         },
@@ -1292,19 +1186,19 @@ export class BattleScene extends Phaser.Scene {
   // ── 턴 종료 ──────────────────────────────────────────────────────────────
   onTurnEnd() {
     this.isDealing = true;
-    const alive = this.monsters.filter(m => !m.isDead);
+    const alive = this.monsterManager.monsters.filter(m => !m.isDead);
     const ATK_GAP = 650;
 
     alive.forEach((m, localIdx) => {
-      const globalIdx = this.monsters.indexOf(m);
+      const globalIdx = this.monsterManager.monsters.indexOf(m);
       this.time.delayedCall(localIdx * ATK_GAP, () => {
-        const useSkill = m.mob.skill && Math.random() < (DEBUG_MODE?3:1) / 3;
+        const useSkill = m.skill && Math.random() < (DEBUG_MODE ? 3 : 1) / 3;
         if (useSkill) {
           this.monsterManager._useMonsterSkill(globalIdx, m);
         } else {
           const dmg = Math.max(0, m.atk - this.player.def);
           this.player.hp = Math.max(0, this.player.hp - dmg);
-          this.addBattleLog(`${m.mob.name}의 공격! ${dmg} 데미지!`);
+          this.addBattleLog(`${m.name}의 공격! ${dmg} 데미지!`);
           this.monsterManager._showMonsterAttack(globalIdx, dmg);
         }
         this.refreshPlayerStats();
@@ -1364,6 +1258,8 @@ export class BattleScene extends Phaser.Scene {
     this.debuffManager.clearAll();
     this.player.def = 0;
 
+    const next = roundManager.getNextStep(this.round, this.battleIndex);
+
     const g = this.add.graphics().setDepth(300);
     g.fillStyle(0x000000, 0.6);
     g.fillRect(0, 0, GW, GH);
@@ -1373,11 +1269,9 @@ export class BattleScene extends Phaser.Scene {
     g.lineStyle(3, 0x44dd88);
     g.strokeRoundedRect(px, py, pw, ph, 20);
 
-    const titleText = this.isBoss ? "ROUND CLEAR!" : "BATTLE CLEAR!";
-    const subText = this.isBoss
-      ? `ROUND ${this.round} 완료  SCORE: ${this.player.score}`
-      : `${this.round}-${this.battleIndex + 1}  SCORE: ${this.player.score}`;
-    const noteText = this.isBoss ? "다음 라운드로..." : "다음 전투로...";
+    const titleText = next.isGameEnd ? "GAME CLEAR!" : (next.isNextRound ? "ROUND CLEAR!" : "BATTLE CLEAR!");
+    const subText = `ROUND ${this.round}-${this.battleIndex + 1}  SCORE: ${this.player.score}`;
+    const noteText = next.isGameEnd ? "게임 클리어!" : (next.isNextRound ? "다음 라운드로..." : "다음 전투로...");
 
     this.add.text(GW / 2, py + 60, titleText, TS.clearTitle).setOrigin(0.5).setDepth(301);
     this.add.text(GW / 2, py + 118, subText, TS.clearSub).setOrigin(0.5).setDepth(301);
@@ -1390,33 +1284,31 @@ export class BattleScene extends Phaser.Scene {
     btn.on("pointerover", () => btn.setFillStyle(0x2d66cc));
     btn.on("pointerout", () => btn.setFillStyle(0x1e4e99));
     btn.on("pointerdown", () => {
-      // 모든 카드를 deck으로 모아 셔플 (permanent만 유지)
       this.deck.resetForNextBattle();
 
-      if (this.isBoss) {
-        writeSave(this.round + 1, this.player.toData(), this.deck.getState());
-        this.scene.start("GameScene", {
-          round: this.round + 1,
-          player: this.player.toData(),
-          deck: this.deck.getState(),
-          battleLog: this.battleLogUI.logs,
-        });
-      } else {
-        this.scene.start("GameScene", {
-          round: this.round,
-          player: this.player.toData(),
-          deck: this.deck.getState(),
-          phase: 'battle',
-          battleIndex: this.battleIndex + 1,
-          battleLog: this.battleLogUI.logs,
-        });
+      if (next.isGameEnd) {
+        deleteSave();
+        this.scene.start("MainMenuScene");
+        return;
       }
+
+      if (next.isNextRound) {
+        writeSave(next.round, this.player.toData(), this.deck.getState());
+      }
+
+      this.scene.start("GameScene", {
+        round: next.round,
+        battleIndex: next.battleIndex,
+        player: this.player.toData(),
+        deck: this.deck.getState(),
+        battleLog: this.battleLogUI.logs,
+      });
     });
   }
 
   // ── 레벨업 후 처리 ────────────────────────────────────────────────────────
   _checkLevelUpThenProceed() {
-    const allDead = this.monsters.every(m => m.isDead);
+    const allDead = this.monsterManager.monsters.every(m => m.isDead);
     if (this._suitLevelUpCount > 0) {
       this.isDealing = true;
       this._showLevelUpPopup(() => {
@@ -1520,7 +1412,7 @@ export class BattleScene extends Phaser.Scene {
       normalCount: this.normalCount,
       monsterTier: this.monsterTier,
       totalCost: this.totalCost,
-      monsters: this.monsters,
+      monsters: this.monsterManager.monsters,
     });
   }
 
@@ -1643,6 +1535,6 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // ── 인게임 옵션 오버레이 ─────────────────────────────────────────────────
-  _showOptions()  { this._optionUI.show(); }
+  _showOptions() { this._optionUI.show(); }
   _closeOptions() { this._optionUI.close(); }
 }

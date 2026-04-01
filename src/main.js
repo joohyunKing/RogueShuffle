@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { MainMenuScene } from "./scenes/MainMenuScene.js";
+import { PreloadScene } from "./scenes/PreloadScene.js";
 import { OptionsScene  } from "./scenes/OptionsScene.js";
 import { GameScene     } from "./scenes/GameScene.js";
 import { BattleScene   } from "./scenes/BattleScene.js";
@@ -20,6 +21,6 @@ font.load().then(loaded => {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     dom: { createContainer: true },
-    scene: [MainMenuScene, OptionsScene, GameScene, BattleScene, MarketScene],
+    scene: [MainMenuScene, PreloadScene, OptionsScene, GameScene, BattleScene, MarketScene],
   });
 });

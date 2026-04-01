@@ -1,114 +1,134 @@
 {
-    "rounds": [
-      {
-        "round": 1,
-        "bg": "01_forest_night.jpg",
-        "normalCount": 3,
-        "monsterTier": [0],
-        "totalCost": 3,
-        "boss": {
-          "monsterTier": [2],
-          "totalCost": 10
-        }
-      },
-      {
-        "round": 2,
-        "bg": "02_village.jpg",
-        "normalCount": 3,
-        "monsterTier": [0, 1],
-        "totalCost": 5,
-        "boss": {
-          "monsterTier": [3],
-          "totalCost": 15
-        }
-      },
-      {
-        "round": 3,
-        "bg": "03_village_to_castle.jpg",
-        "normalCount": 3,
-        "monsterTier": [1, 2],
-        "totalCost": 7,
-        "boss": {
-          "monsterTier": [4],
-          "totalCost": 18
-        }
-      },
-      {
-        "round": 4,
-        "bg": "04_old_stone_castle.jpg",
-        "normalCount": 3,
-        "monsterTier": [2, 3],
-        "totalCost": 10,
-        "boss": {
-          "monsterTier": [5],
-          "totalCost": 22
-        }
-      },
-      {
-        "round": 5,
-        "bg": "05_old_stone_castle_2.jpg",
-        "normalCount": 3,
-        "monsterTier": [3, 4],
-        "totalCost": 14,
-        "boss": {
-          "monsterTier": [6],
-          "totalCost": 26
-        }
-      },
-      {
-        "round": 6,
-        "bg": "06_cave.jpg",
-        "normalCount": 3,
-        "monsterTier": [3, 4],
-        "totalCost": 14,
-        "boss": {
-          "monsterTier": [6],
-          "totalCost": 26
-        }
-      },
-      {
-        "round": 7,
-        "bg": "07_cave_to_hell.jpg",
-        "normalCount": 3,
-        "monsterTier": [3, 4],
-        "totalCost": 14,
-        "boss": {
-          "monsterTier": [6],
-          "totalCost": 26
-        }
-      },
-      {
-        "round": 8,
-        "bg": "08_hell.jpg",
-        "normalCount": 3,
-        "monsterTier": [3, 4],
-        "totalCost": 14,
-        "boss": {
-          "monsterTier": [6],
-          "totalCost": 26
-        }
-      },
-      {
-        "round": 9,
-        "bg": "09_hell_to_space.jpg",
-        "normalCount": 3,
-        "monsterTier": [3, 4],
-        "totalCost": 14,
-        "boss": {
-          "monsterTier": [6],
-          "totalCost": 26
-        }
-      },
-      {
-        "round": 10,
-        "bg": "10_space.jpg",
-        "normalCount": 3,
-        "monsterTier": [3, 4],
-        "totalCost": 14,
-        "boss": {
-          "monsterTier": [6],
-          "totalCost": 26
-        }
-      }
-    ]
-  }
+  "rounds": [
+    {
+      "round": 1, 
+      "bg": "01_forest_night.jpg", 
+      "races": ["undead"],
+      "baseStat": {"hp":40, "atk":5, "def":2},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "elite",  "statMulti": 1.5, "totalCost": 2 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    },
+    {
+      "round": 2, 
+      "bg": "02_village.jpg", 
+      "races": ["undead", "beast"],
+      "baseStat": {"hp":50, "atk":5, "def":3},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
+        { "type": "elite",  "statMulti": 1.6, "totalCost": 2 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    },
+    {
+      "round": 3, 
+      "bg": "03_village_to_castle.jpg", 
+      "races": ["undead", "beast"],
+      "baseStat": {"hp":62, "atk":7, "def":4},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
+        { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    },
+    {
+      "round": 4, 
+      "bg": "04_old_stone_castle.jpg", 
+      "races": ["undead", "beast"],
+      "baseStat": {"hp":76, "atk":10, "def":6},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
+        { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    },
+    {
+      "round": 5, 
+      "bg": "05_old_stone_castle_2.jpg", 
+      "races": ["undead", "beast"],
+      "baseStat": {"hp":90, "atk":14, "def":8},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
+        { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    },
+    {
+      "round": 6, 
+      "bg": "06_cave.jpg", 
+      "races": ["undead", "beast"],
+      "baseStat": {"hp":110, "atk":20, "def":12},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
+        { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    },
+    {
+      "round": 7, 
+      "bg": "07_cave_to_hell.jpg", 
+      "races": ["undead", "beast"],
+      "baseStat": {"hp":140, "atk":25, "def":17},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
+        { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    },
+    {
+      "round": 8, 
+      "bg": "08_hell.jpg", 
+      "races": ["undead", "beast"],
+      "baseStat": {"hp":170, "atk":32, "def":20},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
+        { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    },
+    {
+      "round": 9, 
+      "bg": "09_hell_to_space.jpg", 
+      "races": ["undead", "beast"],
+      "baseStat": {"hp":200, "atk":45, "def":24},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
+        { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    },
+    {
+      "round": 10, 
+      "bg": "10_space.jpg", 
+      "races": ["undead", "beast"],
+      "baseStat": {"hp":260, "atk":60, "def":30},
+      "battles": [
+        { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
+        { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
+        { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
+        { "type": "boss",  "statMulti": 5, "totalCost": 5 }
+      ],
+      "bossPool":[], "bossDebuff": {}
+    }
+  ]
+}

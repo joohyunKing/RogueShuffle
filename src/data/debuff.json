@@ -1,7 +1,7 @@
 {
   "debuffs": [
     {
-      "id": "debuff_weakness",
+      "id": "weakness",
       "name": "약화",
       "description": "공격력 -3 (2턴)",
       "tier": 1,
@@ -12,7 +12,7 @@
       "value": 3
     },
     {
-      "id": "debuff_confusion",
+      "id": "confusion",
       "name": "혼란",
       "description": "랜덤 카드 1장 사용 불가 (1턴)",
       "tier": 2,
@@ -23,7 +23,7 @@
       "value": 1
     },
     {
-      "id": "debuff_poison_deck",
+      "id": "poison_deck",
       "name": "저주받은 덱",
       "description": "덱에 독 카드 1장 추가 (배틀 종료까지)",
       "tier": 3,
@@ -34,7 +34,7 @@
       "value": 1
     },
     {
-      "id": "debuff_small_hand",
+      "id": "small_hand",
       "name": "손 묶임",
       "description": "핸드 크기 -2 (2턴)",
       "tier": 1,
@@ -45,7 +45,7 @@
       "value": 2
     },
     {
-      "id": "debuff_small_field",
+      "id": "small_field",
       "name": "시야 좁힘",
       "description": "필드 크기 -1 (2턴)",
       "tier": 1,

@@ -1,0 +1,132 @@
+{
+  "monsters": [
+    {
+      "id":"skeleton_warrior",
+      "name": "스켈레톤 전사",
+      "cost": 1,
+      "race": "undead",
+      "job": "warrior",
+      "skill":{
+        "type":"damage",
+        "probability":15,
+        "name" : "strike",
+        "damMult":1.5
+      },
+      "sprite": {
+        "idle": "skell_warrior_idle.png",
+        "attack": "skell_warrior_attack.png",
+        "damaged": "skell_warrior_damaged.png",
+        "die": "skell_warrior_die.png"
+      }
+    },
+    {
+      "id":"skeleton_archer",
+      "name": "스켈레톤 궁수",
+      "cost": 1,
+      "race": "undead",
+      "job": "archer",
+      "skill":{
+        "type":"debuff",
+        "probability":15,
+        "debuffId": "weakness"
+      },
+      "sprite": {
+        "idle": "skell_archer_idle.png",
+        "attack": "skell_archer_attack.png",
+        "damaged": "skell_archer_damaged.png",
+        "die": "skell_archer_die.png"
+      }
+    },
+    {
+      "id":"undead_lancer",
+      "name": "언데드 랜서",
+      "cost": 1,
+      "race": "undead",
+      "job": "lancer",
+      "skill":{
+        "type":"debuff",
+        "probability":15,
+        "debuffId": "small_field"
+      },
+      "sprite": {
+        "idle": "undead_lance_idle.png",
+        "attack": "undead_lance_attack.png",
+        "damaged": "undead_lance_damaged.png",
+        "die": "undead_lance_die.png"
+      }
+    },
+    {
+      "id":"orc_warrior",
+      "name": "오크 전사",
+      "cost": 2,
+      "race": "beast",
+      "job": "warrior",
+      "sprite": {
+        "idle": "orc_warrior_idle.png",
+        "attack": "orc_warrior_attack.png",
+        "damaged": "orc_warrior_damaged.png",
+        "die": "orc_warrior_die.png"
+      }
+    },
+    {
+      "id":"undead_mage",
+      "name": "언데드 메이지",
+      "cost": 2,
+      "race": "undead",
+      "job": "mage",
+      "skill":{
+        "type":"damage",
+        "probability":30,
+        "name" : "fireball",
+        "damMult":1.5
+      },
+      "sprite": {
+        "idle": "undead_mage_idle.png",
+        "attack": "undead_mage_attack.png",
+        "skill": "undead_mage_skill.png",
+        "damaged": "undead_mage_damaged.png",
+        "die": "undead_mage_die.png"
+      }
+    },
+    {
+      "id":"undead_warrior",
+      "name": "언데드 전사",
+      "cost": 1,
+      "race": "undead",
+      "job": "warrior",
+      "skill":{
+        "type":"damage",
+        "probability":30,
+        "name" : "bash",
+        "damMult":2.0
+      },
+      "sprite": {
+        "idle": "undead_warrior_idle.png",
+        "attack": "undead_warrior_attack.png",
+        "skill": "undead_warrior_skill.png",
+        "damaged": "undead_warrior_damaged.png",
+        "die": "undead_warrior_die.png"
+      }
+    },
+    {
+      "id":"undead_knight",
+      "name": "언데드 기사",
+      "cost": 3,
+      "race": "undead",
+      "job": "knight",
+      "skill":{
+        "type":"debuff",
+        "probability":30,
+        "debuffId":"confusion"
+      },
+      "sprite": {
+        "idle": "undead_knight_idle.png",
+        "attack": "undead_knight_attack.png",
+        "damaged": "undead_knight_damaged.png",
+        "die": "undead_knight_die.png"
+      }
+    }
+  ]
+  
+}
+  

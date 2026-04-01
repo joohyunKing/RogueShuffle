@@ -5,11 +5,10 @@ import { Player } from "../manager/playerManager.js";
 import DeckManager from "../manager/deckManager.js";
 import itemData from '../data/item.json';
 import relicData from '../data/relic.json';
-import roundData from '../data/round.json';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 import { OptionUI } from '../ui/OptionUI.js';
-import { loadOptions } from "../manager/optionManager.js";
+import { roundManager } from '../manager/roundManager.js';
 
 const RARITY_WEIGHT = { common: 60, rare: 30, epic: 10 };
 const RARITY_COLORS = {
@@ -60,39 +59,15 @@ function pickWeighted(pool, n, weightFn) {
 export class MarketScene extends Phaser.Scene {
   constructor() { super("MarketScene"); }
 
-  preload() {
-    this.load.setBaseURL(import.meta.env.BASE_URL);
-    /*
-    const _round  = this.scene.settings.data?.round ?? 1;
-    const _bgFile = roundData.rounds.find(r => r.round === _round)?.bg ?? "01_forest_night.jpg";
-    const _bgKey  = `bg_${_round}`;
-    if (!this.textures.exists(_bgKey))
-      this.load.image(_bgKey, `assets/images/bg/${_bgFile}`);
-    this._bgKey = _bgKey;
-    itemData.items.forEach(item => {
-      if (item.img && !this.textures.exists(`item_${item.id}`))
-        this.load.image(`item_${item.id}`, `assets/images/item/${item.img}`);
-    });
-    relicData.relics.forEach(r => {
-      if (r.img && !this.textures.exists(`relic_${r.id}`))
-        this.load.image(`relic_${r.id}`, `assets/images/relic/${r.img}`);
-    });
-    if (!this.textures.exists("ui_option"))
-      this.load.image("ui_option", "assets/images/ui/option_rembg.png");
-    */
-  }
-
+  //round, player, deck, battleIndex
   create() {
-    const opt = loadOptions();
-    this.registry.set("bgmVolume", opt.bgmVolume);
-    this.registry.set("sfxVolume", opt.sfxVolume);
-    this.registry.set("lang",      opt.lang);
 
     const data     = this.scene.settings.data || {};
     this.round     = data.round  ?? 1;
     this.player    = new Player(data.player ?? {});
     this._deckData = data.deck ?? null;
     this._deck     = new DeckManager(this._deckData ?? {});
+    this.battleIndex = data.battleIndex  ?? 0;
 
     // 상점 초기화 — 보유하지 않은 유물만 판매
     const ownedRelics = new Set(this.player.relics);
@@ -782,12 +757,13 @@ export class MarketScene extends Phaser.Scene {
   _closeOptions() { this._optionUI.close(); }
 
   _proceed() {
+    const next = roundManager.getNextStep(round, battleIndex);
+
     this.scene.start('GameScene', {
-      round:       this.round,
+      round:       next.round,
       player:      this.player.toData(),
       deck:        this._deck.getState(),
-      phase:       'battle',
-      battleIndex: 0,
+      battleIndex: next.battleIndex,
     });
   }
 }
