@@ -9,10 +9,8 @@ import {
   HAND_DATA, HAND_RANK, DEBUG_MODE,
   context
 } from "../constants.js";
-import langData from "../data/lang.json";
-import relicData from "../data/relic.json";
-
-const _relicMap = Object.fromEntries(relicData.relics.map(r => [r.id, r]));
+import { getHandName } from "../service/langService.js";
+import { relicMap as _relicMap } from "../manager/relicManager.js";
 
 import { writeSave, deleteSave } from "../save.js";
 import { CardRenderer } from "../CardRenderer.js";
@@ -20,15 +18,18 @@ import { TS } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
 import effectManager from '../manager/effectManager.js';
 import DeckManager from '../manager/deckManager.js';
-import itemData from '../data/item.json';
+import { applyItemEffect } from '../manager/itemManager.js';
 import { DebuffManager, debuffData, debuffMap as _debuffMap } from '../manager/debuffManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 import { OptionUI } from '../ui/OptionUI.js';
+import { PilePopupUI } from '../ui/PilePopupUI.js';
 
 
 import { MonsterManager } from '../manager/monsterManager.js';
+import { BossManager } from '../manager/bossManager.js';
+import { BossHPBarUI } from '../ui/BossHPBarUI.js';
 
 import { roundManager } from "../manager/roundManager.js";
 import { spawnManager } from '../manager/spawnManager.js';
@@ -55,7 +56,6 @@ export class BattleScene extends Phaser.Scene {
     const data = this.scene.settings.data || {};
 
     this.round = data.round ?? 1;
-    this.isBoss = data.isBoss ?? false;
     this.battleIndex = data.battleIndex ?? 0;
     this.normalCount = data.normalCount ?? 3;
 
@@ -101,7 +101,7 @@ export class BattleScene extends Phaser.Scene {
     this.sortAsc = true;
     this._fullBattleLog = data.battleLog ?? [];
     this._suitLevelUpCount = 0;
-    this._pilePopupObjs = null;
+    this._pilePopup = new PilePopupUI(this, () => this._hideCardPreview());
     this._cardPreviewObjs = null;
 
     CardRenderer.createAll(this);
@@ -119,6 +119,7 @@ export class BattleScene extends Phaser.Scene {
 
     // 세이브에서 몬스터 복원, 없으면 새로 스폰
     const roundData = roundManager.getRoundData(this.round, this.battleIndex);
+    this.isBoss = roundData.isBoss ?? false;
     this.monsters = data.monsters
       ? data.monsters
       : spawnManager.generate(roundData);
@@ -138,6 +139,14 @@ export class BattleScene extends Phaser.Scene {
 
     this._monsterSprites = this.monsterViews.map(v => v.sprite);
 
+    // 보스 전용 초기화
+    this.bossManager = null;
+    this.bossHPBar   = null;
+    if (this.isBoss && this.monsters.length > 0) {
+      this.bossManager = new BossManager(this);
+      this.bossHPBar   = new BossHPBarUI(this, this.monsters[0]);
+      this.monsterViews[0].hideHPBar();
+    }
 
   }
 
@@ -476,43 +485,8 @@ export class BattleScene extends Phaser.Scene {
     const item = this.player.items[idx];
     if (!item) { obj?.destroy(); return; }
 
-    const itemDef = itemData.items.find(d => d.id === item.id);
-    const eff = itemDef?.effect;
-    if (eff) {
-      switch (eff.type) {
-        case 'heal':
-          this.player.hp = Math.min(this.player.maxHp, this.player.hp + eff.value);
-          this.addBattleLog(`[${item.name}] HP +${eff.value}`);
-          break;
-        case 'maxHp':
-          this.player.maxHp += eff.value;
-          //this.player.hp += eff.value;  //최대 체력만 올린다
-          this.addBattleLog(`[${item.name}] 최대 HP +${eff.value}`);
-          break;
-        case 'def':
-          this.player.def += eff.value;
-          this.addBattleLog(`[${item.name}] DEF +${eff.value}`);
-          break;
-        case 'attacksPerTurn':
-          this.player.attacksPerTurn += eff.value;
-          this.addBattleLog(`[${item.name}] 공격횟수 +${eff.value}`);
-          break;
-        case 'handSize':
-          this.player.handSize += eff.value;
-          this.player.handSizeLimit += eff.value;
-          this.addBattleLog(`[${item.name}] 핸드 크기 +${eff.value}`);
-          break;
-        case 'fieldSize':
-          this.player.fieldSize += eff.value;
-          this.player.fieldSizeLimit += eff.value;
-          this.addBattleLog(`[${item.name}] 필드 크기 +${eff.value}`);
-          break;
-        case 'attr':
-          this.player.attrs[eff.suit] += eff.value;
-          this.addBattleLog(`[${item.name}] ${eff.suit} 적응 +${eff.value}`);
-          break;
-      }
-    }
+    const msg = applyItemEffect(this.player, item.id, item.name);
+    if (msg) this.addBattleLog(msg);
 
     this.player.items.splice(idx, 1);
     obj?.destroy();
@@ -574,7 +548,7 @@ export class BattleScene extends Phaser.Scene {
       this._tooltipTxt.setVisible(true);
     });
     hit.on("pointerout", () => { this._tooltipBg.setVisible(false); this._tooltipTxt.setVisible(false); });
-    hit.on("pointerdown", () => { if (!this._pilePopupObjs) this._showPilePopup(this.deckData, "DECK"); });
+    hit.on("pointerdown", () => { if (!this._pilePopup.isOpen) this._pilePopup.show(this.deckData, "DECK"); });
     this.cardObjs.push(hit);
   }
 
@@ -597,7 +571,7 @@ export class BattleScene extends Phaser.Scene {
       this._tooltipTxt.setVisible(true);
     });
     hit.on("pointerout", () => { this._tooltipBg.setVisible(false); this._tooltipTxt.setVisible(false); });
-    hit.on("pointerdown", () => { if (!this._pilePopupObjs) this._showPilePopup(this.dummyData, "DUMMY CARDS"); });
+    hit.on("pointerdown", () => { if (!this._pilePopup.isOpen) this._pilePopup.show(this.dummyData, "DUMMY CARDS"); });
     this.cardObjs.push(hit);
   }
 
@@ -738,6 +712,10 @@ export class BattleScene extends Phaser.Scene {
     });
 
     this._monsterSprites = this.monsterViews.map(v => v.sprite);
+
+    if (this.isBoss && this.bossHPBar && mons[0]) {
+      this.bossHPBar.update(mons[0], this.bossManager);
+    }
   }
 
   // ── 아이템 패널 렌더 ─────────────────────────────────────────────────────
@@ -873,7 +851,7 @@ export class BattleScene extends Phaser.Scene {
     if (score > 0) {
       const lang = this.registry?.get('lang') ?? 'ko';
       const key = HAND_DATA[rank]?.key ?? '';
-      const name = langData[lang]?.hand?.[key]?.name ?? key;
+      const name = getHandName(lang, key);
 
       //hand name
       this._handText
@@ -949,7 +927,7 @@ export class BattleScene extends Phaser.Scene {
    * @param {function} onCardsConsumed - 카드 펄스 완료 후 호출 (핸드 제거 + render)
    * @param {function} onComplete
    */
-  _playAttackAnimation(details, cardFlyInfo, onCardsConsumed, onComplete) {
+  playAttackAnimation(details, cardFlyInfo, onCardsConsumed, onComplete) {
     const PW = PLAYER_PANEL_W;
     const FAW = GW - PW - ITEM_PANEL_W;
     const cX = PW + FAW / 2;
@@ -1186,28 +1164,10 @@ export class BattleScene extends Phaser.Scene {
   // ── 턴 종료 ──────────────────────────────────────────────────────────────
   onTurnEnd() {
     this.isDealing = true;
-    const alive = this.monsterManager.monsters.filter(m => !m.isDead);
-    const ATK_GAP = 650;
 
-    alive.forEach((m, localIdx) => {
-      const globalIdx = this.monsterManager.monsters.indexOf(m);
-      this.time.delayedCall(localIdx * ATK_GAP, () => {
-        const useSkill = m.skill && Math.random() < (DEBUG_MODE ? 3 : 1) / 3;
-        if (useSkill) {
-          this.monsterManager._useMonsterSkill(globalIdx, m);
-        } else {
-          const dmg = Math.max(0, m.atk - this.player.def);
-          this.player.hp = Math.max(0, this.player.hp - dmg);
-          this.addBattleLog(`${m.name}의 공격! ${dmg} 데미지!`);
-          this.monsterManager._showMonsterAttack(globalIdx, dmg);
-        }
-        this.refreshPlayerStats();
-        this.refreshBattleLog();
-      });
-    });
-
-    this.time.delayedCall(alive.length * ATK_GAP + 300, () => {
+    const onMonstersDone = () => {
       try { this.render(); } catch (e) { console.error("[onTurnEnd render]", e); }
+      this.bossHPBar?.update(this.monsters[0], this.bossManager);
       if (this.player.hp <= 0) {
         this.time.delayedCall(500, () => this.showGameOver());
         return;
@@ -1224,7 +1184,33 @@ export class BattleScene extends Phaser.Scene {
       this.dummyData = this.deck.dummyPile;
 
       this.time.delayedCall(500, () => this.startTurn());
+    };
+
+    // 보스 턴
+    if (this.isBoss && this.bossManager) {
+      const boss = this.monsters[0];
+      if (!boss || boss.isDead) {
+        onMonstersDone();
+        return;
+      }
+      this.bossManager.doTurn(boss, onMonstersDone);
+      return;
+    }
+
+    // 일반 몬스터 턴
+    const alive = this.monsterManager.monsters.filter(m => !m.isDead);
+    const ATK_GAP = 650;
+
+    alive.forEach((m, localIdx) => {
+      const globalIdx = this.monsterManager.monsters.indexOf(m);
+      this.time.delayedCall(localIdx * ATK_GAP, () => {
+        this.monsterManager.doMonsterAction(globalIdx, m);
+        this.refreshPlayerStats();
+        this.refreshBattleLog();
+      });
     });
+
+    this.time.delayedCall(alive.length * ATK_GAP + 300, onMonstersDone);
   }
 
   // ── 턴 시작 ──────────────────────────────────────────────────────────────
@@ -1257,6 +1243,8 @@ export class BattleScene extends Phaser.Scene {
     this.isDealing = true;
     this.debuffManager.clearAll();
     this.player.def = 0;
+    this.bossHPBar?.destroy();
+    this.bossHPBar = null;
 
     const next = roundManager.getNextStep(this.round, this.battleIndex);
 
@@ -1416,92 +1404,7 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // ── 덱/더미 카드 목록 팝업 ────────────────────────────────────────────────
-  _showPilePopup(pileData, title) {
-    if (this._pilePopupObjs) return;
-    const objs = this._pilePopupObjs = [];
-
-    const RANK_LIST = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    const CW_ = FIELD_CW, CH_ = FIELD_CH;
-    const GAP_X = CW_ + 4, ROW_H = CH_ + 16, LABEL_W = 26, PAD = 20;
-    const panelX = PLAYER_PANEL_W + PAD;
-    const panelW = GW - PLAYER_PANEL_W - PAD * 2;
-
-    const bySuit = { S: [], H: [], D: [], C: [] };
-    for (const card of pileData) {
-      const s = card.key[0];
-      if (bySuit[s]) bySuit[s].push(card);
-    }
-    SUITS.forEach(s =>
-      bySuit[s].sort((a, b) =>
-        RANK_LIST.indexOf(a.key.slice(1)) - RANK_LIST.indexOf(b.key.slice(1))
-      )
-    );
-
-    const titleH = 38, closeH = 40;
-    const panelH = titleH + SUITS.length * ROW_H + closeH;
-    const panelTop = Math.max(BATTLE_LOG_H + 6, (GH - panelH) / 2);
-    const panelCX = panelX + panelW / 2;
-
-    const dim = this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x000000, 0.78)
-      .setDepth(600).setInteractive();
-    objs.push(dim);
-    objs.push(
-      this.add.rectangle(panelCX, panelTop + panelH / 2, panelW, panelH, 0x0a1e12, 0.97)
-        .setDepth(601).setStrokeStyle(1, 0x3a7a4a)
-    );
-    objs.push(
-      this.add.text(panelCX, panelTop + titleH / 2,
-        `${title}  (${pileData.length})`,
-        { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#ccffcc' }
-      ).setOrigin(0.5).setDepth(602)
-    );
-
-    const SUIT_SYMS = { S: '♠', H: '♥', D: '♦', C: '♣' };
-    const SUIT_COLORS = { S: '#8888ff', H: '#ff6666', D: '#ff6666', C: '#8888ff' };
-    const rowsY = panelTop + titleH;
-
-    SUITS.forEach((suit, si) => {
-      const cy = rowsY + si * ROW_H + CH_ / 2 + 8;
-      const cards = bySuit[suit];
-      objs.push(
-        this.add.text(panelX + LABEL_W / 2, cy, SUIT_SYMS[suit],
-          { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }
-        ).setOrigin(0.5).setDepth(602)
-      );
-      cards.forEach((card, ci) => {
-        const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
-        const img = this.add.image(cx, cy, card.key)
-          .setDisplaySize(CW_, CH_).setDepth(602).setInteractive();
-        img.on('pointerover', () => {
-          this.tweens.add({ targets: img, displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100 });
-          img.setDepth(650);
-        });
-        img.on('pointerout', () => {
-          this.tweens.add({ targets: img, displayWidth: CW_, displayHeight: CH_, duration: 100 });
-          img.setDepth(602);
-        });
-        objs.push(img);
-      });
-    });
-
-    const closeY = rowsY + SUITS.length * ROW_H + closeH / 2;
-    const closeBg = this.add.rectangle(panelCX, closeY, 130, 28, 0x1a3a22)
-      .setDepth(602).setStrokeStyle(1, 0x4a9a5a);
-    const closeTxt = this.add.text(panelCX, closeY, 'CLOSE',
-      { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: '#aaffaa' }
-    ).setOrigin(0.5).setDepth(603).setInteractive();
-    closeTxt.on('pointerdown', () => this._closePilePopup());
-    dim.on('pointerdown', () => this._closePilePopup());
-    objs.push(closeBg, closeTxt);
-  }
-
-  _closePilePopup() {
-    if (!this._pilePopupObjs) return;
-    this._hideCardPreview();
-    this._pilePopupObjs.forEach(o => o.destroy());
-    this._pilePopupObjs = null;
-  }
+  // 덱/더미 팝업은 PilePopupUI 위임
 
   // ── 게임 오버 ────────────────────────────────────────────────────────────
   showGameOver() {

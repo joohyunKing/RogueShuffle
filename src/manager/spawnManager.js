@@ -1,4 +1,5 @@
 import monsterJson from '../data/monsters.json';
+import bossData   from '../data/boss.json';
 
 function randomPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -148,19 +149,42 @@ export class SpawnManager {
     }
 
     /**
-     * 보스 생성 (임시)
+     * 보스 생성
      */
     createBoss(roundData) {
-        const base = roundData.baseStat;
+        const base  = roundData.baseStat;
         const multi = roundData.battleInfo.statMulti;
+        const bossId = roundData.bossId;
+
+        const template = bossData.bosses.find(b => b.id === bossId);
+        if (!template) {
+            console.warn(`Boss "${bossId}" not found in boss.json`);
+            const hp = Math.floor(base.hp * multi);
+            return { id: bossId, name: bossId, isBoss: true, hp, maxHp: hp,
+                     atk: Math.floor(base.atk * multi), def: Math.floor(base.def * multi),
+                     phases: [], passive: null, skills: {}, statMulti: multi };
+        }
+
+        const scale = template.statScale ?? { hp: 1, atk: 1, def: 1 };
+        const hp    = Math.floor(base.hp  * multi * scale.hp);
 
         return {
-            id: roundData.bossId,
-            isBoss: true,
+            id:       template.id,
+            name:     template.name,
+            isBoss:   true,
+            sprite:   template.sprite,
 
-            hp: Math.floor(base.hp * multi),
-            atk: Math.floor(base.atk * multi),
-            def: Math.floor(base.def * multi)
+            hp, maxHp: hp,
+            atk:      Math.floor(base.atk * multi * scale.atk),
+            def:      Math.floor(base.def * multi * scale.def),
+
+            phases:   template.phases,
+            passive:  template.passive,
+            skills:   template.skills,
+            statMulti: multi,
+
+            xp:   Math.floor((4  + roundData.round * 2)   * multi * 3),
+            gold: Math.floor((2  + roundData.round * 1.5) * multi * 3),
         };
     }
 }

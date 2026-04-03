@@ -1,20 +1,49 @@
 {
-    "bosses": [
-      {
-        "id": "skeleton_warrior",
-        "name": "스켈레톤 전사",
-        "tier": 0,
-        "race": "undead",
-        "hp":  [40, 43],
-        "atk": [5,  7],
-        "def": [1,  3],
-        "cost": 1,
-        "sprite": {
-          "idle": "skell_warrior_idle.png",
-          "attack": "skell_warrior_attack.png",
-          "damaged": "skell_warrior_Damaged.png",
-          "die": "skell_warrior_Die.png"
+  "bosses": [
+    {
+      "id": "berserker",
+      "name": "광전사",
+      "sprite": {
+        "idle":    "berserker_idle.png",
+        "attack":  "berserker_attack.png",
+        "damaged": "berserker_damaged.png",
+        "die":     "berserker_die.png"
+      },
+      "statScale": { "hp": 2.0, "atk": 1.2, "def": 1.0 },
+      "passive": {
+        "type":  "atk_per_turn",
+        "value": 1
+      },
+      "phases": [
+        {
+          "hpThreshold": 0.3,
+          "label": "일반",
+          "actions": [
+            { "type": "skill",  "skillId": "def_up" },
+            { "type": "attack" }
+          ]
+        },
+        {
+          "hpThreshold": 0.0,
+          "label": "광전사 모드",
+          "actions": [
+            { "type": "skill", "skillId": "berserker_rage" }
+          ]
+        }
+      ],
+      "skills": {
+        "def_up": {
+          "type":  "buff",
+          "name":  "방어 자세",
+          "stat":  "def",
+          "value": 2
+        },
+        "berserker_rage": {
+          "type":    "damage",
+          "name":    "광전사 일격",
+          "damMult": 3
         }
       }
-    ]
+    }
+  ]
 }

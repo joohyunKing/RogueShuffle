@@ -3,8 +3,8 @@ import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W, SUITS, RANKS, FIELD_CW, FIELD_CH 
 import { TS } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
 import DeckManager from "../manager/deckManager.js";
-import itemData from '../data/item.json';
-import relicData from '../data/relic.json';
+import { getAllItems } from '../manager/itemManager.js';
+import { getRelicsExcluding } from '../manager/relicManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 import { OptionUI } from '../ui/OptionUI.js';
@@ -71,11 +71,11 @@ export class MarketScene extends Phaser.Scene {
 
     // 상점 초기화 — 보유하지 않은 유물만 판매
     const ownedRelics = new Set(this.player.relics);
-    const relicPool   = relicData.relics.filter(r => !ownedRelics.has(r.id));
+    const relicPool   = getRelicsExcluding(ownedRelics);
     this._shopRelics  = pickWeighted(relicPool, 3, r => RARITY_WEIGHT[r.rarity] ?? 10)
       .map(r => ({ ...r, bought: false }));
 
-    this._shopItems = pickWeighted(itemData.items, 5, r => RARITY_WEIGHT[r.rarity] ?? 30)
+    this._shopItems = pickWeighted(getAllItems(), 5, r => RARITY_WEIGHT[r.rarity] ?? 30)
       .map(r => ({ ...r, bought: false }));
 
     this._deckOpsUsed      = 0;

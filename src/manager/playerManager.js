@@ -4,9 +4,7 @@
  * 씬 전환 시 player.toData() 로 직렬화하여 넘깁니다.
  */
 import { HAND_DATA, DEBUG_MODE } from "../constants.js";
-import relicData from '../data/relic.json';
-
-const RELIC_MAP = Object.fromEntries(relicData.relics.map(r => [r.id, r]));
+import { relicMap as RELIC_MAP, getAllRelics } from './relicManager.js';
 
 // HAND_DATA에서 { multi, aoe } 만 추출한 기본 handConfig
 const DEFAULT_HAND_CONFIG = Object.fromEntries(
@@ -17,7 +15,7 @@ const DEFAULT_HAND_CONFIG = Object.fromEntries(
 const RARITY_WEIGHT = { common: 60, rare: 30, epic: 10 };
 
 function _pickStartingRelicIds(n) {
-    const pool = relicData.relics.map(r => ({ id: r.id, w: RARITY_WEIGHT[r.rarity] ?? 10 }));
+    const pool = getAllRelics().map(r => ({ id: r.id, w: RARITY_WEIGHT[r.rarity] ?? 10 }));
     const result = [];
     const avail  = [...pool];
     while (result.length < n && avail.length > 0) {

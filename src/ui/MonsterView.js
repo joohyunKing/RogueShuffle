@@ -150,6 +150,10 @@ export default class MonsterView {
     }
   }
 
+  hideHPBar() {
+    [this.hpBarBg, this.hpBar, this.hpText].forEach(o => o?.setVisible(false));
+  }
+
   destroy() {
     [
       this.sprite,

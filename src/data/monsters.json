@@ -125,8 +125,22 @@
         "damaged": "undead_knight_damaged.png",
         "die": "undead_knight_die.png"
       }
+    },
+    {
+      "id": "berserker",
+      "name": "광전사",
+      "cost": 0,
+      "race": "boss",
+      "job": "warrior",
+      "skill": null,
+      "sprite": {
+        "idle":    "berserker_idle.png",
+        "attack":  "berserker_attack.png",
+        "damaged": "berserker_damaged.png",
+        "die":     "berserker_die.png"
+      }
     }
   ]
-  
+
 }
   

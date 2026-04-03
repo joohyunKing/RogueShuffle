@@ -1,11 +1,9 @@
 import { ITEM_PANEL_W, GW, GH, BATTLE_LOG_H } from "../constants.js";
 import { TS } from "../textStyles.js";
-import relicData from "../data/relic.json";
+import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
 
 const RARITY_STRIP  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
 const RARITY_COLOR  = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
-
-const RELIC_MAP = Object.fromEntries(relicData.relics.map(r => [r.id, r]));
 
 /**
  * ItemUI — 우측 패널: Relic(위) + Item(아래)

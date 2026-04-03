@@ -20,7 +20,7 @@ console.log(calculateScore(sample_cards, sample_context));
 */
 
 import { HAND_RANK, HAND_DATA } from "../constants.js";
-import relicData from '../data/relic.json';
+import { relicMap } from '../manager/relicManager.js';
 
 //최종 점수
 export function calculateScore(cards, context) {
@@ -112,12 +112,6 @@ function calcCardScore(card, ctx, relics) {
 
     return score;
 }
-
-// id → relic 객체 빠르게 찾기
-const relicMap = Object.fromEntries(
-    relicData.relics.map(r => [r.id, r])
-);
-
 
 function getRelicsFromContext(context) {
     return context.relics

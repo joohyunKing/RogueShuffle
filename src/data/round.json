@@ -11,7 +11,7 @@
         { "type": "elite",  "statMulti": 1.5, "totalCost": 2 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     },
     {
       "round": 2, 
@@ -24,7 +24,7 @@
         { "type": "elite",  "statMulti": 1.6, "totalCost": 2 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     },
     {
       "round": 3, 
@@ -37,7 +37,7 @@
         { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     },
     {
       "round": 4, 
@@ -50,7 +50,7 @@
         { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     },
     {
       "round": 5, 
@@ -63,7 +63,7 @@
         { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     },
     {
       "round": 6, 
@@ -76,7 +76,7 @@
         { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     },
     {
       "round": 7, 
@@ -89,7 +89,7 @@
         { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     },
     {
       "round": 8, 
@@ -102,7 +102,7 @@
         { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     },
     {
       "round": 9, 
@@ -115,7 +115,7 @@
         { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     },
     {
       "round": 10, 
@@ -128,7 +128,7 @@
         { "type": "elite",  "statMulti": 1.6, "totalCost": 3 },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":[], "bossDebuff": {}
+      "bossPool":["berserker"], "bossDebuff": {}
     }
   ]
 }

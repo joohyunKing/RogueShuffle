@@ -10,9 +10,8 @@
 
 import { GW, GH } from "../constants.js";
 import { TS } from "../textStyles.js";
-import relicData from "../data/relic.json";
+import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
 
-const RELIC_MAP = Object.fromEntries(relicData.relics.map(r => [r.id, r]));
 const RARITY_C  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
 const RARITY_TX = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
 const MAX_RELICS = 6;

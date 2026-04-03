@@ -119,7 +119,7 @@ export class MonsterManager {
       scene.player.attrs[s] * scene.player.adaptability[s] * suitCounts[s]
     );
 
-    scene._playAttackAnimation(details, cardFlyInfo, removeCards, () => {
+    scene.playAttackAnimation(details, cardFlyInfo, removeCards, () => {
       if (aoe) {
         // ── 광역 공격 ────────────────────────────────────────────────────
         const aliveMonsters = scene.monsters.filter(m => !m.isDead);
@@ -398,6 +398,20 @@ export class MonsterManager {
     });
   }
 
+  // ── 몬스터 행동 결정 (일반 공격 or 스킬) ─────────────────────────────────
+  doMonsterAction(monIdx, m) {
+    const { scene } = this;
+    const useSkill = m.skill && Math.random() * 100 < (m.skill.probability ?? 0);
+    if (useSkill) {
+      this._useMonsterSkill(monIdx, m);
+    } else {
+      const dmg = Math.max(0, m.atk - scene.player.def);
+      scene.player.hp = Math.max(0, scene.player.hp - dmg);
+      scene.addBattleLog(`${m.name}의 공격! ${dmg} 데미지!`);
+      this._showMonsterAttack(monIdx, dmg);
+    }
+  }
+
   // ── 몬스터 스킬 사용 ─────────────────────────────────────────────────────
   _useMonsterSkill(monIdx, m) {
     const { scene } = this;
@@ -419,7 +433,7 @@ export class MonsterManager {
     }
 
     if (skill.type === 'damage') {
-      const raw = skill.value ?? 0;
+      const raw = skill.value ?? Math.floor(m.atk * (skill.damMult ?? 1));
       const dmg = Math.max(0, raw - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
       scene.addBattleLog(`${m.name}의 ${skill.name}! ${dmg} 데미지!`);
