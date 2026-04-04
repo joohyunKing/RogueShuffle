@@ -83,6 +83,19 @@ export class RoundManager {
     }
 
     /**
+     * market을 제외한 전투 표시 번호 (1-based)
+     * ex) [normal, market, normal, elite, boss] 에서 battleIndex=2 → 2
+     */
+    getBattleDisplayNumber(round, battleIndex) {
+        const roundData = this.rounds.find(r => r.round === round);
+        if (!roundData) return battleIndex + 1;
+        return roundData.battles
+            .slice(0, battleIndex + 1)
+            .filter(b => b.type !== 'market')
+            .length;
+    }
+
+    /**
      * 해당 라운드 총 전투 수
      */
     getBattleCount(round) {

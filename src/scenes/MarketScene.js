@@ -757,7 +757,7 @@ export class MarketScene extends Phaser.Scene {
   _closeOptions() { this._optionUI.close(); }
 
   _proceed() {
-    const next = roundManager.getNextStep(round, battleIndex);
+    const next = roundManager.getNextStep(this.round, this.battleIndex);
 
     this.scene.start('GameScene', {
       round:       next.round,

@@ -106,6 +106,10 @@ export class BattleScene extends Phaser.Scene {
 
     CardRenderer.createAll(this);
 
+    // isBoss는 createUI() 내부에서 사용되므로 반드시 먼저 설정
+    const roundData = roundManager.getRoundData(this.round, this.battleIndex);
+    this.isBoss = roundData.isBoss ?? false;
+
     this.drawBg();
     this.createUI();
     this.createSortButton();
@@ -116,10 +120,6 @@ export class BattleScene extends Phaser.Scene {
 
     this.monsterObjs = [];
     this._monsterSprites = [];
-
-    // 세이브에서 몬스터 복원, 없으면 새로 스폰
-    const roundData = roundManager.getRoundData(this.round, this.battleIndex);
-    this.isBoss = roundData.isBoss ?? false;
     this.monsters = data.monsters
       ? data.monsters
       : spawnManager.generate(roundData);
@@ -220,7 +220,9 @@ export class BattleScene extends Phaser.Scene {
     const faCX = PW + FAW / 2;
 
     // ── 플레이어 패널 (PlayerUI) ─────────────────────────────────────────
-    const battleLabel = this.isBoss ? 'BOSS' : `${this.battleIndex + 1}`;
+    const battleLabel = this.isBoss
+      ? 'BOSS'
+      : `${roundManager.getBattleDisplayNumber(this.round, this.battleIndex)}`;
     this.playerUI = new PlayerUI(this, this.player, {
       round: this.round,
       battleLabel,

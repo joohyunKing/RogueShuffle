@@ -9,6 +9,7 @@
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "elite",  "statMulti": 1.7, "totalCost": 2 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
@@ -19,9 +20,11 @@
       "races": ["undead", "beast"],
       "baseStat": {"hp":50, "atk":5, "def":3},
       "battles": [
+        { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
         { "type": "elite",  "statMulti": 1.7, "totalCost": 2 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
@@ -32,9 +35,11 @@
       "races": ["undead", "beast"],
       "baseStat": {"hp":62, "atk":7, "def":4},
       "battles": [
+        { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
         { "type": "elite",  "statMulti": 1.8, "totalCost": 3 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
@@ -45,9 +50,11 @@
       "races": ["undead", "beast"],
       "baseStat": {"hp":76, "atk":10, "def":6},
       "battles": [
+        { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
         { "type": "elite",  "statMulti": 1.8, "totalCost": 3 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
@@ -58,9 +65,11 @@
       "races": ["undead", "beast"],
       "baseStat": {"hp":90, "atk":14, "def":8},
       "battles": [
+        { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
         { "type": "elite",  "statMulti": 1.8, "totalCost": 3 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
@@ -71,9 +80,11 @@
       "races": ["undead", "beast"],
       "baseStat": {"hp":110, "atk":20, "def":12},
       "battles": [
+        { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
         { "type": "elite",  "statMulti": 1.9, "totalCost": 3 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
@@ -84,9 +95,11 @@
       "races": ["undead", "beast"],
       "baseStat": {"hp":140, "atk":25, "def":17},
       "battles": [
+        { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
         { "type": "elite",  "statMulti": 1.9, "totalCost": 3 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
@@ -97,9 +110,11 @@
       "races": ["undead", "beast"],
       "baseStat": {"hp":170, "atk":32, "def":20},
       "battles": [
+        { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
         { "type": "elite",  "statMulti": 1.9, "totalCost": 3 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
@@ -110,9 +125,11 @@
       "races": ["undead", "beast"],
       "baseStat": {"hp":200, "atk":45, "def":24},
       "battles": [
+        { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
         { "type": "elite",  "statMulti": 2.0, "totalCost": 3 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
@@ -123,9 +140,11 @@
       "races": ["undead", "beast"],
       "baseStat": {"hp":260, "atk":60, "def":30},
       "battles": [
+        { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
         { "type": "normal", "statMulti": 1.1, "totalCost": 4 },
         { "type": "elite",  "statMulti": 2.0, "totalCost": 3 },
+        { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
       "bossPool":["berserker"], "bossDebuff": {}
