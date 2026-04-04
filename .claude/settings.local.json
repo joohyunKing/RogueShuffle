@@ -8,7 +8,19 @@
       "Bash(python -c \":*)",
       "Bash(node:*)",
       "Bash(npx vite:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(grep:*)",
+      "Bash(cp:*)",
+      "Bash(\"C:\\\\Users\\\\rundo\\\\Rogue-Shuffle\\\\src\\\\data\\\\item.json\")",
+      "Bash(\"C:\\\\Users\\\\rundo\\\\Rogue-Shuffle\\\\src\\\\scenes\\\\BattleScene.js\")",
+      "Bash(\"C:\\\\Users\\\\rundo\\\\Rogue-Shuffle\\\\src\\\\scenes\\\\MarketScene.js\")",
+      "Bash(node -e \":*)",
+      "Bash(git rm:*)",
+      "Bash(find C:/Users/rundo/Rogue-Shuffle -name *.jpg -path */bg/*)",
+      "Bash(cd:*)",
+      "Bash(GITHUB_ACTIONS=true npm run build)",
+      "Bash(wc -l 'C:\\\\Users\\\\rundo\\\\Rogue-Shuffle\\\\src\\\\manager'/*.js)",
+      "Bash(gh run:*)"
     ]
   }
 }

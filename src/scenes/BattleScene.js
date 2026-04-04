@@ -111,7 +111,7 @@ export class BattleScene extends Phaser.Scene {
     this.isBoss     = roundData.isBoss ?? false;
     this.battleType = roundData.battleInfo?.type ?? 'normal';
     // elite 배율 (보스·소환 몬스터는 MonsterView 생성 시 개별 지정)
-    this.monsterImgScale = this.battleType === 'elite' ? 1.5 : 1.0;
+    this.monsterImgScale = this.battleType === 'elite' ? 1.4 : 1.0;
 
     this.drawBg();
     this.createUI();
@@ -134,7 +134,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.monsterViews = this.monsterManager.monsters.map((mon, idx) => {
       const { x, y } = positions[idx];
-      const scale = mon.isBoss ? 2.0 : mon.isSummoned ? 1.0 : this.monsterImgScale;
+      const scale = mon.isBoss ? 1.8 : mon.isSummoned ? 1.0 : this.monsterImgScale;
 
       return new MonsterView(this, mon, idx, x, y, (i) => {
         if (!this.isDealing) this.monsterManager.attackMonster(i);

@@ -11,6 +11,8 @@ import { OptionUI } from '../ui/OptionUI.js';
 import { roundManager } from '../manager/roundManager.js';
 
 const RARITY_WEIGHT = { common: 60, rare: 30, epic: 10 };
+const ITEM_PRICE  = { common: 5,  rare: 10, epic: 15 };
+const RELIC_PRICE = { common: 20, rare: 30, epic: 40 };
 const RARITY_COLORS = {
   common: { bg: 0x1a3a22, label: '#aaffaa' },
   rare:   { bg: 0x1a2a4a, label: '#aaaaff' },
@@ -266,7 +268,8 @@ export class MarketScene extends Phaser.Scene {
   _drawRelicCard(cx, cy, relic, idx) {
     const W = RELIC_W, H = RELIC_H;
     const rar    = RARITY_COLORS[relic.rarity] ?? RARITY_COLORS.common;
-    const canBuy = !relic.bought && this.player.gold >= relic.price
+    const price  = RELIC_PRICE[relic.rarity] ?? RELIC_PRICE.common;
+    const canBuy = !relic.bought && this.player.gold >= price
                    && this.player.relics.length < 6;
     const alpha  = relic.bought ? 0.4 : 1;
     const top    = cy - H / 2;
@@ -304,8 +307,8 @@ export class MarketScene extends Phaser.Scene {
         { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: '#555555' })
         .setOrigin(0.5).setDepth(6);
     } else {
-      const costColor = this.player.gold >= relic.price ? '#ffdd44' : '#aa6644';
-      this.add.text(cx, priceY, `${relic.price}G`,
+      const costColor = this.player.gold >= price ? '#ffdd44' : '#aa6644';
+      this.add.text(cx, priceY, `${price}G`,
         { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: costColor })
         .setOrigin(0.5).setDepth(6).setAlpha(alpha);
     }
@@ -315,7 +318,7 @@ export class MarketScene extends Phaser.Scene {
 
     const showTip = () => {
       this._showShopTip(cx - W / 2, cy, relic.name, relic.description ?? '',
-        rar.label, relic.price, canBuy, relic.bought,
+        rar.label, price, canBuy, relic.bought,
         canBuy ? () => this._buyRelic(idx) : null);
     };
 
@@ -335,8 +338,9 @@ export class MarketScene extends Phaser.Scene {
 
   _buyRelic(idx) {
     const relic = this._shopRelics[idx];
-    if (relic.bought || this.player.gold < relic.price || this.player.relics.length >= 6) return;
-    this.player.gold -= relic.price;
+    const price = RELIC_PRICE[relic.rarity] ?? RELIC_PRICE.common;
+    if (relic.bought || this.player.gold < price || this.player.relics.length >= 6) return;
+    this.player.gold -= price;
     relic.bought = true;
     this.player.tryAddRelic(relic.id);
     this._drawScene();
@@ -367,7 +371,8 @@ export class MarketScene extends Phaser.Scene {
   _drawItemCard(cx, cy, item, idx) {
     const W = ITEM_W, H = ITEM_H;
     const rar    = RARITY_COLORS[item.rarity] ?? RARITY_COLORS.common;
-    const canBuy = !item.bought && this.player.gold >= item.cost
+    const price  = ITEM_PRICE[item.rarity] ?? ITEM_PRICE.common;
+    const canBuy = !item.bought && this.player.gold >= price
                    && this.player.items.length < 6;
     const alpha  = item.bought ? 0.4 : 1;
     const top    = cy - H / 2;
@@ -406,8 +411,8 @@ export class MarketScene extends Phaser.Scene {
         { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: '#555555' })
         .setOrigin(0.5).setDepth(6);
     } else {
-      const costColor = this.player.gold >= item.cost ? '#ffdd44' : '#aa6644';
-      this.add.text(cx, priceY, `${item.cost}G`,
+      const costColor = this.player.gold >= price ? '#ffdd44' : '#aa6644';
+      this.add.text(cx, priceY, `${price}G`,
         { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: costColor })
         .setOrigin(0.5).setDepth(6).setAlpha(alpha);
     }
@@ -416,7 +421,7 @@ export class MarketScene extends Phaser.Scene {
 
     const showTip = () => {
       this._showShopTip(cx - W / 2, cy, item.name, item.desc ?? '',
-        rar.label, item.cost, canBuy, item.bought,
+        rar.label, price, canBuy, item.bought,
         canBuy ? () => this._buyItem(idx) : null);
     };
 
@@ -436,8 +441,9 @@ export class MarketScene extends Phaser.Scene {
 
   _buyItem(idx) {
     const item = this._shopItems[idx];
-    if (item.bought || this.player.gold < item.cost || this.player.items.length >= 6) return;
-    this.player.gold -= item.cost;
+    const price = ITEM_PRICE[item.rarity] ?? ITEM_PRICE.common;
+    if (item.bought || this.player.gold < price || this.player.items.length >= 6) return;
+    this.player.gold -= price;
     item.bought = true;
     const uid = `${item.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     this.player.items.push({

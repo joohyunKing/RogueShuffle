@@ -4,7 +4,7 @@
  * 씬 전환 시 player.toData() 로 직렬화하여 넘깁니다.
  */
 import { HAND_DATA, DEBUG_MODE } from "../constants.js";
-import { relicMap as RELIC_MAP, getAllRelics } from './relicManager.js';
+import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice } from './relicManager.js';
 
 // HAND_DATA에서 { multi, aoe } 만 추출한 기본 handConfig
 const DEFAULT_HAND_CONFIG = Object.fromEntries(
@@ -200,7 +200,7 @@ export class Player {
             if (eff.type === 'multiplyGold') this.gold = Math.floor(this.gold * eff.value);
         }
         // price 환급 (1/3, 소수점 버림) — 효과 적용 후 추가
-        if (relic.price) this.gold += Math.trunc(relic.price / 3);
+        this.gold += Math.trunc(getRelicPrice(relicId) / 3);
     }
 
     tryAddRelic(relicId) {

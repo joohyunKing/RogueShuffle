@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>Game Data Editor</title>
+<style>
+  body { font-family: Arial; padding: 20px; background:#111; color:#eee; }
+  h2 { margin-top:30px; }
+  .card {
+    border:1px solid #444;
+    border-radius:10px;
+    padding:10px;
+    margin:10px 0;
+    background:#1b1b1b;
+  }
+  input, select {
+    margin:5px;
+    padding:5px;
+  }
+  button {
+    margin:5px;
+    padding:6px 10px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎮 게임 데이터 에디터</h1>
+
+<input type="file" id="fileInput" />
+<button onclick="exportJSON()">💾 저장</button>
+
+<h2>📦 Items</h2>
+<div id="items"></div>
+<button onclick="addItem()">+ 아이템 추가</button>
+
+<h2>💎 Relics</h2>
+<div id="relics"></div>
+<button onclick="addRelic()">+ 유물 추가</button>
+
+<script>
+let data = { items: [], relics: [] };
+
+// 파일 로드
+document.getElementById('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  reader.onload = evt => {
+    data = JSON.parse(evt.target.result);
+    render();
+  };
+  reader.readAsText(file);
+});
+
+function render() {
+  renderItems();
+  renderRelics();
+}
+
+function renderItems() {
+  const container = document.getElementById('items');
+  container.innerHTML = '';
+
+  data.items.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'card';
+
+    div.innerHTML = `
+      <input value="${item.id}" onchange="data.items[${i}].id=this.value">
+      <input value="${item.name}" onchange="data.items[${i}].name=this.value">
+      <input value="${item.cost}" type="number" onchange="data.items[${i}].cost=+this.value">
+      <select onchange="data.items[${i}].rarity=this.value">
+        <option ${item.rarity==='common'?'selected':''}>common</option>
+        <option ${item.rarity==='rare'?'selected':''}>rare</option>
+        <option ${item.rarity==='epic'?'selected':''}>epic</option>
+      </select>
+      <button onclick="deleteItem(${i})">삭제</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function renderRelics() {
+  const container = document.getElementById('relics');
+  container.innerHTML = '';
+
+  data.relics.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'card';
+
+    div.innerHTML = `
+      <input value="${r.id}" onchange="data.relics[${i}].id=this.value">
+      <input value="${r.name}" onchange="data.relics[${i}].name=this.value">
+      <input value="${r.price}" type="number" onchange="data.relics[${i}].price=+this.value">
+      <select onchange="data.relics[${i}].rarity=this.value">
+        <option ${r.rarity==='common'?'selected':''}>common</option>
+        <option ${r.rarity==='rare'?'selected':''}>rare</option>
+        <option ${r.rarity==='epic'?'selected':''}>epic</option>
+      </select>
+      <button onclick="deleteRelic(${i})">삭제</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function addItem() {
+  data.items.push({
+    id: 'new_item',
+    name: '새 아이템',
+    cost: 0,
+    rarity: 'common',
+    effect: { type: 'heal', value: 0 }
+  });
+  renderItems();
+}
+
+function deleteItem(i) {
+  data.items.splice(i,1);
+  renderItems();
+}
+
+function addRelic() {
+  data.relics.push({
+    id: 'new_relic',
+    name: '새 유물',
+    price: 0,
+    rarity: 'common',
+    effects: []
+  });
+  renderRelics();
+}
+
+function deleteRelic(i) {
+  data.relics.splice(i,1);
+  renderRelics();
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'data.json';
+  a.click();
+}
+</script>
+
+</body>
+</html>

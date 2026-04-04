@@ -38,7 +38,7 @@
           "desc": "3 of a kind + a pair"
         },
         "FOUR_OF_A_KIND": {
-          "name": "Four",
+          "name": "Four Card",
           "desc": "4 cards of the same rank"
         },
         "STRAIGHT_FLUSH": {

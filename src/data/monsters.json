@@ -4,7 +4,7 @@
       "id":"skeleton_warrior",
       "name": "스켈레톤 전사",
       "cost": 1,
-      "race": "undead",
+      "race": "skell",
       "job": "warrior",
       "skill":{
         "type":"damage",
@@ -23,7 +23,7 @@
       "id":"skeleton_archer",
       "name": "스켈레톤 궁수",
       "cost": 1,
-      "race": "undead",
+      "race": "skell",
       "job": "archer",
       "skill":{
         "type":"debuff",
@@ -35,6 +35,94 @@
         "attack": "skell_archer_attack.png",
         "damaged": "skell_archer_damaged.png",
         "die": "skell_archer_die.png"
+      }
+    },
+    {
+      "id":"orc_archer",
+      "name": "오크 궁수",
+      "cost": 1,
+      "race": "orc",
+      "job": "archer",
+      "sprite": {
+        "idle": "orc_archer_idle.png",
+        "attack": "orc_archer_attack.png",
+        "skill": "orc_archer_skill.png",
+        "damaged": "orc_archer_damaged.png",
+        "die": "orc_archer_die.png"
+      }
+    },
+    {
+      "id":"orc_warrior",
+      "name": "오크 전사",
+      "cost": 1,
+      "race": "orc",
+      "job": "warrior",
+      "sprite": {
+        "idle": "orc_warrior_idle.png",
+        "attack": "orc_warrior_attack.png",
+        "damaged": "orc_warrior_damaged.png",
+        "die": "orc_warrior_die.png"
+      }
+    },
+    {
+      "id":"orc_mage",
+      "name": "오크 마법사",
+      "cost": 2,
+      "race": "orc",
+      "job": "mage",
+      "sprite": {
+        "idle": "orc_mage_idle.png",
+        "attack": "orc_mage_attack.png",
+        "skill": "orc_mage_skill.png",
+        "damaged": "orc_mage_damaged.png",
+        "die": "orc_mage_die.png"
+      }
+    },
+    {
+      "id":"human_warrior",
+      "name": "인간 전사",
+      "cost": 2,
+      "race": "human",
+      "job": "warrior",
+      "sprite": {
+        "idle": "human_warrior_idle.png",
+        "attack": "human_warrior_attack.png",
+        "skill": "human_warrior_skill.png",
+        "damaged": "human_warrior_damaged.png",
+        "die": "human_warrior_die.png"
+      }
+    },
+    {
+      "id":"human_archer",
+      "name": "인간 궁수",
+      "cost": 2,
+      "race": "human",
+      "job": "archer",
+      "sprite": {
+        "idle": "human_archer_idle.png",
+        "attack": "human_archer_attack.png",
+        "skill": "human_archer_skill.png",
+        "damaged": "human_archer_damaged.png",
+        "die": "human_archer_die.png"
+      }
+    },
+    {
+      "id":"human_knight",
+      "name": "인간 기사",
+      "cost": 2,
+      "race": "human",
+      "job": "knight",
+      "skill":{
+        "type":"debuff",
+        "probability":15,
+        "debuffId": "weakness"
+      },
+      "sprite": {
+        "idle": "human_knight_idle.png",
+        "attack": "human_knight_attack.png",
+        "skill": "human_knight_skill.png",
+        "damaged": "human_knight_damaged.png",
+        "die": "human_knight_die.png"
       }
     },
     {
@@ -53,19 +141,6 @@
         "attack": "undead_lance_attack.png",
         "damaged": "undead_lance_damaged.png",
         "die": "undead_lance_die.png"
-      }
-    },
-    {
-      "id":"orc_warrior",
-      "name": "오크 전사",
-      "cost": 2,
-      "race": "beast",
-      "job": "warrior",
-      "sprite": {
-        "idle": "orc_warrior_idle.png",
-        "attack": "orc_warrior_attack.png",
-        "damaged": "orc_warrior_damaged.png",
-        "die": "orc_warrior_die.png"
       }
     },
     {
@@ -89,6 +164,24 @@
       }
     },
     {
+      "id":"undead_knight",
+      "name": "언데드 기사",
+      "cost": 3,
+      "race": "undead",
+      "job": "knight",
+      "skill":{
+        "type":"debuff",
+        "probability":30,
+        "debuffId":"confusion"
+      },
+      "sprite": {
+        "idle": "undead_knight_idle.png",
+        "attack": "undead_knight_attack.png",
+        "damaged": "undead_knight_damaged.png",
+        "die": "undead_knight_die.png"
+      }
+    },
+    {
       "id":"undead_warrior",
       "name": "언데드 전사",
       "cost": 1,
@@ -106,24 +199,6 @@
         "skill": "undead_warrior_skill.png",
         "damaged": "undead_warrior_damaged.png",
         "die": "undead_warrior_die.png"
-      }
-    },
-    {
-      "id":"undead_knight",
-      "name": "언데드 기사",
-      "cost": 3,
-      "race": "undead",
-      "job": "knight",
-      "skill":{
-        "type":"debuff",
-        "probability":30,
-        "debuffId":"confusion"
-      },
-      "sprite": {
-        "idle": "undead_knight_idle.png",
-        "attack": "undead_knight_attack.png",
-        "damaged": "undead_knight_damaged.png",
-        "die": "undead_knight_die.png"
       }
     }
   ]

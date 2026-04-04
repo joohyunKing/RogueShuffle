@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>JSON Editor</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  textarea { width: 100%; height: 400px; font-family: monospace; }
+  button { margin-top: 10px; margin-right: 10px; }
+</style>
+</head>
+<body>
+
+<h2>JSON 에디터</h2>
+
+<input type="file" id="fileInput"><br><br>
+
+<textarea id="editor"></textarea><br>
+
+<button onclick="formatJSON()">정렬</button>
+<button onclick="validateJSON()">검증</button>
+<button onclick="downloadJSON()">저장</button>
+
+<script>
+let currentData = null;
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function(evt) {
+    try {
+      currentData = JSON.parse(evt.target.result);
+      document.getElementById('editor').value = JSON.stringify(currentData, null, 2);
+    } catch {
+      alert("JSON 파싱 실패");
+    }
+  };
+
+  reader.readAsText(file);
+});
+
+function formatJSON() {
+  try {
+    const data = JSON.parse(document.getElementById('editor').value);
+    document.getElementById('editor').value = JSON.stringify(data, null, 2);
+  } catch {
+    alert("JSON 오류 있음");
+  }
+}
+
+function validateJSON() {
+  try {
+    JSON.parse(document.getElementById('editor').value);
+    alert("✅ 정상 JSON");
+  } catch (e) {
+    alert("❌ 오류: " + e.message);
+  }
+}
+
+function downloadJSON() {
+  const blob = new Blob([document.getElementById('editor').value], { type: "application/json" });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "data.json";
+  a.click();
+}
+</script>
+
+</body>
+</html>
