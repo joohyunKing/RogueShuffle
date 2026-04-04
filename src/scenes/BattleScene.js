@@ -144,7 +144,7 @@ export class BattleScene extends Phaser.Scene {
     this.bossHPBar   = null;
     if (this.isBoss && this.monsters.length > 0) {
       this.bossManager = new BossManager(this);
-      this.bossHPBar   = new BossHPBarUI(this, this.monsters[0]);
+      this.bossHPBar   = new BossHPBarUI(this, this.monsters[0], this.bossManager);
       this.monsterViews[0].hideHPBar();
     }
 
@@ -618,10 +618,8 @@ export class BattleScene extends Phaser.Scene {
   renderHand() {
     if (this.handData.length === 0) return;
 
-    // 공격 횟수 소진 또는 필드픽 한도 도달 시 비활성화
-    const canPick = this.fieldPickCount < this.player.fieldSize
-      && this.attackCount < this.player.attacksPerTurn;
-
+    // 공격 횟수 소진 시 비활성화
+    const canPick = this.attackCount < this.player.attacksPerTurn;
 
     const positions = this.calcHandPositions(this.handData.length);
     const combo = this._getSelectedCombo();
@@ -978,7 +976,7 @@ export class BattleScene extends Phaser.Scene {
     };
 
     // orb 발사 후 이 딜레이 뒤에 countUp 시작 (orb 비행 중 겹침)
-    const ORB_LAG = 110;
+    const ORB_LAG = 100;
 
     // 렐릭 위치 헬퍼
     const relicPos = (relicId) => {
@@ -1021,25 +1019,25 @@ export class BattleScene extends Phaser.Scene {
       });
     }
 
-    // 2. 각 카드 (선택된 순서 — 이미 왼쪽→오른쪽 정렬)
-    cardFlyInfo.forEach((info, idx) => {
-      queue.push(next => {
-        const obj = info.obj;
-        if (!obj?.active) { next(); return; }
-        this.tweens.killTweensOf(obj);
-        const bx = obj.scaleX, by = obj.scaleY;
-        this.tweens.add({
-          targets: obj,
-          scaleX: bx * 1.1,
-          scaleY: by * 1.1,
-          duration: 160, yoyo: true, ease: 'Sine.easeInOut',
-          onComplete: () => { try { obj.setScale(bx, by); } catch (_) { } next(); },
-        });
+    // 카드 펄스 fire-and-forget (큐를 블로킹하지 않음)
+    const pulseCard = (obj) => {
+      if (!obj?.active) return;
+      this.tweens.killTweensOf(obj);
+      const bx = obj.scaleX, by = obj.scaleY;
+      this.tweens.add({
+        targets: obj,
+        scaleX: bx * 1.1, scaleY: by * 1.1,
+        duration: 160, yoyo: true, ease: 'Sine.easeInOut',
+        onComplete: () => { try { obj.setScale(bx, by); } catch (_) { } },
       });
+    };
 
+    // 2. 각 카드 — 펄스와 orb 동시 시작, countUp 완료가 next() 담당
+    cardFlyInfo.forEach((info) => {
       if (info.scoringDetail) {
         const cd = info.scoringDetail;
         queue.push(next => {
+          pulseCard(info.obj);
           throwOrb(info.fromX, info.fromY, 0xffdd44);
           this.time.delayedCall(ORB_LAG, () => countUp(currentScore + cd.baseScore, 200, next));
         });
@@ -1052,6 +1050,9 @@ export class BattleScene extends Phaser.Scene {
             this.time.delayedCall(ORB_LAG, () => countUp(currentScore + delta, 240, next));
           });
         });
+      } else {
+        // 점수 없는 카드는 펄스만 fire-and-forget, 즉시 next
+        queue.push(next => { pulseCard(info.obj); next(); });
       }
     });
 
@@ -1167,7 +1168,7 @@ export class BattleScene extends Phaser.Scene {
 
     const onMonstersDone = () => {
       try { this.render(); } catch (e) { console.error("[onTurnEnd render]", e); }
-      this.bossHPBar?.update(this.monsters[0], this.bossManager);
+      this.bossHPBar?.update(this.monsters[0], this.bossManager, false);
       if (this.player.hp <= 0) {
         this.time.delayedCall(500, () => this.showGameOver());
         return;
@@ -1247,6 +1248,9 @@ export class BattleScene extends Phaser.Scene {
     this.bossHPBar = null;
 
     const next = roundManager.getNextStep(this.round, this.battleIndex);
+    const nextType = next.isGameEnd
+      ? null
+      : roundManager.getRoundData(next.round, next.battleIndex)?.battleInfo?.type;
 
     const g = this.add.graphics().setDepth(300);
     g.fillStyle(0x000000, 0.6);
@@ -1259,7 +1263,10 @@ export class BattleScene extends Phaser.Scene {
 
     const titleText = next.isGameEnd ? "GAME CLEAR!" : (next.isNextRound ? "ROUND CLEAR!" : "BATTLE CLEAR!");
     const subText = `ROUND ${this.round}-${this.battleIndex + 1}  SCORE: ${this.player.score}`;
-    const noteText = next.isGameEnd ? "게임 클리어!" : (next.isNextRound ? "다음 라운드로..." : "다음 전투로...");
+    const noteText = next.isGameEnd ? "게임 클리어!" :
+      nextType === 'market' ? "마켓으로..." :
+      next.isNextRound ? "다음 라운드로..." :
+      "다음 전투로...";
 
     this.add.text(GW / 2, py + 60, titleText, TS.clearTitle).setOrigin(0.5).setDepth(301);
     this.add.text(GW / 2, py + 118, subText, TS.clearSub).setOrigin(0.5).setDepth(301);
@@ -1280,10 +1287,8 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
 
-      if (next.isNextRound) {
-        writeSave(next.round, this.player.toData(), this.deck.getState());
-      }
-
+      // GameScene(roundManager)이 마켓/전투 판단을 담당
+      writeSave(next.round, this.player.toData(), this.deck.getState());
       this.scene.start("GameScene", {
         round: next.round,
         battleIndex: next.battleIndex,
@@ -1296,14 +1301,15 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 레벨업 후 처리 ────────────────────────────────────────────────────────
   _checkLevelUpThenProceed() {
-    const allDead = this.monsterManager.monsters.every(m => m.isDead);
+    const isAllDead = () => this.monsterManager.monsters.every(m => m.isDead);
+
     if (this._suitLevelUpCount > 0) {
       this.isDealing = true;
       this._showLevelUpPopup(() => {
         this.isDealing = false;
-        if (allDead) this.time.delayedCall(500, () => this.onBattleClear());
+        if (isAllDead()) this.time.delayedCall(500, () => this.onBattleClear());
       });
-    } else if (allDead) {
+    } else if (isAllDead()) {
       this.time.delayedCall(700, () => this.onBattleClear());
     }
   }

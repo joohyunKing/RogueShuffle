@@ -199,6 +199,7 @@ export class MonsterManager {
         const overkill = Math.max(0, damage - prevHp);
         const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
         scene.player.score += score;
+        this._refreshHP(monIdx, mon);
 
         if (suitCounts.H > 0) {
           const eff = suitEff('H');
@@ -241,6 +242,7 @@ export class MonsterManager {
     const { scene } = this;
     if (mon.hp <= 0) {
       mon.isDead = true;
+      this._playDie(monIdx, mon);
       const newLevels = scene.player.addXp(mon.xp);
       scene.player.gold += mon.gold;
       scene.addBattleLog(`${mon.name} 처치! +${mon.xp}XP +${mon.gold}G`);
@@ -292,12 +294,13 @@ export class MonsterManager {
 
     scene.effects.hitExplosion(aoeX, aoeY, aliveSprites);
 
-    aliveTargets.forEach(({ m }) => {
+    aliveTargets.forEach(({ m, i }) => {
       const actualDmg = Math.max(0, dmg - m.def);
       m.hp = Math.max(0, m.hp - actualDmg);
       scene.addBattleLog(`BULLSEYE 연쇄! ${m.name}에게 ${actualDmg} 데미지!`);
       if (m.hp <= 0 && !m.isDead) {
         m.isDead = true;
+        this._playDie(i, m);
         const newLevels = scene.player.addXp(m.xp);
         scene.player.gold += m.gold;
         scene.addBattleLog(`${m.name} 처치! +${m.xp}XP +${m.gold}G`);
@@ -305,6 +308,8 @@ export class MonsterManager {
           scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
           scene._suitLevelUpCount += newLevels.length;
         }
+      } else {
+        this._refreshHP(i, m);
       }
     });
 
@@ -327,75 +332,68 @@ export class MonsterManager {
     }
     if (idx === -1) { onDone?.(); return; }
 
-    const positions = this.calcMonsterPositions(scene.monsters.length);
-    const fromX     = positions[fromIdx].x;
-    const toX       = positions[idx].x;
+    const positions  = this.calcMonsterPositions(scene.monsters.length);
+    const fromSprite = scene._monsterSprites?.[fromIdx];
+    const toSprite   = scene._monsterSprites?.[idx];
+    const fromX      = fromSprite?.x ?? positions[fromIdx].x;
+    const fromY      = fromSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2);
+    const toX        = toSprite?.x   ?? positions[idx].x;
+    const toY        = toSprite?.y   ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2);
 
-    const monSprite = scene._monsterSprites?.[idx];
-    scene.effects.hitLightning(
-      monSprite?.x ?? positions[idx].x,
-      monSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
-      monSprite ?? null
-    );
+    scene.effects.hitChainLightning(fromX, fromY, toX, toY, toSprite ?? null);
+    scene._sfx("sfx_knifeSlice");
 
-    const orbY  = MONSTER_IMG_Y - 80;
-    const cpX   = (fromX + toX) / 2;
-    const cpY   = orbY - 60;
-    const orb   = scene.add.circle(fromX, orbY, 10, 0xff4422, 1.0).setDepth(420);
-    const glow  = scene.add.circle(fromX, orbY, 18, 0xff4422, 0.35).setDepth(419);
-    const t = { v: 0 };
-    scene.tweens.add({
-      targets: t, v: 1, duration: 260, ease: 'Sine.easeIn',
-      onUpdate: () => {
-        const s = t.v, r = 1 - s;
-        const x = r * r * fromX + 2 * r * s * cpX + s * s * toX;
-        const y = r * r * orbY   + 2 * r * s * cpY + s * s * orbY;
-        orb.setPosition(x, y);
-        glow.setPosition(x, y);
-      },
-      onComplete: () => {
-        scene.tweens.add({
-          targets: [orb, glow], scaleX: 3.5, scaleY: 3.5, alpha: 0,
-          duration: 130, ease: 'Sine.easeOut',
-          onComplete: () => { orb.destroy(); glow.destroy(); },
-        });
+    scene.time.delayedCall(120, () => {
+      const target    = scene.monsters[idx];
+      const actualDmg = Math.max(0, dmg - target.def);
+      const prevHp    = target.hp;
+      target.hp       = Math.max(0, target.hp - actualDmg);
+      const chain     = Math.max(0, actualDmg - prevHp);
+      this._refreshHP(idx, target);
+      scene.addBattleLog(`오버킬! ${target.name}에게 ${actualDmg} 연쇄!`);
 
-        const target     = scene.monsters[idx];
-        const actualDmg  = Math.max(0, dmg - target.def);
-        const prevHp     = target.hp;
-        target.hp        = Math.max(0, target.hp - actualDmg);
-        const chain      = Math.max(0, actualDmg - prevHp);
-
-        scene.addBattleLog(`오버킬! ${target.name}에게 ${actualDmg} 연쇄!`);
-        scene._sfx("sfx_knifeSlice");
-
-        const monSprite  = scene._monsterSprites?.[idx];
-        const damagedKey = `${target.id}_damaged`;
-        const afterAnim  = () => {
-          if (target.hp <= 0 && !target.isDead) {
-            target.isDead = true;
-            const newLevels = scene.player.addXp(target.xp);
-            scene.player.gold += target.gold;
-            scene.addBattleLog(`${target.name} 연쇄 처치! +${target.xp}XP`);
-            if (newLevels.length > 0) {
-              scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
-              scene._suitLevelUpCount += newLevels.length;
-            }
-            if (chain > 0) this._applyOverkill(idx, chain, onDone);
-            else onDone?.();
-          } else {
-            onDone?.();
-          }
-        };
-
-        if (monSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
-          monSprite.play(damagedKey);
-          monSprite.once('animationcomplete', afterAnim);
-        } else {
-          afterAnim();
+      if (target.hp <= 0 && !target.isDead) {
+        target.isDead = true;
+        this._playDie(idx, target);
+        const newLevels = scene.player.addXp(target.xp);
+        scene.player.gold += target.gold;
+        scene.addBattleLog(`${target.name} 연쇄 처치! +${target.xp}XP`);
+        if (newLevels.length > 0) {
+          scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
+          scene._suitLevelUpCount += newLevels.length;
         }
-      },
+        if (chain > 0) {
+          scene.time.delayedCall(120, () => this._applyOverkill(idx, chain, onDone));
+        } else {
+          onDone?.();
+        }
+      } else {
+        // 생존 — damaged 애니메이션 기다린 후 종료
+        const damagedKey = `${target.id}_damaged`;
+        if (toSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
+          toSprite.play(damagedKey);
+          toSprite.once('animationcomplete', () => onDone?.());
+        } else {
+          onDone?.();
+        }
+      }
     });
+  }
+
+  // ── HP바 즉시 갱신 (애니메이션 불간섭) ──────────────────────────────────
+  _refreshHP(monIdx, mon) {
+    this.scene.monsterViews?.[monIdx]?.updateStats(mon);
+  }
+
+  // ── die 애니메이션 즉시 재생 ─────────────────────────────────────────────
+  _playDie(monIdx, mon) {
+    const view = this.scene.monsterViews?.[monIdx];
+    if (!view) return;
+    view.updateStats(mon);
+    const dieKey = `${mon.id}_die`;
+    if (this.scene.anims.exists(dieKey)) {
+      view.sprite.play(dieKey);
+    }
   }
 
   // ── 몬스터 행동 결정 (일반 공격 or 스킬) ─────────────────────────────────

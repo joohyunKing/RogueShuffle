@@ -150,6 +150,20 @@ export default class MonsterView {
     }
   }
 
+  // HP바 · ATK · DEF 수치만 갱신 (애니메이션 불간섭)
+  updateStats(mon) {
+    const hpRatio = Math.max(0, mon.hp / mon.maxHp);
+    const hpColor =
+      hpRatio > 0.5 ? 0x44cc44 :
+      hpRatio > 0.25 ? 0xddaa00 :
+      0xdd3333;
+    this.hpBar.width = Math.max(1, this.barW * hpRatio);
+    this.hpBar.fillColor = hpColor;
+    this.hpText.setText(`${mon.hp}/${mon.maxHp}`);
+    this.atkText.setText(mon.atk);
+    this.defText.setText(mon.def);
+  }
+
   hideHPBar() {
     [this.hpBarBg, this.hpBar, this.hpText].forEach(o => o?.setVisible(false));
   }

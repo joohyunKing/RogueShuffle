@@ -123,6 +123,65 @@ export default class effectManager {
         if (monsterSprite) this._hitReaction(monsterSprite, 0xaaaaff);
     }
 
+    // ⛓ 오버킬 체인 번개 — 몬스터 → 몬스터
+    hitChainLightning(fromX, fromY, toX, toY, toSprite) {
+        const scene = this.scene;
+
+        const makePts = () => {
+            const pts = [{ x: fromX, y: fromY }];
+            const SEG = 8;
+            for (let i = 1; i < SEG; i++) {
+                const t = i / SEG;
+                const bx = fromX + (toX - fromX) * t;
+                const by = fromY + (toY - fromY) * t;
+                const jitter = Math.sin(t * Math.PI) * 22;
+                pts.push({ x: bx + Phaser.Math.Between(-jitter, jitter), y: by + Phaser.Math.Between(-5, 5) });
+            }
+            pts.push({ x: toX, y: toY });
+            return pts;
+        };
+
+        const drawLine = (g1, g2) => {
+            const pts = makePts();
+            g1.clear(); g1.lineStyle(9, 0xff5511, 0.55);
+            g1.beginPath(); g1.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => g1.lineTo(p.x, p.y)); g1.strokePath();
+
+            g2.clear(); g2.lineStyle(2.5, 0xffddaa, 1.0);
+            g2.beginPath(); g2.moveTo(pts[0].x, pts[0].y);
+            pts.slice(1).forEach(p => g2.lineTo(p.x, p.y)); g2.strokePath();
+        };
+
+        const gGlow = scene.add.graphics().setDepth(9998).setBlendMode(Phaser.BlendModes.ADD);
+        const gCore = scene.add.graphics().setDepth(9999).setBlendMode(Phaser.BlendModes.ADD);
+        drawLine(gGlow, gCore);
+        scene.time.delayedCall(55, () => { if (gCore.active) drawLine(gGlow, gCore); });
+        scene.tweens.add({
+            targets: [gGlow, gCore], alpha: 0, delay: 110, duration: 90,
+            onComplete: () => { gGlow.destroy(); gCore.destroy(); },
+        });
+
+        // 출발점 스파크
+        const origin = scene.add.circle(fromX, fromY, 7, 0xff6633, 0.9)
+            .setDepth(9999).setBlendMode(Phaser.BlendModes.ADD);
+        scene.tweens.add({ targets: origin, scale: 2.5, alpha: 0, duration: 160, ease: 'Expo.easeOut', onComplete: () => origin.destroy() });
+
+        // 도착점 임팩트
+        const spark = scene.add.circle(toX, toY, 13, 0xff7722, 1)
+            .setDepth(9999).setBlendMode(Phaser.BlendModes.ADD);
+        scene.tweens.add({ targets: spark, scale: 3.2, alpha: 0, duration: 200, ease: 'Expo.easeOut', onComplete: () => spark.destroy() });
+
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2;
+            const frag = scene.add.circle(toX, toY, 3, 0xffaa55, 1)
+                .setDepth(9998).setBlendMode(Phaser.BlendModes.ADD);
+            scene.tweens.add({ targets: frag, x: toX + Math.cos(angle) * 22, y: toY + Math.sin(angle) * 22, alpha: 0, duration: 180, onComplete: () => frag.destroy() });
+        }
+
+        scene.cameras.main.shake(90, 0.009);
+        if (toSprite) this._hitReaction(toSprite, 0xff9955);
+    }
+
     // 💥 폭발 (AOE) — 콰콰쾅
     hitExplosion(centerX, centerY, monsters) {
         const scene = this.scene;

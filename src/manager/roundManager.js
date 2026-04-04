@@ -76,6 +76,13 @@ export class RoundManager {
     }
 
     /**
+     * 해당 라운드 존재 여부
+     */
+    hasRound(round) {
+        return this.rounds.some(r => r.round === round);
+    }
+
+    /**
      * 해당 라운드 총 전투 수
      */
     getBattleCount(round) {

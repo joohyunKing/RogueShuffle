@@ -6,6 +6,7 @@ import itemData from '../data/item.json';
 import relicData from "../data/relic.json";
 import debuffData from '../data/debuff.json';
 import monsterJson from '../data/monsters.json';
+import bossJson   from '../data/boss.json';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() { super("PreloadScene"); }
@@ -81,6 +82,18 @@ export class PreloadScene extends Phaser.Scene {
       });
     });
 
+    //boss
+    bossJson.bosses.forEach(boss => {
+      Object.entries(boss.sprite).forEach(([action, fileName]) => {
+        const key = `${boss.id}_${action}`;
+        if (!this.textures.exists(key))
+          this.load.spritesheet(key, `assets/images/monster/${fileName}`, {
+            frameWidth: 384,
+            frameHeight: 384
+          });
+      });
+    });
+
     //sfx
     this.load.audio("sfx_shuffle", "assets/audio/sfx/card-shuffle.ogg");
     this.load.audio("sfx_fan", "assets/audio/sfx/card-fan-1.ogg");
@@ -129,6 +142,21 @@ export class PreloadScene extends Phaser.Scene {
       });
     });
 
+
+    // 보스 애니메이션 등록
+    bossJson.bosses.forEach(boss => {
+      Object.keys(boss.sprite).forEach(action => {
+        const key = `${boss.id}_${action}`;
+        if (this.anims.exists(key)) return;
+        const validFrames = this._countValidFrames(this.textures, key);
+        this.anims.create({
+          key,
+          frames: this.anims.generateFrameNumbers(key, { start: 0, end: validFrames - 1 }),
+          frameRate: 6,
+          repeat: action === 'idle' ? -1 : 0
+        });
+      });
+    });
 
     const data = this.scene.settings.data || {};
     this.time.delayedCall(500, () => {
