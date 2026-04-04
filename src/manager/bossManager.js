@@ -17,17 +17,29 @@ export class BossManager {
     return sorted.find(p => ratio >= p.hpThreshold) ?? sorted[sorted.length - 1];
   }
 
-  // ── 패시브 적용 ──────────────────────────────────────────────────────────
-  applyPassive(boss) {
+  // ── 패시브 활성화 (trigger: 'boss_turn' | 'player_turn') ─────────────────
+  activatePassive(boss, trigger) {
     const { scene } = this;
     const p = boss.passive;
-    if (!p) return;
+    if (!p || p.triggerOn !== trigger) return;
 
     if (p.type === 'atk_per_turn') {
       const gain = Math.floor(p.value * boss.statMulti);
       boss.atk += gain;
       scene.addBattleLog(`[패시브] ${boss.name} ATK +${gain} (총 ${boss.atk})`);
     }
+
+    if (p.type === 'def_multiply_when_summoned') {
+      const summonedAlive = scene.monsters.filter(m => m.isSummoned && !m.isDead);
+      boss.def = summonedAlive.length > 0
+        ? Math.floor(boss.baseDef * p.value)
+        : boss.baseDef;
+    }
+  }
+
+  // ── 보스 턴 패시브 적용 (하위 호환용 래퍼) ───────────────────────────────
+  applyPassive(boss) {
+    this.activatePassive(boss, 'boss_turn');
   }
 
   // ── 보스 턴 실행 ─────────────────────────────────────────────────────────
@@ -65,7 +77,42 @@ export class BossManager {
       this._doAttack(boss, monIdx);
     } else if (action.type === 'skill') {
       this._doSkill(boss, monIdx, action.skillId);
+    } else if (action.type === 'summon_or_attack') {
+      this._doSummonOrAttack(boss, monIdx);
     }
+  }
+
+  // ── 소환(부활) 또는 공격 ──────────────────────────────────────────────────
+  _doSummonOrAttack(boss, monIdx) {
+    const { scene } = this;
+    const deadSummoned = scene.monsters.find(m => m.isSummoned && m.isDead);
+    if (deadSummoned) {
+      this._doRevive(boss, monIdx, deadSummoned);
+    } else {
+      this._doAttack(boss, monIdx);
+    }
+  }
+
+  // ── 소환 몬스터 부활 ────────────────────────────────────────────────────
+  _doRevive(boss, monIdx, target) {
+    const { scene } = this;
+
+    target.isDead = false;
+    target.hp     = Math.floor(target.maxHp * 0.5);
+    target.state  = 'idle';
+
+    // 스프라이트 idle 재생
+    const targetIdx = scene.monsters.indexOf(target);
+    const sprite    = scene._monsterSprites?.[targetIdx];
+    if (sprite instanceof Phaser.GameObjects.Sprite) {
+      const idleKey = `${target.id}_idle`;
+      if (scene.anims.exists(idleKey)) sprite.play(idleKey);
+    }
+
+    this._playAnim(boss, monIdx, 'skill');
+    scene.renderMonsters();
+    scene.addBattleLog(`${boss.name}의 부활! ${target.name} 재생!`);
+    this._showSummonEffect(monIdx);
   }
 
   // ── 일반 공격 ────────────────────────────────────────────────────────────
@@ -160,5 +207,21 @@ export class BossManager {
       { fontFamily: "'PressStart2P',Arial", fontSize: '14px', color: '#88aaff', stroke: '#000000', strokeThickness: 3 })
       .setOrigin(0.5).setDepth(501);
     scene.tweens.add({ targets: txt, y: txt.y - 50, alpha: 0, duration: 600, delay: 100, ease: 'Power2.Out', onComplete: () => txt.destroy() });
+  }
+
+  // ── 소환 이펙트 ──────────────────────────────────────────────────────────
+  _showSummonEffect(monIdx) {
+    const { scene } = this;
+    const positions = scene.monsterManager.calcMonsterPositions(scene.monsters.length);
+    const mX = positions[monIdx]?.x ?? GW / 2;
+
+    const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x9900ff, 0.18).setDepth(500);
+    scene.tweens.add({ targets: flash, alpha: 0, duration: 600, onComplete: () => flash.destroy() });
+    scene._sfx('sfx_shuffle');
+
+    const txt = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, 'SUMMON!',
+      { fontFamily: "'PressStart2P',Arial", fontSize: '13px', color: '#dd88ff', stroke: '#000000', strokeThickness: 3 })
+      .setOrigin(0.5).setDepth(501);
+    scene.tweens.add({ targets: txt, y: txt.y - 60, alpha: 0, duration: 700, delay: 80, ease: 'Power2.Out', onComplete: () => txt.destroy() });
   }
 }

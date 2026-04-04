@@ -63,11 +63,12 @@ export class MarketScene extends Phaser.Scene {
   create() {
 
     const data     = this.scene.settings.data || {};
-    this.round     = data.round  ?? 1;
-    this.player    = new Player(data.player ?? {});
-    this._deckData = data.deck ?? null;
-    this._deck     = new DeckManager(this._deckData ?? {});
-    this.battleIndex = data.battleIndex  ?? 0;
+    this.round       = data.round  ?? 1;
+    this.player      = new Player(data.player ?? {});
+    this._deckData   = data.deck ?? null;
+    this._deck       = new DeckManager(this._deckData ?? {});
+    this.battleIndex = data.battleIndex ?? 0;
+    this._battleLog  = data.battleLog ?? [];
 
     // 상점 초기화 — 보유하지 않은 유물만 판매
     const ownedRelics = new Set(this.player.relics);
@@ -764,6 +765,7 @@ export class MarketScene extends Phaser.Scene {
       player:      this.player.toData(),
       deck:        this._deck.getState(),
       battleIndex: next.battleIndex,
+      battleLog:   this._battleLog,
     });
   }
 }

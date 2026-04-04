@@ -9,10 +9,11 @@
         "damaged": "berserker_damaged.png",
         "die":     "berserker_die.png"
       },
-      "statScale": { "hp": 2.0, "atk": 1.2, "def": 1.0 },
+      "statScale": { "hp": 2.0, "atk": 1.0, "def": 1.0 },
       "passive": {
-        "type":  "atk_per_turn",
-        "value": 1
+        "type":      "atk_per_turn",
+        "value":     1,
+        "triggerOn": "boss_turn"
       },
       "phases": [
         {
@@ -41,9 +42,49 @@
         "berserker_rage": {
           "type":    "damage",
           "name":    "광전사 일격",
-          "damMult": 3
+          "damMult": 2
         }
       }
+    }
+    ,
+    {
+      "id": "summoner",
+      "name": "소환사",
+      "sprite": {
+        "idle":    "summoner_idle.png",
+        "attack":  "summoner_attack.png",
+        "damaged": "summoner_damaged.png",
+        "die":     "summoner_die.png",
+        "skill":   "summoner_attack.png"
+      },
+      "statScale": { "hp": 1.5, "atk": 1.8, "def": 0.5 },
+      "passive": {
+        "type":      "def_multiply_when_summoned",
+        "value":     3,
+        "triggerOn": "player_turn"
+      },
+      "summons": [
+        { "monsterId": "skeleton_warrior", "count": 2 }
+      ],
+      "phases": [
+        {
+          "hpThreshold": 0.4,
+          "label": "소환",
+          "actions": [
+            { "type": "summon_or_attack" },
+            { "type": "summon_or_attack" }
+          ]
+        },
+        {
+          "hpThreshold": 0.0,
+          "label": "맹공",
+          "actions": [
+            { "type": "summon_or_attack" },
+            { "type": "attack" }
+          ]
+        }
+      ],
+      "skills": {}
     }
   ]
 }

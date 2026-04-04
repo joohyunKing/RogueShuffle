@@ -3,7 +3,7 @@
     {
       "round": 1, 
       "bg": "01_forest_night.jpg", 
-      "races": ["undead"],
+      "races": ["skell"],
       "baseStat": {"hp":40, "atk":5, "def":2},
       "battles": [
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
@@ -12,13 +12,13 @@
         { "type": "market" },
         { "type": "boss",  "statMulti": 5, "totalCost": 5 }
       ],
-      "bossPool":["berserker"], "bossDebuff": {}
+      "bossPool":["summoner"], "bossDebuff": {}
     },
     {
-      "round": 2, 
+      "round": 2,
       "bg": "02_village.jpg", 
-      "races": ["undead", "beast"],
-      "baseStat": {"hp":50, "atk":5, "def":3},
+      "races": ["skell", "orc"],
+      "baseStat": {"hp":52, "atk":5, "def":4},
       "battles": [
         { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
@@ -32,8 +32,8 @@
     {
       "round": 3, 
       "bg": "03_village_to_castle.jpg", 
-      "races": ["undead", "beast"],
-      "baseStat": {"hp":62, "atk":7, "def":4},
+      "races": ["orc"],
+      "baseStat": {"hp":70, "atk":7, "def":7},
       "battles": [
         { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
@@ -47,8 +47,8 @@
     {
       "round": 4, 
       "bg": "04_old_stone_castle.jpg", 
-      "races": ["undead", "beast"],
-      "baseStat": {"hp":76, "atk":10, "def":6},
+      "races": ["human"],
+      "baseStat": {"hp":90, "atk":10, "def":11},
       "battles": [
         { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
@@ -62,8 +62,8 @@
     {
       "round": 5, 
       "bg": "05_old_stone_castle_2.jpg", 
-      "races": ["undead", "beast"],
-      "baseStat": {"hp":90, "atk":14, "def":8},
+      "races": ["undead"],
+      "baseStat": {"hp":110, "atk":14, "def":15},
       "battles": [
         { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
@@ -77,8 +77,8 @@
     {
       "round": 6, 
       "bg": "06_cave.jpg", 
-      "races": ["undead", "beast"],
-      "baseStat": {"hp":110, "atk":20, "def":12},
+      "races": ["undead"],
+      "baseStat": {"hp":137, "atk":20, "def":18},
       "battles": [
         { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
@@ -92,8 +92,8 @@
     {
       "round": 7, 
       "bg": "07_cave_to_hell.jpg", 
-      "races": ["undead", "beast"],
-      "baseStat": {"hp":140, "atk":25, "def":17},
+      "races": ["undead"],
+      "baseStat": {"hp":170, "atk":25, "def":22},
       "battles": [
         { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
@@ -107,8 +107,8 @@
     {
       "round": 8, 
       "bg": "08_hell.jpg", 
-      "races": ["undead", "beast"],
-      "baseStat": {"hp":170, "atk":32, "def":20},
+      "races": ["undead"],
+      "baseStat": {"hp":210, "atk":32, "def":27},
       "battles": [
         { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
@@ -122,8 +122,8 @@
     {
       "round": 9, 
       "bg": "09_hell_to_space.jpg", 
-      "races": ["undead", "beast"],
-      "baseStat": {"hp":200, "atk":45, "def":24},
+      "races": ["undead"],
+      "baseStat": {"hp":250, "atk":45, "def":31},
       "battles": [
         { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },
@@ -137,8 +137,8 @@
     {
       "round": 10, 
       "bg": "10_space.jpg", 
-      "races": ["undead", "beast"],
-      "baseStat": {"hp":260, "atk":60, "def":30},
+      "races": ["undead"],
+      "baseStat": {"hp":300, "atk":60, "def":40},
       "battles": [
         { "type": "market" },
         { "type": "normal", "statMulti": 1.0, "totalCost": 3 },

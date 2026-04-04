@@ -1,5 +1,6 @@
 import monsterJson from '../data/monsters.json';
 import bossData   from '../data/boss.json';
+import { roundManager } from './roundManager.js';
 
 function randomPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -15,7 +16,7 @@ export class SpawnManager {
      */
     generate(roundData) {
         if (roundData.isBoss) {
-            return [this.createBoss(roundData)];
+            return this.createBossGroup(roundData);
         }
 
         const { totalCost, statMulti, type } = roundData.battleInfo;
@@ -125,8 +126,9 @@ export class SpawnManager {
 
         switch(race) {
             case "human": result = {"hp":1.0, "atk":1.0, "def":1.0};break;
+            case "skell": result = {"hp":0.8, "atk":1.2, "def":0.9};break;
             case "undead": result = {"hp":0.8, "atk":1.2, "def":0.9};break;
-            case "beast": result = {"hp":1.2, "atk":1.0, "def":0.9};break;
+            case "orc": result = {"hp":1.2, "atk":1.0, "def":0.9};break;
             default: result = {"hp":1.0, "atk":1.0, "def":1.0};
         }
 
@@ -149,6 +151,35 @@ export class SpawnManager {
     }
 
     /**
+     * 보스 그룹 생성 (보스 + boss.json summons 정의 몬스터)
+     */
+    createBossGroup(roundData) {
+        const boss = this.createBoss(roundData);
+        const template = bossData.bosses.find(b => b.id === boss.id);
+        if (!template?.summons?.length) return [boss];
+
+        // 해당 라운드 첫 번째 non-market 배틀 스탯으로 소환 몬스터 생성
+        const rawRound = roundManager.rounds.find(r => r.round === roundData.round);
+        const firstBattle = rawRound?.battles.find(b => b.statMulti != null);
+        const summonStatMulti = firstBattle?.statMulti ?? 1.0;
+        const summonRoundData = { round: roundData.round, baseStat: roundData.baseStat };
+
+        const summons = [];
+        for (const s of template.summons) {
+            const monData = this.monsters.find(m => m.id === s.monsterId);
+            if (!monData) continue;
+            for (let i = 0; i < (s.count ?? 1); i++) {
+                const mon = this.createMonster(monData, summonRoundData, summonStatMulti);
+                mon.isSummoned = true;
+                mon.state = 'idle';
+                summons.push(mon);
+            }
+        }
+
+        return [boss, ...summons];
+    }
+
+    /**
      * 보스 생성
      */
     createBoss(roundData) {
@@ -167,6 +198,7 @@ export class SpawnManager {
 
         const scale = template.statScale ?? { hp: 1, atk: 1, def: 1 };
         const hp    = Math.floor(base.hp  * multi * scale.hp);
+        const def   = Math.floor(base.def * multi * scale.def);
 
         return {
             id:       template.id,
@@ -176,7 +208,8 @@ export class SpawnManager {
 
             hp, maxHp: hp,
             atk:      Math.floor(base.atk * multi * scale.atk),
-            def:      Math.floor(base.def * multi * scale.def),
+            def,
+            baseDef:  def,
 
             phases:   template.phases,
             passive:  template.passive,

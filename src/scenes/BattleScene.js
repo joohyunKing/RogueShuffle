@@ -108,7 +108,10 @@ export class BattleScene extends Phaser.Scene {
 
     // isBoss는 createUI() 내부에서 사용되므로 반드시 먼저 설정
     const roundData = roundManager.getRoundData(this.round, this.battleIndex);
-    this.isBoss = roundData.isBoss ?? false;
+    this.isBoss     = roundData.isBoss ?? false;
+    this.battleType = roundData.battleInfo?.type ?? 'normal';
+    // elite 배율 (보스·소환 몬스터는 MonsterView 생성 시 개별 지정)
+    this.monsterImgScale = this.battleType === 'elite' ? 1.5 : 1.0;
 
     this.drawBg();
     this.createUI();
@@ -131,10 +134,11 @@ export class BattleScene extends Phaser.Scene {
 
     this.monsterViews = this.monsterManager.monsters.map((mon, idx) => {
       const { x, y } = positions[idx];
+      const scale = mon.isBoss ? 2.0 : mon.isSummoned ? 1.0 : this.monsterImgScale;
 
       return new MonsterView(this, mon, idx, x, y, (i) => {
         if (!this.isDealing) this.monsterManager.attackMonster(i);
-      });
+      }, scale);
     });
 
     this._monsterSprites = this.monsterViews.map(v => v.sprite);
@@ -692,6 +696,11 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 몬스터 렌더 ──────────────────────────────────────────────────────────
   renderMonsters() {
+    // 보스 패시브 (player_turn 트리거) 갱신
+    if (this.isBoss && this.bossManager && this.monsters.length > 0) {
+      this.bossManager.activatePassive(this.monsters[0], 'player_turn');
+    }
+
     const mons = this.monsterManager.monsters;
     const positions = this.monsterManager.calcMonsterPositions(mons.length);
 
@@ -902,6 +911,7 @@ export class BattleScene extends Phaser.Scene {
   refreshBattleLog() {
     this.battleLogUI.refresh();
   }
+
 
   toggleHand(i) {
     this._sfx("sfx_place");
@@ -1245,6 +1255,7 @@ export class BattleScene extends Phaser.Scene {
   onBattleClear() {
     this.isDealing = true;
     this.debuffManager.clearAll();
+    this.render();
     this.player.def = 0;
     this.bossHPBar?.destroy();
     this.bossHPBar = null;

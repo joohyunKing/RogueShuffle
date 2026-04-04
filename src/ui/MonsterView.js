@@ -1,13 +1,14 @@
 import { TS } from "../textStyles.js";
 
 export default class MonsterView {
-  constructor(scene, mon, idx, x, y, onClick) {
+  constructor(scene, mon, idx, x, y, onClick, imgScale = 1.0) {
     this.scene = scene;
     this.mon = mon;
     this.idx = idx;
     this.onClick = onClick;
 
-    const imgW = 156, imgH = 156;
+    const imgW = Math.round(156 * imgScale);
+    const imgH = Math.round(156 * imgScale);
 
     // ── 위치 기준 계산
     const MON_BOTTOM = 400; // battleScene 값 그대로 쓰거나 외부에서 넘겨도 좋음

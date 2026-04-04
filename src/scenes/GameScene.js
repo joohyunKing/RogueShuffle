@@ -35,7 +35,7 @@ export class GameScene extends Phaser.Scene {
 
     switch (roundData.battleInfo.type) {
       case 'market':
-        this.scene.start('MarketScene', { round, player, deck, battleIndex });
+        this.scene.start('MarketScene', { round, player, deck, battleIndex, battleLog });
         break;
 
       case 'normal':
