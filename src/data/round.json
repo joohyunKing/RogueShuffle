@@ -36,9 +36,6 @@
           "totalCost": 5
         }
       ],
-      "bossPool": [
-        "troll"
-      ],
       "bossDebuff": {}
     },
     {
@@ -81,9 +78,6 @@
           "totalCost": 5
         }
       ],
-      "bossPool": [
-        "trickster"
-      ],
       "bossDebuff": {}
     },
     {
@@ -124,11 +118,6 @@
           "statMulti": 5,
           "totalCost": 5
         }
-      ],
-      "bossPool": [
-        "berserker",
-        "troll",
-        "hexweaver"
       ],
       "bossDebuff": {}
     },
@@ -171,9 +160,6 @@
           "totalCost": 5
         }
       ],
-      "bossPool": [
-        "summoner"
-      ],
       "bossDebuff": {}
     },
     {
@@ -214,10 +200,6 @@
           "statMulti": 5,
           "totalCost": 5
         }
-      ],
-      "bossPool": [
-        "berserker",
-        "tricksterB"
       ],
       "bossDebuff": {}
     },
@@ -260,10 +242,6 @@
           "totalCost": 5
         }
       ],
-      "bossPool": [
-        "berserker",
-        "iron_fortress"
-      ],
       "bossDebuff": {}
     },
     {
@@ -304,10 +282,6 @@
           "statMulti": 5,
           "totalCost": 5
         }
-      ],
-      "bossPool": [
-        "berserker",
-        "mirror_knight"
       ],
       "bossDebuff": {}
     },
@@ -350,9 +324,6 @@
           "totalCost": 5
         }
       ],
-      "bossPool": [
-        "berserker"
-      ],
       "bossDebuff": {}
     },
     {
@@ -394,9 +365,6 @@
           "totalCost": 5
         }
       ],
-      "bossPool": [
-        "berserker"
-      ],
       "bossDebuff": {}
     },
     {
@@ -437,9 +405,6 @@
           "statMulti": 5,
           "totalCost": 5
         }
-      ],
-      "bossPool": [
-        "berserker"
       ],
       "bossDebuff": {}
     }

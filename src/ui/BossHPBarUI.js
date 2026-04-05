@@ -40,8 +40,14 @@ export class BossHPBarUI {
       .setOrigin(1, 0.5)
       .setDepth(23);
 
-    // ATK / DEF (바 오른쪽 아래)
+    // 보스 이름 (바 아래 중앙)
     const statY = BAR_Y + BAR_H + 6;
+    this._bigNameText = scene.add.text(BAR_X + BAR_W / 2, statY, boss.name,
+      { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#ffdddd', stroke: '#000000', strokeThickness: 3 })
+      .setOrigin(0.5, 0)
+      .setDepth(23);
+
+    // ATK / DEF (바 오른쪽 아래)
     const statRight = BAR_X + BAR_W;
 
     this._atkIcon = scene.add.image(statRight - 88, statY, 'ui_sword')
@@ -149,7 +155,7 @@ export class BossHPBarUI {
 
   destroy() {
     [this._bg, this._fill, this._nameText, this._hpText, this._phaseLabel,
-     this._atkIcon, this._atkText, this._defIcon, this._defText]
+     this._bigNameText, this._atkIcon, this._atkText, this._defIcon, this._defText]
       .forEach(o => o?.destroy());
     this._phaseObjs.forEach(o => o.destroy());
   }

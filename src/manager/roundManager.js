@@ -1,6 +1,9 @@
 // roundManager.js
 
 import roundDataJson from '../data/round.json';
+import bossDataJson  from '../data/boss.json';
+
+const ALL_BOSS_IDS = bossDataJson.bosses.map(b => b.id);
 
 function randomPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -45,8 +48,8 @@ export class RoundManager {
             // 일반 전투용
             races: isBoss ? null : (roundData.races || []),
 
-            // 보스용
-            bossId: isBoss ? randomPick(roundData.bossPool || []) : null,
+            // 보스용 — 전체 보스 목록에서 랜덤 선택
+            bossId: isBoss ? randomPick(ALL_BOSS_IDS) : null,
             bossDebuff: isBoss ? (roundData.bossDebuff || {}) : null
         };
 
