@@ -56,6 +56,16 @@ function pipSize(count) {
 
 const SUIT_SYMS_FB = { S: '♠', H: '♥', D: '♦', C: '♣' };
 
+// ── 씰 툴팁 관리 ─────────────────────────────────────────────────────────────
+const SEAL_INFO = {
+  red:   { name: 'Red Seal',   desc: '공격력 20 강화',          border: 0xff4444 },
+  gold:  { name: 'Gold Seal',  desc: '공격 시 5골드 추가',       border: 0xffdd44 },
+  green: { name: 'Green Seal', desc: '공격 시 아이템 추가',      border: 0x44ff88 },
+};
+const SUIT_COLS = { S: '#aaaaff', H: '#ff6666', D: '#ff6666', C: '#aaaaff' };
+
+let _tipObjs = [];
+
 export class CardRenderer {
   /**
    * 카드 하나를 씬에 그립니다.
@@ -69,7 +79,7 @@ export class CardRenderer {
    * @param {number} y         카드 중심 Y
    * @param {object} card      { key, suit, rank?, enhancements? }
    * @param {{ width:number, height:number, depth?:number, disabled?:boolean, objs?:Array }} opts
-   * @returns {Phaser.GameObjects.Image|Phaser.GameObjects.Text}  메인 카드 오브젝트
+   * @returns {{ cardImg: Phaser.GameObjects.Image|Text, sealImg: Phaser.GameObjects.Image|null }}
    */
   static drawCard(scene, x, y, card, { width, height, depth = 0, disabled = false, objs = null } = {}) {
     const disKey = `${card.key}_disabled`;
@@ -99,23 +109,82 @@ export class CardRenderer {
     }
     objs?.push(cardImg);
 
-    // 강화 표시 (우상단 노란 점)
-    if ((card.enhancements?.length ?? 0) > 0) {
-      const dot = scene.add.circle(
-        x + width / 2 - 5,
-        y - height / 2 + 5,
-        4, 0xffdd44
-      ).setDepth(depth + 2);
-      objs?.push(dot);
+    // 강화(씰) 표시 — 우상단에 씰 이미지
+    let sealImg = null;
+    const enh = card.enhancements?.[0];
+    if (enh) {
+      const sealKey = `seal_${enh.type}`;
+      if (scene.textures.exists(sealKey)) {
+        const sz = Math.round(Math.min(width, height) * 0.3);
+        sealImg = scene.add.image(
+          x + width / 2 - sz / 2 - 1,
+          y - height / 2 + sz / 2 + 1,
+          sealKey
+        ).setDisplaySize(sz, sz).setDepth(depth + 2);
+        objs?.push(sealImg);
+      }
     }
 
-    return cardImg;
+    return { cardImg, sealImg };
+  }
+
+  /**
+   * 씰 툴팁을 카드 위(공간 부족 시 아래)에 표시합니다.
+   * @param {Phaser.Scene} scene
+   * @param {object} card        카드 데이터 { suit, rank, enhancements }
+   * @param {number} cardX       카드 중심 X
+   * @param {number} cardY       카드 중심 Y
+   * @param {number} cardH       카드 표시 높이 (위치 계산용)
+   * @param {number} [depth=900]
+   */
+  static showSealTooltip(scene, card, cardX, cardY, cardH, depth = 900) {
+    CardRenderer.hideSealTooltip();
+    const enh = card.enhancements?.[0];
+    const info = SEAL_INFO[enh?.type];
+    if (!info) return;
+
+    const sym = SUIT_SYMS_FB[card.suit] ?? '';
+    const suitColor = SUIT_COLS[card.suit] ?? '#ffffff';
+
+    const TIP_W = 190, LINE_H = 22, PAD = 10;
+    const TIP_H = LINE_H * 3 + PAD * 2;
+
+    let tipY = cardY - cardH / 2 - TIP_H / 2 - 8;
+    if (tipY < TIP_H / 2 + 4) tipY = cardY + cardH / 2 + TIP_H / 2 + 8;
+
+    const bg = scene.add.rectangle(cardX, tipY, TIP_W, TIP_H, 0x0a0a1a, 0.93)
+      .setDepth(depth).setStrokeStyle(1.5, info.border);
+    _tipObjs.push(bg);
+
+    _tipObjs.push(
+      scene.add.text(cardX, tipY - LINE_H, `${sym} ${card.rank}`,
+        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: suitColor })
+        .setOrigin(0.5).setDepth(depth + 1),
+
+      scene.add.text(cardX, tipY, info.name,
+        { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffffff' })
+        .setOrigin(0.5).setDepth(depth + 1),
+
+      scene.add.text(cardX, tipY + LINE_H, info.desc,
+        { fontFamily: 'Arial', fontSize: '13px', color: '#cccccc' })
+        .setOrigin(0.5).setDepth(depth + 1),
+    );
+  }
+
+  /** 씰 툴팁을 제거합니다. */
+  static hideSealTooltip() {
+    _tipObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
+    _tipObjs = [];
   }
 
   static preload(scene) {
     Object.entries(SYM_URLS).forEach(([suit, url]) => {
       scene.load.image(`sym_${suit}`, url);
     });
+    scene.load.image('seal_red',    'assets/images/symbol/red_seal.png');
+    scene.load.image('seal_gold',   'assets/images/symbol/yellow_seal.png');
+    scene.load.image('seal_green',  'assets/images/symbol/green_seal.png');
+    scene.load.image('seal_rainbow','assets/images/symbol/rainbow_seal.png');
   }
 
   static createAll(scene) {

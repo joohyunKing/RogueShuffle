@@ -18,7 +18,7 @@ import { TS } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
 import effectManager from '../manager/effectManager.js';
 import DeckManager from '../manager/deckManager.js';
-import { applyItemEffect, revertItemEffect, itemMap } from '../manager/itemManager.js';
+import { applyItemEffect, revertItemEffect, itemMap, getAllItems, maxItemCount } from '../manager/itemManager.js';
 import { DebuffManager, debuffData, debuffMap as _debuffMap } from '../manager/debuffManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
@@ -595,7 +595,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.fieldData.forEach((card, i) => {
       const x = card.slotX;
-      const img = CardRenderer.drawCard(this, x, FIELD_Y, card, { width: FIELD_CW, height: FIELD_CH, depth: 10, objs: this.cardObjs });
+      const { cardImg: img, sealImg } = CardRenderer.drawCard(this, x, FIELD_Y, card, { width: FIELD_CW, height: FIELD_CH, depth: 10, objs: this.cardObjs });
 
       img.setInteractive({ draggable: canPick });
 
@@ -610,12 +610,16 @@ export class BattleScene extends Phaser.Scene {
           if (!this.isDragging) {
             this.tweens.add({ targets: img, displayWidth: FIELD_CW * 1.4, displayHeight: FIELD_CH * 1.4, y: FIELD_Y - 10, duration: 100 });
             img.setDepth(20);
+            sealImg?.setVisible(false);
+            CardRenderer.showSealTooltip(this, card, x, FIELD_Y, FIELD_CH);
           }
         });
         img.on("pointerout", () => {
           if (!this.isDragging) {
             this.tweens.add({ targets: img, displayWidth: FIELD_CW, displayHeight: FIELD_CH, y: FIELD_Y, duration: 100 });
             img.setDepth(10);
+            sealImg?.setVisible(true);
+            CardRenderer.hideSealTooltip();
           }
         });
       } else {
@@ -665,7 +669,7 @@ export class BattleScene extends Phaser.Scene {
       const y = sel ? HAND_Y - selOffset : HAND_Y;
 
       const isDisabled = this._isCardDisabled(card);
-      const img = CardRenderer.drawCard(this, x, y, card, { width: cardW, height: cardH, depth: sel ? 32 : 30, disabled: isDisabled, objs: this.cardObjs });
+      const { cardImg: img, sealImg } = CardRenderer.drawCard(this, x, y, card, { width: cardW, height: cardH, depth: sel ? 32 : 30, disabled: isDisabled, objs: this.cardObjs });
       img.setInteractive();
 
       if (canPick) {
@@ -674,12 +678,16 @@ export class BattleScene extends Phaser.Scene {
           if (!this.isDragging) {
             this.tweens.add({ targets: img, displayWidth: hoverW, displayHeight: hoverH, y: y - 8, duration: 100 });
             img.setDepth(40);
+            sealImg?.setVisible(false);
+            CardRenderer.showSealTooltip(this, card, x, y, cardH);
           }
         });
         img.on("pointerout", () => {
           if (!this.isDragging) {
             this.tweens.add({ targets: img, displayWidth: cardW, displayHeight: cardH, y, duration: 100 });
             img.setDepth(sel ? 32 : 30);
+            sealImg?.setVisible(true);
+            CardRenderer.hideSealTooltip();
           }
         });
       } else {
@@ -863,6 +871,35 @@ export class BattleScene extends Phaser.Scene {
     return dm.disabledCardUids.has(card.uid)
       || dm.disabledRanks.has(card.rank)
       || dm.disabledSuits.has(card.suit);
+  }
+
+  // ── 씰 효과 적용 (공격에 사용된 카드 기준) ───────────────────────────────
+  _applySealEffects(cards) {
+    let goldGained = 0;
+
+    for (const card of cards) {
+      for (const enh of (card.enhancements ?? [])) {
+        if (enh.type === 'gold') {
+          goldGained += 5;
+        } else if (enh.type === 'green') {
+          if (this.player.items.length < maxItemCount) {
+            const all = getAllItems();
+            const item = all[Math.floor(Math.random() * all.length)];
+            this.player.items.push({
+              uid: `seal_item_${crypto.randomUUID()}`,
+              id: item.id, name: item.name, desc: item.desc,
+              rarity: item.rarity, img: item.img,
+            });
+            this.addBattleLog(`[씰] ${card.key} → 아이템 [${item.name}] 획득!`);
+          }
+        }
+      }
+    }
+
+    if (goldGained > 0) {
+      this.player.gold += goldGained;
+      this.addBattleLog(`[씰] +${goldGained}G 획득!`);
+    }
   }
 
   // ── 족보 계산 헬퍼 ───────────────────────────────────────────────────────

@@ -100,7 +100,8 @@ function calcHandScore(cards, ctx, relics) {
 function calcCardScore(card, ctx, relics) {
     let score = card.baseScore;
     for (const enh of (card.enhancements ?? [])) {
-        if (enh.type === 'add') score += enh.value;
+        if (enh.type === 'red')  score += 20;          // 공격력 강화 씰
+        if (enh.type === 'add')  score += enh.value;   // 하위 호환
     }
 
     for (const relic of relics) {

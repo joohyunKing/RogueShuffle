@@ -637,7 +637,7 @@ export class MarketScene extends Phaser.Scene {
         const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
         const isSelected = this._deckSelectedCard?.uid === card.uid;
 
-        const cardObj = CardRenderer.drawCard(this, cx, cy, card, { width: CW_, height: CH_, depth: 502, objs });
+        const { cardImg: cardObj, sealImg } = CardRenderer.drawCard(this, cx, cy, card, { width: CW_, height: CH_, depth: 502, objs });
 
         // 선택 테두리
         if (isSelected) {
@@ -650,20 +650,19 @@ export class MarketScene extends Phaser.Scene {
         const hitR = this.add.rectangle(cx, cy, CW_, CH_, 0xffffff, 0)
           .setDepth(505).setInteractive();
         hitR.on('pointerover', () => {
-          this.tweens.add({
-            targets: cardObj,
-            displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100
-          });
+          this.tweens.add({ targets: cardObj, displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100 });
           cardObj.setDepth(560);
+          sealImg?.setVisible(false);
+          CardRenderer.showSealTooltip(this, card, cx, cy, CH_, 560);
         });
         hitR.on('pointerout', () => {
-          this.tweens.add({
-            targets: cardObj,
-            displayWidth: CW_, displayHeight: CH_, duration: 100
-          });
+          this.tweens.add({ targets: cardObj, displayWidth: CW_, displayHeight: CH_, duration: 100 });
           cardObj.setDepth(502);
+          sealImg?.setVisible(true);
+          CardRenderer.hideSealTooltip();
         });
         hitR.on('pointerdown', () => {
+          CardRenderer.hideSealTooltip();
           this._deckSelectedCard =
             (this._deckSelectedCard?.uid === card.uid) ? null : card;
           this._closeDeckPopup();
@@ -687,10 +686,11 @@ export class MarketScene extends Phaser.Scene {
     // 선택 카드 정보
     if (selCard) {
       const isRed = selCard.suit === 'H' || selCard.suit === 'D';
-      const enhBonus = (selCard.enhancements ?? [])
-        .reduce((s, e) => s + (e.type === 'add' ? e.value : 0), 0);
-      const dispScore = selCard.baseScore + enhBonus;
-      const enhLabel = enhBonus > 0 ? ` (+${enhBonus})` : '';
+      const enh = selCard.enhancements?.[0];
+      const SEAL_DESC = { red: '+20점', gold: '+5골드', green: '+아이템', add: `+${enh?.value ?? 0}점` };
+      const scoreBonus = enh?.type === 'red' ? 20 : enh?.type === 'add' ? (enh.value ?? 0) : 0;
+      const dispScore  = selCard.baseScore + scoreBonus;
+      const enhLabel   = enh ? `  [씰: ${SEAL_DESC[enh.type] ?? enh.type}]` : '';
       const suitSym = SUIT_CHARS[selCard.suit] ?? '';
       objs.push(
         this.add.text(panelCX, actionTop + 14,
@@ -706,15 +706,16 @@ export class MarketScene extends Phaser.Scene {
       );
     }
 
-    // 강화 버튼
-    const canEnhance = !!selCard && this.player.gold >= CARD_OP_COST && opsLeft > 0;
+    // 강화 버튼 (씰 적용 — 이미 강화된 카드는 비활성)
+    const alreadySealed = (selCard?.enhancements?.length ?? 0) > 0;
+    const canEnhance = !!selCard && !alreadySealed && this.player.gold >= CARD_OP_COST && opsLeft > 0;
     const enhX = panelCX - 90;
     const btnActY = actionTop + 64;
     const enhBtn = this.add.rectangle(enhX, btnActY, 162, 42,
       canEnhance ? 0x1a3a5a : 0x1a1a1a)
       .setDepth(502).setStrokeStyle(2, canEnhance ? 0x4488cc : 0x333333).setInteractive();
     objs.push(enhBtn,
-      this.add.text(enhX, btnActY, `강화  (+20점)`,
+      this.add.text(enhX, btnActY, alreadySealed ? '강화  (완료)' : '강화  (씰 랜덤)',
         {
           fontFamily: "'PressStart2P',Arial", fontSize: '10px',
           color: canEnhance ? '#88ccff' : '#444444'
@@ -783,8 +784,12 @@ export class MarketScene extends Phaser.Scene {
   _deckEnhance() {
     const card = this._deckSelectedCard;
     if (!card || this.player.gold < CARD_OP_COST || this._deckOpsUsed >= CARD_OP_MAX) return;
-    card.enhancements = card.enhancements ?? [];
-    card.enhancements.push({ type: 'add', value: 20 });
+    if ((card.enhancements?.length ?? 0) > 0) return; // 이미 강화된 카드
+
+    const SEAL_TYPES = ['red', 'gold', 'green'];
+    const type = SEAL_TYPES[Math.floor(Math.random() * SEAL_TYPES.length)];
+    card.enhancements = [{ type }];
+
     this.player.gold -= CARD_OP_COST;
     this._deckOpsUsed++;
     this._deckSelectedCard = null;

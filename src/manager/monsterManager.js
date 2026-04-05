@@ -181,6 +181,9 @@ export class MonsterManager {
     scene.attackCount++;
     scene.isDealing = true;
 
+    // 씰 효과 (골드/아이템) 적용
+    scene._applySealEffects?.(selectedCards);
+
     const removeCards = () => {
       scene.selected.clear();
       [...selectedIndices].sort((a, b) => b - a)

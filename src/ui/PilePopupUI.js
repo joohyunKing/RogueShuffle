@@ -84,15 +84,19 @@ export class PilePopupUI {
       );
       cards.forEach((card, ci) => {
         const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
-        const img = CardRenderer.drawCard(scene, cx, cy, card, { width: CW_, height: CH_, depth: 602, objs });
+        const { cardImg: img, sealImg } = CardRenderer.drawCard(scene, cx, cy, card, { width: CW_, height: CH_, depth: 602, objs });
         img.setInteractive();
         img.on('pointerover', () => {
           scene.tweens.add({ targets: img, displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100 });
           img.setDepth(650);
+          sealImg?.setVisible(false);
+          CardRenderer.showSealTooltip(scene, card, cx, cy, CH_, 700);
         });
         img.on('pointerout', () => {
           scene.tweens.add({ targets: img, displayWidth: CW_, displayHeight: CH_, duration: 100 });
           img.setDepth(602);
+          sealImg?.setVisible(true);
+          CardRenderer.hideSealTooltip();
         });
       });
     });
