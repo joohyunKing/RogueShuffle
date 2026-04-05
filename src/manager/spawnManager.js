@@ -1,5 +1,5 @@
 import monsterJson from '../data/monsters.json';
-import bossData   from '../data/boss.json';
+import bossData from '../data/boss.json';
 import { roundManager } from './roundManager.js';
 
 function randomPick(arr) {
@@ -96,8 +96,8 @@ export class SpawnManager {
         const raceMult = this.getRaceStatMult(monsterData.race) || { hp: 1, atk: 1, def: 1 };
         const jobMult = this.getJobStatMult(monsterData.job) || { hp: 1, atk: 1, def: 1 };
 
-        const baseXp =  4 + (roundData.round * 2);
-        const baseGold = 2 + (roundData.round * 1.5);
+        const baseXp = 4 + roundData.round;
+        const baseGold = 2 + (roundData.round * 0.5);
 
         const hp = Math.floor(base.hp * statMulti * raceMult.hp * jobMult.hp * rnd());
 
@@ -115,7 +115,7 @@ export class SpawnManager {
 
             skill: monsterData.skill || null,
             sprite: monsterData.sprite,
-            
+
             xp: Math.floor(baseXp * statMulti * rnd()),
             gold: Math.floor(baseGold * statMulti * rnd())
         };
@@ -124,12 +124,12 @@ export class SpawnManager {
     getRaceStatMult(race) {
         let result = {};
 
-        switch(race) {
-            case "human": result = {"hp":1.0, "atk":1.0, "def":1.0};break;
-            case "skell": result = {"hp":0.8, "atk":1.2, "def":0.9};break;
-            case "undead": result = {"hp":0.8, "atk":1.2, "def":0.9};break;
-            case "orc": result = {"hp":1.2, "atk":1.0, "def":0.9};break;
-            default: result = {"hp":1.0, "atk":1.0, "def":1.0};
+        switch (race) {
+            case "human": result = { "hp": 1.0, "atk": 1.0, "def": 1.0 }; break;
+            case "skell": result = { "hp": 0.8, "atk": 1.2, "def": 0.9 }; break;
+            case "undead": result = { "hp": 0.8, "atk": 1.2, "def": 0.9 }; break;
+            case "orc": result = { "hp": 1.2, "atk": 1.0, "def": 0.9 }; break;
+            default: result = { "hp": 1.0, "atk": 1.0, "def": 1.0 };
         }
 
         return result;
@@ -138,13 +138,13 @@ export class SpawnManager {
     getJobStatMult(job) {
         let result = {};
 
-        switch(job) {
-            case "warrior": result = {"hp":1.1, "atk":1.1, "def":0.8};break;
-            case "archer": result = {"hp":0.9, "atk":1.4, "def":0.7};break;
-            case "lancer": result = {"hp":1.1, "atk":0.8, "def":1.1};break;
-            case "knight": result = {"hp":1.2, "atk":1.2, "def":1.5};break;
-            case "mage": result = {"hp":0.8, "atk":1.7, "def":0.8};break;
-            default: result = {"hp":1.0, "atk":1.0, "def":1.0};
+        switch (job) {
+            case "warrior": result = { "hp": 1.1, "atk": 1.1, "def": 0.8 }; break;
+            case "archer": result = { "hp": 0.9, "atk": 1.4, "def": 0.7 }; break;
+            case "lancer": result = { "hp": 1.1, "atk": 0.8, "def": 1.1 }; break;
+            case "knight": result = { "hp": 1.2, "atk": 1.2, "def": 1.5 }; break;
+            case "mage": result = { "hp": 0.8, "atk": 1.7, "def": 0.8 }; break;
+            default: result = { "hp": 1.0, "atk": 1.0, "def": 1.0 };
         }
 
         return result;
@@ -183,7 +183,7 @@ export class SpawnManager {
      * 보스 생성
      */
     createBoss(roundData) {
-        const base  = roundData.baseStat;
+        const base = roundData.baseStat;
         const multi = roundData.battleInfo.statMulti;
         const bossId = roundData.bossId;
 
@@ -191,33 +191,35 @@ export class SpawnManager {
         if (!template) {
             console.warn(`Boss "${bossId}" not found in boss.json`);
             const hp = Math.floor(base.hp * multi);
-            return { id: bossId, name: bossId, isBoss: true, hp, maxHp: hp,
-                     atk: Math.floor(base.atk * multi), def: Math.floor(base.def * multi),
-                     phases: [], passive: null, skills: {}, statMulti: multi };
+            return {
+                id: bossId, name: bossId, isBoss: true, hp, maxHp: hp,
+                atk: Math.floor(base.atk * multi), def: Math.floor(base.def * multi),
+                phases: [], passive: null, skills: {}, statMulti: multi
+            };
         }
 
         const scale = template.statScale ?? { hp: 1, atk: 1, def: 1 };
-        const hp    = Math.floor(base.hp  * multi * scale.hp);
-        const def   = Math.floor(base.def * multi * scale.def);
+        const hp = Math.floor(base.hp * multi * scale.hp);
+        const def = Math.floor(base.def * multi * scale.def);
 
         return {
-            id:       template.id,
-            name:     template.name,
-            isBoss:   true,
-            sprite:   template.sprite,
+            id: template.id,
+            name: template.name,
+            isBoss: true,
+            sprite: template.sprite,
 
             hp, maxHp: hp,
-            atk:      Math.floor(base.atk * multi * scale.atk),
+            atk: Math.floor(base.atk * multi * scale.atk),
             def,
-            baseDef:  def,
+            baseDef: def,
 
-            phases:   template.phases,
-            passive:  template.passive,
-            skills:   template.skills,
+            phases: template.phases,
+            passive: template.passive,
+            skills: template.skills,
             statMulti: multi,
 
-            xp:   Math.floor((4  + roundData.round * 2)   * multi * 3),
-            gold: Math.floor((2  + roundData.round * 1.5) * multi * 3),
+            xp: Math.floor((4 + roundData.round) * multi * 3),
+            gold: Math.floor((2 + roundData.round * 0.5) * multi * 3),
         };
     }
 }

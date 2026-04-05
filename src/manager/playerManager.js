@@ -17,7 +17,7 @@ const RARITY_WEIGHT = { common: 60, rare: 30, epic: 10 };
 function _pickStartingRelicIds(n) {
     const pool = getAllRelics().map(r => ({ id: r.id, w: RARITY_WEIGHT[r.rarity] ?? 10 }));
     const result = [];
-    const avail  = [...pool];
+    const avail = [...pool];
     while (result.length < n && avail.length > 0) {
         const total = avail.reduce((s, r) => s + r.w, 0);
         let rand = Math.random() * total;
@@ -56,10 +56,13 @@ export class Player {
         this.atk = data.atk ?? 5;
         /** 슈트별 레벨 { S, H, D, C } */
         this.attrs = data.attrs ?? { S: 1, H: 1, D: 1, C: 1 };
-        /** 구매한 아이템 목록 (최대 4개) */
+        /** 구매한 아이템 목록 (최대 6개) */
         this.items = data.items ?? [];
-        /** 보유 유물 ID 목록 (최대 15개) */
-        this.relics = (data.relics ?? _pickStartingRelicIds(DEBUG_MODE ? 3 : 1)).slice(0, 6);
+        /** 보유 유물 ID 목록 (최대 9개) */
+        this.relics = data.relics ?? [];
+
+        /** 테스트를 위해 시작부터 relic 부여할 경우 아래 주석 해제 */
+        //(data.relics ?? _pickStartingRelicIds(3)).slice(0, 9);
 
         // ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
         /** 직업 */
@@ -99,7 +102,7 @@ export class Player {
 
         // ── 족보 사용 횟수 (handRank 번호 → 누적 횟수) ──────────────────────────
         // HAND_RANK: HIGH_CARD=0 ~ FIVE_CARD=9
-        const defaultCounts = { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0 };
+        const defaultCounts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
         this.handUseCounts = data.handUseCounts
             ? { ...defaultCounts, ...data.handUseCounts }
             : { ...defaultCounts };

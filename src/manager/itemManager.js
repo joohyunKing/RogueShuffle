@@ -1,10 +1,12 @@
 import itemData from '../data/item.json';
 
 export const itemList = itemData.items;
-export const itemMap  = Object.fromEntries(itemData.items.map(i => [i.id, i]));
+export const itemMap = Object.fromEntries(itemData.items.map(i => [i.id, i]));
 
 export function getAllItems() { return itemList; }
 export function getItemById(id) { return itemMap[id] ?? null; }
+
+export const maxItemCount = 6;
 
 /**
  * 아이템 효과를 player에 적용하고 로그 메시지를 반환한다.
@@ -13,6 +15,30 @@ export function getItemById(id) { return itemMap[id] ?? null; }
  * @param {string} itemName - 아이템 표시명 (로그용)
  * @returns {string|null} 배틀 로그 메시지
  */
+/**
+ * 배틀 한정(scope:'battle') 아이템 효과를 되돌린다.
+ * applyItemEffect 와 반대 방향으로 스탯을 조정한다.
+ */
+export function revertItemEffect(player, itemId) {
+  const def = itemMap[itemId];
+  const eff = def?.effect;
+  if (!eff) return;
+
+  switch (eff.type) {
+    case 'attacksPerTurn':
+      player.attacksPerTurn -= eff.value;
+      break;
+    case 'handSize':
+      player.handSize      -= eff.value;
+      player.handSizeLimit -= eff.value;
+      break;
+    case 'fieldSize':
+      player.fieldSize      -= eff.value;
+      player.fieldSizeLimit -= eff.value;
+      break;
+  }
+}
+
 export function applyItemEffect(player, itemId, itemName) {
   const def = itemMap[itemId];
   const eff = def?.effect;

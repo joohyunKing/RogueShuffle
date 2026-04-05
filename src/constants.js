@@ -9,9 +9,9 @@ export const PILE_CW = Math.round(125);   // 46 — 덱/더미 파일 표시 크
 export const PILE_CH = Math.round(86);   // 67
 
 // ─── 카드 데이터 ──────────────────────────────────────────────────────────────
-export const SUITS = ["S", "H", "D", "C"];
+export const SUITS = ["S", "H", "C", "D"];
 export const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
-export const SUIT_ORDER = { S: 0, H: 1, D: 2, C: 3 };
+export const SUIT_ORDER = { S: 0, H: 1, C: 2, D: 3 };
 
 
 /*
@@ -37,19 +37,19 @@ export const HAND_RANK = {
 };
 
 export const HAND_DATA = {
-    11: { key: "FIVE_CARD",      multi: 8,   aoe: true,  enabled: true  },
-    10: { key: "STRAIGHT_FLUSH", multi: 7,   aoe: true,  enabled: true  },
-    9:  { key: "FOUR_OF_A_KIND", multi: 6,   aoe: true,  enabled: true  },
-    8:  { key: "FULL_HOUSE",     multi: 4,   aoe: true,  enabled: true  },
-    7:  { key: "FLUSH",          multi: 4,   aoe: true,  enabled: true  },
-    6:  { key: "STRAIGHT",       multi: 4,   aoe: true,  enabled: true  },
-    5:  { key: "FLUSH_DRAW",     multi: 3.5, aoe: false, enabled: false },
-    4:  { key: "STRAIGHT_DRAW",  multi: 3.5, aoe: false, enabled: false },
-    3:  { key: "TWO_PAIR",       multi: 3,   aoe: false, enabled: true  },
-    2:  { key: "TRIPLE",         multi: 2,   aoe: false, enabled: true  },
-    1:  { key: "ONE_PAIR",       multi: 2,   aoe: false, enabled: true  },
-    0:  { key: "HIGH_CARD",      multi: 1,   aoe: false, enabled: true  },
-  };
+    11: { key: "FIVE_CARD", multi: 8, aoe: true, enabled: true },
+    10: { key: "STRAIGHT_FLUSH", multi: 7, aoe: true, enabled: true },
+    9: { key: "FOUR_OF_A_KIND", multi: 6, aoe: true, enabled: true },
+    8: { key: "FULL_HOUSE", multi: 4, aoe: true, enabled: true },
+    7: { key: "FLUSH", multi: 4, aoe: true, enabled: true },
+    6: { key: "STRAIGHT", multi: 4, aoe: true, enabled: true },
+    5: { key: "FLUSH_DRAW", multi: 3.5, aoe: false, enabled: false },
+    4: { key: "STRAIGHT_DRAW", multi: 3.5, aoe: false, enabled: false },
+    3: { key: "TWO_PAIR", multi: 3, aoe: false, enabled: true },
+    2: { key: "TRIPLE", multi: 2, aoe: false, enabled: true },
+    1: { key: "ONE_PAIR", multi: 2, aoe: false, enabled: true },
+    0: { key: "HIGH_CARD", multi: 1, aoe: false, enabled: true },
+};
 
 
 // ─── context ──────────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ export const context = {
 // 715 ── 720   : 하단 여백
 //
 export const PLAYER_PANEL_W = 200;            // 왼쪽 플레이어 정보 패널 폭
-export const ITEM_PANEL_W   = 200;            // 오른쪽 아이템 패널 폭
+export const ITEM_PANEL_W = 200;            // 오른쪽 아이템 패널 폭
 
 export const BATTLE_LOG_H = 70;
 export const MONSTER_AREA_TOP = 80;
@@ -80,7 +80,7 @@ export const MONSTER_AREA_H = 315;
 export const MONSTER_IMG_Y = 310;             // 몬스터 영역 하단 정렬 (스프라이트 중심)
 
 export const FIELD_Y = 470;                   // 필드 카드 중심  (패널: 408~532)
-export const HAND_Y  = 625;                   // 핸드 카드 중심  (패널: 535~715)
+export const HAND_Y = 625;                   // 핸드 카드 중심  (패널: 535~715)
 export const HAND_TOP = HAND_Y - CH / 2 - 18; // 535 — 드롭 판정 기준
 
 export const DEAL_DELAY = 110;

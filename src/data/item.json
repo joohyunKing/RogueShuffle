@@ -6,7 +6,10 @@
       "img": "red_portion.png",
       "desc": "HP를 20 회복",
       "rarity": "common",
-      "effect": { "type": "heal", "value": 20 }
+      "effect": {
+        "type": "heal",
+        "value": 20
+      }
     },
     {
       "id": "max_hp_up",
@@ -14,7 +17,10 @@
       "img": "green_portion.png",
       "desc": "최대 HP +10",
       "rarity": "common",
-      "effect": { "type": "maxHp", "value": 10 }
+      "effect": {
+        "type": "maxHp",
+        "value": 10
+      }
     },
     {
       "id": "shield",
@@ -22,31 +28,46 @@
       "img": null,
       "desc": "DEF +3",
       "rarity": "common",
-      "effect": { "type": "def", "value": 3 }
+      "effect": {
+        "type": "def",
+        "value": 3
+      }
     },
     {
       "id": "extra_attack",
       "name": "광폭화",
       "img": null,
-      "desc": "턴당 공격 횟수 +1",
+      "desc": "턴당 공격 횟수 +1 (이번 전투만)",
       "rarity": "rare",
-      "effect": { "type": "attacksPerTurn", "value": 1 }
+      "effect": {
+        "type": "attacksPerTurn",
+        "value": 1
+      },
+      "scope": "battle"
     },
     {
       "id": "hand_expand",
       "name": "패 확장",
       "img": null,
-      "desc": "핸드 카드 수 +1",
+      "desc": "핸드 카드 수 +1 (이번 전투만)",
       "rarity": "rare",
-      "effect": { "type": "handSize", "value": 1 }
+      "effect": {
+        "type": "handSize",
+        "value": 1
+      },
+      "scope": "battle"
     },
     {
       "id": "field_expand",
       "name": "필드 확장",
       "img": null,
-      "desc": "필드 카드 수 +1",
+      "desc": "필드 카드 수 +1 (이번 전투만)",
       "rarity": "rare",
-      "effect": { "type": "fieldSize", "value": 1 }
+      "effect": {
+        "type": "fieldSize",
+        "value": 1
+      },
+      "scope": "battle"
     },
     {
       "id": "suit_spade",
@@ -54,7 +75,11 @@
       "img": null,
       "desc": "♠ 적응 레벨 +1",
       "rarity": "epic",
-      "effect": { "type": "attr", "suit": "S", "value": 1 }
+      "effect": {
+        "type": "attr",
+        "suit": "S",
+        "value": 1
+      }
     },
     {
       "id": "suit_heart",
@@ -62,7 +87,11 @@
       "img": null,
       "desc": "♥ 적응 레벨 +1",
       "rarity": "epic",
-      "effect": { "type": "attr", "suit": "H", "value": 1 }
+      "effect": {
+        "type": "attr",
+        "suit": "H",
+        "value": 1
+      }
     },
     {
       "id": "suit_diamond",
@@ -70,7 +99,11 @@
       "img": null,
       "desc": "♦ 적응 레벨 +1",
       "rarity": "epic",
-      "effect": { "type": "attr", "suit": "D", "value": 1 }
+      "effect": {
+        "type": "attr",
+        "suit": "D",
+        "value": 1
+      }
     },
     {
       "id": "suit_club",
@@ -78,7 +111,11 @@
       "img": null,
       "desc": "♣ 적응 레벨 +1",
       "rarity": "epic",
-      "effect": { "type": "attr", "suit": "C", "value": 1 }
+      "effect": {
+        "type": "attr",
+        "suit": "C",
+        "value": 1
+      }
     }
   ]
 }

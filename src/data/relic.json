@@ -1,184 +1,282 @@
 {
-    "relics": [
-      {
-        "id": "relic_a",
-        "name": "다이아의 힘",
-        "description": "다이아 10 카드에 +20 점수",
-        "rarity": "common",
-        "img": "gems_11.png",
-        "effects": [
-          {
-            "scope": "card",
-            "type": "add",
-            "value": 20,
-            "condition": {
-              "suit": "D",
-              "rank": "10"
-            }
+  "relics": [
+    {
+      "id": "diamond_power",
+      "name": "다이아의 힘",
+      "description": "다이아 카드마다 +10 점수",
+      "rarity": "common",
+      "img": "dia_relic.png",
+      "effects": [
+        {
+          "scope": "card",
+          "type": "add",
+          "value": 10,
+          "condition": {
+            "suit": "D"
           }
-        ]
-      },
-  
-      {
-        "id": "relic_b",
-        "name": "쌍둥이 반지",
-        "description": "페어 점수 2배",
-        "rarity": "rare",
-        "img": "gems_11.png",
-        "effects": [
-          {
-            "scope": "hand",
-            "type": "multiply",
-            "value": 2,
-            "condition": {
-              "handRank": 1
-            }
+        }
+      ]
+    },
+    {
+      "id": "heart_power",
+      "name": "하트의 축복",
+      "description": "하트 카드마다 +10 점수",
+      "rarity": "common",
+      "img": "heart_relic.png",
+      "effects": [
+        {
+          "scope": "card",
+          "type": "add",
+          "value": 10,
+          "condition": {
+            "suit": "H"
           }
-        ]
-      },
-  
-  
-      {
-        "id": "relic_b2",
-        "name": "쌍둥이 반지",
-        "description": "하이카드 3배",
-        "rarity": "rare",
-        "img": "gems_11.png",
-        "effects": [
-          {
-            "scope": "hand",
-            "type": "multiply",
-            "value": 3,
-            "condition": {
-              "handRank": 0
-            }
+        }
+      ]
+    },
+    {
+      "id": "spade_power",
+      "name": "스페이드의 힘",
+      "description": "스페이드 카드마다 +10 점수",
+      "rarity": "common",
+      "img": "spade_relic.png",
+      "effects": [
+        {
+          "scope": "card",
+          "type": "add",
+          "value": 10,
+          "condition": {
+            "suit": "S"
           }
-        ]
-      },
-
-      {
-        "id": "relic_c",
-        "name": "탐욕의 주머니",
-        "description": "덱이 30장 이상이면 +30 점수",
-        "rarity": "common",
-        "img": "masc_11.png",
-        "effects": [
-          {
-            "scope": "final",
-            "type": "add",
-            "value": 30,
-            "condition": {
-              "deckCountGte": 30
-            }
+        }
+      ]
+    },
+    {
+      "id": "club_power",
+      "name": "클럽의 힘",
+      "description": "클럽 카드마다 +10 점수",
+      "rarity": "common",
+      "img": "club_relic.png",
+      "effects": [
+        {
+          "scope": "card",
+          "type": "add",
+          "value": 10,
+          "condition": {
+            "suit": "C"
           }
-        ]
-      },
-  
-      {
-        "id": "relic_d",
-        "name": "하트의 축복",
-        "description": "하트 카드마다 +5 점수",
-        "rarity": "common",
-        "img": "lamp.png",
-        "effects": [
-          {
-            "scope": "card",
-            "type": "add",
-            "value": 5,
-            "condition": {
-              "suit": "H"
-            }
+        }
+      ]
+    },
+    {
+      "id": "pair_a",
+      "name": "쌍둥이 반지",
+      "description": "페어 점수 2배",
+      "rarity": "common",
+      "img": "pair.png",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 2,
+          "condition": {
+            "handRank": 1
           }
-        ]
-      },
-  
-      {
-        "id": "relic_e",
-        "name": "스트레이트 장인",
-        "description": "스트레이트일 경우 +50 점수",
-        "rarity": "rare",
-        "img": "gems_12.png",
-        "effects": [
-          {
-            "scope": "hand",
-            "type": "add",
-            "value": 50,
-            "condition": {
-              "handRank": 6
-            }
+        }
+      ]
+    },
+    {
+      "id": "one_eye",
+      "name": "외눈반지",
+      "description": "하이카드 3배",
+      "rarity": "common",
+      "img": "one_eye.png",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 3,
+          "condition": {
+            "handRank": 0
           }
-        ]
-      },
-  
-      {
-        "id": "relic_g",
-        "name": "물의 흐름",
-        "description": "FLUSH DRAW 패 활성화 (같은 슈트 4장)",
-        "rarity": "rare",
-        "img": "gems_11.png",
-        "effects": [
-          { "scope": "special", "type": "enableHand", "handRank": 5 }
-        ]
-      },
-
-      {
-        "id": "relic_f",
-        "name": "올인",
-        "description": "최종 점수 1.5배",
-        "rarity": "epic",
-        "img": "gems_12.png",
-        "effects": [
-          {
-            "scope": "final",
-            "type": "multiply",
-            "value": 1.5
+        }
+      ]
+    },
+    {
+      "id": "triple",
+      "name": "트리플",
+      "description": "트리플 점수 2배",
+      "rarity": "common",
+      "img": "triple.png",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 2,
+          "condition": {
+            "handRank": 2
           }
-        ]
-      },
-
-      {
-        "id": "relic_h",
-        "name": "쌍의 폭풍",
-        "description": "원 페어로 전체 광역 공격",
-        "rarity": "rare",
-        "img": "gems_11.png",
-        "effects": [
-          { "scope": "special", "type": "setHandAoe", "handRank": 1, "value": true }
-        ]
-      },
-
-      {
-        "id": "relic_i",
-        "name": "집중의 불꽃",
-        "description": "FLUSH 단일 공격, 배수 2배",
-        "rarity": "epic",
-        "img": "gems_12.png",
-        "effects": [
-          { "scope": "special", "type": "setHandAoe",        "handRank": 7, "value": false },
-          { "scope": "special", "type": "multiplyHandMulti", "handRank": 7, "value": 2 }
-        ]
-      },
-
-      {
-        "id": "relic_j",
-        "name": "붉은 심장",
-        "description": "하트와 다이아를 같은 수트로 인식",
-        "rarity": "rare",
-        "img": "lamp.png",
-        "effects": [
-          { "scope": "special", "type": "suitAlias", "suit": "H", "aliasTo": "D" }
-        ]
-      },
-
-      {
-        "id": "relic_k",
-        "name": "황금의 역설",
-        "description": "제거 시 보유 골드 2배",
-        "rarity": "epic",
-        "img": "gems_12.png",
-        "effects": [
-          { "scope": "onRemove", "type": "multiplyGold", "value": 2 }
-        ]
-      }
-    ]
-  }
+        }
+      ]
+    },
+    {
+      "id": "two_pair",
+      "name": "투페어",
+      "description": "투페어 점수 2배",
+      "rarity": "common",
+      "img": "two_pair.png",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 2,
+          "condition": {
+            "handRank": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "avarice",
+      "name": "탐욕의 주머니",
+      "description": "덱이 30장 이상이면 +30 점수",
+      "rarity": "common",
+      "img": "avarice.png",
+      "effects": [
+        {
+          "scope": "final",
+          "type": "add",
+          "value": 30,
+          "condition": {
+            "deckCountGte": 30
+          }
+        }
+      ]
+    },
+    {
+      "id": "straight_master",
+      "name": "스트레이트 장인",
+      "description": "스트레이트일 경우 +60 점수",
+      "rarity": "rare",
+      "img": "STRAIGHT.png",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "add",
+          "value": 60,
+          "condition": {
+            "handRank": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "relic_g",
+      "name": "물의 흐름",
+      "description": "FLUSH DRAW 패 활성화 (같은 슈트 4장)",
+      "rarity": "rare",
+      "img": "gems_11.png",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "enableHand",
+          "handRank": 5
+        }
+      ]
+    },
+    {
+      "id": "relic_f",
+      "name": "올인",
+      "description": "최종 점수 1.5배",
+      "rarity": "epic",
+      "img": "gems_12.png",
+      "effects": [
+        {
+          "scope": "final",
+          "type": "multiply",
+          "value": 1.5
+        }
+      ]
+    },
+    {
+      "id": "pair_tornado",
+      "name": "쌍의 폭풍",
+      "description": "원 페어로 전체 광역 공격",
+      "rarity": "rare",
+      "img": "pair2.png",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "setHandAoe",
+          "handRank": 1,
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "triple_bomb",
+      "name": "트리플 폭탄",
+      "description": "트리플로 전체 광역 공격",
+      "rarity": "rare",
+      "img": "triple2.png",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "setHandAoe",
+          "handRank": 2,
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "relic_i",
+      "name": "집중의 불꽃",
+      "description": "FLUSH 단일 공격, 배수 2배",
+      "rarity": "epic",
+      "img": "gems_12.png",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "setHandAoe",
+          "handRank": 7,
+          "value": false
+        },
+        {
+          "scope": "special",
+          "type": "multiplyHandMulti",
+          "handRank": 7,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "relic_j",
+      "name": "붉은 심장",
+      "description": "하트와 다이아를 같은 수트로 인식",
+      "rarity": "rare",
+      "img": "lamp.png",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "suitAlias",
+          "suit": "H",
+          "aliasTo": "D"
+        }
+      ]
+    },
+    {
+      "id": "relic_k",
+      "name": "황금의 역설",
+      "description": "제거 시 보유 골드 2배",
+      "rarity": "epic",
+      "img": "gems_12.png",
+      "effects": [
+        {
+          "scope": "onRemove",
+          "type": "multiplyGold",
+          "value": 2
+        }
+      ]
+    }
+  ]
+}
