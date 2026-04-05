@@ -477,6 +477,10 @@ export class MonsterManager {
       });
     }
 
+    // Orb: 몬스터 → 플레이어 HP 바
+    const fromY = monSprite instanceof Phaser.GameObjects.Sprite ? monSprite.y - 30 : MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
+    scene.effects.throwOrb(mX, fromY, PLAYER_PANEL_W / 2, 152, 0xff4444);
+
     const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0xcc0000, 0.22).setDepth(500);
     scene.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
     scene._sfx("sfx_chop");

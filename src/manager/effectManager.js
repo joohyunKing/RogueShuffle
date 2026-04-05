@@ -270,6 +270,33 @@ export default class effectManager {
         scene.cameras.main.flash(220, 255, 160, 60);
     }
 
+    // 🔮 orb 날아가기 — 몬스터 → 플레이어 HP or 디버프 아이콘
+    throwOrb(fromX, fromY, toX, toY, color = 0xff4444) {
+        const scene = this.scene;
+        const duration = 260;
+
+        const glow = scene.add.circle(fromX, fromY, 12, color, 0.35)
+            .setDepth(9998).setBlendMode(Phaser.BlendModes.ADD);
+        const orb = scene.add.circle(fromX, fromY, 7, color, 1)
+            .setDepth(9999).setBlendMode(Phaser.BlendModes.ADD);
+
+        scene.tweens.add({
+            targets: [orb, glow],
+            x: toX, y: toY,
+            duration,
+            ease: 'Quad.easeIn',
+            onComplete: () => {
+                orb.destroy(); glow.destroy();
+                const impact = scene.add.circle(toX, toY, 8, color, 1)
+                    .setDepth(9999).setBlendMode(Phaser.BlendModes.ADD);
+                scene.tweens.add({
+                    targets: impact, scale: 3.5, alpha: 0, duration: 220, ease: 'Expo.easeOut',
+                    onComplete: () => impact.destroy(),
+                });
+            },
+        });
+    }
+
     // 🔧 공통 피격 반응
     _hitReaction(monster, color) {
         try {

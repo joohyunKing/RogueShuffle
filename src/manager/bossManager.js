@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GW, GH, MONSTER_AREA_TOP, MONSTER_AREA_H } from '../constants.js';
+import { GW, GH, PLAYER_PANEL_W, MONSTER_AREA_TOP, MONSTER_AREA_H } from '../constants.js';
 import { TS } from '../textStyles.js';
 
 const ACTION_GAP = 850; // 액션 간 딜레이(ms)
@@ -32,6 +32,13 @@ export class BossManager {
     if (p.type === 'def_multiply_when_summoned') {
       const summonedAlive = scene.monsters.filter(m => m.isSummoned && !m.isDead);
       boss.def = summonedAlive.length > 0
+        ? Math.floor(boss.baseDef * p.value)
+        : boss.baseDef;
+    }
+
+    if (p.type === 'def_multiply_when_healthy') {
+      const ratio = boss.hp / boss.maxHp;
+      boss.def = ratio >= p.threshold
         ? Math.floor(boss.baseDef * p.value)
         : boss.baseDef;
     }
@@ -115,6 +122,18 @@ export class BossManager {
     this._showSummonEffect(monIdx);
   }
 
+  // ── 보스 스프라이트 Y 위치 ────────────────────────────────────────────────
+  _getMonSpritePos(monIdx) {
+    const { scene } = this;
+    const positions = scene.monsterManager.calcMonsterPositions(scene.monsters.length);
+    const mX = positions[monIdx]?.x ?? GW / 2;
+    const sprite = scene._monsterSprites?.[monIdx];
+    const mY = sprite instanceof Phaser.GameObjects.Sprite
+      ? sprite.y - 30
+      : MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
+    return { mX, mY };
+  }
+
   // ── 일반 공격 ────────────────────────────────────────────────────────────
   _doAttack(boss, monIdx) {
     const { scene } = this;
@@ -122,6 +141,8 @@ export class BossManager {
     scene.player.hp = Math.max(0, scene.player.hp - dmg);
     scene.addBattleLog(`${boss.name}의 공격! ${dmg} 데미지!`);
     this._playAnim(boss, monIdx, 'attack');
+    const { mX, mY } = this._getMonSpritePos(monIdx);
+    scene.effects.throwOrb(mX, mY, PLAYER_PANEL_W / 2, 152, 0xff4444);
     this._showHitFlash(monIdx, dmg, 0xcc0000, false);
   }
 
@@ -139,6 +160,8 @@ export class BossManager {
       const dmg = Math.max(0, raw - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
       scene.addBattleLog(`${boss.name}의 ${skill.name}! ${dmg} 강력한 데미지!`);
+      const { mX: dmX, mY: dmY } = this._getMonSpritePos(monIdx);
+      scene.effects.throwOrb(dmX, dmY, PLAYER_PANEL_W / 2, 152, 0xff2222);
       this._showHitFlash(monIdx, dmg, 0xff2222, true);
 
     } else if (skill.type === 'buff') {
@@ -151,9 +174,45 @@ export class BossManager {
     } else if (skill.type === 'debuff') {
       scene.debuffManager.applyDebuff(skill.debuffId, boss.name);
       scene.render();
-      scene.addBattleLog(`${boss.name}의 ${skill.name}!`);
-      scene._sfx('sfx_chop');
+      this._showDebuffFlash(monIdx);
+      const { mX: dbX, mY: dbY } = this._getMonSpritePos(monIdx);
+      scene.effects.throwOrb(dbX, dbY, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 16, 0xaa44ff);
+
+    } else if (skill.type === 'heal_lost_hp') {
+      const lost   = boss.maxHp - boss.hp;
+      const amount = Math.max(1, Math.floor(lost * skill.ratio));
+      boss.hp = Math.min(boss.maxHp, boss.hp + amount);
+      scene.addBattleLog(`${boss.name}의 ${skill.name}! +${amount} HP`);
+      this._showHealEffect(monIdx, amount);
+
+    } else if (skill.type === 'rank_disable') {
+      scene.debuffManager.applyRankDisable(boss.name);
+      this._showDebuffFlash(monIdx);
+      const { mX: rkX, mY: rkY } = this._getMonSpritePos(monIdx);
+      scene.effects.throwOrb(rkX, rkY, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 16, 0xaa44ff);
+
+    } else if (skill.type === 'suit_disable') {
+      scene.debuffManager.applySuitDisable(boss.name);
+      this._showDebuffFlash(monIdx);
+      const { mX: stX, mY: stY } = this._getMonSpritePos(monIdx);
+      scene.effects.throwOrb(stX, stY, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 16, 0xaa44ff);
     }
+  }
+
+  // ── 디버프 플래시 (트릭스터용) ────────────────────────────────────────────
+  _showDebuffFlash(monIdx) {
+    const { scene } = this;
+    const positions = scene.monsterManager.calcMonsterPositions(scene.monsters.length);
+    const mX = positions[monIdx]?.x ?? GW / 2;
+
+    const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x224400, 0.30).setDepth(500);
+    scene.tweens.add({ targets: flash, alpha: 0, duration: 600, onComplete: () => flash.destroy() });
+    scene._sfx('sfx_chop');
+
+    const txt = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, 'SEAL!',
+      { fontFamily: "'PressStart2P',Arial", fontSize: '14px', color: '#aaff44', stroke: '#000000', strokeThickness: 3 })
+      .setOrigin(0.5).setDepth(501);
+    scene.tweens.add({ targets: txt, y: txt.y - 55, alpha: 0, duration: 650, delay: 80, ease: 'Power2.Out', onComplete: () => txt.destroy() });
   }
 
   // ── 애니메이션 재생 ──────────────────────────────────────────────────────
@@ -223,5 +282,24 @@ export class BossManager {
       { fontFamily: "'PressStart2P',Arial", fontSize: '13px', color: '#dd88ff', stroke: '#000000', strokeThickness: 3 })
       .setOrigin(0.5).setDepth(501);
     scene.tweens.add({ targets: txt, y: txt.y - 60, alpha: 0, duration: 700, delay: 80, ease: 'Power2.Out', onComplete: () => txt.destroy() });
+  }
+
+  // ── 힐 이펙트 (트롤용) ───────────────────────────────────────────────────
+  _showHealEffect(monIdx, amount) {
+    const { scene } = this;
+    const positions = scene.monsterManager.calcMonsterPositions(scene.monsters.length);
+    const mX = positions[monIdx]?.x ?? GW / 2;
+
+    const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x004400, 0.25).setDepth(500);
+    scene.tweens.add({ targets: flash, alpha: 0, duration: 600, onComplete: () => flash.destroy() });
+    scene._sfx('sfx_chop');
+
+    const txt = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, `+${amount} HP`,
+      { fontFamily: "'PressStart2P',Arial", fontSize: '13px', color: '#44ff88', stroke: '#000000', strokeThickness: 3 })
+      .setOrigin(0.5).setDepth(501);
+    scene.tweens.add({ targets: txt, y: txt.y - 55, alpha: 0, duration: 700, delay: 80, ease: 'Power2.Out', onComplete: () => txt.destroy() });
+
+    // HP바 갱신
+    scene.renderMonsters();
   }
 }

@@ -85,6 +85,95 @@
         }
       ],
       "skills": {}
+    },
+    {
+      "id": "trickster",
+      "name": "트릭스터",
+      "sprite": {
+        "idle":    "trickster_idle.png",
+        "attack":  "trickster_attack.png",
+        "damaged": "trickster_damaged.png",
+        "die":     "trickster_die.png",
+        "skill":   "trickster_skill.png"
+      },
+      "statScale": { "hp": 1.2, "atk": 1.0, "def": 0.8 },
+      "passive": null,
+      "phases": [
+        {
+          "hpThreshold": 0.5,
+          "label": "속임수",
+          "actions": [
+            { "type": "skill", "skillId": "disable_rank" },
+            { "type": "attack" }
+          ]
+        },
+        {
+          "hpThreshold": 0.0,
+          "label": "대혼란",
+          "actions": [
+            { "type": "skill", "skillId": "disable_suit" },
+            { "type": "attack" }
+          ]
+        }
+      ],
+      "skills": {
+        "disable_rank": {
+          "type": "rank_disable",
+          "name": "랭크 봉인"
+        },
+        "disable_suit": {
+          "type": "suit_disable",
+          "name": "슈트 봉인"
+        }
+      }
+    },
+    {
+      "id": "troll",
+      "name": "트롤",
+      "sprite": {
+        "idle":    "troll_idle.png",
+        "attack":  "troll_attack.png",
+        "damaged": "troll_damaged.png",
+        "die":     "troll_die.png",
+        "skill":   "troll_skill.png"
+      },
+      "statScale": { "hp": 1.5, "atk": 1.2, "def": 1.0 },
+      "passive": {
+        "type":      "def_multiply_when_healthy",
+        "threshold": 0.3,
+        "value":     1.5,
+        "triggerOn": "player_turn"
+      },
+      "phases": [
+        {
+          "hpThreshold": 0.3,
+          "label": "재생",
+          "actions": [
+            { "type": "skill", "skillId": "regenerate" },
+            { "type": "attack" }
+          ]
+        },
+        {
+          "hpThreshold": 0.0,
+          "label": "광포",
+          "actions": [
+            { "type": "skill", "skillId": "fierce_regenerate" },
+            { "type": "attack" }
+          ]
+        }
+      ],
+      "skills": {
+        "regenerate": {
+          "type":  "heal_lost_hp",
+          "name":  "재생력",
+          "ratio": 0.1
+        },
+        "fierce_regenerate": {
+          "type":  "heal_lost_hp",
+          "name":  "광포한 재생력",
+          "ratio": 0.2
+        }
+      }
     }
   ]
 }

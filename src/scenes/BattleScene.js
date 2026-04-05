@@ -629,8 +629,17 @@ export class BattleScene extends Phaser.Scene {
 
     const positions = this.calcHandPositions(this.handData.length);
     const combo = this._getSelectedCombo();
-    const comboCardSet = new Set(combo.cards ?? []);
-    const hasValidCombo = (combo.rank ?? 0);
+    const hasValidCombo = combo.rank != null && (combo.cards?.length ?? 0) > 0;
+
+    // TWO_PAIR: 킥커(페어 아닌 카드) 제외하고 4장만 떨기
+    let comboCardSet;
+    if (combo.rank === HAND_RANK.TWO_PAIR) {
+      const valCount = {};
+      for (const c of combo.cards) valCount[c.val] = (valCount[c.val] || 0) + 1;
+      comboCardSet = new Set(combo.cards.filter(c => valCount[c.val] >= 2));
+    } else {
+      comboCardSet = new Set(combo.cards ?? []);
+    }
 
     const count = this.handData.length;
     // 기본 크기: CW * 0.95, 9장 이상이면 추가 축소
@@ -649,7 +658,9 @@ export class BattleScene extends Phaser.Scene {
       const selOffset = Math.round(22 * scale);
       const y = sel ? HAND_Y - selOffset : HAND_Y;
 
-      const isDisabled = this.debuffManager.disabledCardUids.has(card.uid);
+      const isDisabled = this.debuffManager.disabledCardUids.has(card.uid)
+        || this.debuffManager.disabledRanks.has(card.rank)
+        || this.debuffManager.disabledSuits.has(card.suit);
       const img = this.add.image(x, y, card.key)
         .setDisplaySize(cardW, cardH).setDepth(sel ? 32 : 30).setInteractive()
         .setAlpha(isDisabled ? 0.35 : 1);

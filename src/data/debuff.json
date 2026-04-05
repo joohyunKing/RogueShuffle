@@ -54,6 +54,28 @@
       "durationValue": 2,
       "type": "필드사이즈감소",
       "value": 1
+    },
+    {
+      "id": "disable_rank",
+      "name": "랭크 봉인",
+      "description": "랜덤 랭크 카드 사용 불가 (1턴)",
+      "tier": 2,
+      "img": "rune_11.jpg",
+      "duration": "turn",
+      "durationValue": 2,
+      "type": "랜덤랭크사용불가",
+      "value": 1
+    },
+    {
+      "id": "disable_suit",
+      "name": "슈트 봉인",
+      "description": "랜덤 슈트 카드 사용 불가 (1턴)",
+      "tier": 2,
+      "img": "rune_11.jpg",
+      "duration": "turn",
+      "durationValue": 2,
+      "type": "랜덤슈트사용불가",
+      "value": 1
     }
   ]
 }

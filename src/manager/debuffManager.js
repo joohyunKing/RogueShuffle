@@ -8,6 +8,8 @@ export class DebuffManager {
     this.scene = scene;
     this.activeDebuffs    = [];          // { id, turnsLeft }  -1 = battle 지속
     this.disabledCardUids = new Set();   // 사용불가 처리된 카드 uid
+    this.disabledRanks    = new Set();   // 사용불가 랭크 (트릭스터 보스)
+    this.disabledSuits    = new Set();   // 사용불가 슈트 (트릭스터 보스)
   }
 
   // ── 디버프 적용 ─────────────────────────────────────────────────────────────
@@ -77,6 +79,8 @@ export class DebuffManager {
     }
     this.activeDebuffs = [];
     this.disabledCardUids.clear();
+    this.disabledRanks.clear();
+    this.disabledSuits.clear();
   }
 
   // ── 디버프 효과 해제 ─────────────────────────────────────────────────────────
@@ -103,6 +107,62 @@ export class DebuffManager {
         scene.deckData = scene.deckData.filter(c => !c._poison);
         scene.deck.deckPile = scene.deck.deckPile.filter(c => !c._poison);
         break;
+      case '랜덤랭크사용불가':
+        this.disabledRanks.clear();
+        break;
+      case '랜덤슈트사용불가':
+        this.disabledSuits.clear();
+        break;
     }
+  }
+
+  // ── 랭크 봉인 적용 (트릭스터 보스) ─────────────────────────────────────────
+  applyRankDisable(sourceName) {
+    const { scene } = this;
+
+    // 매 보스 턴마다 새로 뽑기 위해 기존 항목 제거 후 재적용
+    this.activeDebuffs = this.activeDebuffs.filter(d => d.id !== 'disable_rank');
+    this.disabledRanks.clear();
+
+    const allCards = [
+      ...(scene.handData  ?? []),
+      ...(scene.fieldData ?? []),
+      ...(scene.deckData  ?? []),
+    ];
+    const ranks = [...new Set(allCards.map(c => c.rank))];
+    if (ranks.length === 0) return;
+
+    const rank = ranks[Math.floor(Math.random() * ranks.length)];
+    this.disabledRanks.add(rank);
+
+    const def = debuffMap['disable_rank'];
+    this.activeDebuffs.push({ id: 'disable_rank', turnsLeft: def.durationValue });
+    scene.addBattleLog(`${sourceName}의 ${def.name}! [${rank}] 사용 불가!`);
+    scene.render();
+  }
+
+  // ── 슈트 봉인 적용 (트릭스터 보스) ─────────────────────────────────────────
+  applySuitDisable(sourceName) {
+    const { scene } = this;
+
+    this.activeDebuffs = this.activeDebuffs.filter(d => d.id !== 'disable_suit');
+    this.disabledSuits.clear();
+
+    const allCards = [
+      ...(scene.handData  ?? []),
+      ...(scene.fieldData ?? []),
+      ...(scene.deckData  ?? []),
+    ];
+    const suits = [...new Set(allCards.map(c => c.suit))];
+    if (suits.length === 0) return;
+
+    const suit = suits[Math.floor(Math.random() * suits.length)];
+    this.disabledSuits.add(suit);
+
+    const SUIT_CHAR = { S: '♠', H: '♥', D: '♦', C: '♣' };
+    const def = debuffMap['disable_suit'];
+    this.activeDebuffs.push({ id: 'disable_suit', turnsLeft: def.durationValue });
+    scene.addBattleLog(`${sourceName}의 ${def.name}! [${SUIT_CHAR[suit] ?? suit}] 사용 불가!`);
+    scene.render();
   }
 }
