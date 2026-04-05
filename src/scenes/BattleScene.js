@@ -18,7 +18,7 @@ import { TS } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
 import effectManager from '../manager/effectManager.js';
 import DeckManager from '../manager/deckManager.js';
-import { applyItemEffect } from '../manager/itemManager.js';
+import { applyItemEffect, revertItemEffect, itemMap } from '../manager/itemManager.js';
 import { DebuffManager, debuffData, debuffMap as _debuffMap } from '../manager/debuffManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
@@ -101,6 +101,7 @@ export class BattleScene extends Phaser.Scene {
     this.sortAsc = true;
     this._fullBattleLog = data.battleLog ?? [];
     this._suitLevelUpCount = 0;
+    this._battleItemEffects = []; // 배틀 한정 아이템 효과 기록 (종료 시 되돌리기)
     this._pilePopup = new PilePopupUI(this, () => this._hideCardPreview());
     this._cardPreviewObjs = null;
 
@@ -495,6 +496,11 @@ export class BattleScene extends Phaser.Scene {
     const msg = applyItemEffect(this.player, item.id, item.name);
     if (msg) this.addBattleLog(msg);
 
+    // 배틀 한정 효과는 종료 시 되돌리기 위해 기록
+    if (itemMap[item.id]?.scope === 'battle') {
+      this._battleItemEffects.push(item.id);
+    }
+
     this.player.items.splice(idx, 1);
     obj?.destroy();
     this.render();
@@ -589,7 +595,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.fieldData.forEach((card, i) => {
       const x = card.slotX;
-      const img = this.add.image(x, FIELD_Y, card.key).setDisplaySize(FIELD_CW, FIELD_CH).setDepth(10);
+      const img = CardRenderer.drawCard(this, x, FIELD_Y, card, { width: FIELD_CW, height: FIELD_CH, depth: 10, objs: this.cardObjs });
 
       img.setInteractive({ draggable: canPick });
 
@@ -618,7 +624,6 @@ export class BattleScene extends Phaser.Scene {
         });
         img.setAlpha(0.45);
       }
-      this.cardObjs.push(img);
     });
   }
 
@@ -660,9 +665,8 @@ export class BattleScene extends Phaser.Scene {
       const y = sel ? HAND_Y - selOffset : HAND_Y;
 
       const isDisabled = this._isCardDisabled(card);
-      const texKey = isDisabled ? `${card.key}_disabled` : card.key;
-      const img = this.add.image(x, y, texKey)
-        .setDisplaySize(cardW, cardH).setDepth(sel ? 32 : 30).setInteractive();
+      const img = CardRenderer.drawCard(this, x, y, card, { width: cardW, height: cardH, depth: sel ? 32 : 30, disabled: isDisabled, objs: this.cardObjs });
+      img.setInteractive();
 
       if (canPick) {
         img.on("pointerdown", () => { if (!this.isDragging && !this.isDealing) this.toggleHand(i); });
@@ -684,7 +688,6 @@ export class BattleScene extends Phaser.Scene {
         });
       }
 
-      this.cardObjs.push(img);
       this.handCardObjs.push(img);
 
       if (inCombo) {
@@ -1321,6 +1324,10 @@ export class BattleScene extends Phaser.Scene {
     btn.on("pointerout", () => btn.setFillStyle(0x1e4e99));
     btn.on("pointerdown", () => {
       this.deck.resetForNextBattle();
+
+      // 배틀 한정 아이템 효과 되돌리기 (toData() 전에 수행)
+      this._battleItemEffects.forEach(id => revertItemEffect(this.player, id));
+      this._battleItemEffects = [];
 
       if (next.isGameEnd) {
         deleteSave();

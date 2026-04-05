@@ -5,6 +5,7 @@ import {
   BATTLE_LOG_H,
   SUITS,
 } from "../constants.js";
+import { CardRenderer } from "../CardRenderer.js";
 
 /**
  * PilePopupUI — 덱/더미 카드 목록 팝업
@@ -39,7 +40,7 @@ export class PilePopupUI {
     const panelX = PLAYER_PANEL_W + PAD;
     const panelW = GW - PLAYER_PANEL_W - PAD * 2;
 
-    const bySuit = { S: [], H: [], D: [], C: [] };
+    const bySuit = { S: [], H: [], C: [], D: [] };
     for (const card of pileData) {
       const s = card.key[0];
       if (bySuit[s]) bySuit[s].push(card);
@@ -69,8 +70,8 @@ export class PilePopupUI {
       ).setOrigin(0.5).setDepth(602)
     );
 
-    const SUIT_SYMS   = { S: '♠', H: '♥', D: '♦', C: '♣' };
-    const SUIT_COLORS = { S: '#8888ff', H: '#ff6666', D: '#ff6666', C: '#8888ff' };
+    const SUIT_SYMS = { S: '♠', H: '♥', C: '♣', D: '♦' };
+    const SUIT_COLORS = { S: '#8888ff', H: '#ff6666', C: '#8888ff', D: '#ff6666' };
     const rowsY = panelTop + titleH;
 
     SUITS.forEach((suit, si) => {
@@ -83,8 +84,8 @@ export class PilePopupUI {
       );
       cards.forEach((card, ci) => {
         const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
-        const img = scene.add.image(cx, cy, card.key)
-          .setDisplaySize(CW_, CH_).setDepth(602).setInteractive();
+        const img = CardRenderer.drawCard(scene, cx, cy, card, { width: CW_, height: CH_, depth: 602, objs });
+        img.setInteractive();
         img.on('pointerover', () => {
           scene.tweens.add({ targets: img, displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100 });
           img.setDepth(650);
@@ -93,7 +94,6 @@ export class PilePopupUI {
           scene.tweens.add({ targets: img, displayWidth: CW_, displayHeight: CH_, duration: 100 });
           img.setDepth(602);
         });
-        objs.push(img);
       });
     });
 

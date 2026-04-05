@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W, SUITS, RANKS, FIELD_CW, FIELD_CH } from "../constants.js";
+import { CardRenderer } from "../CardRenderer.js";
 import { TS } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
 import DeckManager from "../manager/deckManager.js";
@@ -635,27 +636,8 @@ export class MarketScene extends Phaser.Scene {
       sCards.forEach((card, ci) => {
         const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
         const isSelected = this._deckSelectedCard?.uid === card.uid;
-        const hasEnh = (card.enhancements?.length ?? 0) > 0;
-        const isRed = card.suit === 'H' || card.suit === 'D';
 
-        let cardObj;
-        if (this.textures.exists(card.key)) {
-          cardObj = this.add.image(cx, cy, card.key)
-            .setDisplaySize(CW_, CH_).setDepth(502);
-        } else {
-          const cg = this.add.graphics().setDepth(502);
-          cg.fillStyle(isRed ? 0x2a0808 : 0x08102a);
-          cg.fillRect(cx - CW_ / 2, cy - CH_ / 2, CW_, CH_);
-          objs.push(cg);
-          cardObj = this.add.text(cx, cy,
-            `${card.rank ?? card.key?.slice(1)}\n${SUIT_SYMS[card.suit]}`,
-            {
-              fontFamily: 'Arial', fontSize: '12px', fontStyle: 'bold',
-              color: isRed ? '#ff9999' : '#aaaaff', align: 'center'
-            })
-            .setOrigin(0.5).setDepth(503);
-        }
-        objs.push(cardObj);
+        const cardObj = CardRenderer.drawCard(this, cx, cy, card, { width: CW_, height: CH_, depth: 502, objs });
 
         // 선택 테두리
         if (isSelected) {
@@ -663,13 +645,6 @@ export class MarketScene extends Phaser.Scene {
           selG.lineStyle(3, 0xffdd44);
           selG.strokeRect(cx - CW_ / 2, cy - CH_ / 2, CW_, CH_);
           objs.push(selG);
-        }
-
-        // 강화 표시 (노란 점)
-        if (hasEnh) {
-          objs.push(
-            this.add.circle(cx + CW_ / 2 - 5, cy - CH_ / 2 + 5, 4, 0xffdd44).setDepth(504)
-          );
         }
 
         const hitR = this.add.rectangle(cx, cy, CW_, CH_, 0xffffff, 0)
