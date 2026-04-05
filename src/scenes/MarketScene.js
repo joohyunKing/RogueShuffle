@@ -526,19 +526,28 @@ export class MarketScene extends Phaser.Scene {
       addBtn.on("pointerout", () => addBtn.setFillStyle(0x1a4a2a));
     }
 
-    // 상점갱신
-    const rfsh = this.add.rectangle(rfshX, btnY, BTN_W, BTN_H, 0x3a2a1a)
-      .setDepth(10).setInteractive().setStrokeStyle(2, 0xaa7a3a);
-    this.add.text(rfshX, btnY, "상점갱신",
-      { fontFamily: "'PressStart2P',Arial", fontSize: '12px', color: '#ffcc66' })
+    // 상점갱신 (5G)
+    const REFRESH_COST = 5;
+    const canRefresh = this.player.gold >= REFRESH_COST;
+    const rfshFill = canRefresh ? 0x3a2a1a : 0x202020;
+    const rfshBrd  = canRefresh ? 0xaa7a3a : 0x444444;
+    const rfsh = this.add.rectangle(rfshX, btnY, BTN_W, BTN_H, rfshFill)
+      .setDepth(10).setInteractive().setStrokeStyle(2, rfshBrd);
+    this.add.text(rfshX, btnY, `상점갱신  (${REFRESH_COST}G)`,
+      { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: canRefresh ? '#ffcc66' : '#555555' })
       .setOrigin(0.5).setDepth(11);
-    rfsh.on("pointerdown", () => this._refreshShop());
-    rfsh.on("pointerover", () => rfsh.setFillStyle(0x5a4a2a));
-    rfsh.on("pointerout", () => rfsh.setFillStyle(0x3a2a1a));
+    if (canRefresh) {
+      rfsh.on("pointerdown", () => this._refreshShop());
+      rfsh.on("pointerover", () => rfsh.setFillStyle(0x5a4a2a));
+      rfsh.on("pointerout", () => rfsh.setFillStyle(rfshFill));
+    }
   }
 
   // ── 상점 갱신 ────────────────────────────────────────────────────────────
   _refreshShop() {
+    const REFRESH_COST = 5;
+    if (this.player.gold < REFRESH_COST) return;
+    this.player.gold -= REFRESH_COST;
     const rarityWeights = getRarityWeights(this.round);
     const ownedRelics   = new Set(this.player.relics);
     const relicPool     = getRelicsExcluding(ownedRelics);
