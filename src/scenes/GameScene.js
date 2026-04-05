@@ -27,7 +27,7 @@ export class GameScene extends Phaser.Scene {
     const round = data.round ?? 1;
     const player = data.player ?? null;
     const deck = data.deck ?? null;
-    const battleIndex = data.battleIndex ?? 0;
+    const battleIndex = data.battleIndex ?? data.battle?.battleIndex ?? 0;
     const battleLog = data.battleLog ?? [];
 
     const roundData = roundManager.getRoundData(round, battleIndex);

@@ -1,4 +1,6 @@
 import debuffData from '../data/debuff.json';
+import { HAND_DATA } from '../constants.js';
+import { getHandName } from '../service/langService.js';
 
 export { debuffData };
 export const debuffMap = Object.fromEntries(debuffData.debuffs.map(d => [d.id, d]));
@@ -8,8 +10,9 @@ export class DebuffManager {
     this.scene = scene;
     this.activeDebuffs    = [];          // { id, turnsLeft }  -1 = battle 지속
     this.disabledCardUids = new Set();   // 사용불가 처리된 카드 uid
-    this.disabledRanks    = new Set();   // 사용불가 랭크 (트릭스터 보스)
+    this.disabledRanks    = new Set();   // 사용불가 카드 랭크 (트릭스터 보스)
     this.disabledSuits    = new Set();   // 사용불가 슈트 (트릭스터 보스)
+    this.disabledHandRanks = new Set();  // 사용불가 족보 handRank (트릭스터B 보스)
   }
 
   // ── 디버프 적용 ─────────────────────────────────────────────────────────────
@@ -81,6 +84,7 @@ export class DebuffManager {
     this.disabledCardUids.clear();
     this.disabledRanks.clear();
     this.disabledSuits.clear();
+    this.disabledHandRanks.clear();
   }
 
   // ── 디버프 효과 해제 ─────────────────────────────────────────────────────────
@@ -113,6 +117,9 @@ export class DebuffManager {
       case '랜덤슈트사용불가':
         this.disabledSuits.clear();
         break;
+      case '족보사용불가':
+        this.disabledHandRanks.clear();
+        break;
     }
   }
 
@@ -138,6 +145,67 @@ export class DebuffManager {
     const def = debuffMap['disable_rank'];
     this.activeDebuffs.push({ id: 'disable_rank', turnsLeft: def.durationValue });
     scene.addBattleLog(`${sourceName}의 ${def.name}! [${rank}] 사용 불가!`);
+    scene.render();
+  }
+
+  // ── 최다 사용 족보 봉인 (트릭스터B 1페이즈) ──────────────────────────────────
+  applyMostUsedHandSeal(sourceName) {
+    const { scene } = this;
+    const lang = scene.registry?.get('lang') ?? 'ko';
+
+    this.activeDebuffs = this.activeDebuffs.filter(d => d.id !== 'seal_hand');
+    this.disabledHandRanks.clear();
+
+    const counts = scene.player.handUseCounts;
+    const best = Object.entries(counts)
+      .filter(([, cnt]) => cnt > 0)
+      .sort(([, a], [, b]) => b - a)[0];
+
+    if (!best) return; // 아직 족보를 사용한 적 없음
+
+    const handRankNum = Number(best[0]);
+    this.disabledHandRanks.add(handRankNum);
+
+    const def = debuffMap['seal_hand'];
+    this.activeDebuffs.push({ id: 'seal_hand', turnsLeft: def.durationValue });
+
+    const displayName = getHandName(lang, HAND_DATA[handRankNum]?.key ?? '');
+    scene.addBattleLog(`${sourceName}의 ${def.name}! [${displayName}] 사용 불가!`);
+    scene.render();
+  }
+
+  // ── 최다 + 최근 족보 이중 봉인 (트릭스터B 2페이즈) ──────────────────────────
+  applyMostAndLastHandSeal(sourceName) {
+    const { scene } = this;
+    const lang = scene.registry?.get('lang') ?? 'ko';
+
+    this.activeDebuffs = this.activeDebuffs.filter(d => d.id !== 'seal_hand');
+    this.disabledHandRanks.clear();
+
+    const counts = scene.player.handUseCounts;
+    const best = Object.entries(counts)
+      .filter(([, cnt]) => cnt > 0)
+      .sort(([, a], [, b]) => b - a)[0];
+
+    const mostUsed = best != null ? Number(best[0]) : null;
+    const lastUsed = scene.player.lastHandRank;
+
+    const sealed = [];
+    if (mostUsed != null) {
+      this.disabledHandRanks.add(mostUsed);
+      sealed.push(getHandName(lang, HAND_DATA[mostUsed]?.key ?? ''));
+    }
+    if (lastUsed != null && lastUsed !== mostUsed) {
+      this.disabledHandRanks.add(lastUsed);
+      sealed.push(getHandName(lang, HAND_DATA[lastUsed]?.key ?? ''));
+    }
+
+    if (this.disabledHandRanks.size === 0) return;
+
+    const def = debuffMap['seal_hand'];
+    this.activeDebuffs.push({ id: 'seal_hand', turnsLeft: def.durationValue });
+
+    scene.addBattleLog(`${sourceName}의 이중 봉인! [${sealed.join(', ')}] 사용 불가!`);
     scene.render();
   }
 

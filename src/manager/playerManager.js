@@ -96,6 +96,16 @@ export class Player {
         this.handConfig = data.handConfig
             ? JSON.parse(JSON.stringify(data.handConfig))
             : JSON.parse(JSON.stringify(DEFAULT_HAND_CONFIG));
+
+        // ── 족보 사용 횟수 (handRank 번호 → 누적 횟수) ──────────────────────────
+        // HAND_RANK: HIGH_CARD=0 ~ FIVE_CARD=9
+        const defaultCounts = { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0 };
+        this.handUseCounts = data.handUseCounts
+            ? { ...defaultCounts, ...data.handUseCounts }
+            : { ...defaultCounts };
+
+        /** 마지막으로 사용한 족보 handRank 번호 (null = 아직 없음) */
+        this.lastHandRank = data.lastHandRank ?? null;
     }
 
     /** 현재 레벨에서 레벨업에 필요한 총 경험치 */
@@ -235,6 +245,8 @@ export class Player {
             items: [...this.items],
             relics: [...this.relics],
             handConfig: JSON.parse(JSON.stringify(this.handConfig)),
+            handUseCounts: { ...this.handUseCounts },
+            lastHandRank: this.lastHandRank,
         };
     }
 }

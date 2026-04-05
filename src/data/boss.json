@@ -128,6 +128,47 @@
       }
     },
     {
+      "id": "tricksterB",
+      "name": "트릭스터B",
+      "sprite": {
+        "idle":    "trickster_idle.png",
+        "attack":  "trickster_attack.png",
+        "damaged": "trickster_damaged.png",
+        "die":     "trickster_die.png",
+        "skill":   "trickster_skill.png"
+      },
+      "statScale": { "hp": 1.4, "atk": 1.1, "def": 0.9 },
+      "passive": null,
+      "phases": [
+        {
+          "hpThreshold": 0.5,
+          "label": "최다 봉인",
+          "actions": [
+            { "type": "skill", "skillId": "seal_most_used" },
+            { "type": "attack" }
+          ]
+        },
+        {
+          "hpThreshold": 0.0,
+          "label": "이중 봉인",
+          "actions": [
+            { "type": "skill", "skillId": "seal_most_and_last" },
+            { "type": "attack" }
+          ]
+        }
+      ],
+      "skills": {
+        "seal_most_used": {
+          "type": "seal_most_used_hand",
+          "name": "족보 봉인"
+        },
+        "seal_most_and_last": {
+          "type": "seal_most_and_last_hand",
+          "name": "이중 족보 봉인"
+        }
+      }
+    },
+    {
       "id": "troll",
       "name": "트롤",
       "sprite": {

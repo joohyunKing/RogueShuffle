@@ -63,8 +63,31 @@ export class CardRenderer {
 
   static createAll(scene) {
     SUITS.forEach(suit =>
-      RANKS.forEach(rank => CardRenderer._make(scene, suit, rank))
+      RANKS.forEach(rank => {
+        CardRenderer._make(scene, suit, rank);
+        CardRenderer._makeDisabled(scene, suit, rank);
+      })
     );
+  }
+
+  static _makeDisabled(scene, suit, rank) {
+    const key = `${suit}${rank}_disabled`;
+    if (scene.textures.exists(key)) return;
+
+    const normalKey = `${suit}${rank}`;
+    if (!scene.textures.exists(normalKey)) CardRenderer._make(scene, suit, rank);
+
+    const W = CW, H = CH;
+    const normalSrc = scene.textures.get(normalKey).getSourceImage();
+    const canvas  = document.createElement('canvas');
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    ctx.filter = 'grayscale(1) brightness(0.80)';
+    ctx.drawImage(normalSrc, 0, 0, W, H);
+
+    scene.textures.addCanvas(key, canvas);
   }
 
   static _make(scene, suit, rank) {

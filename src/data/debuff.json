@@ -76,6 +76,16 @@
       "durationValue": 2,
       "type": "랜덤슈트사용불가",
       "value": 1
+    },
+    {
+      "id": "seal_hand",
+      "name": "족보 봉인",
+      "description": "특정 족보 사용 불가 (1턴)",
+      "tier": 3,
+      "img": "rune_11.jpg",
+      "duration": "turn",
+      "durationValue": 2,
+      "type": "족보사용불가"
     }
   ]
 }

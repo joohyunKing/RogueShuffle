@@ -3,7 +3,7 @@ import {
   GW, GH, CW, CH,
   PLAYER_PANEL_W, ITEM_PANEL_W,
   MONSTER_AREA_TOP, MONSTER_AREA_H, MONSTER_IMG_Y,
-  HAND_Y, context,
+  HAND_Y, context, HAND_DATA,
 } from "../constants.js";
 import { TS } from "../textStyles.js";
 import { getScoreDetails } from "../service/scoreService.js";
@@ -72,8 +72,13 @@ export class MonsterManager {
 
     scene._refreshContext();
 
-    // 점수 내역 계산 (애니메이션 + 데미지 모두 사용)
-    const selectedCards = [...scene.selected].map(i => scene.handData[i]);
+    // disabled 카드 제외 — 점수/슈트 효과에 기여 안 함, 하지만 dummy로 버려짐
+    const dm = scene.debuffManager;
+    const isDisabled = (c) => dm.disabledCardUids.has(c.uid)
+      || dm.disabledRanks.has(c.rank) || dm.disabledSuits.has(c.suit);
+
+    // 점수 내역 계산 (애니메이션 + 데미지 모두 사용) — 활성 카드만
+    const selectedCards = [...scene.selected].map(i => scene.handData[i]).filter(c => !isDisabled(c));
     const details = getScoreDetails(selectedCards, context);
     if (details.totalScore <= 0) return;
 
@@ -85,12 +90,30 @@ export class MonsterManager {
     const score    = details.totalScore;
     const handName = details.handName;
     const aoe      = details.aoe;
+    const handRank = details.rank;
 
-    // 카드 위치 · 슈트 카운트 캡처 (제거 전)
+    // 봉인된 족보 차단
+    if (handRank != null && scene.debuffManager.disabledHandRanks.has(handRank)) {
+      const handKey = HAND_DATA[handRank]?.key ?? String(handRank);
+      scene.addBattleLog(`[${handKey}] 봉인된 족보입니다!`);
+      scene.refreshBattleLog();
+      return;
+    }
+
+    // 족보 사용 횟수 기록 + 마지막 사용 족보 갱신
+    if (handRank != null) {
+      scene.player.handUseCounts[handRank] = (scene.player.handUseCounts[handRank] ?? 0) + 1;
+      scene.player.lastHandRank = handRank;
+    }
+
+    // 카드 위치 · 슈트 카운트 캡처 (제거 전) — 슈트 효과도 활성 카드만
     const selectedIndices = [...scene.selected].sort((a, b) => a - b);
     const handPositions   = scene.calcHandPositions(scene.handData.length);
     const suitCounts      = { S: 0, H: 0, D: 0, C: 0 };
-    selectedIndices.forEach(i => { suitCounts[scene.handData[i].suit]++; });
+    selectedIndices.forEach(i => {
+      const c = scene.handData[i];
+      if (!isDisabled(c)) suitCounts[c.suit]++;
+    });
 
     const cardFlyInfo = selectedIndices.map(i => {
       const card = scene.handData[i];

@@ -165,6 +165,10 @@ export default class MonsterView {
     this.defText.setText(mon.def);
   }
 
+  hideStats() {
+    [this.atkIcon, this.atkText, this.defIcon, this.defText].forEach(o => o?.setVisible(false));
+  }
+
   hideHPBar() {
     [this.hpBarBg, this.hpBar, this.hpText].forEach(o => o?.setVisible(false));
   }

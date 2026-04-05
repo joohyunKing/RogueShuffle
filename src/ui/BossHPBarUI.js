@@ -40,6 +40,22 @@ export class BossHPBarUI {
       .setOrigin(1, 0.5)
       .setDepth(23);
 
+    // ATK / DEF (바 오른쪽 아래)
+    const statY = BAR_Y + BAR_H + 6;
+    const statRight = BAR_X + BAR_W;
+
+    this._atkIcon = scene.add.image(statRight - 88, statY, 'ui_sword')
+      .setDisplaySize(5, 13).setOrigin(0.5).setDepth(23);
+    this._atkText = scene.add.text(statRight - 84, statY, '',
+      { fontFamily: "'PressStart2P',Arial", fontSize: '8px', color: '#ffaaaa', stroke: '#000000', strokeThickness: 2 })
+      .setOrigin(0, 0.5).setDepth(23);
+
+    this._defIcon = scene.add.image(statRight - 46, statY, 'ui_shield')
+      .setDisplaySize(12, 12).setOrigin(0.5).setDepth(23);
+    this._defText = scene.add.text(statRight - 38, statY, '',
+      { fontFamily: "'PressStart2P',Arial", fontSize: '8px', color: '#aaaaff', stroke: '#000000', strokeThickness: 2 })
+      .setOrigin(0, 0.5).setDepth(23);
+
     // 초기 페이즈 저장 (변경 감지용)
     this._trackedPhaseLabel = bossManager
       ? (bossManager.getCurrentPhase(boss)?.label ?? '')
@@ -77,6 +93,8 @@ export class BossHPBarUI {
     this._fill.fillRoundedRect(BAR_X, BAR_Y, Math.max(4, BAR_W * ratio), BAR_H, 4);
 
     this._hpText.setText(`${boss.hp} / ${boss.maxHp}`);
+    this._atkText.setText(String(boss.atk));
+    this._defText.setText(String(boss.def));
 
     if (!bossManager) return;
 
@@ -130,7 +148,8 @@ export class BossHPBarUI {
   }
 
   destroy() {
-    [this._bg, this._fill, this._nameText, this._hpText, this._phaseLabel]
+    [this._bg, this._fill, this._nameText, this._hpText, this._phaseLabel,
+     this._atkIcon, this._atkText, this._defIcon, this._defText]
       .forEach(o => o?.destroy());
     this._phaseObjs.forEach(o => o.destroy());
   }

@@ -89,7 +89,7 @@ export class BattleScene extends Phaser.Scene {
       onOpen: () => { this.isDealing = true; },
       onClose: () => { this.isDealing = false; },
       onMainMenu: () => {
-        writeSave(this.round, this.player.toData(), this.deck.getState());
+        writeSave(this.round, this.player.toData(), this.deck.getState(), { battleIndex: this.battleIndex });
         this.scene.start("MainMenuScene");
       },
     });
@@ -150,6 +150,7 @@ export class BattleScene extends Phaser.Scene {
       this.bossManager = new BossManager(this);
       this.bossHPBar   = new BossHPBarUI(this, this.monsters[0], this.bossManager);
       this.monsterViews[0].hideHPBar();
+      this.monsterViews[0].hideStats();
     }
 
   }
@@ -658,20 +659,12 @@ export class BattleScene extends Phaser.Scene {
       const selOffset = Math.round(22 * scale);
       const y = sel ? HAND_Y - selOffset : HAND_Y;
 
-      const isDisabled = this.debuffManager.disabledCardUids.has(card.uid)
-        || this.debuffManager.disabledRanks.has(card.rank)
-        || this.debuffManager.disabledSuits.has(card.suit);
-      const img = this.add.image(x, y, card.key)
-        .setDisplaySize(cardW, cardH).setDepth(sel ? 32 : 30).setInteractive()
-        .setAlpha(isDisabled ? 0.35 : 1);
+      const isDisabled = this._isCardDisabled(card);
+      const texKey = isDisabled ? `${card.key}_disabled` : card.key;
+      const img = this.add.image(x, y, texKey)
+        .setDisplaySize(cardW, cardH).setDepth(sel ? 32 : 30).setInteractive();
 
-      if (isDisabled) {
-        this.add.text(x, y, '✕', { fontFamily: 'Arial', fontSize: `${Math.round(cardW * 0.6)}px`, color: '#ff4444' })
-          .setOrigin(0.5).setDepth(33);
-      }
-
-      if (canPick && !isDisabled) {
-
+      if (canPick) {
         img.on("pointerdown", () => { if (!this.isDragging && !this.isDealing) this.toggleHand(i); });
         img.on("pointerover", () => {
           if (!this.isDragging) {
@@ -687,8 +680,7 @@ export class BattleScene extends Phaser.Scene {
         });
       } else {
         img.on("pointerdown", () => {
-          if (isDisabled) this.addBattleLog(`디버프로 사용 불가 카드입니다!`);
-          else this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
+          this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
         });
       }
 
@@ -715,8 +707,10 @@ export class BattleScene extends Phaser.Scene {
     const mons = this.monsterManager.monsters;
     const positions = this.monsterManager.calcMonsterPositions(mons.length);
 
-    const hasCombo = this._getSelectedCombo().score > 0
-      && this.attackCount < this.player.attacksPerTurn;
+    const _combo = this._getSelectedCombo();
+    const hasCombo = _combo.score > 0
+      && this.attackCount < this.player.attacksPerTurn
+      && !this.debuffManager.disabledHandRanks.has(_combo.rank);
     const imgW = 156, imgH = 156;
 
     // 하단 기준 레이아웃
@@ -774,7 +768,10 @@ export class BattleScene extends Phaser.Scene {
     const SIZE = 28;
     const GAP = 34;
     const startX = PLAYER_PANEL_W + 10 + SIZE / 2;
-    const iconY = MONSTER_AREA_TOP + 8 + SIZE / 2;
+    // 보스전: boss HP bar(MONSTER_AREA_TOP+4, h=20) + ATK/DEF행(+6, ~10px) 아래
+    const iconY = this.isBoss
+      ? MONSTER_AREA_TOP + 4 + 20 + 6 + 14 + SIZE / 2   // ≈ 138
+      : MONSTER_AREA_TOP + 8 + SIZE / 2;                 // 일반: 102
 
     this.debuffManager.activeDebuffs.forEach((active, idx) => {
       const def = _debuffMap[active.id];
@@ -857,10 +854,22 @@ export class BattleScene extends Phaser.Scene {
     context.atk = this.player.atk;
   }
 
+  // ── 디버프 카드 여부 ─────────────────────────────────────────────────────
+  _isCardDisabled(card) {
+    const dm = this.debuffManager;
+    return dm.disabledCardUids.has(card.uid)
+      || dm.disabledRanks.has(card.rank)
+      || dm.disabledSuits.has(card.suit);
+  }
+
   // ── 족보 계산 헬퍼 ───────────────────────────────────────────────────────
   _getSelectedCombo() {
     if (this.selected.size === 0) return { score: 0, handName: "" };
-    return calculateScore([...this.selected].map(i => this.handData[i]), context);
+    const activeCards = [...this.selected]
+      .map(i => this.handData[i])
+      .filter(c => !this._isCardDisabled(c));
+    if (activeCards.length === 0) return { score: 0, handName: "" };
+    return calculateScore(activeCards, context);
   }
 
   updatePreview() {
@@ -868,20 +877,28 @@ export class BattleScene extends Phaser.Scene {
     const { score: cardScore, rank } = this._getSelectedCombo();
     const score = cardScore > 0 ? Math.floor(cardScore) : 0;
 
+    const handRankSealed = rank != null && this.debuffManager.disabledHandRanks.has(rank);
+
     if (score > 0) {
       const lang = this.registry?.get('lang') ?? 'ko';
       const key = HAND_DATA[rank]?.key ?? '';
       const name = getHandName(lang, key);
 
-      //hand name
-      this._handText
-        .setText(name)
-        .setColor('#ccddcc')
-        .setVisible(true);
-
-      // PlayerUI hand 반짝 + ItemUI relic 달그락
-      this.playerUI?.highlightHand(rank);
-      this.itemUI?.rattleRelics(this._getApplicableRelicIds(rank));
+      if (handRankSealed) {
+        this._handText
+          .setText(`${name} [봉인]`)
+          .setColor('#ff6666')
+          .setVisible(true);
+        this.playerUI?.highlightHand(null);
+        this.itemUI?.rattleRelics([]);
+      } else {
+        this._handText
+          .setText(name)
+          .setColor('#ccddcc')
+          .setVisible(true);
+        this.playerUI?.highlightHand(rank);
+        this.itemUI?.rattleRelics(this._getApplicableRelicIds(rank));
+      }
     } else {
       this._handText.setVisible(false);
 
@@ -1312,7 +1329,7 @@ export class BattleScene extends Phaser.Scene {
       }
 
       // GameScene(roundManager)이 마켓/전투 판단을 담당
-      writeSave(next.round, this.player.toData(), this.deck.getState());
+      writeSave(next.round, this.player.toData(), this.deck.getState(), { battleIndex: next.battleIndex });
       this.scene.start("GameScene", {
         round: next.round,
         battleIndex: next.battleIndex,

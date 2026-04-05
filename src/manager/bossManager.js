@@ -2,11 +2,12 @@ import Phaser from 'phaser';
 import { GW, GH, PLAYER_PANEL_W, MONSTER_AREA_TOP, MONSTER_AREA_H } from '../constants.js';
 import { TS } from '../textStyles.js';
 
-const ACTION_GAP = 850; // 액션 간 딜레이(ms)
+const ACTION_GAP = 1600; // 액션 간 딜레이(ms)
 
 export class BossManager {
   constructor(scene) {
     this.scene = scene;
+    this._debuffInitialized = false; // 첫 플레이어 턴 디버프 초기화 여부
   }
 
   // ── 현재 페이즈 판단 ─────────────────────────────────────────────────────
@@ -20,6 +21,12 @@ export class BossManager {
   // ── 패시브 활성화 (trigger: 'boss_turn' | 'player_turn') ─────────────────
   activatePassive(boss, trigger) {
     const { scene } = this;
+
+    // player_turn 시작 시: 디버프 타입 보스가 첫 턴에 디버프 없으면 1페이즈 디버프 초기화
+    if (trigger === 'player_turn') {
+      this._initDebuffIfNeeded(boss);
+    }
+
     const p = boss.passive;
     if (!p || p.triggerOn !== trigger) return;
 
@@ -47,6 +54,36 @@ export class BossManager {
   // ── 보스 턴 패시브 적용 (하위 호환용 래퍼) ───────────────────────────────
   applyPassive(boss) {
     this.activatePassive(boss, 'boss_turn');
+  }
+
+  // ── 디버프 초기화 (첫 플레이어 턴에 한 번만 조용히 적용) ────────────────────
+  _initDebuffIfNeeded(boss) {
+    // 한 번 초기화하면 이후 재적용 안 함 (tick 만료 후 재적용 방지)
+    if (this._debuffInitialized) return;
+
+    const { scene } = this;
+    const DEBUFF_SKILL_TYPES = ['rank_disable', 'suit_disable', 'seal_most_used_hand', 'seal_most_and_last_hand'];
+
+    // 해당 보스가 디버프 스킬을 가졌는지 확인
+    const phase1 = [...boss.phases].sort((a, b) => b.hpThreshold - a.hpThreshold)[0];
+    const hasDebuffSkill = (phase1?.actions ?? []).some(a =>
+      a.type === 'skill' && DEBUFF_SKILL_TYPES.includes(boss.skills?.[a.skillId]?.type)
+    );
+    if (!hasDebuffSkill) return;
+
+    for (const action of (phase1?.actions ?? [])) {
+      if (action.type !== 'skill') continue;
+      const skill = boss.skills?.[action.skillId];
+      if (!skill || !DEBUFF_SKILL_TYPES.includes(skill.type)) continue;
+
+      // 재진입 방지를 위해 플래그를 먼저 설정 (apply 내부에서 render() 호출 시 무한루프 방지)
+      this._debuffInitialized = true;
+      if (skill.type === 'rank_disable')            scene.debuffManager.applyRankDisable(boss.name);
+      if (skill.type === 'suit_disable')            scene.debuffManager.applySuitDisable(boss.name);
+      if (skill.type === 'seal_most_used_hand')     scene.debuffManager.applyMostUsedHandSeal(boss.name);
+      if (skill.type === 'seal_most_and_last_hand') scene.debuffManager.applyMostAndLastHandSeal(boss.name);
+      break;
+    }
   }
 
   // ── 보스 턴 실행 ─────────────────────────────────────────────────────────
@@ -176,7 +213,7 @@ export class BossManager {
       scene.render();
       this._showDebuffFlash(monIdx);
       const { mX: dbX, mY: dbY } = this._getMonSpritePos(monIdx);
-      scene.effects.throwOrb(dbX, dbY, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 16, 0xaa44ff);
+      scene.effects.throwOrb(dbX, dbY, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 58, 0xaa44ff);
 
     } else if (skill.type === 'heal_lost_hp') {
       const lost   = boss.maxHp - boss.hp;
@@ -189,13 +226,25 @@ export class BossManager {
       scene.debuffManager.applyRankDisable(boss.name);
       this._showDebuffFlash(monIdx);
       const { mX: rkX, mY: rkY } = this._getMonSpritePos(monIdx);
-      scene.effects.throwOrb(rkX, rkY, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 16, 0xaa44ff);
+      scene.effects.throwOrb(rkX, rkY, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 58, 0xaa44ff);
 
     } else if (skill.type === 'suit_disable') {
       scene.debuffManager.applySuitDisable(boss.name);
       this._showDebuffFlash(monIdx);
       const { mX: stX, mY: stY } = this._getMonSpritePos(monIdx);
-      scene.effects.throwOrb(stX, stY, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 16, 0xaa44ff);
+      scene.effects.throwOrb(stX, stY, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 58, 0xaa44ff);
+
+    } else if (skill.type === 'seal_most_used_hand') {
+      scene.debuffManager.applyMostUsedHandSeal(boss.name);
+      this._showDebuffFlash(monIdx);
+      const { mX: m1X, mY: m1Y } = this._getMonSpritePos(monIdx);
+      scene.effects.throwOrb(m1X, m1Y, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 58, 0xaa44ff);
+
+    } else if (skill.type === 'seal_most_and_last_hand') {
+      scene.debuffManager.applyMostAndLastHandSeal(boss.name);
+      this._showDebuffFlash(monIdx);
+      const { mX: m2X, mY: m2Y } = this._getMonSpritePos(monIdx);
+      scene.effects.throwOrb(m2X, m2Y, PLAYER_PANEL_W + 24, MONSTER_AREA_TOP + 58, 0xaa44ff);
     }
   }
 
