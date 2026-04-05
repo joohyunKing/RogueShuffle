@@ -8,18 +8,17 @@ import {
 import { TS } from "../textStyles.js";
 import { getScoreDetails } from "../service/scoreService.js";
 
+// 플레이어 HP바 방향 orb 목표 좌표 (bossManager.js 의 ATK_ORB 와 동일)
+const ATK_ORB = { x: PLAYER_PANEL_W / 2, y: 152 };
+
 export class MonsterManager {
   constructor(scene) {
     this.scene = scene;
   }
-  
+
   setMonsters(monsters) {
     this.monsters = monsters;
-  
-    // 상태 초기화 (없으면)
-    this.monsters.forEach(mon => {
-      if (!mon.state) mon.state = 'idle';
-    });
+    this.monsters.forEach(mon => { if (!mon.state) mon.state = 'idle'; });
   }
 
   // ── 몬스터 위치 계산 ───────────────────────────────────────────────────────
@@ -64,6 +63,67 @@ export class MonsterManager {
     return total;
   }
 
+  // ── 디버프로 disabled 된 카드 판별 ───────────────────────────────────────
+  _isCardDisabled(card) {
+    const dm = this.scene.debuffManager;
+    return dm.disabledCardUids.has(card.uid)
+      || dm.disabledRanks.has(card.rank)
+      || dm.disabledSuits.has(card.suit);
+  }
+
+  // ── 몬스터 애니메이션 재생 후 idle 복귀 ──────────────────────────────────
+  // animType 키가 없으면 fallbackType 으로 시도
+  _playMonAnim(monIdx, animType, fallbackType = 'attack') {
+    const { scene } = this;
+    const sprite = scene._monsterSprites?.[monIdx];
+    if (!(sprite instanceof Phaser.GameObjects.Sprite)) return;
+    const mon = scene.monsters[monIdx];
+    if (!mon) return;
+    const key     = `${mon.id}_${animType}`;
+    const playKey = scene.anims.exists(key) ? key
+      : (scene.anims.exists(`${mon.id}_${fallbackType}`) ? `${mon.id}_${fallbackType}` : null);
+    if (!playKey) return;
+    sprite.play(playKey);
+    sprite.once('animationcomplete', () => {
+      const idleKey = `${mon.id}_idle`;
+      if (scene.anims.exists(idleKey)) sprite.play(idleKey);
+    });
+  }
+
+  // ── 피격 이펙트 (flash + sfx + 데미지 라벨) ──────────────────────────────
+  // mX: 라벨 X 위치, opts: { flashColor, flashAlpha, sfx, tint? }
+  _showHitEffect(mX, damage, {
+    flashColor = 0xcc0000, flashAlpha = 0.22,
+    sfx = 'sfx_chop', tint = null,
+  } = {}) {
+    const { scene } = this;
+    const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, flashColor, flashAlpha).setDepth(500);
+    scene.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
+    scene._sfx(sfx);
+
+    const label = damage > 0 ? `-${damage} HP` : 'BLOCKED!';
+    const style = (damage > 0 || tint) ? TS.damageHit : TS.damageBlocked;
+    const txt   = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, style)
+      .setOrigin(0.5, 0).setDepth(501);
+    if (tint) txt.setTint(tint);
+    scene.tweens.add({ targets: txt, y: 128, alpha: 0, duration: 480, delay: 80, ease: 'Power1.In', onComplete: () => txt.destroy() });
+  }
+
+  // ── 처치 공통 처리 (XP/골드 획득, 로그, 레벨업) ───────────────────────────
+  // monIdx가 null 이면 _playDie 생략 (AOE 처치 시 render() 가 대신 처리)
+  _onKill(mon, monIdx = null, label = null) {
+    const { scene } = this;
+    mon.isDead = true;
+    if (monIdx !== null) this._playDie(monIdx, mon);
+    const newLevels = scene.player.addXp(mon.xp);
+    scene.player.gold += mon.gold;
+    scene.addBattleLog(label ?? `${mon.name} 처치! +${mon.xp}XP +${mon.gold}G`);
+    if (newLevels.length > 0) {
+      scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
+      scene._suitLevelUpCount += newLevels.length;
+    }
+  }
+
   // ── 몬스터 공격 ──────────────────────────────────────────────────────────
   attackMonster(monIdx) {
     const { scene } = this;
@@ -72,13 +132,9 @@ export class MonsterManager {
 
     scene._refreshContext();
 
-    // disabled 카드 제외 — 점수/슈트 효과에 기여 안 함, 하지만 dummy로 버려짐
-    const dm = scene.debuffManager;
-    const isDisabled = (c) => dm.disabledCardUids.has(c.uid)
-      || dm.disabledRanks.has(c.rank) || dm.disabledSuits.has(c.suit);
-
-    // 점수 내역 계산 (애니메이션 + 데미지 모두 사용) — 활성 카드만
-    const selectedCards = [...scene.selected].map(i => scene.handData[i]).filter(c => !isDisabled(c));
+    // 점수 계산: disabled 카드 제외 (점수/슈트 효과 기여 안 함, dummy로는 버려짐)
+    const selectedCards = [...scene.selected].map(i => scene.handData[i])
+      .filter(c => !this._isCardDisabled(c));
     const details = getScoreDetails(selectedCards, context);
     if (details.totalScore <= 0) return;
 
@@ -87,20 +143,16 @@ export class MonsterManager {
       return;
     }
 
-    const score    = details.totalScore;
-    const handName = details.handName;
-    const aoe      = details.aoe;
-    const handRank = details.rank;
+    const { totalScore: score, handName, aoe, rank: handRank } = details;
 
     // 봉인된 족보 차단
     if (handRank != null && scene.debuffManager.disabledHandRanks.has(handRank)) {
-      const handKey = HAND_DATA[handRank]?.key ?? String(handRank);
-      scene.addBattleLog(`[${handKey}] 봉인된 족보입니다!`);
+      scene.addBattleLog(`[${HAND_DATA[handRank]?.key ?? handRank}] 봉인된 족보입니다!`);
       scene.refreshBattleLog();
       return;
     }
 
-    // 족보 사용 횟수 기록 + 마지막 사용 족보 갱신
+    // 족보 사용 기록
     if (handRank != null) {
       scene.player.handUseCounts[handRank] = (scene.player.handUseCounts[handRank] ?? 0) + 1;
       scene.player.lastHandRank = handRank;
@@ -112,7 +164,7 @@ export class MonsterManager {
     const suitCounts      = { S: 0, H: 0, D: 0, C: 0 };
     selectedIndices.forEach(i => {
       const c = scene.handData[i];
-      if (!isDisabled(c)) suitCounts[c.suit]++;
+      if (!this._isCardDisabled(c)) suitCounts[c.suit]++;
     });
 
     const cardFlyInfo = selectedIndices.map(i => {
@@ -129,7 +181,6 @@ export class MonsterManager {
     scene.attackCount++;
     scene.isDealing = true;
 
-    // 카드 제거 콜백 — 펄스 애니메이션 완료 후 dummy로 이동
     const removeCards = () => {
       scene.selected.clear();
       [...selectedIndices].sort((a, b) => b - a)
@@ -144,135 +195,133 @@ export class MonsterManager {
 
     scene.playAttackAnimation(details, cardFlyInfo, removeCards, () => {
       if (aoe) {
-        // ── 광역 공격 ────────────────────────────────────────────────────
-        const aliveMonsters = scene.monsters.filter(m => !m.isDead);
-        const aliveSprites  = scene._monsterSprites?.filter((_, i) => !scene.monsters[i]?.isDead) ?? [];
-
-        if (suitCounts.S > 0) {
-          const eff = suitEff('S');
-          if (eff > 0) { aliveMonsters.forEach(m => { m.def -= eff; }); scene.addBattleLog(`♠ 적응: 전체 DEF -${eff}`); }
-        }
-        if (suitCounts.C > 0) {
-          const eff = suitEff('C');
-          if (eff > 0) {
-            aliveMonsters.forEach(m => {
-              const reduced = Math.min(eff, m.atk);
-              m.atk = Math.max(0, m.atk - eff);
-              if (reduced > 0) scene.addBattleLog(`♣ 적응: ${m.name} ATK -${reduced}`);
-            });
-          }
-        }
-        if (suitCounts.H > 0) {
-          const eff = suitEff('H');
-          scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
-          if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
-        }
-        if (suitCounts.D > 0) {
-          const eff = suitEff('D');
-          scene.player.def += eff;
-          if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
-        }
-
-        scene.player.score += score;
-        scene.addBattleLog(`${handName}! 전체에 ${score}점 광역 공격!`);
-        scene._sfx("sfx_knifeSlice");
-
-        const aoeX = positions.length > 0
-          ? positions.reduce((s, p) => s + p.x, 0) / positions.length
-          : GW / 2;
-        scene.effects.hitExplosion(aoeX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, aliveSprites);
-
-        aliveMonsters.forEach(m => {
-          const dmg = Math.floor(Math.max(0, score - m.def));
-          m.hp = Math.max(0, m.hp - dmg);
-          scene.addBattleLog(`${m.name}에게 ${dmg} 데미지!`);
-          if (m.hp <= 0) {
-            m.isDead = true;
-            const newLevels = scene.player.addXp(m.xp);
-            scene.player.gold += m.gold;
-            scene.addBattleLog(`${m.name} 처치! +${m.xp}XP +${m.gold}G`);
-            if (newLevels.length > 0) {
-              scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
-              scene._suitLevelUpCount += newLevels.length;
-            }
-          }
-        });
-
-        scene.isDealing = false;
-        scene.render();
-        scene._checkLevelUpThenProceed();
-
+        this._resolveAoe(score, handName, suitCounts, suitEff, positions);
       } else {
-        // ── 단일 타겟 공격 ────────────────────────────────────────────────
-        if (suitCounts.S > 0) {
-          const eff = suitEff('S');
-          mon.def -= eff;
-          if (eff > 0) scene.addBattleLog(`♠ 적응: ${mon.name} DEF -${eff}`);
-        }
-        if (suitCounts.C > 0) {
-          const eff = suitEff('C');
-          const reduced = Math.min(eff, mon.atk);
-          mon.atk = Math.max(0, mon.atk - eff);
-          if (reduced > 0) scene.addBattleLog(`♣ 적응: ${mon.name} ATK -${reduced}`);
-        }
-
-        const damage   = Math.floor(Math.max(0, score - mon.def));
-        const prevHp   = mon.hp;
-        mon.hp         = Math.max(0, mon.hp - damage);
-        const overkill = Math.max(0, damage - prevHp);
-        const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
-        scene.player.score += score;
-        this._refreshHP(monIdx, mon);
-
-        if (suitCounts.H > 0) {
-          const eff = suitEff('H');
-          scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
-          if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
-        }
-        if (suitCounts.D > 0) {
-          const eff = suitEff('D');
-          scene.player.def += eff;
-          if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
-        }
-
-        scene.addBattleLog(`${mon.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
-        scene._sfx("sfx_knifeSlice");
-
-        const monSprite  = scene._monsterSprites?.[monIdx];
-        scene.effects.hitLightning(
-          monSprite?.x ?? positions[monIdx].x,
-          monSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
-          monSprite ?? null
-        );
-        const damagedKey = `${mon.id}_damaged`;
-
-        if (monSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
-          monSprite.play(damagedKey);
-          monSprite.once('animationcomplete', () => {
-            scene.isDealing = false;
-            this._afterAttack(mon, monIdx, overkill, bullseye);
-          });
-        } else {
-          scene.isDealing = false;
-          this._afterAttack(mon, monIdx, overkill, bullseye);
-        }
+        this._resolveSingle(mon, monIdx, score, handName, suitCounts, suitEff, positions);
       }
     });
+  }
+
+  // ── 광역 공격 처리 ────────────────────────────────────────────────────────
+  _resolveAoe(score, handName, suitCounts, suitEff, positions) {
+    const { scene } = this;
+    const aliveMonsters = scene.monsters.filter(m => !m.isDead);
+    const aliveSprites  = scene._monsterSprites?.filter((_, i) => !scene.monsters[i]?.isDead) ?? [];
+
+    // 슈트 적응 효과 (전체 대상)
+    if (suitCounts.S > 0) {
+      const eff = suitEff('S');
+      if (eff > 0) { aliveMonsters.forEach(m => { m.def -= eff; }); scene.addBattleLog(`♠ 적응: 전체 DEF -${eff}`); }
+    }
+    if (suitCounts.C > 0) {
+      const eff = suitEff('C');
+      if (eff > 0) {
+        aliveMonsters.forEach(m => {
+          const reduced = Math.min(eff, m.atk);
+          m.atk = Math.max(0, m.atk - eff);
+          if (reduced > 0) scene.addBattleLog(`♣ 적응: ${m.name} ATK -${reduced}`);
+        });
+      }
+    }
+    if (suitCounts.H > 0) {
+      const eff = suitEff('H');
+      scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
+      if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
+    }
+    if (suitCounts.D > 0) {
+      const eff = suitEff('D');
+      scene.player.def += eff;
+      if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
+    }
+
+    scene.player.score += score;
+    scene.addBattleLog(`${handName}! 전체에 ${score}점 광역 공격!`);
+    scene._sfx("sfx_knifeSlice");
+
+    const aoeX = positions.length > 0
+      ? positions.reduce((s, p) => s + p.x, 0) / positions.length
+      : GW / 2;
+    scene.effects.hitExplosion(aoeX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, aliveSprites);
+
+    aliveMonsters.forEach(m => {
+      const dmg = Math.floor(Math.max(0, score - m.def));
+      m.hp = Math.max(0, m.hp - dmg);
+      if (scene.isBoss && m === scene.monsters[0]) m._damageTaken = (m._damageTaken ?? 0) + dmg;
+      scene.addBattleLog(`${m.name}에게 ${dmg} 데미지!`);
+      if (m.hp <= 0) this._onKill(m); // AOE: _playDie 생략, render() 가 처리
+    });
+
+    scene.isDealing = false;
+    scene.render();
+    scene._checkLevelUpThenProceed();
+  }
+
+  // ── 단일 타겟 공격 처리 ──────────────────────────────────────────────────
+  _resolveSingle(mon, monIdx, score, handName, suitCounts, suitEff, positions) {
+    const { scene } = this;
+
+    // 슈트 적응 효과 (데미지 전: ♠DEF감소, ♣ATK감소)
+    if (suitCounts.S > 0) {
+      const eff = suitEff('S');
+      mon.def -= eff;
+      if (eff > 0) scene.addBattleLog(`♠ 적응: ${mon.name} DEF -${eff}`);
+    }
+    if (suitCounts.C > 0) {
+      const eff    = suitEff('C');
+      const reduced = Math.min(eff, mon.atk);
+      mon.atk = Math.max(0, mon.atk - eff);
+      if (reduced > 0) scene.addBattleLog(`♣ 적응: ${mon.name} ATK -${reduced}`);
+    }
+
+    const damage   = Math.floor(Math.max(0, score - mon.def));
+    const prevHp   = mon.hp;
+    mon.hp         = Math.max(0, mon.hp - damage);
+    if (scene.isBoss) mon._damageTaken = (mon._damageTaken ?? 0) + damage;
+    const overkill = Math.max(0, damage - prevHp);
+    const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
+    scene.player.score += score;
+    this._refreshHP(monIdx, mon);
+
+    // 슈트 적응 효과 (데미지 후: ♥HP회복, ♦DEF증가)
+    if (suitCounts.H > 0) {
+      const eff = suitEff('H');
+      scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
+      if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
+    }
+    if (suitCounts.D > 0) {
+      const eff = suitEff('D');
+      scene.player.def += eff;
+      if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
+    }
+
+    scene.addBattleLog(`${mon.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
+    scene._sfx("sfx_knifeSlice");
+
+    const monSprite = scene._monsterSprites?.[monIdx];
+    scene.effects.hitLightning(
+      monSprite?.x ?? positions[monIdx].x,
+      monSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
+      monSprite ?? null
+    );
+
+    const damagedKey = `${mon.id}_damaged`;
+    if (monSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
+      monSprite.play(damagedKey);
+      monSprite.once('animationcomplete', () => {
+        scene.isDealing = false;
+        this._afterAttack(mon, monIdx, overkill, bullseye);
+      });
+    } else {
+      scene.isDealing = false;
+      this._afterAttack(mon, monIdx, overkill, bullseye);
+    }
   }
 
   // ── 공격 후 처리 ──────────────────────────────────────────────────────────
   _afterAttack(mon, monIdx, overkill = 0, bullseye = false) {
     const { scene } = this;
     if (mon.hp <= 0) {
-      mon.isDead = true;
-      this._playDie(monIdx, mon);
-      const newLevels = scene.player.addXp(mon.xp);
-      scene.player.gold += mon.gold;
-      scene.addBattleLog(`${mon.name} 처치! +${mon.xp}XP +${mon.gold}G`);
-      if (newLevels.length > 0) {
-        scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
-        scene._suitLevelUpCount += newLevels.length;
-      }
+      this._onKill(mon, monIdx);
       if (overkill > 0) {
         scene.isDealing = true;
         this._applyOverkill(monIdx, overkill, () => {
@@ -297,7 +346,7 @@ export class MonsterManager {
     }
   }
 
-  // ── 불스아이 BullsEye 광역 ──────────────────────────────────────────────────────────
+  // ── 불스아이 광역 ─────────────────────────────────────────────────────────
   _applyBullseye(fromIdx, dmg, onDone) {
     const { scene } = this;
     if (dmg <= 0) { onDone?.(); return; }
@@ -305,32 +354,19 @@ export class MonsterManager {
     const aliveTargets = scene.monsters
       .map((m, i) => ({ m, i }))
       .filter(({ m, i }) => !m.isDead && i !== fromIdx);
-
     if (aliveTargets.length === 0) { onDone?.(); return; }
 
-    const positions  = this.calcMonsterPositions(scene.monsters.length);
-    const aoeX       = positions[fromIdx].x;
-    const aoeY       = MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
-    const aliveSprites = aliveTargets
-      .map(({ i }) => scene._monsterSprites?.[i])
-      .filter(Boolean);
-
-    scene.effects.hitExplosion(aoeX, aoeY, aliveSprites);
+    const positions   = this.calcMonsterPositions(scene.monsters.length);
+    const aoeX        = positions[fromIdx].x;
+    const aliveSprites = aliveTargets.map(({ i }) => scene._monsterSprites?.[i]).filter(Boolean);
+    scene.effects.hitExplosion(aoeX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, aliveSprites);
 
     aliveTargets.forEach(({ m, i }) => {
       const actualDmg = Math.max(0, dmg - m.def);
       m.hp = Math.max(0, m.hp - actualDmg);
       scene.addBattleLog(`BULLSEYE 연쇄! ${m.name}에게 ${actualDmg} 데미지!`);
       if (m.hp <= 0 && !m.isDead) {
-        m.isDead = true;
-        this._playDie(i, m);
-        const newLevels = scene.player.addXp(m.xp);
-        scene.player.gold += m.gold;
-        scene.addBattleLog(`${m.name} 처치! +${m.xp}XP +${m.gold}G`);
-        if (newLevels.length > 0) {
-          scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
-          scene._suitLevelUpCount += newLevels.length;
-        }
+        this._onKill(m, i);
       } else {
         this._refreshHP(i, m);
       }
@@ -344,6 +380,7 @@ export class MonsterManager {
     const { scene } = this;
     if (dmg <= 0) { onDone?.(); return; }
 
+    // fromIdx 이후 → 이전 순으로 다음 생존 몬스터 탐색
     let idx = -1;
     for (let i = fromIdx + 1; i < scene.monsters.length; i++) {
       if (!scene.monsters[i].isDead) { idx = i; break; }
@@ -358,12 +395,13 @@ export class MonsterManager {
     const positions  = this.calcMonsterPositions(scene.monsters.length);
     const fromSprite = scene._monsterSprites?.[fromIdx];
     const toSprite   = scene._monsterSprites?.[idx];
-    const fromX      = fromSprite?.x ?? positions[fromIdx].x;
-    const fromY      = fromSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2);
-    const toX        = toSprite?.x   ?? positions[idx].x;
-    const toY        = toSprite?.y   ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2);
-
-    scene.effects.hitChainLightning(fromX, fromY, toX, toY, toSprite ?? null);
+    scene.effects.hitChainLightning(
+      fromSprite?.x ?? positions[fromIdx].x,
+      fromSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
+      toSprite?.x   ?? positions[idx].x,
+      toSprite?.y   ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
+      toSprite ?? null
+    );
     scene._sfx("sfx_knifeSlice");
 
     scene.time.delayedCall(120, () => {
@@ -376,22 +414,13 @@ export class MonsterManager {
       scene.addBattleLog(`오버킬! ${target.name}에게 ${actualDmg} 연쇄!`);
 
       if (target.hp <= 0 && !target.isDead) {
-        target.isDead = true;
-        this._playDie(idx, target);
-        const newLevels = scene.player.addXp(target.xp);
-        scene.player.gold += target.gold;
-        scene.addBattleLog(`${target.name} 연쇄 처치! +${target.xp}XP`);
-        if (newLevels.length > 0) {
-          scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
-          scene._suitLevelUpCount += newLevels.length;
-        }
+        this._onKill(target, idx, `${target.name} 연쇄 처치! +${target.xp}XP`);
         if (chain > 0) {
           scene.time.delayedCall(120, () => this._applyOverkill(idx, chain, onDone));
         } else {
           onDone?.();
         }
       } else {
-        // 생존 — damaged 애니메이션 기다린 후 종료
         const damagedKey = `${target.id}_damaged`;
         if (toSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
           toSprite.play(damagedKey);
@@ -414,9 +443,7 @@ export class MonsterManager {
     if (!view) return;
     view.updateStats(mon);
     const dieKey = `${mon.id}_die`;
-    if (this.scene.anims.exists(dieKey)) {
-      view.sprite.play(dieKey);
-    }
+    if (this.scene.anims.exists(dieKey)) view.sprite.play(dieKey);
   }
 
   // ── 몬스터 행동 결정 (일반 공격 or 스킬) ─────────────────────────────────
@@ -436,47 +463,22 @@ export class MonsterManager {
   // ── 몬스터 스킬 사용 ─────────────────────────────────────────────────────
   _useMonsterSkill(monIdx, m) {
     const { scene } = this;
-    const skill       = m.skill;
-    const monSprite   = scene._monsterSprites?.[monIdx];
-    const skillTexKey = `${m.id}_skill`;
-    const skillAnimKey = `${m.id}_skill`;
-    const idleKey     = `${m.id}_idle`;
+    const skill = m.skill;
+    const positions = this.calcMonsterPositions(scene.monsters.length);
+    const mX = positions[monIdx]?.x ?? GW / 2;
 
-    if (monSprite instanceof Phaser.GameObjects.Sprite) {
-      const playKey = scene.anims.exists(skillAnimKey) ? skillAnimKey
-                    : `${m.id}_attack`;
-      if (scene.anims.exists(playKey)) {
-        monSprite.play(playKey);
-        monSprite.once('animationcomplete', () => {
-          if (scene.anims.exists(idleKey)) monSprite.play(idleKey);
-        });
-      }
-    }
+    this._playMonAnim(monIdx, 'skill');
 
     if (skill.type === 'damage') {
       const raw = skill.value ?? Math.floor(m.atk * (skill.damMult ?? 1));
       const dmg = Math.max(0, raw - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
       scene.addBattleLog(`${m.name}의 ${skill.name}! ${dmg} 데미지!`);
-
-      const positions = this.calcMonsterPositions(scene.monsters.length);
-      const mX = positions[monIdx]?.x ?? GW / 2;
-      const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x880088, 0.25).setDepth(500);
-      scene.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
-      scene._sfx("sfx_knifeSlice");
-      const label = dmg > 0 ? `-${dmg} HP` : 'BLOCKED!';
-      const txt = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, TS.damageHit)
-        .setOrigin(0.5, 0).setDepth(501).setTint(0xee44ff);
-      scene.tweens.add({
-        targets: txt, y: 128, alpha: 0, duration: 480, delay: 80, ease: 'Power1.In',
-        onComplete: () => txt.destroy(),
-      });
+      this._showHitEffect(mX, dmg, { flashColor: 0x880088, flashAlpha: 0.25, sfx: 'sfx_knifeSlice', tint: 0xee44ff });
 
     } else if (skill.type === 'debuff') {
-      const debuffId = skill.debuffId ?? skill.value;
-      scene.debuffManager.applyDebuff(debuffId, m.name);
+      scene.debuffManager.applyDebuff(skill.debuffId ?? skill.value, m.name);
       scene.render();
-
       const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x440044, 0.20).setDepth(500);
       scene.tweens.add({ targets: flash, alpha: 0, duration: 600, onComplete: () => flash.destroy() });
       scene._sfx("sfx_chop");
@@ -488,33 +490,13 @@ export class MonsterManager {
     const { scene } = this;
     const positions = this.calcMonsterPositions(scene.monsters.length);
     const mX        = positions[monIdx]?.x ?? GW / 2;
+    const monSprite = scene._monsterSprites?.[monIdx];
+    const fromY     = monSprite instanceof Phaser.GameObjects.Sprite
+      ? monSprite.y - 30
+      : MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
 
-    const monSprite  = scene._monsterSprites?.[monIdx];
-    const mon        = scene.monsters[monIdx];
-    const attackKey  = `${mon?.id}_attack`;
-    const idleKey    = `${mon?.id}_idle`;
-    if (monSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(attackKey)) {
-      monSprite.play(attackKey);
-      monSprite.once('animationcomplete', () => {
-        if (scene.anims.exists(idleKey)) monSprite.play(idleKey);
-      });
-    }
-
-    // Orb: 몬스터 → 플레이어 HP 바
-    const fromY = monSprite instanceof Phaser.GameObjects.Sprite ? monSprite.y - 30 : MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
-    scene.effects.throwOrb(mX, fromY, PLAYER_PANEL_W / 2, 152, 0xff4444);
-
-    const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0xcc0000, 0.22).setDepth(500);
-    scene.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
-    scene._sfx("sfx_chop");
-
-    const label    = damage > 0 ? `-${damage} HP` : "BLOCKED!";
-    const txtStyle = damage > 0 ? TS.damageHit : TS.damageBlocked;
-    const txt = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, txtStyle)
-      .setOrigin(0.5, 0).setDepth(501);
-    scene.tweens.add({
-      targets: txt, y: 128, alpha: 0, duration: 480, delay: 80, ease: "Power1.In",
-      onComplete: () => txt.destroy(),
-    });
+    this._playMonAnim(monIdx, 'attack');
+    scene.effects.throwOrb(mX, fromY, ATK_ORB.x, ATK_ORB.y, 0xff4444);
+    this._showHitEffect(mX, damage);
   }
 }

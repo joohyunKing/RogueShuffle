@@ -14,12 +14,12 @@
       "battles": [
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -59,7 +59,7 @@
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -103,7 +103,7 @@
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -127,7 +127,8 @@
       ],
       "bossPool": [
         "berserker",
-        "troll"
+        "troll",
+        "hexweaver"
       ],
       "bossDebuff": {}
     },
@@ -148,7 +149,7 @@
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -192,7 +193,7 @@
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -237,7 +238,7 @@
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -260,7 +261,8 @@
         }
       ],
       "bossPool": [
-        "berserker"
+        "berserker",
+        "iron_fortress"
       ],
       "bossDebuff": {}
     },
@@ -281,7 +283,7 @@
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -304,7 +306,8 @@
         }
       ],
       "bossPool": [
-        "berserker"
+        "berserker",
+        "mirror_knight"
       ],
       "bossDebuff": {}
     },
@@ -325,7 +328,7 @@
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -369,7 +372,7 @@
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -379,7 +382,7 @@
         },
         {
           "type": "elite",
-          "statMulti": 2.0,
+          "statMulti": 2,
           "totalCost": 3
         },
         {
@@ -413,7 +416,7 @@
         },
         {
           "type": "normal",
-          "statMulti": 1.0,
+          "statMulti": 1,
           "totalCost": 3
         },
         {
@@ -423,7 +426,7 @@
         },
         {
           "type": "elite",
-          "statMulti": 2.0,
+          "statMulti": 2,
           "totalCost": 3
         },
         {
