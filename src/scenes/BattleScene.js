@@ -595,7 +595,8 @@ export class BattleScene extends Phaser.Scene {
 
     this.fieldData.forEach((card, i) => {
       const x = card.slotX;
-      const { cardImg: img, sealImg } = CardRenderer.drawCard(this, x, FIELD_Y, card, { width: FIELD_CW, height: FIELD_CH, depth: 10, objs: this.cardObjs });
+      const isDisabled = this._isCardDisabled(card);
+      const { cardImg: img, sealImg } = CardRenderer.drawCard(this, x, FIELD_Y, card, { width: FIELD_CW, height: FIELD_CH, depth: 10, disabled: isDisabled, objs: this.cardObjs });
 
       img.setInteractive({ draggable: canPick });
 
@@ -627,6 +628,7 @@ export class BattleScene extends Phaser.Scene {
           this.addBattleLog(`이번 턴 공격 횟수 초과! (${this.player.attacksPerTurn}회)`);
         });
         img.setAlpha(0.45);
+        sealImg?.setAlpha(0.45);
       }
     });
   }
@@ -641,15 +643,7 @@ export class BattleScene extends Phaser.Scene {
     const combo = this._getSelectedCombo();
     const hasValidCombo = combo.rank != null && (combo.cards?.length ?? 0) > 0;
 
-    // TWO_PAIR: 킥커(페어 아닌 카드) 제외하고 4장만 떨기
-    let comboCardSet;
-    if (combo.rank === HAND_RANK.TWO_PAIR) {
-      const valCount = {};
-      for (const c of combo.cards) valCount[c.val] = (valCount[c.val] || 0) + 1;
-      comboCardSet = new Set(combo.cards.filter(c => valCount[c.val] >= 2));
-    } else {
-      comboCardSet = new Set(combo.cards ?? []);
-    }
+    const comboCardSet = new Set(combo.cards ?? []);
 
     const count = this.handData.length;
     // 기본 크기: CW * 0.95, 9장 이상이면 추가 축소

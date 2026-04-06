@@ -121,6 +121,7 @@ export class BossManager {
     const phase   = this.getCurrentPhase(boss);
     const actions = phase.actions;
 
+    // 보스 행동
     actions.forEach((action, i) => {
       scene.time.delayedCall(i * ACTION_GAP + 200, () => {
         this._executeAction(boss, 0, action);
@@ -129,7 +130,22 @@ export class BossManager {
       });
     });
 
-    scene.time.delayedCall(actions.length * ACTION_GAP + 500, () => {
+    // 소환 몬스터 공격 (보스 행동 종료 후 순차 실행)
+    const summonedAlive = scene.monsters.filter(m => m.isSummoned && !m.isDead);
+    summonedAlive.forEach((mon, si) => {
+      const monIdx = scene.monsters.indexOf(mon);
+      const delay  = actions.length * ACTION_GAP + 200 + si * ACTION_GAP;
+      scene.time.delayedCall(delay, () => {
+        if (!mon.isDead) {
+          this._doAttack(mon, monIdx);
+          scene.refreshPlayerStats();
+          scene.refreshBattleLog();
+        }
+      });
+    });
+
+    const totalActions = actions.length + summonedAlive.length;
+    scene.time.delayedCall(totalActions * ACTION_GAP + 500, () => {
       onDone?.();
     });
   }

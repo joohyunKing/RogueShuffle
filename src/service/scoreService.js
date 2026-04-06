@@ -191,6 +191,7 @@ export function getScoreDetails(cards, context) {
     const cardDetails = ctx.cards.map(card => {
         let baseScore = card.baseScore;
         for (const enh of (card.enhancements ?? [])) {
+            if (enh.type === 'red') baseScore += 20;
             if (enh.type === 'add') baseScore += enh.value;
         }
         const cardRelicDeltas = [];
@@ -353,11 +354,7 @@ function evaluateHand(cards, enabledHands, suitAliases) {
     if (rank === HAND_RANK.HIGH_CARD) {
         if (groups[0].length === 2 && groups[1]?.length === 2) {
             rank = HAND_RANK.TWO_PAIR;
-            bestCards = [
-                ...groups[0],
-                ...groups[1],
-                ...getKickers(sorted, [...groups[0], ...groups[1]], 1)
-            ];
+            bestCards = [...groups[0], ...groups[1]];
         } else if (groups[0].length === 3) {
             rank = HAND_RANK.TRIPLE;
             bestCards = [...groups[0]];

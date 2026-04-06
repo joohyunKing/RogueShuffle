@@ -371,7 +371,7 @@ export class MarketScene extends Phaser.Scene {
   _buyRelic(idx) {
     const relic = this._shopRelics[idx];
     const price = RELIC_PRICE[relic.rarity] ?? RELIC_PRICE.common;
-    if (relic.bought || this.player.gold < price || this.player.relics.length >= 6) return;
+    if (relic.bought || this.player.gold < price || this.player.relics.length >= maxRelicCount) return;
     this.player.gold -= price;
     relic.bought = true;
     this.player.tryAddRelic(relic.id);
