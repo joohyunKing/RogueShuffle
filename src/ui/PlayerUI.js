@@ -333,6 +333,9 @@ export class PlayerUI {
     this._hpBarFill?.setFillStyle(ratio > 0.5 ? 0x44cc44 : ratio > 0.25 ? 0xddaa00 : 0xdd3333);
 
     this.refreshLevel();
+    if (this.opts.showHandConfig) {
+      this.refreshHandConfig();
+    }
     return this;
   }
 
