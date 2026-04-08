@@ -11,6 +11,7 @@ import {
 } from "../constants.js";
 import { getHandName } from "../service/langService.js";
 import { relicMap as _relicMap } from "../manager/relicManager.js";
+import { sealMap } from '../manager/sealManager.js';
 
 import { writeSave, deleteSave } from "../save.js";
 import { CardRenderer } from "../CardRenderer.js";
@@ -232,9 +233,7 @@ export class BattleScene extends Phaser.Scene {
     this.playerUI = new PlayerUI(this, this.player, {
       round: this.round,
       battleLabel,
-      showAtk: true,
       showDeckCounts: true,
-      showTooltips: true,
       showHandConfig: true,
     });
     this.playerUI.create();
@@ -874,7 +873,7 @@ export class BattleScene extends Phaser.Scene {
     for (const card of cards) {
       for (const enh of (card.enhancements ?? [])) {
         if (enh.type === 'gold') {
-          goldGained += 5;
+          goldGained += sealMap['gold']?.goldBonus ?? 5;
         } else if (enh.type === 'green') {
           if (this.player.items.length < maxItemCount) {
             const all = getAllItems();

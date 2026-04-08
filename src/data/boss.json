@@ -2,6 +2,7 @@
   "bosses": [
     {
       "id": "berserker",
+      "useYn": "Y",
       "name": "광전사",
       "sprite": {
         "idle": "berserker_idle.png",
@@ -60,6 +61,7 @@
     },
     {
       "id": "summoner",
+      "useYn": "Y",
       "name": "소환사",
       "sprite": {
         "idle": "summoner_idle.png",
@@ -114,6 +116,7 @@
     },
     {
       "id": "trickster",
+      "useYn": "Y",
       "name": "트릭스터",
       "sprite": {
         "idle": "trickster_idle.png",
@@ -169,6 +172,7 @@
     },
     {
       "id": "tricksterB",
+      "useYn": "Y",
       "name": "트릭스터B",
       "sprite": {
         "idle": "trickster_idle.png",
@@ -224,6 +228,7 @@
     },
     {
       "id": "troll",
+      "useYn": "Y",
       "name": "트롤",
       "sprite": {
         "idle": "troll_idle.png",
@@ -286,6 +291,7 @@
     },
     {
       "id": "hexweaver",
+      "useYn": "Y",
       "name": "저주술사",
       "sprite": {
         "idle": "undead_mage_idle.png",
@@ -359,6 +365,7 @@
     },
     {
       "id": "iron_fortress",
+      "useYn": "Y",
       "name": "방어의 화신",
       "sprite": {
         "idle": "human_knight_idle.png",
@@ -422,6 +429,7 @@
     },
     {
       "id": "mirror_knight",
+      "useYn": "Y",
       "name": "반사경",
       "sprite": {
         "idle": "trickster_idle.png",

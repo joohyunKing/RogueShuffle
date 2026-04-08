@@ -6,15 +6,9 @@
       "description": "다이아 카드마다 +10 점수",
       "rarity": "common",
       "img": "dia_relic.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "card",
-          "type": "add",
-          "value": 10,
-          "condition": {
-            "suit": "D"
-          }
-        }
+        { "scope": "card", "type": "add", "value": 10, "condition": { "suit": "D" } }
       ]
     },
     {
@@ -23,15 +17,9 @@
       "description": "하트 카드마다 +10 점수",
       "rarity": "common",
       "img": "heart_relic.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "card",
-          "type": "add",
-          "value": 10,
-          "condition": {
-            "suit": "H"
-          }
-        }
+        { "scope": "card", "type": "add", "value": 10, "condition": { "suit": "H" } }
       ]
     },
     {
@@ -40,15 +28,9 @@
       "description": "스페이드 카드마다 +10 점수",
       "rarity": "common",
       "img": "spade_relic.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "card",
-          "type": "add",
-          "value": 10,
-          "condition": {
-            "suit": "S"
-          }
-        }
+        { "scope": "card", "type": "add", "value": 10, "condition": { "suit": "S" } }
       ]
     },
     {
@@ -57,15 +39,9 @@
       "description": "클럽 카드마다 +10 점수",
       "rarity": "common",
       "img": "club_relic.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "card",
-          "type": "add",
-          "value": 10,
-          "condition": {
-            "suit": "C"
-          }
-        }
+        { "scope": "card", "type": "add", "value": 10, "condition": { "suit": "C" } }
       ]
     },
     {
@@ -74,15 +50,9 @@
       "description": "페어 점수 2배",
       "rarity": "common",
       "img": "pair.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "hand",
-          "type": "multiply",
-          "value": 2,
-          "condition": {
-            "handRank": 1
-          }
-        }
+        { "scope": "hand", "type": "multiply", "value": 2, "condition": { "handRank": 1 } }
       ]
     },
     {
@@ -91,15 +61,9 @@
       "description": "하이카드 3배",
       "rarity": "common",
       "img": "one_eye.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "hand",
-          "type": "multiply",
-          "value": 3,
-          "condition": {
-            "handRank": 0
-          }
-        }
+        { "scope": "hand", "type": "multiply", "value": 3, "condition": { "handRank": 0 } }
       ]
     },
     {
@@ -108,15 +72,9 @@
       "description": "트리플 점수 2배",
       "rarity": "common",
       "img": "triple.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "hand",
-          "type": "multiply",
-          "value": 2,
-          "condition": {
-            "handRank": 2
-          }
-        }
+        { "scope": "hand", "type": "multiply", "value": 2, "condition": { "handRank": 2 } }
       ]
     },
     {
@@ -125,15 +83,9 @@
       "description": "투페어 점수 2배",
       "rarity": "common",
       "img": "two_pair.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "hand",
-          "type": "multiply",
-          "value": 2,
-          "condition": {
-            "handRank": 3
-          }
-        }
+        { "scope": "hand", "type": "multiply", "value": 2, "condition": { "handRank": 3 } }
       ]
     },
     {
@@ -142,15 +94,9 @@
       "description": "덱이 30장 이상이면 +30 점수",
       "rarity": "common",
       "img": "avarice.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "final",
-          "type": "add",
-          "value": 30,
-          "condition": {
-            "deckCountGte": 30
-          }
-        }
+        { "scope": "final", "type": "add", "value": 30, "condition": { "deckCountGte": 30 } }
       ]
     },
     {
@@ -159,15 +105,9 @@
       "description": "스트레이트일 경우 +60 점수",
       "rarity": "rare",
       "img": "STRAIGHT.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "hand",
-          "type": "add",
-          "value": 60,
-          "condition": {
-            "handRank": 6
-          }
-        }
+        { "scope": "hand", "type": "add", "value": 60, "condition": { "handRank": 6 } }
       ]
     },
     {
@@ -176,12 +116,9 @@
       "description": "FLUSH DRAW 패 활성화 (같은 슈트 4장)",
       "rarity": "rare",
       "img": "gems_11.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "special",
-          "type": "enableHand",
-          "handRank": 5
-        }
+        { "scope": "special", "type": "enableHand", "handRank": 5 }
       ]
     },
     {
@@ -190,12 +127,9 @@
       "description": "최종 점수 1.5배",
       "rarity": "epic",
       "img": "gems_12.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "final",
-          "type": "multiply",
-          "value": 1.5
-        }
+        { "scope": "final", "type": "multiply", "value": 1.5 }
       ]
     },
     {
@@ -204,13 +138,9 @@
       "description": "원 페어로 전체 광역 공격",
       "rarity": "rare",
       "img": "pair2.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "special",
-          "type": "setHandAoe",
-          "handRank": 1,
-          "value": true
-        }
+        { "scope": "special", "type": "setHandAoe", "handRank": 1, "value": true }
       ]
     },
     {
@@ -219,13 +149,9 @@
       "description": "트리플로 전체 광역 공격",
       "rarity": "rare",
       "img": "triple2.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "special",
-          "type": "setHandAoe",
-          "handRank": 2,
-          "value": true
-        }
+        { "scope": "special", "type": "setHandAoe", "handRank": 2, "value": true }
       ]
     },
     {
@@ -234,19 +160,10 @@
       "description": "FLUSH 단일 공격, 배수 2배",
       "rarity": "epic",
       "img": "gems_12.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "special",
-          "type": "setHandAoe",
-          "handRank": 7,
-          "value": false
-        },
-        {
-          "scope": "special",
-          "type": "multiplyHandMulti",
-          "handRank": 7,
-          "value": 2
-        }
+        { "scope": "special", "type": "setHandAoe", "handRank": 7, "value": false },
+        { "scope": "special", "type": "multiplyHandMulti", "handRank": 7, "value": 2 }
       ]
     },
     {
@@ -255,13 +172,9 @@
       "description": "하트와 다이아를 같은 수트로 인식",
       "rarity": "rare",
       "img": "lamp.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "special",
-          "type": "suitAlias",
-          "suit": "H",
-          "aliasTo": "D"
-        }
+        { "scope": "special", "type": "suitAlias", "suit": "H", "aliasTo": "D" }
       ]
     },
     {
@@ -270,12 +183,9 @@
       "description": "제거 시 보유 골드 2배",
       "rarity": "epic",
       "img": "gems_12.png",
+      "useYn": "Y",
       "effects": [
-        {
-          "scope": "onRemove",
-          "type": "multiplyGold",
-          "value": 2
-        }
+        { "scope": "onRemove", "type": "multiplyGold", "value": 2 }
       ]
     }
   ]

@@ -19,17 +19,22 @@ src/
   main.js               # FontFace 로드 → Phaser.Game 생성, 씬 등록
   constants.js          # 레이아웃 전용 상수
   save.js               # localStorage 세이브/로드 유틸
-  CardRenderer.js       # Canvas2D API로 런타임 카드 텍스처 생성
+  CardRenderer.js       # Canvas2D API로 런타임 카드 텍스처 생성 + 씰 툴팁
   textStyles.js         # Phaser Text 스타일 상수 모음 (TS 객체)
   data/
     monster.json        # 몬스터 데이터 (name/tier/race/hp/atk/def/cost/sprite)
-    item.json           # 아이템 데이터 (id/name/img/desc/cost/rarity/effect)
-    relic.json          # 유물 데이터 (id/name/description/rarity/effects)
+    boss.json           # 보스 데이터 (id/name/hp/atk/def/sprite/useYn)
+    item.json           # 아이템 데이터 (id/name/img/desc/rarity/effect/useYn)
+    relic.json          # 유물 데이터 (id/name/description/rarity/effects/useYn)
+    seal.json           # 씰 데이터 (id/name/desc/border/scoreBonus/goldBonus/shopLabel/img/usable)
     round.json          # 라운드 데이터 (rounds[]: round/normalCount/monsterTier/totalCost/boss)
   manager/
     roundManager.js     # RoundManager — 라운드/배틀 순서 관리
     playerManager.js    # Player 클래스 + getRequiredExp
     deckManager.js      # DeckManager — 덱/핸드/필드/더미 상태 관리
+    itemManager.js      # 아이템 목록/맵 + applyItemEffect / revertItemEffect
+    relicManager.js     # 유물 목록/맵 + getRelicById / getRelicsExcluding / getRelicPrice
+    sealManager.js      # 씰 목록/맵 + getSealTypes() / sealBorderColor()
     effectManager.js    # 시각 이펙트 (hitExplosion 등)
     optionManager.js    # 옵션 저장/로드 (registry 기반)
   scenes/
@@ -46,13 +51,22 @@ src/
     audio/sfx/          # card-shuffle.ogg, card-fan-1.ogg, card-slide-5.ogg,
                         # card-place-1.ogg, chop.ogg, knifeSlice.ogg
     images/
-      symbol/           # spade_symbol.jpg, hearts_symbol.jpg, diamonds_symbol.jpg, clubs_symbol.jpg
+      symbol/           # spade_symbol.png, hearts_symbol.png, diamonds_symbol.png, clubs_symbol.png
+                        # red_seal.png, yellow_seal.png, green_seal.png, rainbow_seal.png
       monster/          # 몬스터 스프라이트시트 PNG (384×384 프레임, 3col)
-      item/             # 아이템 이미지 (red_portion.png, green_portion.png 등)
+      item/             # 아이템 이미지 (red_portion.png, green_portion.png, scroll.png 등)
       bg/               # old_stone_castle.jpg (배경 — 정사각형, 가로 맞춤 하단 정렬)
       ui/               # card_back_deck.png, card_back_dummy.png, 버튼 이미지 등
 public/
 ```
+
+## useYn 패턴
+`boss.json`, `item.json`, `relic.json`의 각 항목에 `useYn: 'Y'|'N'` 필드가 있음.
+- **Manager의 List**(relicList, itemList 등): `useYn === 'Y'` 필터링 → 상점/선택 풀에서만 제외
+- **Manager의 Map**(relicMap, itemMap 등): 전체 데이터 유지 → 보유 아이템 효과 적용에 사용
+- 테스트하기 싫은 보스/아이템/유물은 `useYn: 'N'`으로 비활성화
+
+---
 
 ## 씬 전환 흐름
 ```
@@ -153,8 +167,10 @@ HAND_RANK = { FIVE_CARD:9, STRAIGHT_FLUSH:8, FOUR_OF_A_KIND:7,
 | `attrs` | `{S:1,H:1,D:1,C:1}` | 슈트별 레벨 — 레벨업 suit 선택 팝업으로 증가 |
 | `adaptability` | 각 1.0 | 슈트별 적응도 |
 | `items` | `[]` | 보유 아이템 목록 `{uid, id, name, desc, rarity, img}` |
+| `relics` | `[]` | 보유 유물 ID 배열 (최대 `maxRelicCount=9`) |
 | `handSize` | 7 | 라운드 시작 핸드 배치 수 |
 | `fieldSize` | 5 | 필드 배치 수 |
+| `handConfig` | 족보별 멀티 설정 | `{ [rankNum]: { multi } }` — 강화서 아이템으로 증가 |
 
 ### 레벨업 효과
 - `maxHp += 2`, `hp += 2`, `atk += 1` (레벨 1회당)
@@ -169,9 +185,10 @@ HAND_RANK = { FIVE_CARD:9, STRAIGHT_FLUSH:8, FOUR_OF_A_KIND:7,
 
 ### 주요 메서드
 ```js
-player.addXp(amount)   // XP 추가 + 레벨업 처리(스탯 자동 증가) → 새 레벨 배열 반환
-player.toData()        // 씬 전환용 직렬화
-new Player(data)       // data 없으면 내부 기본값
+player.addXp(amount)        // XP 추가 + 레벨업 처리(스탯 자동 증가) → 새 레벨 배열 반환
+player.tryAddRelic(relicId) // 유물 추가 (maxRelicCount 초과 시 false 반환)
+player.toData()             // 씬 전환용 직렬화
+new Player(data)            // data 없으면 내부 기본값
 ```
 
 ---
@@ -185,15 +202,46 @@ deck.deal(n)                  // 핸드로 n장 배분
 deck.replenishField(size)     // 필드 보충
 // 상태: deck.deckPile / deck.hand / deck.field / deck.dummyPile
 ```
-- 카드 객체: `{ suit, rank, val, baseScore, key, uid, duration }`
+- 카드 객체: `{ suit, rank, val, baseScore, key, uid, duration, enhancements }`
 - `duration: 'permanent'` — 배틀 간 유지되는 카드
+- `enhancements: [{ type: 'red'|'gold'|'green' }]` — 씰 강화 (최대 1개)
 
 ---
 
-## 아이템 시스템 (data/item.json)
+## 아이템 시스템 (data/item.json + manager/itemManager.js)
 - **구매**: MarketScene에서 gold 소모 → `player.items[]`에 추가 (uid 포함)
-- **사용**: BattleScene 아이템 패널에서 drag → 몬스터/필드/핸드 영역에 드롭 → `_useItem()` 적용
-- **effect 타입**: `heal`, `maxHp`, `def`, `attacksPerTurn`, `handSize`, `fieldSize`, `attr`
+- **사용**: BattleScene 아이템 패널에서 drag → 몬스터/필드/핸드 영역에 드롭 → `applyItemEffect()` 적용
+- **effect 타입**: `heal`, `maxHp`, `def`, `attacksPerTurn`, `handSize`, `fieldSize`, `attr`, `hand_multi`
+- `scope: 'battle'` 아이템(attacksPerTurn, handSize, fieldSize): 배틀 종료 시 `revertItemEffect()`로 되돌림
+- **hand_multi**: `player.handConfig[rank].multi += value` — 강화서 아이템이 사용하는 타입
+```js
+import { getAllItems, getItemById, applyItemEffect, revertItemEffect, maxItemCount } from './itemManager.js';
+```
+
+---
+
+## 유물 시스템 (data/relic.json + manager/relicManager.js)
+- 최대 보유: `maxRelicCount = 9`
+- effects scope: `card`(카드별 점수), `hand`(족보 배수/가산), `final`(최종 점수), `special`(특수 효과), `onRemove`(제거 시)
+```js
+import { getAllRelics, getRelicById, getRelicsExcluding, getRelicPrice, maxRelicCount } from './relicManager.js';
+```
+
+---
+
+## 씰 시스템 (data/seal.json + manager/sealManager.js)
+카드 강화는 씰만 사용. MarketScene 카드 관리에서 랜덤 강화(20G).
+
+| 씰 | 효과 | img |
+|----|------|-----|
+| red | 공격 시 +20점 | red_seal.png |
+| gold | 공격 시 +5골드 | yellow_seal.png |
+| green | 공격 시 아이템 추가 | green_seal.png |
+| rainbow | 미구현 (usable:false) | rainbow_seal.png |
+
+- 씰 이미지 key: `seal_${id}` (PreloadScene에서 `CardRenderer.preload(scene)` 호출 시 로드)
+- `sealBorderColor(id)` — hex string `border`를 Phaser용 숫자로 변환
+- `getSealTypes()` — `usable:true` 인 씰 ID 배열 반환
 
 ---
 
@@ -201,7 +249,7 @@ deck.replenishField(size)     // 필드 보충
 ```js
 calculateScore(cards, context)
 // 반환: { rank, handName, score, cards, aoe }
-// score = 족보 카드 baseScore 합산 + relic 효과
+// score = 족보 카드 baseScore 합산 + relic 효과 + 씰(red) 보너스
 // aoe   = true이면 광역 공격 족보 (FLUSH 이상)
 // 실제 공격 데미지 = score + player.atk
 ```
@@ -303,6 +351,18 @@ Canvas2D API로 52장 카드 텍스처를 런타임 생성.
 > 씬 재시작 시 `scene.textures.exists(key)` 체크로 중복 등록 방지.
 
 카드 텍스처 키: `${suit}${rank}` (예: `SA`, `H10`, `DK`)
+
+```js
+CardRenderer.drawCard(scene, x, y, card, { width, height, depth, disabled, objs })
+// 반환: { cardImg, sealImg } — cardImg: Image|Text, sealImg: Image|null
+// disabled=true → `${key}_disabled` 텍스처 (회색) 사용
+// objs 배열 전달 시 생성된 오브젝트 자동 push
+
+CardRenderer.showSealTooltip(scene, card, cardX, cardY, cardH, depth)
+CardRenderer.hideSealTooltip()
+CardRenderer.preload(scene)   // sym_S/H/D/C + seal_red/gold/green/rainbow 로드
+CardRenderer.createAll(scene) // 52장 + disabled 텍스처 생성
+```
 
 ---
 

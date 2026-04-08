@@ -10,6 +10,7 @@ import { PlayerUI } from '../ui/PlayerUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 import { OptionUI } from '../ui/OptionUI.js';
 import { roundManager } from '../manager/roundManager.js';
+import { sealMap, getSealTypes } from '../manager/sealManager.js';
 
 // 라운드별 rarity 확률 (round 1: common 60/rare 30/epic 10, round 10: common 20/rare 50/epic 30)
 function getRarityWeights(round) {
@@ -563,7 +564,7 @@ export class MarketScene extends Phaser.Scene {
     if (this.player.gold < CARD_OP_COST || this._deckOpsUsed >= CARD_OP_MAX) return;
     const suit = SUITS[Math.floor(Math.random() * SUITS.length)];
     const rank = RANKS[Math.floor(Math.random() * RANKS.length)];
-    this._deck.createCard(suit, rank, [{ type: 'add', value: 20 }], 'permanent', 'market', 'dummy');
+    this._deck.createCard(suit, rank, [], 'permanent', 'market', 'dummy');
     this.player.gold -= CARD_OP_COST;
     this._deckOpsUsed++;
     this._drawScene();
@@ -687,10 +688,10 @@ export class MarketScene extends Phaser.Scene {
     if (selCard) {
       const isRed = selCard.suit === 'H' || selCard.suit === 'D';
       const enh = selCard.enhancements?.[0];
-      const SEAL_DESC = { red: '+20점', gold: '+5골드', green: '+아이템', add: `+${enh?.value ?? 0}점` };
-      const scoreBonus = enh?.type === 'red' ? 20 : enh?.type === 'add' ? (enh.value ?? 0) : 0;
+      const scoreBonus = enh?.type === 'red' ? (sealMap['red']?.scoreBonus ?? 20) : 0;
       const dispScore  = selCard.baseScore + scoreBonus;
-      const enhLabel   = enh ? `  [씰: ${SEAL_DESC[enh.type] ?? enh.type}]` : '';
+      const sealLabel  = enh ? (sealMap[enh.type]?.shopLabel ?? enh.type) : null;
+      const enhLabel   = sealLabel ? `  [씰: ${sealLabel}]` : '';
       const suitSym = SUIT_CHARS[selCard.suit] ?? '';
       objs.push(
         this.add.text(panelCX, actionTop + 14,
@@ -786,8 +787,8 @@ export class MarketScene extends Phaser.Scene {
     if (!card || this.player.gold < CARD_OP_COST || this._deckOpsUsed >= CARD_OP_MAX) return;
     if ((card.enhancements?.length ?? 0) > 0) return; // 이미 강화된 카드
 
-    const SEAL_TYPES = ['red', 'gold', 'green'];
-    const type = SEAL_TYPES[Math.floor(Math.random() * SEAL_TYPES.length)];
+    const types = getSealTypes();
+    const type = types[Math.floor(Math.random() * types.length)];
     card.enhancements = [{ type }];
 
     this.player.gold -= CARD_OP_COST;

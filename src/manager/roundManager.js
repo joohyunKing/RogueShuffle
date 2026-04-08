@@ -3,7 +3,7 @@
 import roundDataJson from '../data/round.json';
 import bossDataJson  from '../data/boss.json';
 
-const ALL_BOSS_IDS = bossDataJson.bosses.map(b => b.id);
+const ALL_BOSS_IDS = bossDataJson.bosses.filter(b => b.useYn === 'Y').map(b => b.id);
 
 function randomPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];

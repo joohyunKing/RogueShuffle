@@ -6,10 +6,8 @@
       "img": "red_portion.png",
       "desc": "HP를 20 회복",
       "rarity": "common",
-      "effect": {
-        "type": "heal",
-        "value": 20
-      }
+      "useYn": "Y",
+      "effect": { "type": "heal", "value": 20 }
     },
     {
       "id": "max_hp_up",
@@ -17,10 +15,8 @@
       "img": "green_portion.png",
       "desc": "최대 HP +10",
       "rarity": "common",
-      "effect": {
-        "type": "maxHp",
-        "value": 10
-      }
+      "useYn": "Y",
+      "effect": { "type": "maxHp", "value": 10 }
     },
     {
       "id": "shield",
@@ -28,10 +24,8 @@
       "img": null,
       "desc": "DEF +3",
       "rarity": "common",
-      "effect": {
-        "type": "def",
-        "value": 3
-      }
+      "useYn": "Y",
+      "effect": { "type": "def", "value": 3 }
     },
     {
       "id": "extra_attack",
@@ -39,10 +33,8 @@
       "img": null,
       "desc": "턴당 공격 횟수 +1 (이번 전투만)",
       "rarity": "rare",
-      "effect": {
-        "type": "attacksPerTurn",
-        "value": 1
-      },
+      "useYn": "Y",
+      "effect": { "type": "attacksPerTurn", "value": 1 },
       "scope": "battle"
     },
     {
@@ -51,10 +43,8 @@
       "img": null,
       "desc": "핸드 카드 수 +1 (이번 전투만)",
       "rarity": "rare",
-      "effect": {
-        "type": "handSize",
-        "value": 1
-      },
+      "useYn": "Y",
+      "effect": { "type": "handSize", "value": 1 },
       "scope": "battle"
     },
     {
@@ -63,10 +53,8 @@
       "img": null,
       "desc": "필드 카드 수 +1 (이번 전투만)",
       "rarity": "rare",
-      "effect": {
-        "type": "fieldSize",
-        "value": 1
-      },
+      "useYn": "Y",
+      "effect": { "type": "fieldSize", "value": 1 },
       "scope": "battle"
     },
     {
@@ -75,11 +63,8 @@
       "img": null,
       "desc": "♠ 적응 레벨 +1",
       "rarity": "epic",
-      "effect": {
-        "type": "attr",
-        "suit": "S",
-        "value": 1
-      }
+      "useYn": "Y",
+      "effect": { "type": "attr", "suit": "S", "value": 1 }
     },
     {
       "id": "suit_heart",
@@ -87,11 +72,8 @@
       "img": null,
       "desc": "♥ 적응 레벨 +1",
       "rarity": "epic",
-      "effect": {
-        "type": "attr",
-        "suit": "H",
-        "value": 1
-      }
+      "useYn": "Y",
+      "effect": { "type": "attr", "suit": "H", "value": 1 }
     },
     {
       "id": "suit_diamond",
@@ -99,11 +81,8 @@
       "img": null,
       "desc": "♦ 적응 레벨 +1",
       "rarity": "epic",
-      "effect": {
-        "type": "attr",
-        "suit": "D",
-        "value": 1
-      }
+      "useYn": "Y",
+      "effect": { "type": "attr", "suit": "D", "value": 1 }
     },
     {
       "id": "suit_club",
@@ -111,11 +90,98 @@
       "img": null,
       "desc": "♣ 적응 레벨 +1",
       "rarity": "epic",
-      "effect": {
-        "type": "attr",
-        "suit": "C",
-        "value": 1
-      }
+      "useYn": "Y",
+      "effect": { "type": "attr", "suit": "C", "value": 1 }
+    },
+    {
+      "id": "scroll_high_card",
+      "name": "하이카드 강화서",
+      "img": "scroll.png",
+      "desc": "하이카드의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 0, "value": 1 }
+    },
+    {
+      "id": "scroll_one_pair",
+      "name": "원페어 강화서",
+      "img": "scroll.png",
+      "desc": "원페어의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 1, "value": 1 }
+    },
+    {
+      "id": "scroll_triple",
+      "name": "트리플 강화서",
+      "img": "scroll.png",
+      "desc": "트리플의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 2, "value": 1 }
+    },
+    {
+      "id": "scroll_two_pair",
+      "name": "투페어 강화서",
+      "img": "scroll.png",
+      "desc": "투페어의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 3, "value": 1 }
+    },
+    {
+      "id": "scroll_straight",
+      "name": "스트레이트 강화서",
+      "img": "scroll.png",
+      "desc": "스트레이트의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 6, "value": 1 }
+    },
+    {
+      "id": "scroll_flush",
+      "name": "플러쉬 강화서",
+      "img": "scroll.png",
+      "desc": "플러쉬의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 7, "value": 1 }
+    },
+    {
+      "id": "scroll_full_house",
+      "name": "풀하우스 강화서",
+      "img": "scroll.png",
+      "desc": "풀하우스의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 8, "value": 1 }
+    },
+    {
+      "id": "scroll_four_of_a_kind",
+      "name": "포카드 강화서",
+      "img": "scroll.png",
+      "desc": "포카드의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 9, "value": 1 }
+    },
+    {
+      "id": "scroll_straight_flush",
+      "name": "스트레이트 플러쉬 강화서",
+      "img": "scroll.png",
+      "desc": "스트레이트 플러쉬의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 10, "value": 1 }
+    },
+    {
+      "id": "scroll_five_card",
+      "name": "파이브카드 강화서",
+      "img": "scroll.png",
+      "desc": "파이브카드의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": { "type": "hand_multi", "handRank": 11, "value": 1 }
     }
   ]
 }

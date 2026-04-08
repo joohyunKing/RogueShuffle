@@ -21,6 +21,7 @@ console.log(calculateScore(sample_cards, sample_context));
 
 import { HAND_RANK, HAND_DATA } from "../constants.js";
 import { relicMap } from '../manager/relicManager.js';
+import { sealMap } from '../manager/sealManager.js';
 
 //최종 점수
 export function calculateScore(cards, context) {
@@ -100,8 +101,8 @@ function calcHandScore(cards, ctx, relics) {
 function calcCardScore(card, ctx, relics) {
     let score = card.baseScore;
     for (const enh of (card.enhancements ?? [])) {
-        if (enh.type === 'red')  score += 20;          // 공격력 강화 씰
-        if (enh.type === 'add')  score += enh.value;   // 하위 호환
+        if (enh.type === 'red')  score += sealMap['red']?.scoreBonus ?? 20;
+        // if (enh.type === 'add')  score += enh.value;   // 하위 호환 (미사용)
     }
 
     for (const relic of relics) {
@@ -191,8 +192,8 @@ export function getScoreDetails(cards, context) {
     const cardDetails = ctx.cards.map(card => {
         let baseScore = card.baseScore;
         for (const enh of (card.enhancements ?? [])) {
-            if (enh.type === 'red') baseScore += 20;
-            if (enh.type === 'add') baseScore += enh.value;
+            if (enh.type === 'red') baseScore += sealMap['red']?.scoreBonus ?? 20;
+            // if (enh.type === 'add') baseScore += enh.value; // 하위 호환 (미사용)
         }
         const cardRelicDeltas = [];
         let runCard = baseScore;

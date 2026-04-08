@@ -1,7 +1,7 @@
 import itemData from '../data/item.json';
 
-export const itemList = itemData.items;
-export const itemMap = Object.fromEntries(itemData.items.map(i => [i.id, i]));
+export const itemList = itemData.items.filter(i => i.useYn === 'Y');
+export const itemMap = Object.fromEntries(itemData.items.map(i => [i.id, i])); // 전체 (보유 아이템 효과 적용용)
 
 export function getAllItems() { return itemList; }
 export function getItemById(id) { return itemMap[id] ?? null; }
@@ -68,6 +68,13 @@ export function applyItemEffect(player, itemId, itemName) {
     case 'attr':
       player.attrs[eff.suit] += eff.value;
       return `[${itemName}] ${eff.suit} 적응 +${eff.value}`;
+    case 'hand_multi': {
+      const rank = String(eff.handRank);
+      if (player.handConfig[rank] != null) {
+        player.handConfig[rank].multi += eff.value;
+      }
+      return `[${itemName}] 배수 +${eff.value}`;
+    }
     default:
       return null;
   }

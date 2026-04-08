@@ -46,7 +46,7 @@
         "orc"
       ],
       "baseStat": {
-        "hp": 55,
+        "hp": 60,
         "atk": 5,
         "def": 4
       },
@@ -87,7 +87,7 @@
         "orc"
       ],
       "baseStat": {
-        "hp": 70,
+        "hp": 80,
         "atk": 7,
         "def": 7
       },
@@ -128,7 +128,7 @@
         "human"
       ],
       "baseStat": {
-        "hp": 90,
+        "hp": 130,
         "atk": 10,
         "def": 11
       },
@@ -169,7 +169,7 @@
         "undead"
       ],
       "baseStat": {
-        "hp": 115,
+        "hp": 180,
         "atk": 14,
         "def": 15
       },
@@ -210,7 +210,7 @@
         "undead"
       ],
       "baseStat": {
-        "hp": 145,
+        "hp": 245,
         "atk": 20,
         "def": 18
       },
@@ -251,7 +251,7 @@
         "undead"
       ],
       "baseStat": {
-        "hp": 180,
+        "hp": 330,
         "atk": 25,
         "def": 22
       },
@@ -292,7 +292,7 @@
         "undead"
       ],
       "baseStat": {
-        "hp": 230,
+        "hp": 445,
         "atk": 32,
         "def": 27
       },
@@ -333,7 +333,7 @@
         "undead"
       ],
       "baseStat": {
-        "hp": 280,
+        "hp": 600,
         "atk": 45,
         "def": 31
       },
@@ -374,7 +374,7 @@
         "undead"
       ],
       "baseStat": {
-        "hp": 330,
+        "hp": 800,
         "atk": 60,
         "def": 40
       },

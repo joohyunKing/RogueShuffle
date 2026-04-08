@@ -10,27 +10,26 @@
 
 import { GW, GH } from "../constants.js";
 import { TS } from "../textStyles.js";
-import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
+import { relicMap as RELIC_MAP, maxRelicCount } from "../manager/relicManager.js";
 
-const RARITY_C  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
+const RARITY_C = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
 const RARITY_TX = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
-const MAX_RELICS = 6;
 
 export function showRelicPickPopup(scene, player, newRelicId, onDone) {
   const newRelic = RELIC_MAP[newRelicId];
   if (!newRelic) { onDone?.(null); return; }
 
   // 6개 미만이면 그냥 추가
-  if (player.relics.length < MAX_RELICS) {
+  if (player.relics.length < maxRelicCount) {
     player.relics.push(newRelicId);
     onDone?.(newRelicId);
     return;
   }
 
   const objs = [];
-  const D    = 500;
-  const cx   = GW / 2, cy = GH / 2;
-  const pw   = 560, ph = 460;
+  const D = 500;
+  const cx = GW / 2, cy = GH / 2;
+  const pw = 560, ph = 460;
 
   // dim
   const dim = scene.add.rectangle(cx, cy, GW, GH, 0x000000, 0.75).setDepth(D).setInteractive();
@@ -39,16 +38,16 @@ export function showRelicPickPopup(scene, player, newRelicId, onDone) {
   // panel
   const panelG = scene.add.graphics().setDepth(D + 1);
   panelG.fillStyle(0x0d2b18);
-  panelG.fillRoundedRect(cx - pw/2, cy - ph/2, pw, ph, 16);
+  panelG.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
   panelG.lineStyle(2, 0xdd4444);
-  panelG.strokeRoundedRect(cx - pw/2, cy - ph/2, pw, ph, 16);
+  panelG.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
   objs.push(panelG);
 
   objs.push(
-    scene.add.text(cx, cy - ph/2 + 32, "RELIC FULL!", TS.clearTitle).setOrigin(0.5).setDepth(D + 2)
+    scene.add.text(cx, cy - ph / 2 + 32, "RELIC FULL!", TS.clearTitle).setOrigin(0.5).setDepth(D + 2)
   );
   objs.push(
-    scene.add.text(cx, cy - ph/2 + 64, "버릴 relic을 선택하세요 (새 relic은 맨 앞에 표시)",
+    scene.add.text(cx, cy - ph / 2 + 64, "버릴 relic을 선택하세요 (새 relic은 맨 앞에 표시)",
       { fontFamily: 'Arial', fontSize: '13px', color: '#ccbbaa', wordWrap: { width: pw - 40 } })
       .setOrigin(0.5, 0).setDepth(D + 2)
   );
@@ -56,24 +55,24 @@ export function showRelicPickPopup(scene, player, newRelicId, onDone) {
   // 선택 가능한 relic 목록 = 새 relic + 기존 6개
   const candidates = [newRelicId, ...player.relics];
   const SZ = 56, IMG = 44, COLS = 4, GAPX = 10, GAPY = 10;
-  const gridW  = COLS * SZ + (COLS - 1) * GAPX;
+  const gridW = COLS * SZ + (COLS - 1) * GAPX;
   const gridX0 = cx - gridW / 2;
-  const gridY0 = cy - ph/2 + 100;
+  const gridY0 = cy - ph / 2 + 100;
 
   function _destroy() {
-    objs.forEach(o => { try { o?.destroy(); } catch(_) {} });
+    objs.forEach(o => { try { o?.destroy(); } catch (_) { } });
   }
 
   candidates.forEach((relicId, i) => {
-    const relic   = RELIC_MAP[relicId];
+    const relic = RELIC_MAP[relicId];
     if (!relic) return;
-    const col     = i % COLS;
-    const row     = Math.floor(i / COLS);
-    const rx      = gridX0 + col * (SZ + GAPX) + SZ / 2;
-    const ry      = gridY0 + row * (SZ + GAPY) + SZ / 2;
-    const borderC = RARITY_C[relic.rarity]  ?? RARITY_C.common;
-    const tipC    = RARITY_TX[relic.rarity] ?? RARITY_TX.common;
-    const isNew   = (i === 0);
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    const rx = gridX0 + col * (SZ + GAPX) + SZ / 2;
+    const ry = gridY0 + row * (SZ + GAPY) + SZ / 2;
+    const borderC = RARITY_C[relic.rarity] ?? RARITY_C.common;
+    const tipC = RARITY_TX[relic.rarity] ?? RARITY_TX.common;
+    const isNew = (i === 0);
 
     // 배경 (새 relic은 빨간 테두리)
     const bg = scene.add.rectangle(rx, ry, SZ, SZ, isNew ? 0x2a0a0a : 0x0a1a0e)
@@ -84,7 +83,7 @@ export function showRelicPickPopup(scene, player, newRelicId, onDone) {
     // "NEW" 라벨
     if (isNew) {
       objs.push(
-        scene.add.text(rx, ry - SZ/2 - 8, "NEW",
+        scene.add.text(rx, ry - SZ / 2 - 8, "NEW",
           { fontFamily: "'PressStart2P',Arial", fontSize: '8px', color: '#ff8888' })
           .setOrigin(0.5, 1).setDepth(D + 3)
       );
@@ -104,9 +103,11 @@ export function showRelicPickPopup(scene, player, newRelicId, onDone) {
 
     // 이름
     objs.push(
-      scene.add.text(rx, ry + SZ/2 + 2, relic.name,
-        { fontFamily: 'Arial', fontSize: '11px', color: tipC,
-          wordWrap: { width: SZ + GAPX } })
+      scene.add.text(rx, ry + SZ / 2 + 2, relic.name,
+        {
+          fontFamily: 'Arial', fontSize: '11px', color: tipC,
+          wordWrap: { width: SZ + GAPX }
+        })
         .setOrigin(0.5, 0).setDepth(D + 3)
     );
 
@@ -114,7 +115,7 @@ export function showRelicPickPopup(scene, player, newRelicId, onDone) {
     const hit = scene.add.rectangle(rx, ry, SZ, SZ, 0xffffff, 0).setDepth(D + 4).setInteractive();
     objs.push(hit);
     hit.on('pointerover', () => hit.setFillStyle(0xff4444, 0.2));
-    hit.on('pointerout',  () => hit.setFillStyle(0xffffff, 0));
+    hit.on('pointerout', () => hit.setFillStyle(0xffffff, 0));
     hit.on('pointerdown', () => {
       _destroy();
       if (isNew) {
@@ -130,14 +131,14 @@ export function showRelicPickPopup(scene, player, newRelicId, onDone) {
   });
 
   // 취소 (= 새 relic 버림)
-  const cancelBtn = scene.add.rectangle(cx, cy + ph/2 - 32, 180, 40, 0x444444)
+  const cancelBtn = scene.add.rectangle(cx, cy + ph / 2 - 32, 180, 40, 0x444444)
     .setDepth(D + 2).setInteractive();
   objs.push(cancelBtn,
-    scene.add.text(cx, cy + ph/2 - 32, "새 relic 버리기",
+    scene.add.text(cx, cy + ph / 2 - 32, "새 relic 버리기",
       { fontFamily: 'Arial', fontSize: '13px', color: '#aaaaaa' })
       .setOrigin(0.5).setDepth(D + 3)
   );
   cancelBtn.on('pointerdown', () => { _destroy(); onDone?.(null); });
   cancelBtn.on('pointerover', () => cancelBtn.setFillStyle(0x666666));
-  cancelBtn.on('pointerout',  () => cancelBtn.setFillStyle(0x444444));
+  cancelBtn.on('pointerout', () => cancelBtn.setFillStyle(0x444444));
 }

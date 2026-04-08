@@ -4,7 +4,7 @@
  * 씬 전환 시 player.toData() 로 직렬화하여 넘깁니다.
  */
 import { HAND_DATA, DEBUG_MODE } from "../constants.js";
-import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice } from './relicManager.js';
+import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice, maxRelicCount } from './relicManager.js';
 
 // HAND_DATA에서 { multi, aoe } 만 추출한 기본 handConfig
 const DEFAULT_HAND_CONFIG = Object.fromEntries(
@@ -217,7 +217,7 @@ export class Player {
     }
 
     tryAddRelic(relicId) {
-        if (this.relics.length < 6) {
+        if (this.relics.length < maxRelicCount) {
             this.relics.push(relicId);
             return true;
         }

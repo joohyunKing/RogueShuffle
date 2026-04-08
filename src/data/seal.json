@@ -1,0 +1,41 @@
+{
+  "seals": [
+    {
+      "id": "red",
+      "name": "Red Seal",
+      "desc": "공격력 20 강화",
+      "border": "#ff4444",
+      "scoreBonus": 20,
+      "shopLabel": "+20점",
+      "img": "red_seal.png",
+      "usable": true
+    },
+    {
+      "id": "gold",
+      "name": "Gold Seal",
+      "desc": "공격 시 5골드 추가",
+      "border": "#ffdd44",
+      "goldBonus": 5,
+      "shopLabel": "+5골드",
+      "img": "yellow_seal.png",
+      "usable": true
+    },
+    {
+      "id": "green",
+      "name": "Green Seal",
+      "desc": "공격 시 아이템 추가",
+      "border": "#44ff88",
+      "shopLabel": "+아이템",
+      "img": "green_seal.png",
+      "usable": true
+    },
+    {
+      "id": "rainbow",
+      "name": "Rainbow Seal",
+      "desc": "미구현",
+      "border": "#ffffff",
+      "img": "rainbow_seal.png",
+      "usable": false
+    }
+  ]
+}

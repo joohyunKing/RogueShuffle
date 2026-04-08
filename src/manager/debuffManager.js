@@ -161,9 +161,14 @@ export class DebuffManager {
       .filter(([, cnt]) => cnt > 0)
       .sort(([, a], [, b]) => b - a)[0];
 
-    if (!best) return; // 아직 족보를 사용한 적 없음
-
-    const handRankNum = Number(best[0]);
+    // 사용 기록 없으면 활성화된 족보 중 랜덤 봉인
+    let handRankNum;
+    if (!best) {
+      const pool = scene.enabledHands ? [...scene.enabledHands] : Object.keys(HAND_DATA).map(Number);
+      handRankNum = pool[Math.floor(Math.random() * pool.length)];
+    } else {
+      handRankNum = Number(best[0]);
+    }
     this.disabledHandRanks.add(handRankNum);
 
     const def = debuffMap['seal_hand'];
@@ -198,6 +203,16 @@ export class DebuffManager {
     if (lastUsed != null && lastUsed !== mostUsed) {
       this.disabledHandRanks.add(lastUsed);
       sealed.push(getHandName(lang, HAND_DATA[lastUsed]?.key ?? ''));
+    }
+
+    // 사용 기록 없으면 활성화된 족보 중 랜덤 2개 봉인
+    if (this.disabledHandRanks.size === 0) {
+      const pool = scene.enabledHands ? [...scene.enabledHands] : Object.keys(HAND_DATA).map(Number);
+      const shuffled = pool.sort(() => Math.random() - 0.5);
+      shuffled.slice(0, 2).forEach(rank => {
+        this.disabledHandRanks.add(rank);
+        sealed.push(getHandName(lang, HAND_DATA[rank]?.key ?? ''));
+      });
     }
 
     if (this.disabledHandRanks.size === 0) return;

@@ -4,6 +4,7 @@
  */
 
 import { CW, CH, SUITS, RANKS } from './constants.js';
+import { sealMap, sealList, sealBorderColor } from './manager/sealManager.js';
 
 const SYM_URLS = {
   S: 'assets/images/symbol/spade_symbol.png',
@@ -57,11 +58,6 @@ function pipSize(count) {
 const SUIT_SYMS_FB = { S: '♠', H: '♥', D: '♦', C: '♣' };
 
 // ── 씰 툴팁 관리 ─────────────────────────────────────────────────────────────
-const SEAL_INFO = {
-  red:   { name: 'Red Seal',   desc: '공격력 20 강화',          border: 0xff4444 },
-  gold:  { name: 'Gold Seal',  desc: '공격 시 5골드 추가',       border: 0xffdd44 },
-  green: { name: 'Green Seal', desc: '공격 시 아이템 추가',      border: 0x44ff88 },
-};
 const SUIT_COLS = { S: '#aaaaff', H: '#ff6666', D: '#ff6666', C: '#aaaaff' };
 
 let _tipObjs = [];
@@ -140,7 +136,7 @@ export class CardRenderer {
   static showSealTooltip(scene, card, cardX, cardY, cardH, depth = 900) {
     CardRenderer.hideSealTooltip();
     const enh = card.enhancements?.[0];
-    const info = SEAL_INFO[enh?.type];
+    const info = sealMap[enh?.type];
     if (!info) return;
 
     const sym = SUIT_SYMS_FB[card.suit] ?? '';
@@ -153,7 +149,7 @@ export class CardRenderer {
     if (tipY < TIP_H / 2 + 4) tipY = cardY + cardH / 2 + TIP_H / 2 + 8;
 
     const bg = scene.add.rectangle(cardX, tipY, TIP_W, TIP_H, 0x0a0a1a, 0.93)
-      .setDepth(depth).setStrokeStyle(1.5, info.border);
+      .setDepth(depth).setStrokeStyle(1.5, sealBorderColor(enh?.type));
     _tipObjs.push(bg);
 
     _tipObjs.push(
@@ -181,10 +177,9 @@ export class CardRenderer {
     Object.entries(SYM_URLS).forEach(([suit, url]) => {
       scene.load.image(`sym_${suit}`, url);
     });
-    scene.load.image('seal_red',    'assets/images/symbol/red_seal.png');
-    scene.load.image('seal_gold',   'assets/images/symbol/yellow_seal.png');
-    scene.load.image('seal_green',  'assets/images/symbol/green_seal.png');
-    scene.load.image('seal_rainbow','assets/images/symbol/rainbow_seal.png');
+    sealList.forEach(s => {
+      scene.load.image(`seal_${s.id}`, `assets/images/symbol/${s.img}`);
+    });
   }
 
   static createAll(scene) {

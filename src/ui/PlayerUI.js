@@ -31,9 +31,7 @@ function getHandName(rank, lang) {
  * opts:
  *   round           {number}       라운드 번호
  *   battleLabel     {string|null}  전투 레이블 ("1","2","BOSS" 등, null → 숫자만)
- *   showAtk         {boolean}      ATK 행 표시 (기본 false)
  *   showDeckCounts  {boolean}      DECK/DUMMY/FIELD/HAND 카운트 표시 (기본 false)
- *   showTooltips    {boolean}      슈트 hover 툴팁 표시 (기본 false)
  *   depth           {number}       기본 depth (기본 12)
  */
 export class PlayerUI {
@@ -42,7 +40,7 @@ export class PlayerUI {
     this.player = player;
     this.opts   = {
       round: 1, battleLabel: null,
-      showAtk: false, showDeckCounts: false, showTooltips: false,
+      showDeckCounts: false,
       showHandConfig: false,
       depth: 12,
       ...opts,
@@ -141,12 +139,10 @@ export class PlayerUI {
     this.playerDefTxt = this._add(
       scene.add.text(PW / 2 - 8, ry, "", TS.playerDef).setOrigin(1, 0).setDepth(D)
     );
-    if (opts.showAtk) {
-      this._add(scene.add.text(PW / 2 + 4, ry, "ATK", TS.infoLabel).setDepth(D));
-      this.playerAtkTxt = this._add(
-        scene.add.text(R, ry, `${p.atk}`, TS.playerDef).setOrigin(1, 0).setDepth(D)
-      );
-    }
+    this._add(scene.add.text(PW / 2 + 4, ry, "ATK", TS.infoLabel).setDepth(D));
+    this.playerAtkTxt = this._add(
+      scene.add.text(R, ry, `${p.atk}`, TS.playerDef).setOrigin(1, 0).setDepth(D)
+    );
 
     // DEF / ATK 툴팁 히트 영역 (rowY를 const로 고정해 클로저 캡처 오류 방지)
     {
@@ -161,15 +157,13 @@ export class PlayerUI {
       defHit.on('pointerout',  () => this._hideTooltip());
       defHit.on('pointerdown', () => this._showTooltipAt(DEF_TOOLTIP, '#aaaadd', rowY));
 
-      if (opts.showAtk) {
-        const atkHit = this._add(
-          scene.add.rectangle(PW / 2 + 4 + halfW / 2, rowY + hitH / 2, halfW, hitH, 0xffffff, 0)
-            .setDepth(D + 2).setInteractive()
-        );
-        atkHit.on('pointerover', () => this._showTooltipAt(ATK_TOOLTIP, '#ffdd44', rowY));
-        atkHit.on('pointerout',  () => this._hideTooltip());
-        atkHit.on('pointerdown', () => this._showTooltipAt(ATK_TOOLTIP, '#ffdd44', rowY));
-      }
+      const atkHit = this._add(
+        scene.add.rectangle(PW / 2 + 4 + halfW / 2, rowY + hitH / 2, halfW, hitH, 0xffffff, 0)
+          .setDepth(D + 2).setInteractive()
+      );
+      atkHit.on('pointerover', () => this._showTooltipAt(ATK_TOOLTIP, '#ffdd44', rowY));
+      atkHit.on('pointerout',  () => this._hideTooltip());
+      atkHit.on('pointerdown', () => this._showTooltipAt(ATK_TOOLTIP, '#ffdd44', rowY));
     }
 
     ry += ROW + 6;
@@ -191,17 +185,15 @@ export class PlayerUI {
           { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: SUIT_COLORS[suit] })
           .setDepth(D));
 
-        if (opts.showTooltips) {
-          const hitW = PW / 2 - 8;
-          const hitX = sx + hitW / 2;
-          const rowHit = this._add(
-            scene.add.rectangle(hitX, sy + 10, hitW, 26, 0xffffff, 0)
-              .setDepth(D + 2).setInteractive()
-          );
-          rowHit.on('pointerover', () => this._showTooltip(suit, sy));
-          rowHit.on('pointerout',  () => this._hideTooltip());
-          rowHit.on('pointerdown', () => this._showTooltip(suit, sy));
-        }
+        const hitW = PW / 2 - 8;
+        const hitX = sx + hitW / 2;
+        const rowHit = this._add(
+          scene.add.rectangle(hitX, sy + 10, hitW, 26, 0xffffff, 0)
+            .setDepth(D + 2).setInteractive()
+        );
+        rowHit.on('pointerover', () => this._showTooltip(suit, sy));
+        rowHit.on('pointerout',  () => this._hideTooltip());
+        rowHit.on('pointerdown', () => this._showTooltip(suit, sy));
       });
     });
 
