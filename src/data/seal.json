@@ -30,6 +30,16 @@
       "usable": true
     },
     {
+      "id": "pink",
+      "name": "Pink Seal",
+      "desc": "공격 시 체력 5 회복",
+      "border": "#ff88cc",
+      "healBonus": 5,
+      "shopLabel": "+5HP",
+      "img": "pink_seal.png",
+      "usable": true
+    },
+    {
       "id": "rainbow",
       "name": "Rainbow Seal",
       "desc": "미구현",

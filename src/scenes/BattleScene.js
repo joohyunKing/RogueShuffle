@@ -11,7 +11,7 @@ import {
 } from "../constants.js";
 import { getHandName } from "../service/langService.js";
 import { relicMap as _relicMap } from "../manager/relicManager.js";
-import { sealMap } from '../manager/sealManager.js';
+import { sealMap, getSealTypes } from '../manager/sealManager.js';
 
 import { writeSave, deleteSave } from "../save.js";
 import { CardRenderer } from "../CardRenderer.js";
@@ -110,7 +110,7 @@ export class BattleScene extends Phaser.Scene {
 
     // isBoss는 createUI() 내부에서 사용되므로 반드시 먼저 설정
     const roundData = roundManager.getRoundData(this.round, this.battleIndex);
-    this.isBoss     = roundData.isBoss ?? false;
+    this.isBoss = roundData.isBoss ?? false;
     this.battleType = roundData.battleInfo?.type ?? 'normal';
     // elite 배율 (보스·소환 몬스터는 MonsterView 생성 시 개별 지정)
     this.monsterImgScale = this.battleType === 'elite' ? 1.4 : 1.0;
@@ -147,10 +147,10 @@ export class BattleScene extends Phaser.Scene {
 
     // 보스 전용 초기화
     this.bossManager = null;
-    this.bossHPBar   = null;
+    this.bossHPBar = null;
     if (this.isBoss && this.monsters.length > 0) {
       this.bossManager = new BossManager(this);
-      this.bossHPBar   = new BossHPBarUI(this, this.monsters[0], this.bossManager);
+      this.bossHPBar = new BossHPBarUI(this, this.monsters[0], this.bossManager);
       this.monsterViews[0].hideHPBar();
       this.monsterViews[0].hideStats();
     }
@@ -492,11 +492,85 @@ export class BattleScene extends Phaser.Scene {
     const item = this.player.items[idx];
     if (!item) { obj?.destroy(); return; }
 
+    const def = itemMap[item.id];
+    const eff = def?.effect;
+
+    // copy_hand_card: 선택된 카드 1장을 복사해 핸드에 추가
+    if (eff?.type === 'copy_hand_card') {
+      const selectedIdxs = [...this.selected];
+      if (selectedIdxs.length !== 1) {
+        obj?.destroy();
+        this.render();
+        return;
+      }
+      const src = this.handData[selectedIdxs[0]];
+      const copy = {
+        ...src,
+        uid: crypto.randomUUID(),
+        enhancements: src.enhancements ? src.enhancements.map(e => ({ ...e })) : [],
+      };
+      this.handData.push(copy);
+      this.selected.clear();
+      this.addBattleLog(`[${item.name}] ${src.key} 복사!`);
+      this.player.items.splice(idx, 1);
+      obj?.destroy();
+      this.render();
+      return;
+    }
+
+    // seal_hand_card: 선택된 카드 1장에 씰 랜덤 강화
+    if (eff?.type === 'seal_hand_card') {
+      const selectedIdxs = [...this.selected];
+      if (selectedIdxs.length !== 1) {
+        obj?.destroy();
+        this.render();
+        return;
+      }
+      const card = this.handData[selectedIdxs[0]];
+      if ((card.enhancements?.length ?? 0) > 0) {
+        // 이미 씰이 있는 카드 — 사용 취소
+        obj?.destroy();
+        this.render();
+        return;
+      }
+      const types = getSealTypes();
+      const type = types[Math.floor(Math.random() * types.length)];
+      card.enhancements = [{ type }];
+      this.selected.clear();
+      this.addBattleLog(`[${item.name}] ${card.key} → ${type} 씰 강화!`);
+      this.player.items.splice(idx, 1);
+      obj?.destroy();
+      this.render();
+      return;
+    }
+
+    // remove_hand_cards: 선택된 카드를 최대 maxCards장 제거
+    if (eff?.type === 'remove_hand_cards') {
+      const maxCards = eff.maxCards ?? 2;
+      const selectedIdxs = [...this.selected];
+      if (selectedIdxs.length === 0 || selectedIdxs.length > maxCards) {
+        obj?.destroy();
+        this.render();
+        return;
+      }
+      // 내림차순 정렬 후 제거 (앞 인덱스가 밀리지 않도록)
+      selectedIdxs.sort((a, b) => b - a).forEach(i => {
+        const removed = this.handData.splice(i, 1)[0];
+        if (removed) this.deck.dummyPile.push(removed);
+      });
+      this.selected.clear();
+      this.addBattleLog(`[${item.name}] 카드 ${selectedIdxs.length}장 제거`);
+      this.player.items.splice(idx, 1);
+      obj?.destroy();
+      this.render();
+      return;
+    }
+
     const msg = applyItemEffect(this.player, item.id, item.name);
     if (msg) this.addBattleLog(msg);
 
     // 배틀 한정 효과는 종료 시 되돌리기 위해 기록
-    if (itemMap[item.id]?.scope === 'battle') {
+    if (def?.scope === 'battle') {
       this._battleItemEffects.push(item.id);
     }
 
@@ -885,6 +959,10 @@ export class BattleScene extends Phaser.Scene {
             });
             this.addBattleLog(`[씰] ${card.key} → 아이템 [${item.name}] 획득!`);
           }
+        } else if (enh.type === 'pink') {
+          const healAmt = sealMap['pink']?.healBonus ?? 5;
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
+          this.addBattleLog(`[씰] ${card.key} → HP +${healAmt} 회복!`);
         }
       }
     }
@@ -975,8 +1053,13 @@ export class BattleScene extends Phaser.Scene {
 
 
   toggleHand(i) {
+    if (this.selected.has(i)) {
+      this.selected.delete(i);
+    } else {
+      if (this.selected.size >= 5) return;
+      this.selected.add(i);
+    }
     this._sfx("sfx_place");
-    this.selected.has(i) ? this.selected.delete(i) : this.selected.add(i);
     this.render();
   }
 
@@ -1059,6 +1142,7 @@ export class BattleScene extends Phaser.Scene {
 
     // ── 카운팅 업 ─────────────────────────────────────────────────────────
     const countUp = (target, duration, onDone) => {
+      this._sfx("sfx_orb"); // 점수 튕길 때 소리 재생
       const tweenObj = { val: currentScore };
       this.tweens.killTweensOf(scoreTxt);
       scoreTxt.y = scoreY;
@@ -1170,6 +1254,7 @@ export class BattleScene extends Phaser.Scene {
 
     // 6. 최종 점수 강조 후 페이드아웃
     queue.push(next => {
+      this._sfx("sfx_chop"); // 최종 점수 산출 시 강조되는 타격음
       this.tweens.add({
         targets: scoreTxt,
         scaleX: { from: 1, to: 1.45 }, scaleY: { from: 1, to: 1.45 },
@@ -1339,8 +1424,8 @@ export class BattleScene extends Phaser.Scene {
     const subText = `ROUND ${this.round}-${this.battleIndex + 1}  SCORE: ${this.player.score}`;
     const noteText = next.isGameEnd ? "게임 클리어!" :
       nextType === 'market' ? "마켓으로..." :
-      next.isNextRound ? "다음 라운드로..." :
-      "다음 전투로...";
+        next.isNextRound ? "다음 라운드로..." :
+          "다음 전투로...";
 
     this.add.text(GW / 2, py + 60, titleText, TS.clearTitle).setOrigin(0.5).setDepth(301);
     this.add.text(GW / 2, py + 118, subText, TS.clearSub).setOrigin(0.5).setDepth(301);

@@ -35,6 +35,12 @@ export default class effectManager {
     // ⚡ 번개 — scoreTxt 위치에서 몬스터에 번개 타격
     hitLightning(toX, toY, monsterSprite) {
         const scene = this.scene;
+
+        try {
+            const sfxVol = (scene.registry?.get("sfxVolume") ?? 7) / 10;
+            scene.sound.play("sfx_lightning", { volume: sfxVol * 0.8 });
+        } catch(e) {}
+
         const fromX = PLAYER_PANEL_W + (GW - PLAYER_PANEL_W - ITEM_PANEL_W) / 2;
         const fromY = MONSTER_AREA_TOP + 20;
 
@@ -127,6 +133,11 @@ export default class effectManager {
     hitChainLightning(fromX, fromY, toX, toY, toSprite) {
         const scene = this.scene;
 
+        try {
+            const sfxVol = (scene.registry?.get("sfxVolume") ?? 7) / 10;
+            scene.sound.play("sfx_lightning", { volume: sfxVol * 0.6 });
+        } catch(e) {}
+
         const makePts = () => {
             const pts = [{ x: fromX, y: fromY }];
             const SEG = 8;
@@ -186,6 +197,11 @@ export default class effectManager {
     hitExplosion(centerX, centerY, monsters) {
         const scene = this.scene;
 
+        try {
+            const sfxVol = (scene.registry?.get("sfxVolume") ?? 7) / 10;
+            scene.sound.play("sfx_explosion", { volume: sfxVol * 0.95 });
+        } catch(e) {}
+
         // 1. 순간 화이트 플래시 코어
         const flash = scene.add.circle(centerX, centerY, 22, 0xffffff, 1)
             .setDepth(10000).setBlendMode(Phaser.BlendModes.ADD);
@@ -219,8 +235,8 @@ export default class effectManager {
         // 4. 파편 22개 방사형
         for (let i = 0; i < 22; i++) {
             const angle = (i / 22) * Math.PI * 2 + Phaser.Math.FloatBetween(-0.1, 0.1);
-            const dist  = Phaser.Math.FloatBetween(90, 170);
-            const size  = Phaser.Math.Between(3, 9);
+            const dist = Phaser.Math.FloatBetween(90, 170);
+            const size = Phaser.Math.Between(3, 9);
             const colors = [0xffee44, 0xff8800, 0xff4422, 0xffffff, 0xffcc00];
             const dot = scene.add.circle(centerX, centerY, size, colors[i % colors.length], 1)
                 .setDepth(9998).setBlendMode(Phaser.BlendModes.ADD);
@@ -275,6 +291,12 @@ export default class effectManager {
         const scene = this.scene;
         const duration = 260;
 
+        try {
+            const sfxVol = (scene.registry?.get("sfxVolume") ?? 7) / 10;
+            scene.sound.play("sfx_orb", { volume: sfxVol });
+        } catch (e) { }
+
+
         const glow = scene.add.circle(fromX, fromY, 12, color, 0.35)
             .setDepth(9998).setBlendMode(Phaser.BlendModes.ADD);
         const orb = scene.add.circle(fromX, fromY, 7, color, 1)
@@ -301,7 +323,7 @@ export default class effectManager {
     _hitReaction(monster, color) {
         try {
             monster.setTint(color);
-        } catch(ex) {}
+        } catch (ex) { }
 
         this.scene.tweens.add({
             targets: monster,
@@ -313,7 +335,7 @@ export default class effectManager {
         this.scene.time.delayedCall(120, () => {
             try {
                 monster.clearTint();
-            } catch(ex) {}
+            } catch (ex) { }
         });
     }
 }

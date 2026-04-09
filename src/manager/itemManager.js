@@ -75,6 +75,12 @@ export function applyItemEffect(player, itemId, itemName) {
       }
       return `[${itemName}] 배수 +${eff.value}`;
     }
+    case 'copy_hand_card':
+      return null; // BattleScene._useItem에서 직접 처리
+    case 'seal_hand_card':
+      return null; // BattleScene._useItem에서 직접 처리
+    case 'remove_hand_cards':
+      return null; // BattleScene._useItem에서 직접 처리
     default:
       return null;
   }

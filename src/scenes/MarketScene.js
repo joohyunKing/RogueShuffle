@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W, SUITS, RANKS, FIELD_CW, FIELD_CH } from "../constants.js";
+import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W, SUITS, FIELD_CW, FIELD_CH } from "../constants.js";
 import { CardRenderer } from "../CardRenderer.js";
 import { TS } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
@@ -9,16 +9,16 @@ import { getRelicsExcluding, maxRelicCount } from '../manager/relicManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 import { OptionUI } from '../ui/OptionUI.js';
+import { TooltipUI } from '../ui/TooltipUI.js';
 import { roundManager } from '../manager/roundManager.js';
-import { sealMap, getSealTypes } from '../manager/sealManager.js';
 
 // 라운드별 rarity 확률 (round 1: common 60/rare 30/epic 10, round 10: common 20/rare 50/epic 30)
 function getRarityWeights(round) {
   const t = Math.min(Math.max((round - 1) / 9, 0), 1); // 0(1라운드) ~ 1(10라운드)
   return {
     common: Math.round(60 - 40 * t),  // 60 → 20
-    rare:   Math.round(30 + 20 * t),  // 30 → 50
-    epic:   Math.round(10 + 20 * t),  // 10 → 30
+    rare: Math.round(30 + 20 * t),  // 30 → 50
+    epic: Math.round(10 + 20 * t),  // 10 → 30
   };
 }
 const ITEM_PRICE = { common: 5, rare: 10, epic: 15 };
@@ -28,9 +28,6 @@ const RARITY_COLORS = {
   rare: { bg: 0x1a2a4a, label: '#aaaaff' },
   epic: { bg: 0x2a1a3a, label: '#cc88ff' },
 };
-const SUIT_CHARS = { S: '♠', H: '♥', D: '♦', C: '♣' };
-const CARD_OP_COST = 20;
-const CARD_OP_MAX = 2;
 
 // 레이아웃 상수
 const PW = PLAYER_PANEL_W;
@@ -46,7 +43,7 @@ const RELIC_CARD_TOP = 76;
 
 // 아이템 카드 (유물과 동일 크기, 4×1 그리드)
 const ITEM_W = 150, ITEM_H = 186, ITEM_GAP_X = 16, ITEM_GAP_Y = 16;
-const ITEM_COLS = 4;
+const ITEM_COLS = 5;
 const ITEM_SECTION_TOP = RELIC_CARD_TOP + RELIC_H + 14;  // ~276
 const ITEM_CARD_TOP = ITEM_SECTION_TOP + 18;           // ~294
 
@@ -89,8 +86,13 @@ function pickWeighted(pool, n, weights) {
 export class MarketScene extends Phaser.Scene {
   constructor() { super("MarketScene"); }
 
+  preload() {
+    CardRenderer.preload(this);
+  }
+
   //round, player, deck, battleIndex
   create() {
+    CardRenderer.createAll(this);
 
     const data = this.scene.settings.data || {};
     this.round = data.round ?? 1;
@@ -104,15 +106,13 @@ export class MarketScene extends Phaser.Scene {
     const rarityWeights = getRarityWeights(this.round);
     const ownedRelics = new Set(this.player.relics);
     const relicPool = getRelicsExcluding(ownedRelics);
-    this._shopRelics = pickWeighted(relicPool, 4, rarityWeights)
+    this._shopRelics = pickWeighted(relicPool, 5, rarityWeights)
       .map(r => ({ ...r, bought: false }));
 
-    this._shopItems = pickWeighted(getAllItems(), 4, rarityWeights)
+    this._shopItems = pickWeighted(getAllItems(), 5, rarityWeights)
       .map(r => ({ ...r, bought: false }));
 
-    this._deckOpsUsed = 0;
-    this._deckSelectedCard = null;
-    this._tipObjs = [];
+    this._tooltip = new TooltipUI(this, {});
     this._tipPinned = false;
     this._optionUI = new OptionUI(this, {
       onMainMenu: () => this.scene.start("MainMenuScene"),
@@ -124,86 +124,37 @@ export class MarketScene extends Phaser.Scene {
 
   // ── 툴팁 ────────────────────────────────────────────────────────────────
   _clearTip() {
-    this._tipObjs.forEach(o => { try { o?.destroy(); } catch (_) { } });
-    this._tipObjs = [];
+    this._tooltip.hide();
     this._tipPinned = false;
   }
 
-  /**
-   * 구매 버튼이 포함된 상점 툴팁
-   */
   _showShopTip(nearX, nearY, title, desc, colorHex, price, canBuy, bought, onBuy) {
-    this._tipObjs.forEach(o => { try { o?.destroy(); } catch (_) { } });
-    this._tipObjs = [];
+    const TIP_W = 210;
+    let left = nearX - TIP_W - 8;
+    if (left < PW + 4) left = nearX + 8;
 
-    const tw = 190, pad = 10, titleH = 18, lineH = 15, btnH = 30;
-    const descLines = Math.max(1, Math.ceil((desc?.length ?? 0) / 13));
-    const th = pad * 2 + titleH + descLines * lineH + 8 + btnH + 6;
-    const colorN = parseInt(colorHex.replace('#', ''), 16);
-
-    let tx = nearX - tw - 8;
-    if (tx < PW + 4) tx = nearX + 8;
-    const ty = Math.max(60, Math.min(nearY - th / 2, GH - th - 10));
-
-    const g = this.add.graphics().setDepth(300);
-    g.fillStyle(0x0a1e12, 0.97);
-    g.fillRoundedRect(tx, ty, tw, th, 6);
-    g.lineStyle(1, colorN);
-    g.strokeRoundedRect(tx, ty, tw, th, 6);
-    this._tipObjs.push(g);
-
-    this._tipObjs.push(
-      this.add.text(tx + pad, ty + pad, title,
-        { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: colorHex })
-        .setOrigin(0, 0).setDepth(301)
-    );
-    this._tipObjs.push(
-      this.add.text(tx + pad, ty + pad + titleH, desc ?? '',
-        {
-          fontFamily: 'Arial', fontSize: '12px', color: '#aaccbb',
-          wordWrap: { width: tw - pad * 2 }
-        })
-        .setOrigin(0, 0).setDepth(301)
-    );
-
-    // 구매 버튼 영역
-    const btnY = ty + th - pad - btnH / 2;
-    if (bought) {
-      this._tipObjs.push(
-        this.add.text(tx + tw / 2, btnY, 'SOLD',
-          { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: '#555555' })
-          .setOrigin(0.5).setDepth(301)
-      );
-    } else {
-      const btnFill = canBuy ? 0x1a5533 : 0x2a1a1a;
-      const btnBrd = canBuy ? 0x44dd88 : 0x554444;
-      const priceC = canBuy ? '#ffdd44' : '#aa6644';
-      const btn = this.add.rectangle(tx + tw / 2, btnY, tw - pad * 2, btnH, btnFill)
-        .setDepth(301).setStrokeStyle(1, btnBrd).setInteractive();
-      const btnTxt = this.add.text(tx + tw / 2, btnY, `구매  ${price}G`,
-        { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: priceC })
-        .setOrigin(0.5).setDepth(302);
-
-      if (canBuy && onBuy) {
-        btn.on('pointerdown', () => { this._clearTip(); onBuy(); });
-        btn.on('pointerover', () => btn.setFillStyle(0x2a7744));
-        btn.on('pointerout', () => btn.setFillStyle(btnFill));
-      } else if (!canBuy) {
-        btn.on('pointerdown', () => {
-          btnTxt.setText('골드 부족!').setColor('#ff6644');
-          this.time.delayedCall(900, () => {
-            try { btnTxt.setText(`구매  ${price}G`).setColor(priceC); } catch (_) { }
-          });
-        });
-      }
-      this._tipObjs.push(btn, btnTxt);
-    }
+    this._tooltip.update({
+      titleMsg: title,
+      contentMsg: desc ?? '',
+      titleMsgColor: colorHex,
+      tooltipW: TIP_W,
+      left,
+      centerY: nearY,
+      clampMin: 60,
+      clampMax: GH - 10,
+      onUse: (canBuy && !bought && onBuy) ? onBuy : undefined,
+      btnLabel: `구매  ${price}G`,
+      btnDisabled: (!canBuy && !bought),
+      btnDisabledMsg: '골드 부족!',
+      sold: bought,
+      depth: 300,
+    });
   }
 
   // ── 씬 전체 그리기 ──────────────────────────────────────────────────────
   _drawScene() {
     this.children.removeAll(true);
-    this._tipObjs = [];
+    this._tooltip = new TooltipUI(this, {});
     this._tipPinned = false;
     this._deckPopupObjs = null;
 
@@ -327,7 +278,7 @@ export class MarketScene extends Phaser.Scene {
     const nameY = top + 16 + 80 + 14;
     this.add.text(cx, nameY, relic.name,
       {
-        fontFamily: "'PressStart2P',Arial", fontSize: '9px',
+        fontFamily: "'PressStart2P',Arial", fontSize: '13px',
         color: relic.bought ? '#555555' : '#ffffff',
         wordWrap: { width: W - 14 }, align: 'center'
       })
@@ -433,7 +384,7 @@ export class MarketScene extends Phaser.Scene {
     const nameY = top + 16 + 80 + 14;
     this.add.text(cx, nameY, item.name,
       {
-        fontFamily: "'PressStart2P',Arial", fontSize: '9px',
+        fontFamily: "'PressStart2P',Arial", fontSize: '13px',
         color: item.bought ? '#555555' : '#ffffff',
         wordWrap: { width: W - 14 }, align: 'center'
       })
@@ -497,10 +448,9 @@ export class MarketScene extends Phaser.Scene {
     const btnY = CARD_MGMT_TOP + CARD_MGMT_H / 2;
     const BTN_W = 170, BTN_H = 42, BTN_GAP = 14;
 
-    // 버튼 3개 균등 배치: [카드관리] [카드추가] [상점갱신]
-    const mgmtX  = CX - BTN_W - BTN_GAP;
-    const addX   = CX;
-    const rfshX  = CX + BTN_W + BTN_GAP;
+    // 버튼 2개 균등 배치: [카드관리] [상점갱신]
+    const mgmtX = CX - BTN_W / 2 - BTN_GAP / 2;
+    const rfshX = CX + BTN_W / 2 + BTN_GAP / 2;
 
     // 카드관리
     const mgmt = this.add.rectangle(mgmtX, btnY, BTN_W, BTN_H, 0x1a3a5a)
@@ -512,27 +462,11 @@ export class MarketScene extends Phaser.Scene {
     mgmt.on("pointerover", () => mgmt.setFillStyle(0x2a5a7a));
     mgmt.on("pointerout", () => mgmt.setFillStyle(0x1a3a5a));
 
-    // 카드추가
-    const opsLeft = CARD_OP_MAX - this._deckOpsUsed;
-    const canAdd = this.player.gold >= CARD_OP_COST && opsLeft > 0;
-    const addFill = canAdd ? 0x1a4a2a : 0x202020;
-    const addBrd  = canAdd ? 0x4a9a5a : 0x444444;
-    const addBtn = this.add.rectangle(addX, btnY, BTN_W, BTN_H, addFill)
-      .setDepth(10).setInteractive().setStrokeStyle(2, addBrd);
-    this.add.text(addX, btnY, `카드추가  (${CARD_OP_COST}G)`,
-      { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: canAdd ? '#aaffaa' : '#555555' })
-      .setOrigin(0.5).setDepth(11);
-    if (canAdd) {
-      addBtn.on("pointerdown", () => this._addCard());
-      addBtn.on("pointerover", () => addBtn.setFillStyle(0x2a6a3a));
-      addBtn.on("pointerout", () => addBtn.setFillStyle(0x1a4a2a));
-    }
-
     // 상점갱신 (5G)
     const REFRESH_COST = 5;
     const canRefresh = this.player.gold >= REFRESH_COST;
     const rfshFill = canRefresh ? 0x3a2a1a : 0x202020;
-    const rfshBrd  = canRefresh ? 0xaa7a3a : 0x444444;
+    const rfshBrd = canRefresh ? 0xaa7a3a : 0x444444;
     const rfsh = this.add.rectangle(rfshX, btnY, BTN_W, BTN_H, rfshFill)
       .setDepth(10).setInteractive().setStrokeStyle(2, rfshBrd);
     this.add.text(rfshX, btnY, `상점갱신  (${REFRESH_COST}G)`,
@@ -551,26 +485,16 @@ export class MarketScene extends Phaser.Scene {
     if (this.player.gold < REFRESH_COST) return;
     this.player.gold -= REFRESH_COST;
     const rarityWeights = getRarityWeights(this.round);
-    const ownedRelics   = new Set(this.player.relics);
-    const relicPool     = getRelicsExcluding(ownedRelics);
-    this._shopRelics = pickWeighted(relicPool, 4, rarityWeights)
+    const ownedRelics = new Set(this.player.relics);
+    const relicPool = getRelicsExcluding(ownedRelics);
+    this._shopRelics = pickWeighted(relicPool, 5, rarityWeights)
       .map(r => ({ ...r, bought: false }));
-    this._shopItems = pickWeighted(getAllItems(), 4, rarityWeights)
+    this._shopItems = pickWeighted(getAllItems(), 5, rarityWeights)
       .map(r => ({ ...r, bought: false }));
     this._drawScene();
   }
 
-  _addCard() {
-    if (this.player.gold < CARD_OP_COST || this._deckOpsUsed >= CARD_OP_MAX) return;
-    const suit = SUITS[Math.floor(Math.random() * SUITS.length)];
-    const rank = RANKS[Math.floor(Math.random() * RANKS.length)];
-    this._deck.createCard(suit, rank, [], 'permanent', 'market', 'dummy');
-    this.player.gold -= CARD_OP_COST;
-    this._deckOpsUsed++;
-    this._drawScene();
-  }
-
-  // ── 덱 팝업 (_showPilePopup 스타일) ──────────────────────────────────────
+  // ── 덱 팝업 (조회 전용) ───────────────────────────────────────────────────
   _showDeckPopup() {
     if (this._deckPopupObjs) return;
     const objs = this._deckPopupObjs = [];
@@ -596,8 +520,8 @@ export class MarketScene extends Phaser.Scene {
       )
     );
 
-    const titleH = 38, closeH = 40, actionH = 128;
-    const panelH = titleH + SUITS.length * ROW_H + actionH + closeH;
+    const titleH = 38, closeH = 40;
+    const panelH = titleH + SUITS.length * ROW_H + closeH;
     const panelTop = Math.max(70, Math.round((GH - panelH) / 2));
 
     // 딤
@@ -614,7 +538,7 @@ export class MarketScene extends Phaser.Scene {
     // 제목
     objs.push(
       this.add.text(panelCX, panelTop + titleH / 2,
-        `카드 관리  (${cards.length}장)`,
+        `덱 조회  (${cards.length}장)`,
         { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#ccffcc' })
         .setOrigin(0.5).setDepth(502)
     );
@@ -636,17 +560,7 @@ export class MarketScene extends Phaser.Scene {
 
       sCards.forEach((card, ci) => {
         const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
-        const isSelected = this._deckSelectedCard?.uid === card.uid;
-
         const { cardImg: cardObj, sealImg } = CardRenderer.drawCard(this, cx, cy, card, { width: CW_, height: CH_, depth: 502, objs });
-
-        // 선택 테두리
-        if (isSelected) {
-          const selG = this.add.graphics().setDepth(503);
-          selG.lineStyle(3, 0xffdd44);
-          selG.strokeRect(cx - CW_ / 2, cy - CH_ / 2, CW_, CH_);
-          objs.push(selG);
-        }
 
         const hitR = this.add.rectangle(cx, cy, CW_, CH_, 0xffffff, 0)
           .setDepth(505).setInteractive();
@@ -662,110 +576,12 @@ export class MarketScene extends Phaser.Scene {
           sealImg?.setVisible(true);
           CardRenderer.hideSealTooltip();
         });
-        hitR.on('pointerdown', () => {
-          CardRenderer.hideSealTooltip();
-          this._deckSelectedCard =
-            (this._deckSelectedCard?.uid === card.uid) ? null : card;
-          this._closeDeckPopup();
-          this._showDeckPopup();
-        });
         objs.push(hitR);
       });
     });
 
-    // ── 하단 액션 영역 ──────────────────────────────────────────────────────
-    const actionTop = panelTop + titleH + SUITS.length * ROW_H;
-    const opsLeft = CARD_OP_MAX - this._deckOpsUsed;
-    const selCard = this._deckSelectedCard;
-
-    // 구분선
-    const divG = this.add.graphics().setDepth(502);
-    divG.lineStyle(1, 0x2a5a3a, 0.7);
-    divG.lineBetween(panelX + 20, actionTop, panelX + panelW - 20, actionTop);
-    objs.push(divG);
-
-    // 선택 카드 정보
-    if (selCard) {
-      const isRed = selCard.suit === 'H' || selCard.suit === 'D';
-      const enh = selCard.enhancements?.[0];
-      const scoreBonus = enh?.type === 'red' ? (sealMap['red']?.scoreBonus ?? 20) : 0;
-      const dispScore  = selCard.baseScore + scoreBonus;
-      const sealLabel  = enh ? (sealMap[enh.type]?.shopLabel ?? enh.type) : null;
-      const enhLabel   = sealLabel ? `  [씰: ${sealLabel}]` : '';
-      const suitSym = SUIT_CHARS[selCard.suit] ?? '';
-      objs.push(
-        this.add.text(panelCX, actionTop + 14,
-          `선택: ${selCard.rank ?? selCard.key?.slice(1)}${suitSym}  기본점수: ${dispScore}${enhLabel}`,
-          { fontFamily: 'Arial', fontSize: '14px', color: isRed ? '#ff9999' : '#aaccff' })
-          .setOrigin(0.5, 0).setDepth(502)
-      );
-    } else {
-      objs.push(
-        this.add.text(panelCX, actionTop + 14, '카드를 선택하세요',
-          { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#446655' })
-          .setOrigin(0.5, 0).setDepth(502)
-      );
-    }
-
-    // 강화 버튼 (씰 적용 — 이미 강화된 카드는 비활성)
-    const alreadySealed = (selCard?.enhancements?.length ?? 0) > 0;
-    const canEnhance = !!selCard && !alreadySealed && this.player.gold >= CARD_OP_COST && opsLeft > 0;
-    const enhX = panelCX - 90;
-    const btnActY = actionTop + 64;
-    const enhBtn = this.add.rectangle(enhX, btnActY, 162, 42,
-      canEnhance ? 0x1a3a5a : 0x1a1a1a)
-      .setDepth(502).setStrokeStyle(2, canEnhance ? 0x4488cc : 0x333333).setInteractive();
-    objs.push(enhBtn,
-      this.add.text(enhX, btnActY, alreadySealed ? '강화  (완료)' : '강화  (씰 랜덤)',
-        {
-          fontFamily: "'PressStart2P',Arial", fontSize: '10px',
-          color: canEnhance ? '#88ccff' : '#444444'
-        })
-        .setOrigin(0.5).setDepth(503));
-    if (canEnhance) {
-      enhBtn.on('pointerdown', () => this._deckEnhance());
-      enhBtn.on('pointerover', () => enhBtn.setFillStyle(0x2a5a8a));
-      enhBtn.on('pointerout', () => enhBtn.setFillStyle(0x1a3a5a));
-    }
-
-    // 제거 버튼 (비용 20G)
-    const canRemove = !!selCard && this.player.gold >= CARD_OP_COST && opsLeft > 0;
-    const remX = panelCX + 90;
-    const remBtn = this.add.rectangle(remX, btnActY, 162, 42,
-      canRemove ? 0x3a1a1a : 0x1a1a1a)
-      .setDepth(502).setStrokeStyle(2, canRemove ? 0xaa3333 : 0x333333).setInteractive();
-    objs.push(remBtn,
-      this.add.text(remX, btnActY, `제거  (${CARD_OP_COST}G)`,
-        {
-          fontFamily: "'PressStart2P',Arial", fontSize: '10px',
-          color: canRemove ? '#ffaaaa' : '#444444'
-        })
-        .setOrigin(0.5).setDepth(503));
-    if (canRemove) {
-      remBtn.on('pointerdown', () => this._deckRemove());
-      remBtn.on('pointerover', () => remBtn.setFillStyle(0x5a2a2a));
-      remBtn.on('pointerout', () => remBtn.setFillStyle(0x3a1a1a));
-    }
-
-    // 비용 / 사용 횟수
-    objs.push(
-      this.add.text(panelX + panelW - 14, panelTop + panelH - 12,
-        `비용: ${CARD_OP_COST}G  사용: ${this._deckOpsUsed} / ${CARD_OP_MAX}`,
-        { fontFamily: 'Arial', fontSize: '13px', color: '#88aa77' })
-        .setOrigin(1, 1).setDepth(502)
-    );
-
-    // 현재 골드
-    const goldColor = this.player.gold >= CARD_OP_COST ? '#ffdd44' : '#aa6644';
-    objs.push(
-      this.add.text(panelX + 14, panelTop + panelH - 12,
-        `골드: ${this.player.gold}G`,
-        { fontFamily: 'Arial', fontSize: '13px', color: goldColor })
-        .setOrigin(0, 1).setDepth(502)
-    );
-
     // 닫기 버튼
-    const closeY = actionTop + actionH + closeH / 2;
+    const closeY = panelTop + panelH - closeH / 2;
     const closeBg = this.add.rectangle(panelCX, closeY, 130, 28, 0x1a3a22)
       .setDepth(502).setStrokeStyle(1, 0x4a9a5a);
     const closeTxt = this.add.text(panelCX, closeY, 'CLOSE',
@@ -780,40 +596,6 @@ export class MarketScene extends Phaser.Scene {
     if (!this._deckPopupObjs) return;
     this._deckPopupObjs.forEach(o => { try { o?.destroy(); } catch (_) { } });
     this._deckPopupObjs = null;
-  }
-
-  _deckEnhance() {
-    const card = this._deckSelectedCard;
-    if (!card || this.player.gold < CARD_OP_COST || this._deckOpsUsed >= CARD_OP_MAX) return;
-    if ((card.enhancements?.length ?? 0) > 0) return; // 이미 강화된 카드
-
-    const types = getSealTypes();
-    const type = types[Math.floor(Math.random() * types.length)];
-    card.enhancements = [{ type }];
-
-    this.player.gold -= CARD_OP_COST;
-    this._deckOpsUsed++;
-    this._deckSelectedCard = null;
-    this._closeDeckPopup();
-    this._drawScene();
-    this._showDeckPopup();
-  }
-
-  _deckRemove() {
-    const card = this._deckSelectedCard;
-    if (!card || this.player.gold < CARD_OP_COST || this._deckOpsUsed >= CARD_OP_MAX) return;
-    const rm = (arr) => arr.filter(c => c.uid !== card.uid);
-    this._deck.cards = rm(this._deck.cards);
-    this._deck.deckPile = rm(this._deck.deckPile);
-    this._deck.hand = rm(this._deck.hand);
-    this._deck.field = rm(this._deck.field);
-    this._deck.dummyPile = rm(this._deck.dummyPile);
-    this.player.gold -= CARD_OP_COST;
-    this._deckOpsUsed++;
-    this._deckSelectedCard = null;
-    this._closeDeckPopup();
-    this._drawScene();
-    this._showDeckPopup();
   }
 
   // ── 옵션 오버레이 ─────────────────────────────────────────────────────────

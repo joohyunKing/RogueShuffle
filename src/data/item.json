@@ -7,7 +7,10 @@
       "desc": "HP를 20 회복",
       "rarity": "common",
       "useYn": "Y",
-      "effect": { "type": "heal", "value": 20 }
+      "effect": {
+        "type": "heal",
+        "value": 20
+      }
     },
     {
       "id": "max_hp_up",
@@ -16,7 +19,10 @@
       "desc": "최대 HP +10",
       "rarity": "common",
       "useYn": "Y",
-      "effect": { "type": "maxHp", "value": 10 }
+      "effect": {
+        "type": "maxHp",
+        "value": 10
+      }
     },
     {
       "id": "shield",
@@ -24,8 +30,11 @@
       "img": null,
       "desc": "DEF +3",
       "rarity": "common",
-      "useYn": "Y",
-      "effect": { "type": "def", "value": 3 }
+      "useYn": "N",
+      "effect": {
+        "type": "def",
+        "value": 3
+      }
     },
     {
       "id": "extra_attack",
@@ -34,7 +43,10 @@
       "desc": "턴당 공격 횟수 +1 (이번 전투만)",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "attacksPerTurn", "value": 1 },
+      "effect": {
+        "type": "attacksPerTurn",
+        "value": 1
+      },
       "scope": "battle"
     },
     {
@@ -44,7 +56,10 @@
       "desc": "핸드 카드 수 +1 (이번 전투만)",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "handSize", "value": 1 },
+      "effect": {
+        "type": "handSize",
+        "value": 1
+      },
       "scope": "battle"
     },
     {
@@ -54,7 +69,10 @@
       "desc": "필드 카드 수 +1 (이번 전투만)",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "fieldSize", "value": 1 },
+      "effect": {
+        "type": "fieldSize",
+        "value": 1
+      },
       "scope": "battle"
     },
     {
@@ -63,8 +81,12 @@
       "img": null,
       "desc": "♠ 적응 레벨 +1",
       "rarity": "epic",
-      "useYn": "Y",
-      "effect": { "type": "attr", "suit": "S", "value": 1 }
+      "useYn": "N",
+      "effect": {
+        "type": "attr",
+        "suit": "S",
+        "value": 1
+      }
     },
     {
       "id": "suit_heart",
@@ -72,8 +94,12 @@
       "img": null,
       "desc": "♥ 적응 레벨 +1",
       "rarity": "epic",
-      "useYn": "Y",
-      "effect": { "type": "attr", "suit": "H", "value": 1 }
+      "useYn": "N",
+      "effect": {
+        "type": "attr",
+        "suit": "H",
+        "value": 1
+      }
     },
     {
       "id": "suit_diamond",
@@ -81,8 +107,12 @@
       "img": null,
       "desc": "♦ 적응 레벨 +1",
       "rarity": "epic",
-      "useYn": "Y",
-      "effect": { "type": "attr", "suit": "D", "value": 1 }
+      "useYn": "N",
+      "effect": {
+        "type": "attr",
+        "suit": "D",
+        "value": 1
+      }
     },
     {
       "id": "suit_club",
@@ -90,8 +120,46 @@
       "img": null,
       "desc": "♣ 적응 레벨 +1",
       "rarity": "epic",
+      "useYn": "N",
+      "effect": {
+        "type": "attr",
+        "suit": "C",
+        "value": 1
+      }
+    },
+    {
+      "id": "copy_scroll",
+      "name": "복사 두루마리",
+      "img": "scroll_green.png",
+      "desc": "선택한 카드 1장을 복사해서 핸드에 추가",
+      "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "attr", "suit": "C", "value": 1 }
+      "effect": {
+        "type": "copy_hand_card"
+      }
+    },
+    {
+      "id": "seal_scroll",
+      "name": "씰 두루마리",
+      "img": "scroll_blue.png",
+      "desc": "선택한 카드 1장에 씰 랜덤 강화",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": {
+        "type": "seal_hand_card"
+      }
+    },
+    {
+      "id": "hand_remover",
+      "name": "제거 두루마리",
+      "img": "scroll_red.png",
+      "desc": "선택한 카드를 제거 (최대 2장)",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": {
+        "type": "remove_hand_cards",
+        "maxCards": 2
+      }
     },
     {
       "id": "scroll_high_card",
@@ -100,7 +168,11 @@
       "desc": "하이카드의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 0, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 0,
+        "value": 1
+      }
     },
     {
       "id": "scroll_one_pair",
@@ -109,7 +181,11 @@
       "desc": "원페어의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 1, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 1,
+        "value": 1
+      }
     },
     {
       "id": "scroll_triple",
@@ -118,7 +194,11 @@
       "desc": "트리플의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 2, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 2,
+        "value": 1
+      }
     },
     {
       "id": "scroll_two_pair",
@@ -127,7 +207,11 @@
       "desc": "투페어의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 3, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 3,
+        "value": 1
+      }
     },
     {
       "id": "scroll_straight",
@@ -136,7 +220,11 @@
       "desc": "스트레이트의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 6, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 6,
+        "value": 1
+      }
     },
     {
       "id": "scroll_flush",
@@ -145,7 +233,11 @@
       "desc": "플러쉬의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 7, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 7,
+        "value": 1
+      }
     },
     {
       "id": "scroll_full_house",
@@ -154,7 +246,11 @@
       "desc": "풀하우스의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 8, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 8,
+        "value": 1
+      }
     },
     {
       "id": "scroll_four_of_a_kind",
@@ -163,7 +259,11 @@
       "desc": "포카드의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 9, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 9,
+        "value": 1
+      }
     },
     {
       "id": "scroll_straight_flush",
@@ -172,7 +272,11 @@
       "desc": "스트레이트 플러쉬의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 10, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 10,
+        "value": 1
+      }
     },
     {
       "id": "scroll_five_card",
@@ -181,7 +285,11 @@
       "desc": "파이브카드의 배수를 1 올려줍니다",
       "rarity": "rare",
       "useYn": "Y",
-      "effect": { "type": "hand_multi", "handRank": 11, "value": 1 }
+      "effect": {
+        "type": "hand_multi",
+        "handRank": 11,
+        "value": 1
+      }
     }
   ]
 }

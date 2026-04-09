@@ -1,6 +1,7 @@
 import { ITEM_PANEL_W, GW, GH, BATTLE_LOG_H } from "../constants.js";
 import { TS } from "../textStyles.js";
 import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
+import { TooltipUI } from "./TooltipUI.js";
 
 const RARITY_STRIP  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
 const RARITY_COLOR  = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
@@ -31,107 +32,64 @@ export class ItemUI {
       depth:         9,
       ...opts,
     };
-    this._objs         = [];
-    this._tipObjs      = [];
-    this._relicObjs    = {};
-    this._isDragging   = false;
+    this._objs       = [];
+    this._tooltip    = new TooltipUI(scene, {});
+    this._relicObjs  = {};
+    this._isDragging = false;
     this._dragGhost    = null;
     this._dragGhostTxt = null;
     this._removeZone   = null;
     this._removeTxt    = null;
-    this._tipPinned    = false;
-    this._pinnedId     = null;
+    this._tipPinned  = false;
+    this._pinnedId   = null;
   }
 
   _add(obj) { this._objs.push(obj); return obj; }
 
-  // ── 툴팁 ────────────────────────────────────────────────────────────────
+  // ── 툴팁 헬퍼 ────────────────────────────────────────────────────────────
+  _tipLeft() {
+    return this.opts.panelX - 210 - 8;
+  }
+
+  _showTip(cy, title, desc, color) {
+    this._tooltip.update({
+      titleMsg:      title,
+      contentMsg:    desc || '',
+      titleMsgColor: color,
+      tooltipW:      210,
+      left:          this._tipLeft(),
+      centerY:       cy,
+      clampMin:      BATTLE_LOG_H + 4,
+      clampMax:      GH - 10,
+      onUse:         undefined,
+      btnDisabled:   false,
+      sold:          false,
+      depth:         300,
+    });
+  }
+
+  _showItemTip(cy, item, color, onUse) {
+    this._tooltip.update({
+      titleMsg:      item.name,
+      contentMsg:    item.desc || '',
+      titleMsgColor: color,
+      tooltipW:      210,
+      left:          this._tipLeft(),
+      centerY:       cy,
+      clampMin:      BATTLE_LOG_H + 4,
+      clampMax:      GH - 10,
+      onUse,
+      btnLabel:      '사 용',
+      btnDisabled:   false,
+      sold:          false,
+      depth:         300,
+    });
+  }
+
   _clearTip() {
-    this._tipObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
-    this._tipObjs   = [];
+    this._tooltip.hide();
     this._tipPinned = false;
     this._pinnedId  = null;
-  }
-
-  _showTip(nearY, title, desc, color) {
-    this._tipObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
-    this._tipObjs = [];
-    const { scene } = this;
-    const { panelX } = this.opts;
-    const tw = 210, pad = 12, lineH = 24;
-    const descLines = desc ? Math.max(1, Math.ceil(desc.length / 18)) : 0;
-    const th = pad * 2 + lineH + descLines * lineH;
-    const tx = panelX - tw - 8;
-    const ty = Math.max(BATTLE_LOG_H + 4, Math.min(nearY - th / 2, GH - th - 10));
-    const colorN = parseInt(color.replace('#', ''), 16);
-
-    const g = scene.add.graphics().setDepth(300);
-    g.fillStyle(0x0a1e12, 0.95);
-    g.fillRoundedRect(tx, ty, tw, th, 6);
-    g.lineStyle(1, colorN);
-    g.strokeRoundedRect(tx, ty, tw, th, 6);
-    this._tipObjs.push(g);
-
-    this._tipObjs.push(
-      scene.add.text(tx + pad, ty + pad, title,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color })
-        .setOrigin(0, 0).setDepth(301)
-    );
-    if (desc) {
-      this._tipObjs.push(
-        scene.add.text(tx + pad, ty + pad + lineH, desc,
-          { fontFamily: 'Arial', fontSize: '13px', color: '#aaccbb',
-            wordWrap: { width: tw - pad * 2 } })
-          .setOrigin(0, 0).setDepth(301)
-      );
-    }
-  }
-
-  // 사용 버튼이 포함된 아이템 툴팁
-  _showItemTip(nearY, item, color, onUse) {
-    this._tipObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
-    this._tipObjs = [];
-    const { scene } = this;
-    const { panelX } = this.opts;
-    const tw = 210, pad = 12, lineH = 22, btnH = 34;
-    const descLines = item.desc ? Math.max(1, Math.ceil(item.desc.length / 18)) : 0;
-    const th = pad * 2 + lineH + descLines * lineH + 10 + btnH + 6;
-    const tx = panelX - tw - 8;
-    const ty = Math.max(BATTLE_LOG_H + 4, Math.min(nearY - th / 2, GH - th - 10));
-    const colorN = parseInt(color.replace('#', ''), 16);
-
-    const g = scene.add.graphics().setDepth(300);
-    g.fillStyle(0x0a1e12, 0.97);
-    g.fillRoundedRect(tx, ty, tw, th, 6);
-    g.lineStyle(1, colorN);
-    g.strokeRoundedRect(tx, ty, tw, th, 6);
-    this._tipObjs.push(g);
-
-    this._tipObjs.push(
-      scene.add.text(tx + pad, ty + pad, item.name,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color })
-        .setOrigin(0, 0).setDepth(301)
-    );
-    if (item.desc) {
-      this._tipObjs.push(
-        scene.add.text(tx + pad, ty + pad + lineH, item.desc,
-          { fontFamily: 'Arial', fontSize: '13px', color: '#aaccbb',
-            wordWrap: { width: tw - pad * 2 } })
-          .setOrigin(0, 0).setDepth(301)
-      );
-    }
-
-    // 사용 버튼
-    const btnY = ty + th - pad - btnH / 2;
-    const btn = scene.add.rectangle(tx + tw / 2, btnY, tw - pad * 2, btnH, 0x1a5533)
-      .setDepth(301).setStrokeStyle(1, 0x44dd88).setInteractive();
-    const btnTxt = scene.add.text(tx + tw / 2, btnY, '사 용',
-      { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#aaffaa' })
-      .setOrigin(0.5).setDepth(302);
-    btn.on('pointerdown', () => { this._clearTip(); onUse(); });
-    btn.on('pointerover',  () => btn.setFillStyle(0x2a7744));
-    btn.on('pointerout',   () => btn.setFillStyle(0x1a5533));
-    this._tipObjs.push(btn, btnTxt);
   }
 
   // ── REMOVE 존 표시/숨김 ─────────────────────────────────────────────────
@@ -260,7 +218,6 @@ export class ItemUI {
 
         this._relicObjs[relic.id] = { objs: visObjs, baseCX: cx, baseCY: cy };
 
-        // hit area (hover + lazy drag + tap-to-tip)
         const hit = this._add(
           scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0xffffff, 0)
             .setDepth(D + 2).setInteractive()
@@ -279,7 +236,6 @@ export class ItemUI {
           if (!this._tipPinned) this._clearTip();
         });
 
-        // pointerdown: lazy drag (canRemoveRelic) or just tap detection
         hit.on('pointerdown', (pointer) => {
           if (this._isDragging) return;
           const startX = pointer.x, startY = pointer.y;
@@ -301,7 +257,6 @@ export class ItemUI {
             scene.input.off('pointermove', onMove);
             scene.input.off('pointerup',   onUpCheck);
             if (!moved) {
-              // 탭: 툴팁 토글
               if (this._tipPinned && this._pinnedId === relicId) {
                 this._clearTip();
               } else {
@@ -380,10 +335,10 @@ export class ItemUI {
         scene.add.rectangle(cx, cy, ITM_SZ, ITM_SZ, 0x0c1a10).setDepth(D)
       );
 
-      const imgKey  = `item_${item.id}`;
-      const useKey  = scene.textures.exists(imgKey)             ? imgKey
-                    : scene.textures.exists('item_heal_potion') ? 'item_heal_potion'
-                    : null;
+      const imgKey = `item_${item.id}`;
+      const useKey = scene.textures.exists(imgKey)             ? imgKey
+                   : scene.textures.exists('item_heal_potion') ? 'item_heal_potion'
+                   : null;
       if (useKey) {
         this._add(scene.add.image(cx, cy, useKey).setDisplaySize(ITM_IMG, ITM_IMG).setDepth(D + 1));
       } else {
@@ -408,7 +363,6 @@ export class ItemUI {
         hit.setFillStyle(0xffffff, 0);
         if (!this._tipPinned) this._clearTip();
       });
-      // 클릭: 사용 버튼 있는 툴팁 표시 (즉시 사용 대신)
       hit.on('pointerdown', () => {
         if (this._tipPinned && this._pinnedId === itemKey) {
           this._clearTip();

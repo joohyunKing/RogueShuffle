@@ -4,7 +4,8 @@
  */
 
 import { CW, CH, SUITS, RANKS } from './constants.js';
-import { sealMap, sealList, sealBorderColor } from './manager/sealManager.js';
+import { sealMap, sealList } from './manager/sealManager.js';
+import { TooltipUI } from './ui/TooltipUI.js';
 
 const SYM_URLS = {
   S: 'assets/images/symbol/spade_symbol.png',
@@ -60,7 +61,7 @@ const SUIT_SYMS_FB = { S: '♠', H: '♥', D: '♦', C: '♣' };
 // ── 씰 툴팁 관리 ─────────────────────────────────────────────────────────────
 const SUIT_COLS = { S: '#aaaaff', H: '#ff6666', D: '#ff6666', C: '#aaaaff' };
 
-let _tipObjs = [];
+let _sealTooltip = null;
 
 export class CardRenderer {
   /**
@@ -139,38 +140,32 @@ export class CardRenderer {
     const info = sealMap[enh?.type];
     if (!info) return;
 
-    const sym = SUIT_SYMS_FB[card.suit] ?? '';
-    const suitColor = SUIT_COLS[card.suit] ?? '#ffffff';
+    const sym        = SUIT_SYMS_FB[card.suit] ?? '';
+    const suitColor  = SUIT_COLS[card.suit] ?? '#ffffff';
+    const borderHex  = info.border ?? '#ffffff';
+    const TIP_W      = 190;
+    const TIP_H_EST  = 100; // 높이 추정값 (위/아래 위치 결정용)
 
-    const TIP_W = 190, LINE_H = 22, PAD = 10;
-    const TIP_H = LINE_H * 3 + PAD * 2;
+    let top = cardY - cardH / 2 - TIP_H_EST - 8;
+    if (top < 4) top = cardY + cardH / 2 + 8;
+    const left = cardX - TIP_W / 2;
 
-    let tipY = cardY - cardH / 2 - TIP_H / 2 - 8;
-    if (tipY < TIP_H / 2 + 4) tipY = cardY + cardH / 2 + TIP_H / 2 + 8;
-
-    const bg = scene.add.rectangle(cardX, tipY, TIP_W, TIP_H, 0x0a0a1a, 0.93)
-      .setDepth(depth).setStrokeStyle(1.5, sealBorderColor(enh?.type));
-    _tipObjs.push(bg);
-
-    _tipObjs.push(
-      scene.add.text(cardX, tipY - LINE_H, `${sym} ${card.rank}`,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: suitColor })
-        .setOrigin(0.5).setDepth(depth + 1),
-
-      scene.add.text(cardX, tipY, info.name,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffffff' })
-        .setOrigin(0.5).setDepth(depth + 1),
-
-      scene.add.text(cardX, tipY + LINE_H, info.desc,
-        { fontFamily: 'Arial', fontSize: '13px', color: '#cccccc' })
-        .setOrigin(0.5).setDepth(depth + 1),
-    );
+    _sealTooltip = new TooltipUI(scene, {
+      titleMsg:      `${sym} ${card.rank}  ${info.name}`,
+      contentMsg:    info.desc,
+      titleMsgColor: suitColor,
+      tooltipW:      TIP_W,
+      left,
+      top,
+      depth,
+    });
+    _sealTooltip.show();
   }
 
   /** 씰 툴팁을 제거합니다. */
   static hideSealTooltip() {
-    _tipObjs.forEach(o => { try { o?.destroy(); } catch (_) {} });
-    _tipObjs = [];
+    _sealTooltip?.hide();
+    _sealTooltip = null;
   }
 
   static preload(scene) {
