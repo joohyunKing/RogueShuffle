@@ -9,7 +9,7 @@ export function getRelicById(id) { return relicMap[id] ?? null; }
 export function getAllRelics() { return relicList; }
 export function getRelicsExcluding(ownedSet) { return relicList.filter(r => !ownedSet.has(r.id)); }
 
-const RELIC_PRICE = { common: 20, rare: 30, epic: 40 };
+const RELIC_PRICE = { common: 20, rare: 30, epic: 40, legend: 50 };
 export function getRelicPrice(relicId) {
     const relic = relicMap[relicId];
     return RELIC_PRICE[relic?.rarity] ?? RELIC_PRICE.common;

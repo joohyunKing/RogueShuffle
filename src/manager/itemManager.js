@@ -8,6 +8,12 @@ export function getItemById(id) { return itemMap[id] ?? null; }
 
 export const maxItemCount = 6;
 
+const ITEM_PRICE = { common: 5, rare: 10, epic: 15, legend: 20 };
+export function getItemPrice(itemId) {
+  const item = itemMap[itemId];
+  return ITEM_PRICE[item?.rarity] ?? ITEM_PRICE.common;
+}
+
 /**
  * 아이템 효과를 player에 적용하고 로그 메시지를 반환한다.
  * @param {object} player - Player 인스턴스
@@ -29,11 +35,11 @@ export function revertItemEffect(player, itemId) {
       player.attacksPerTurn -= eff.value;
       break;
     case 'handSize':
-      player.handSize      -= eff.value;
+      player.handSize -= eff.value;
       player.handSizeLimit -= eff.value;
       break;
     case 'fieldSize':
-      player.fieldSize      -= eff.value;
+      player.fieldSize -= eff.value;
       player.fieldSizeLimit -= eff.value;
       break;
   }

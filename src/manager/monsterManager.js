@@ -144,7 +144,7 @@ export class MonsterManager {
       return;
     }
 
-    const { totalScore: score, handName, aoe, rank: handRank } = details;
+    const { totalScore: score, handName, aoe, handRank } = details;
 
     // 봉인된 족보 차단
     if (handRank != null && scene.debuffManager.disabledHandRanks.has(handRank)) {

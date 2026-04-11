@@ -5,6 +5,7 @@
  */
 import { HAND_DATA, DEBUG_MODE } from "../constants.js";
 import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice, maxRelicCount } from './relicManager.js';
+import { getItemPrice } from './itemManager.js';
 
 // HAND_DATA에서 { multi, aoe } 만 추출한 기본 handConfig
 const DEFAULT_HAND_CONFIG = Object.fromEntries(
@@ -211,6 +212,16 @@ export class Player {
         }
         // price 환급 (1/3, 소수점 버림) — 효과 적용 후 추가
         this.gold += Math.trunc(getRelicPrice(relicId) / 3);
+    }
+
+    /**
+     * item 판매 시 골드 환급. items 배열에서 제거하기 전에 호출해야 함.
+     * @param {number} itemIdx - player.items 내 인덱스
+     */
+    applyItemOnSell(itemIdx) {
+        const item = this.items[itemIdx];
+        if (!item) return;
+        this.gold += Math.trunc(getItemPrice(item.id) / 3);
     }
 
     tryAddRelic(relicId) {

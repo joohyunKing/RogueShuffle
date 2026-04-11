@@ -256,12 +256,18 @@ export class BattleScene extends Phaser.Scene {
       panelX: IPX, panelW: IPW,
       startY: BATTLE_LOG_H,
       onItemClick: (idx) => this._useItem(idx, null),
-      onRelicRemove: (relicId) => {
+      onRelicSell: (relicId) => {
         this.player.applyRelicOnRemove(relicId);
         this.player.relics = this.player.relics.filter(id => id !== relicId);
         this.itemUI.refresh();
         this.playerUI?.refresh();
         this.playerUI?.refreshHandConfig();
+      },
+      onItemSell: (idx) => {
+        this.player.applyItemOnSell(idx);
+        this.player.items.splice(idx, 1);
+        this.itemUI.refresh();
+        this.playerUI?.refresh();
       },
     });
     this.itemUI.create();
@@ -341,28 +347,45 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // ── 딜링 애니메이션 ──────────────────────────────────────────────────────
-  startDealAnimation() {
-    this._sfx("sfx_shuffle");
+  _createDeckStack() {
     const deckX = PLAYER_PANEL_W + 50, deckY = FIELD_Y;
-
     for (let i = Math.min(8, 51); i >= 0; i--) {
       this.animObjs.push(
-        //this.add.image(deckX - i * 2, deckY - i * 2, "card_back").setDisplaySize(CW, CH).setDepth(i)
         this.add.image(deckX - i * 2, deckY - i * 2, "card_back").setDisplaySize(FIELD_CW, FIELD_CH).setDepth(i)
       );
     }
+  }
 
+  dealToHand(startDelay) {
     const handPos = this.calcHandPositions(this.player.handSize);
-    let delay = 300;
+    const deckX = PLAYER_PANEL_W + 50, deckY = FIELD_Y;
+    let delay = startDelay;
 
     this.handData.forEach((card, i) => {
       this.time.delayedCall(delay, () => this.flyCard(card, deckX, deckY, handPos[i].x, handPos[i].y));
       delay += DEAL_DELAY;
     });
-    this.fieldData.forEach(card => {
+    return delay;
+  }
+
+  dealToField(startDelay, cards = this.fieldData) {
+    const deckX = PLAYER_PANEL_W + 50, deckY = FIELD_Y;
+    let delay = startDelay;
+
+    cards.forEach(card => {
       this.time.delayedCall(delay, () => this.flyCard(card, deckX, deckY, card.slotX, FIELD_Y));
       delay += DEAL_DELAY;
     });
+    return delay;
+  }
+
+  startDealAnimation() {
+    this._sfx("sfx_shuffle");
+    this._createDeckStack();
+
+    let delay = 300;
+    delay = this.dealToHand(delay);
+    delay = this.dealToField(delay);
 
     this.time.delayedCall(delay + 550, () => {
       this.animObjs.forEach(o => o.destroy());
@@ -631,21 +654,42 @@ export class BattleScene extends Phaser.Scene {
     // fill_field: 필드를 최대치까지 덱에서 채움
     if (eff?.type === 'fill_field') {
       const maxField = this.player.fieldSize;
-      const needed = maxField - this.fieldData.length;
+      const currentCount = this.fieldData.length;
+      const needed = maxField - currentCount;
       if (needed <= 0 || this.deck.deckPile.length === 0) {
         obj?.destroy();
         this.render();
         return;
       }
-      const before = this.deck.field.length;
+
       this.deck.startTurn(needed);
-      const added = this.deck.field.length - before;
       const slotPositions = this.calcFieldPositions(maxField);
-      this.fieldData = this.deck.field.map((c, i) => ({ ...c, slotX: slotPositions[i]?.x ?? 0 }));
-      this.addBattleLog(`[${item.name}] 필드 ${added}장 보충!`);
+      
+      // 새로 추가된 데이터만 필터링해서 좌표 할당
+      const newItems = this.deck.field.slice(currentCount).map((c, i) => ({
+        ...c,
+        slotX: slotPositions[currentCount + i]?.x ?? 0
+      }));
+
+      // fieldData 업데이트
+      this.fieldData.push(...newItems);
+      this.fieldPickCount = Math.max(0, this.fieldPickCount - newItems.length);
+      this.addBattleLog(`[${item.name}] 필드 ${newItems.length}장 보충!`);
       this.player.items.splice(idx, 1);
+
+      // 애니메이션 실행
+      this.isDealing = true;
+      this._createDeckStack();
+      const finalDelay = this.dealToField(300, newItems);
+
+      this.time.delayedCall(finalDelay + 550, () => {
+        this.animObjs.forEach(o => o.destroy());
+        this.animObjs = [];
+        this.isDealing = false;
+        this.render();
+      });
+
       obj?.destroy();
-      this.render();
       return;
     }
 
