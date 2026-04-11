@@ -19,14 +19,14 @@ src/
   main.js               # FontFace 로드 → Phaser.Game 생성, 씬 등록
   constants.js          # 레이아웃 전용 상수
   save.js               # localStorage 세이브/로드 유틸
-  CardRenderer.js       # Canvas2D API로 런타임 카드 텍스처 생성 + 씰 툴팁
+  CardRenderer.js       # Canvas2D API로 런타임 카드 텍스처 생성 + 씰 툴팁(TooltipUI 사용)
   textStyles.js         # Phaser Text 스타일 상수 모음 (TS 객체)
   data/
     monster.json        # 몬스터 데이터 (name/tier/race/hp/atk/def/cost/sprite)
     boss.json           # 보스 데이터 (id/name/hp/atk/def/sprite/useYn)
     item.json           # 아이템 데이터 (id/name/img/desc/rarity/effect/useYn)
     relic.json          # 유물 데이터 (id/name/description/rarity/effects/useYn)
-    seal.json           # 씰 데이터 (id/name/desc/border/scoreBonus/goldBonus/shopLabel/img/usable)
+    seal.json           # 씰 데이터 (id/name/desc/border/scoreBonus/goldBonus/healBonus/shopLabel/img/usable)
     round.json          # 라운드 데이터 (rounds[]: round/normalCount/monsterTier/totalCost/boss)
   manager/
     roundManager.js     # RoundManager — 라운드/배틀 순서 관리
@@ -34,7 +34,7 @@ src/
     deckManager.js      # DeckManager — 덱/핸드/필드/더미 상태 관리
     itemManager.js      # 아이템 목록/맵 + applyItemEffect / revertItemEffect
     relicManager.js     # 유물 목록/맵 + getRelicById / getRelicsExcluding / getRelicPrice
-    sealManager.js      # 씰 목록/맵 + getSealTypes() / sealBorderColor()
+    sealManager.js      # 씰 목록/맵 + getSealTypes()
     effectManager.js    # 시각 이펙트 (hitExplosion 등)
     optionManager.js    # 옵션 저장/로드 (registry 기반)
   scenes/
@@ -42,19 +42,30 @@ src/
     OptionsScene.js     # BGM·SFX 볼륨 · 언어 설정
     GameScene.js        # 라우터 씬 — round/phase 따라 BattleScene or MarketScene 디스패치
     BattleScene.js      # 전투 씬 (카드 선택, 몬스터 공격, 턴 진행)
-    MarketScene.js      # 상점 씬 (아이템 구매, 라운드 클리어 후)
+    MarketScene.js      # 상점 씬 (아이템/유물 구매, 라운드 클리어 후)
   service/
     monsterService.js   # 몬스터 데이터 관리 + 스프라이트 애니메이션
     scoreService.js     # 족보 점수 계산 (calculateScore)
+  ui/
+    TooltipUI.js        # 범용 툴팁 컴포넌트 (ItemUI/MarketScene/CardRenderer에서 사용)
+    ItemUI.js           # 우측 패널: Relic + Item 렌더 (TooltipUI 사용)
+    PlayerUI.js         # 좌측 플레이어 패널
+    BattleLogUI.js      # 배틀 로그 UI
+    BossHPBarUI.js      # 보스 HP바
+    PilePopupUI.js      # 덱/더미 팝업
+    RelicPickPopup.js   # 유물 선택 팝업
+    MonsterView.js      # 몬스터 렌더 뷰
+    OptionUI.js         # 옵션 오버레이
   assets/
     fonts/              # PressStart2P-Regular.ttf
     audio/sfx/          # card-shuffle.ogg, card-fan-1.ogg, card-slide-5.ogg,
                         # card-place-1.ogg, chop.ogg, knifeSlice.ogg
     images/
       symbol/           # spade_symbol.png, hearts_symbol.png, diamonds_symbol.png, clubs_symbol.png
-                        # red_seal.png, yellow_seal.png, green_seal.png, rainbow_seal.png
+                        # red_seal.png, yellow_seal.png, green_seal.png, rainbow_seal.png, pink_seal.png
       monster/          # 몬스터 스프라이트시트 PNG (384×384 프레임, 3col)
-      item/             # 아이템 이미지 (red_portion.png, green_portion.png, scroll.png 등)
+      item/             # 아이템 이미지 (red_portion.png, green_portion.png, scroll.png,
+                        #   scroll_red.png, scroll_blue.png, scroll_green.png 등)
       bg/               # old_stone_castle.jpg (배경 — 정사각형, 가로 맞춤 하단 정렬)
       ui/               # card_back_deck.png, card_back_dummy.png, 버튼 이미지 등
 public/
@@ -204,19 +215,37 @@ deck.replenishField(size)     // 필드 보충
 ```
 - 카드 객체: `{ suit, rank, val, baseScore, key, uid, duration, enhancements }`
 - `duration: 'permanent'` — 배틀 간 유지되는 카드
-- `enhancements: [{ type: 'red'|'gold'|'green' }]` — 씰 강화 (최대 1개)
+- `enhancements: [{ type: 'red'|'gold'|'green'|'pink' }]` — 씰 강화 (최대 1개)
 
 ---
 
 ## 아이템 시스템 (data/item.json + manager/itemManager.js)
 - **구매**: MarketScene에서 gold 소모 → `player.items[]`에 추가 (uid 포함)
-- **사용**: BattleScene 아이템 패널에서 drag → 몬스터/필드/핸드 영역에 드롭 → `applyItemEffect()` 적용
-- **effect 타입**: `heal`, `maxHp`, `def`, `attacksPerTurn`, `handSize`, `fieldSize`, `attr`, `hand_multi`
+- **사용**: BattleScene 아이템 패널 클릭/드롭 → `_useItem()` 호출
+- **effect 타입** (`applyItemEffect`에서 처리):
+  - `heal`, `maxHp`, `def`, `attacksPerTurn`, `handSize`, `fieldSize`, `attr`, `hand_multi`
+- **effect 타입** (BattleScene `_useItem`에서 직접 처리 — 핸드 상태 접근 필요):
+  - `copy_hand_card` — 선택한 카드 1장 복사해서 핸드에 추가 (정확히 1장 선택 필요)
+  - `seal_hand_card` — 선택한 카드 1장에 씰 랜덤 강화 (정확히 1장, 씰 없는 카드만)
+  - `remove_hand_cards` — 선택한 카드 제거, maxCards=2 (1~2장 선택 필요)
 - `scope: 'battle'` 아이템(attacksPerTurn, handSize, fieldSize): 배틀 종료 시 `revertItemEffect()`로 되돌림
 - **hand_multi**: `player.handConfig[rank].multi += value` — 강화서 아이템이 사용하는 타입
 ```js
 import { getAllItems, getItemById, applyItemEffect, revertItemEffect, maxItemCount } from './itemManager.js';
 ```
+
+### 현재 아이템 목록 (useYn=Y)
+| id | 이름 | 이미지 | 효과 |
+|----|------|--------|------|
+| heal_potion | 치료 물약 | red_portion.png | HP +20 |
+| max_hp_up | 생명력 강화 | green_portion.png | 최대 HP +10 |
+| extra_attack | 광폭화 | — | 턴당 공격 +1 (battle) |
+| hand_expand | 패 확장 | — | 핸드 크기 +1 (battle) |
+| field_expand | 필드 확장 | — | 필드 크기 +1 (battle) |
+| copy_scroll | 복사 두루마리 | scroll_green.png | 선택 카드 1장 복사 |
+| seal_scroll | 씰 두루마리 | scroll_blue.png | 선택 카드 1장 씰 랜덤 강화 |
+| hand_remover | 제거 두루마리 | scroll_red.png | 선택 카드 1~2장 제거 |
+| scroll_* | 각 족보 강화서 | scroll.png | 해당 족보 배수 +1 |
 
 ---
 
@@ -230,18 +259,49 @@ import { getAllRelics, getRelicById, getRelicsExcluding, getRelicPrice, maxRelic
 ---
 
 ## 씰 시스템 (data/seal.json + manager/sealManager.js)
-카드 강화는 씰만 사용. MarketScene 카드 관리에서 랜덤 강화(20G).
+카드 강화는 씰만 사용. BattleScene에서 씰 두루마리 아이템으로 적용.
 
 | 씰 | 효과 | img |
 |----|------|-----|
 | red | 공격 시 +20점 | red_seal.png |
 | gold | 공격 시 +5골드 | yellow_seal.png |
 | green | 공격 시 아이템 추가 | green_seal.png |
+| pink | 공격 시 HP +5 회복 | pink_seal.png |
 | rainbow | 미구현 (usable:false) | rainbow_seal.png |
 
-- 씰 이미지 key: `seal_${id}` (PreloadScene에서 `CardRenderer.preload(scene)` 호출 시 로드)
-- `sealBorderColor(id)` — hex string `border`를 Phaser용 숫자로 변환
+- 씰 이미지 key: `seal_${id}` (`CardRenderer.preload(scene)` 호출 시 로드)
 - `getSealTypes()` — `usable:true` 인 씰 ID 배열 반환
+- 씰 효과 처리: `BattleScene._applySealEffects()` — red(점수), gold(골드), green(아이템), pink(HP회복)
+
+---
+
+## TooltipUI (src/ui/TooltipUI.js)
+범용 툴팁 컴포넌트. ItemUI, MarketScene, CardRenderer에서 사용.
+
+```js
+new TooltipUI(scene, opts)
+tip.show()                  // 렌더 (이전 것 자동 제거)
+tip.hide()                  // 오브젝트 destroy
+tip.update(partialOpts)     // opts 교체 후 즉시 재렌더
+```
+
+| 파라미터 | 기본값 | 설명 |
+|----------|--------|------|
+| `titleMsg` | 필수 | 제목 |
+| `contentMsg` | — | 본문 (없으면 생략) |
+| `titleMsgColor` | `'#ffffff'` | 제목 색 + 테두리 색 |
+| `tooltipW` | `210` | 너비 |
+| `left` | 필수 | 툴팁 좌측 X |
+| `top` | — | 툴팁 상단 Y (`centerY`와 택일) |
+| `centerY` | — | 수직 중앙 정렬 + clamp 적용 |
+| `clampMin` | `4` | centerY 사용 시 최소 top |
+| `clampMax` | `GH-10` | centerY 사용 시 최대 bottom |
+| `onUse` | — | 활성 버튼 클릭 콜백 |
+| `btnLabel` | `'사 용'` | 버튼 텍스트 |
+| `btnDisabled` | `false` | 비활성 버튼 표시 |
+| `btnDisabledMsg` | — | 비활성 버튼 클릭 시 일시 메시지 |
+| `sold` | `false` | SOLD 텍스트 표시 |
+| `depth` | `300` | 렌더 depth |
 
 ---
 
@@ -272,7 +332,7 @@ FLUSH(5) > STRAIGHT(4) > TWO_PAIR(3) > TRIPLE(2) > ONE_PAIR(1) > HIGH_CARD(0)
 | `this.deckData[]` | 남은 덱 (`deck.deckPile` 참조) |
 | `this.dummyData[]` | 버린 카드 더미 |
 | `this.monsters[]` | `{mob, hp, maxHp, atk, def, isDead, deathAnimDone}` |
-| `this.selected` | Set — 핸드 선택 인덱스 |
+| `this.selected` | Set — 핸드 선택 인덱스 (최대 5장) |
 | `this.attackCount` | 이번 턴 공격 횟수 |
 | `this.fieldPickCount` | 이번 턴 필드 픽 횟수 |
 | `this.isDealing` | 애니메이션/팝업 중 인터랙션 차단 |
@@ -286,6 +346,7 @@ create() → 딜링 애니메이션 → render()
   ↓ 플레이어 행동
   - 필드 카드 드래그 → 핸드로 이동 (fieldPickCount < fieldPickLimit)
   - 핸드 카드 클릭 → 선택/해제 → 족보 프리뷰 (미리보기 점수 = cardScore + player.atk)
+    * 핸드 선택은 최대 5장으로 제한
   - 몬스터 클릭 (족보 있을 때) → attackMonster()
       aoe=false (단일):
         → 카드 날아가기 + damaged 애니메이션
@@ -307,18 +368,17 @@ create() → 딜링 애니메이션 → render()
 > Bullseye와 Overkill은 동시에 발동하지 않음 (overkill 우선).
 > Bullseye AOE는 방어력 계산 적용됨 (`actualDmg = max(0, maxHp - target.def)`).
 
+## BattleScene — 아이템 사용 (_useItem)
+- `applyItemEffect`로 처리 불가한 타입은 `_useItem`에서 직접 처리
+- `copy_hand_card`: 선택 1장 필수 → 복사본(새 uid) 핸드에 push
+- `seal_hand_card`: 선택 1장 필수, 씰 없는 카드만 → `getSealTypes()` 랜덤 적용
+- `remove_hand_cards`: 선택 1~2장 필수 → handData에서 제거 후 dummyPile로 이동
+
 ## BattleScene — 핸드 카드 렌더
 - 기본 크기: `CW * 0.95` (9장 이상이면 `max(0.65, 8/count)` 추가 축소)
 - 선택 카드: selOffset만큼 위로 올라감
 - 족보 구성 카드: x축 진동 tween
 - hover: 1.35× 확대 tween
-
-## BattleScene — 아이템 카드 렌더
-- 크기: `80 × 116` (CW:CH와 동일 비율 ~0.69)
-- 흰 배경 + 회색 테두리
-- 상단 이름 띠: 레어도 색 (common=초록, rare=파랑, epic=보라)
-- 중앙 아이템 이미지(40×40) + 하단 desc 텍스트
-- hover: 1.3× 확대 tween
 
 ## BattleScene — BattleLog
 - 평상시: 최근 2줄 표시 (위줄 55% alpha, 아래줄 100%)
@@ -345,6 +405,16 @@ create() → 딜링 애니메이션 → render()
 
 ---
 
+## MarketScene
+- **상점 구성**: relic 5개 + item 5개 (라운드별 rarity 가중치 적용)
+- **버튼**: [카드관리] [상점갱신(5G)]
+- **카드관리 팝업**: 덱 조회 전용 (슈트별 정렬, hover 확대/씰 툴팁) — 카드 추가/강화/제거 없음
+- **카드 텍스처**: `preload()` + `create()` 초반에 `CardRenderer.createAll()` 호출
+  → CONTINUE로 MarketScene 직행 시 카드가 까맣게 되는 버그 방지
+- **툴팁**: `TooltipUI` 사용 (`_showShopTip` → `this._tooltip.update(...)`)
+
+---
+
 ## CardRenderer.js
 Canvas2D API로 52장 카드 텍스처를 런타임 생성.
 > `RenderTexture.saveTexture()` + `rt.destroy()` 조합은 텍스처가 까맣게 되는 버그 — Canvas 방식 사용.
@@ -359,8 +429,9 @@ CardRenderer.drawCard(scene, x, y, card, { width, height, depth, disabled, objs 
 // objs 배열 전달 시 생성된 오브젝트 자동 push
 
 CardRenderer.showSealTooltip(scene, card, cardX, cardY, cardH, depth)
+// TooltipUI 사용. 씰 없는 카드는 표시 안 함.
 CardRenderer.hideSealTooltip()
-CardRenderer.preload(scene)   // sym_S/H/D/C + seal_red/gold/green/rainbow 로드
+CardRenderer.preload(scene)   // sym_S/H/D/C + seal 이미지 로드
 CardRenderer.createAll(scene) // 52장 + disabled 텍스처 생성
 ```
 

@@ -143,10 +143,22 @@
       "name": "씰 두루마리",
       "img": "scroll_blue.png",
       "desc": "선택한 카드 1장에 씰 랜덤 강화",
-      "rarity": "rare",
+      "rarity": "common",
       "useYn": "Y",
       "effect": {
         "type": "seal_hand_card"
+      }
+    },
+    {
+      "id": "seal_scroll_epic",
+      "name": "강화 씰 두루마리",
+      "img": "scroll_blue_glow.png",
+      "desc": "선택한 카드 3장에 씰 랜덤 강화 (덮어씌움)",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "seal_hand_cards_multi",
+        "cards": 3
       }
     },
     {
@@ -289,6 +301,53 @@
         "type": "hand_multi",
         "handRank": 11,
         "value": 1
+      }
+    },
+    {
+      "id": "recycle_dummy",
+      "name": "회수의 물약",
+      "img": "purple_portion.png",
+      "desc": "더미 마지막 5장을 덱 상단으로 이동",
+      "rarity": "common",
+      "useYn": "Y",
+      "effect": {
+        "type": "recycle_dummy",
+        "cards": 5
+      }
+    },
+    {
+      "id": "field_refill",
+      "name": "공간의 물약",
+      "img": "blue_portion.png",
+      "desc": "필드를 최대치까지 카드로 채움",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": {
+        "type": "fill_field"
+      }
+    },
+    {
+      "id": "alchemist_crucible",
+      "name": "연금술",
+      "img": "scroll_purple.png",
+      "desc": "핸드에서 3장 선택, 랜덤 1장의 suit/rank를 나머지 2장에 덮어씌움",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "alchemist_crucible",
+        "cards": 3
+      }
+    },
+    {
+      "id": "alchemist_legend",
+      "name": "강화 연금술",
+      "img": "scroll_legend.png",
+      "desc": "핸드에서 4장 선택, 랜덤 1장의 suit/rank를 나머지 3장에 덮어씌움",
+      "rarity": "legend",
+      "useYn": "Y",
+      "effect": {
+        "type": "alchemist_crucible",
+        "cards": 4
       }
     }
   ]

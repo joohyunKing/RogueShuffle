@@ -550,6 +550,31 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
+    // seal_hand_cards_multi: 선택된 N장 모두에 씰 랜덤 강화 (덮어씌움)
+    if (eff?.type === 'seal_hand_cards_multi') {
+      const cardCount  = eff.cards ?? 3;
+      const selectedIdxs = [...this.selected];
+      if (selectedIdxs.length !== cardCount) {
+        obj?.destroy();
+        this.render();
+        return;
+      }
+      const types = getSealTypes();
+      const keys  = [];
+      selectedIdxs.forEach(i => {
+        const card = this.handData[i];
+        const type = types[Math.floor(Math.random() * types.length)];
+        card.enhancements = [{ type }];
+        keys.push(`${card.key}→${type}`);
+      });
+      this.selected.clear();
+      this.addBattleLog(`[${item.name}] ${keys.join(', ')} 씰 강화!`);
+      this.player.items.splice(idx, 1);
+      obj?.destroy();
+      this.render();
+      return;
+    }
+
     // remove_hand_cards: 선택된 카드를 최대 maxCards장 제거
     if (eff?.type === 'remove_hand_cards') {
       const maxCards = eff.maxCards ?? 2;
@@ -566,6 +591,73 @@ export class BattleScene extends Phaser.Scene {
       });
       this.selected.clear();
       this.addBattleLog(`[${item.name}] 카드 ${selectedIdxs.length}장 제거`);
+      this.player.items.splice(idx, 1);
+      obj?.destroy();
+      this.render();
+      return;
+    }
+
+    // recycle_dummy: 더미 마지막 N장을 덱 상단으로 이동
+    if (eff?.type === 'recycle_dummy') {
+      const count = eff.cards ?? 5;
+      if (this.deck.dummyPile.length === 0) {
+        obj?.destroy();
+        this.render();
+        return;
+      }
+      const actual   = Math.min(count, this.deck.dummyPile.length);
+      const recycled = this.deck.dummyPile.splice(-actual);
+      this.deck.deckPile.push(...recycled);
+      this.addBattleLog(`[${item.name}] 더미 ${actual}장 → 덱 상단!`);
+      this.player.items.splice(idx, 1);
+      obj?.destroy();
+      this.render();
+      return;
+    }
+
+    // fill_field: 필드를 최대치까지 덱에서 채움
+    if (eff?.type === 'fill_field') {
+      const maxField = this.player.fieldSize;
+      const needed   = maxField - this.fieldData.length;
+      if (needed <= 0 || this.deck.deckPile.length === 0) {
+        obj?.destroy();
+        this.render();
+        return;
+      }
+      const before = this.deck.field.length;
+      this.deck.startTurn(needed);
+      const added = this.deck.field.length - before;
+      const slotPositions = this.calcFieldPositions(maxField);
+      this.fieldData = this.deck.field.map((c, i) => ({ ...c, slotX: slotPositions[i]?.x ?? 0 }));
+      this.addBattleLog(`[${item.name}] 필드 ${added}장 보충!`);
+      this.player.items.splice(idx, 1);
+      obj?.destroy();
+      this.render();
+      return;
+    }
+
+    // alchemist_crucible: 선택한 3장 중 랜덤 1장의 suit/rank를 나머지 2장에 덮어씌움
+    if (eff?.type === 'alchemist_crucible') {
+      const cardCount = eff.cards ?? 4;
+      const selectedIdxs = [...this.selected];
+      if (selectedIdxs.length !== cardCount) {
+        obj?.destroy();
+        this.render();
+        return;
+      }
+      const srcIdx = selectedIdxs[Math.floor(Math.random() * cardCount)];
+      const src = this.handData[srcIdx];
+      for (const i of selectedIdxs) {
+        if (i === srcIdx) continue;
+        const card = this.handData[i];
+        card.suit = src.suit;
+        card.rank = src.rank;
+        card.val = src.val;
+        card.baseScore = src.baseScore;
+        card.key = src.key;
+      }
+      this.selected.clear();
+      this.addBattleLog(`[${item.name}] ${src.key} 기준으로 ${cardCount - 1}장 변환!`);
       this.player.items.splice(idx, 1);
       obj?.destroy();
       this.render();
@@ -751,7 +843,11 @@ export class BattleScene extends Phaser.Scene {
           if (!this.isDragging) {
             this.tweens.add({ targets: img, displayWidth: hoverW, displayHeight: hoverH, y: y - 8, duration: 100 });
             img.setDepth(40);
-            sealImg?.setVisible(false);
+            if (sealImg) {
+              const hSz = Math.round(Math.min(hoverW, hoverH) * 0.3);
+              this.tweens.add({ targets: sealImg, displayWidth: hSz, displayHeight: hSz, x: x + hoverW / 2 - hSz / 2 - 1, y: (y - 8) - hoverH / 2 + hSz / 2 + 1, duration: 100 });
+              sealImg.setDepth(42);
+            }
             CardRenderer.showSealTooltip(this, card, x, y, cardH);
           }
         });
@@ -759,7 +855,11 @@ export class BattleScene extends Phaser.Scene {
           if (!this.isDragging) {
             this.tweens.add({ targets: img, displayWidth: cardW, displayHeight: cardH, y, duration: 100 });
             img.setDepth(sel ? 32 : 30);
-            sealImg?.setVisible(true);
+            if (sealImg) {
+              const oSz = Math.round(Math.min(cardW, cardH) * 0.3);
+              this.tweens.add({ targets: sealImg, displayWidth: oSz, displayHeight: oSz, x: x + cardW / 2 - oSz / 2 - 1, y: y - cardH / 2 + oSz / 2 + 1, duration: 100 });
+              sealImg.setDepth(sel ? 34 : 32);
+            }
             CardRenderer.hideSealTooltip();
           }
         });

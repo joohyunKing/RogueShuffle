@@ -151,7 +151,7 @@ export class CardRenderer {
     const left = cardX - TIP_W / 2;
 
     _sealTooltip = new TooltipUI(scene, {
-      titleMsg:      `${sym} ${card.rank}  ${info.name}`,
+      titleMsg:      info.name,
       contentMsg:    info.desc,
       titleMsgColor: suitColor,
       tooltipW:      TIP_W,

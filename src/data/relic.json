@@ -448,6 +448,102 @@
           }
         }
       ]
+    },
+    {
+      "id": "straight_ring",
+      "name": "직선의 반지",
+      "description": "스트레이트 점수 2배",
+      "rarity": "rare",
+      "img": "STRAIGHT.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 2,
+          "condition": { "handRank": 6 }
+        }
+      ]
+    },
+    {
+      "id": "flush_ring",
+      "name": "흐름의 반지",
+      "description": "플러쉬 점수 2배",
+      "rarity": "rare",
+      "img": "gems_11.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 2,
+          "condition": { "handRank": 7 }
+        }
+      ]
+    },
+    {
+      "id": "full_house_ring",
+      "name": "풍요의 반지",
+      "description": "풀하우스 점수 2배",
+      "rarity": "epic",
+      "img": "gems_12.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 2,
+          "condition": { "handRank": 8 }
+        }
+      ]
+    },
+    {
+      "id": "four_ring",
+      "name": "사방의 반지",
+      "description": "포카드 점수 2배",
+      "rarity": "epic",
+      "img": "gems_12.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 2,
+          "condition": { "handRank": 9 }
+        }
+      ]
+    },
+    {
+      "id": "str_flush_ring",
+      "name": "완성의 반지",
+      "description": "스트레이트 플러쉬 점수 2배",
+      "rarity": "epic",
+      "img": "gems_12.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 2,
+          "condition": { "handRank": 10 }
+        }
+      ]
+    },
+    {
+      "id": "five_ring",
+      "name": "전설의 반지",
+      "description": "파이브카드 점수 2배",
+      "rarity": "epic",
+      "img": "gems_12.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "multiply",
+          "value": 2,
+          "condition": { "handRank": 11 }
+        }
+      ]
     }
   ]
 }

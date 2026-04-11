@@ -1,251 +1,668 @@
 {
-    "en": {
-      "hand": {
-        "HIGH_CARD": {
-          "name": "High Card",
-          "desc": "No combo (highest card only)"
-        },
-        "ONE_PAIR": {
-          "name": "Pair",
-          "desc": "2 cards of the same rank"
-        },
-        "TWO_PAIR": {
-          "name": "Two Pair",
-          "desc": "2 different pairs"
-        },
-        "TRIPLE": {
-          "name": "Three",
-          "desc": "3 cards of the same rank"
-        },
-        "STRAIGHT_DRAW": {
-          "name": "STR Draw",
-          "desc": "4 cards in sequence"
-        },
-        "FLUSH_DRAW": {
-          "name": "Flush Draw",
-          "desc": "4 cards of the same suit"
-        },
-        "STRAIGHT": {
-          "name": "Straight",
-          "desc": "5 cards in sequence"
-        },
-        "FLUSH": {
-          "name": "Flush",
-          "desc": "5 cards of the same suit"
-        },
-        "FULL_HOUSE": {
-          "name": "Full House",
-          "desc": "3 of a kind + a pair"
-        },
-        "FOUR_OF_A_KIND": {
-          "name": "Four Card",
-          "desc": "4 cards of the same rank"
-        },
-        "STRAIGHT_FLUSH": {
-          "name": "STR Flush",
-          "desc": "5 sequential cards of the same suit"
-        },
-        "FIVE_CARD": {
-          "name": "Five Card",
-          "desc": "5 cards of the same rank"
-        }
+  "en": {
+    "hand": {
+      "HIGH_CARD": {
+        "name": "High Card",
+        "desc": "No combo (highest card only)"
       },
-      "item": {
-        "heal_potion":            { "name": "Heal Potion",        "desc": "Restore 20 HP" },
-        "max_hp_up":              { "name": "Vitality Boost",     "desc": "Max HP +10" },
-        "shield":                 { "name": "Shield",             "desc": "DEF +3" },
-        "extra_attack":           { "name": "Berserk",            "desc": "Attacks per turn +1 (this battle)" },
-        "hand_expand":            { "name": "Hand Expand",        "desc": "Hand size +1 (this battle)" },
-        "field_expand":           { "name": "Field Expand",       "desc": "Field size +1 (this battle)" },
-        "suit_spade":             { "name": "Spade Boost",        "desc": "♠ Adaptation level +1" },
-        "suit_heart":             { "name": "Heart Boost",        "desc": "♥ Adaptation level +1" },
-        "suit_diamond":           { "name": "Diamond Boost",      "desc": "♦ Adaptation level +1" },
-        "suit_club":              { "name": "Club Boost",         "desc": "♣ Adaptation level +1" },
-        "copy_scroll":            { "name": "Copy Scroll",        "desc": "Copy 1 selected card to hand" },
-        "seal_scroll":            { "name": "Seal Scroll",        "desc": "Randomly enhance 1 selected card with a seal" },
-        "hand_remover":           { "name": "Remove Scroll",      "desc": "Remove selected cards (max 2)" },
-        "scroll_high_card":       { "name": "High Card Tome",     "desc": "Increase High Card multiplier by 1" },
-        "scroll_one_pair":        { "name": "Pair Tome",          "desc": "Increase Pair multiplier by 1" },
-        "scroll_triple":          { "name": "Triple Tome",        "desc": "Increase Three multiplier by 1" },
-        "scroll_two_pair":        { "name": "Two Pair Tome",      "desc": "Increase Two Pair multiplier by 1" },
-        "scroll_straight":        { "name": "Straight Tome",      "desc": "Increase Straight multiplier by 1" },
-        "scroll_flush":           { "name": "Flush Tome",         "desc": "Increase Flush multiplier by 1" },
-        "scroll_full_house":      { "name": "Full House Tome",    "desc": "Increase Full House multiplier by 1" },
-        "scroll_four_of_a_kind":  { "name": "Four Card Tome",     "desc": "Increase Four Card multiplier by 1" },
-        "scroll_straight_flush":  { "name": "STR Flush Tome",     "desc": "Increase Straight Flush multiplier by 1" },
-        "scroll_five_card":       { "name": "Five Card Tome",     "desc": "Increase Five Card multiplier by 1" }
+      "ONE_PAIR": {
+        "name": "Pair",
+        "desc": "2 cards of the same rank"
       },
-      "relic": {
-        "diamond_power":    { "name": "Diamond Power",    "desc": "+10 score per Diamond card" },
-        "heart_power":      { "name": "Heart Blessing",   "desc": "+10 score per Heart card" },
-        "spade_power":      { "name": "Spade Power",      "desc": "+10 score per Spade card" },
-        "club_power":       { "name": "Club Power",       "desc": "+10 score per Club card" },
-        "pair_a":           { "name": "Twin Ring",        "desc": "Pair score ×2" },
-        "one_eye":          { "name": "One-Eye Ring",     "desc": "High Card ×3" },
-        "triple":           { "name": "Triple Ring",      "desc": "Triple score ×2" },
-        "two_pair":         { "name": "Two Pair Ring",    "desc": "Two Pair score ×2" },
-        "avarice":          { "name": "Greed Pouch",      "desc": "+30 score if deck has 30+ cards" },
-        "straight_master":  { "name": "Straight Master",  "desc": "+60 score for Straight" },
-        "relic_g":          { "name": "Flow of Water",    "desc": "Enables Flush Draw hand (4 of same suit)" },
-        "relic_f":          { "name": "All In",           "desc": "Final score ×1.5" },
-        "pair_tornado":     { "name": "Twin Storm",       "desc": "One Pair attacks all enemies" },
-        "triple_bomb":      { "name": "Triple Bomb",      "desc": "Triple attacks all enemies" },
-        "relic_i":          { "name": "Focused Flame",    "desc": "Flush targets single enemy, multiplier ×2" },
-        "relic_j":          { "name": "Red Heart",        "desc": "Hearts and Diamonds treated as same suit" },
-        "relic_j2":         { "name": "Black Heart",      "desc": "Spades and Clubs treated as same suit" },
-        "relic_k":          { "name": "Golden Paradox",   "desc": "Gold ×2 when removed" },
-        "pair_legacy":      { "name": "Pair Legacy",      "desc": "Pair usage count ×5 bonus points" },
-        "triple_legacy":    { "name": "Triple Heritage",  "desc": "Triple usage count ×8 bonus points" },
-        "straight_legacy":  { "name": "Straight Path",    "desc": "Straight usage count ×12 bonus points" },
-        "mad_deck":         { "name": "Mad Deck",         "desc": "Score ×2.5 when 15 or fewer cards remain in deck" },
-        "battle_chronicle": { "name": "Battle Chronicle", "desc": "Total hand usage count ×3 bonus points" },
-        "empty_hand":       { "name": "Empty Hand",       "desc": "Score ×1.3 per unused hand card" },
-        "low_card_master":  { "name": "Low Power",        "desc": "Score ×2 if total card value is below 25" },
-        "full_hp_focus":    { "name": "Full HP Focus",    "desc": "Score ×2 when at full HP" }
+      "TWO_PAIR": {
+        "name": "Two Pair",
+        "desc": "2 different pairs"
       },
-      "ui": {
-        "relicStack_perHand":  "Now {pts}pts ({usage} uses)",
-        "relicStack_total":    "Now {pts}pts (total {total})"
+      "TRIPLE": {
+        "name": "Three",
+        "desc": "3 cards of the same rank"
       },
-      "playerUI": {
-        "def_lines":  ["Reduces incoming damage", "Reset to 0 at end of round"],
-        "atk_lines":  ["Added to card score", "+1 per level up"],
-        "suit_S":     ["♠ Spade",    "Reduces enemy DEF"],
-        "suit_H":     ["♥ Hearts",   "Restores your HP"],
-        "suit_D":     ["♦ Diamonds", "Increases your DEF"],
-        "suit_C":     ["♣ Clubs",    "Reduces enemy ATK"],
-        "suit_cards": "{n} × {sym} cards"
+      "STRAIGHT_DRAW": {
+        "name": "STR Draw",
+        "desc": "4 cards in sequence"
       },
-      "market": {
-        "btn_deck_mgmt":    "Deck Mgmt",
-        "btn_shop_refresh": "Refresh  ({cost}G)",
-        "msg_no_gold":      "Not enough gold!",
-        "deck_title":       "DECK  ({n} cards)"
+      "FLUSH_DRAW": {
+        "name": "Flush Draw",
+        "desc": "4 cards of the same suit"
+      },
+      "STRAIGHT": {
+        "name": "Straight",
+        "desc": "5 cards in sequence"
+      },
+      "FLUSH": {
+        "name": "Flush",
+        "desc": "5 cards of the same suit"
+      },
+      "FULL_HOUSE": {
+        "name": "Full House",
+        "desc": "3 of a kind + a pair"
+      },
+      "FOUR_OF_A_KIND": {
+        "name": "Four Card",
+        "desc": "4 cards of the same rank"
+      },
+      "STRAIGHT_FLUSH": {
+        "name": "STR Flush",
+        "desc": "5 sequential cards of the same suit"
+      },
+      "FIVE_CARD": {
+        "name": "Five Card",
+        "desc": "5 cards of the same rank"
       }
     },
-
-    "ko": {
-      "hand": {
-        "HIGH_CARD": {
-          "name": "하이카드",
-          "desc": "조합 없음 (가장 높은 카드 기준)"
-        },
-        "ONE_PAIR": {
-          "name": "페어",
-          "desc": "같은 숫자 카드 2장"
-        },
-        "TWO_PAIR": {
-          "name": "투 페어",
-          "desc": "같은 숫자 2장씩 2세트"
-        },
-        "TRIPLE": {
-          "name": "트리플",
-          "desc": "같은 숫자 카드 3장"
-        },
-        "STRAIGHT_DRAW": {
-          "name": "스트레이트Draw",
-          "desc": "숫자가 연속된 카드 4장"
-        },
-        "FLUSH_DRAW": {
-          "name": "플러시Draw",
-          "desc": "숫자가 연속된 카드 4장"
-        },
-        "STRAIGHT": {
-          "name": "스트레이트",
-          "desc": "숫자가 연속된 카드 5장"
-        },
-        "FLUSH": {
-          "name": "플러시",
-          "desc": "같은 무늬 카드 5장"
-        },
-        "FULL_HOUSE": {
-          "name": "풀하우스",
-          "desc": "트리플 + 페어 조합"
-        },
-        "FOUR_OF_A_KIND": {
-          "name": "포카드",
-          "desc": "같은 숫자 카드 4장"
-        },
-        "STRAIGHT_FLUSH": {
-          "name": "스트레이트 플러시",
-          "desc": "같은 무늬 + 연속된 5장"
-        },
-        "FIVE_CARD": {
-          "name": "파이브 카드",
-          "desc": "같은 숫자 카드 5장"
-        }
+    "item": {
+      "heal_potion": {
+        "name": "Heal Potion",
+        "desc": "Restore 20 HP"
       },
-      "item": {
-        "heal_potion":            { "name": "치료 물약",              "desc": "HP를 20 회복" },
-        "max_hp_up":              { "name": "생명력 강화",             "desc": "최대 HP +10" },
-        "shield":                 { "name": "방패",                   "desc": "DEF +3" },
-        "extra_attack":           { "name": "광폭화",                  "desc": "턴당 공격 횟수 +1 (이번 전투만)" },
-        "hand_expand":            { "name": "패 확장",                 "desc": "핸드 카드 수 +1 (이번 전투만)" },
-        "field_expand":           { "name": "필드 확장",               "desc": "필드 카드 수 +1 (이번 전투만)" },
-        "suit_spade":             { "name": "스페이드 강화",            "desc": "♠ 적응 레벨 +1" },
-        "suit_heart":             { "name": "하트 강화",               "desc": "♥ 적응 레벨 +1" },
-        "suit_diamond":           { "name": "다이아 강화",              "desc": "♦ 적응 레벨 +1" },
-        "suit_club":              { "name": "클럽 강화",               "desc": "♣ 적응 레벨 +1" },
-        "copy_scroll":            { "name": "복사 두루마리",            "desc": "선택한 카드 1장을 복사해서 핸드에 추가" },
-        "seal_scroll":            { "name": "씰 두루마리",              "desc": "선택한 카드 1장에 씰 랜덤 강화" },
-        "hand_remover":           { "name": "제거 두루마리",            "desc": "선택한 카드를 제거 (최대 2장)" },
-        "scroll_high_card":       { "name": "하이카드 강화서",          "desc": "하이카드의 배수를 1 올려줍니다" },
-        "scroll_one_pair":        { "name": "원페어 강화서",            "desc": "원페어의 배수를 1 올려줍니다" },
-        "scroll_triple":          { "name": "트리플 강화서",            "desc": "트리플의 배수를 1 올려줍니다" },
-        "scroll_two_pair":        { "name": "투페어 강화서",            "desc": "투페어의 배수를 1 올려줍니다" },
-        "scroll_straight":        { "name": "스트레이트 강화서",        "desc": "스트레이트의 배수를 1 올려줍니다" },
-        "scroll_flush":           { "name": "플러쉬 강화서",            "desc": "플러쉬의 배수를 1 올려줍니다" },
-        "scroll_full_house":      { "name": "풀하우스 강화서",          "desc": "풀하우스의 배수를 1 올려줍니다" },
-        "scroll_four_of_a_kind":  { "name": "포카드 강화서",            "desc": "포카드의 배수를 1 올려줍니다" },
-        "scroll_straight_flush":  { "name": "스트레이트 플러쉬 강화서", "desc": "스트레이트 플러쉬의 배수를 1 올려줍니다" },
-        "scroll_five_card":       { "name": "파이브카드 강화서",        "desc": "파이브카드의 배수를 1 올려줍니다" }
+      "max_hp_up": {
+        "name": "Vitality Boost",
+        "desc": "Max HP +10"
       },
-      "relic": {
-        "diamond_power":    { "name": "다이아의 힘",      "desc": "다이아 카드마다 +10 점수" },
-        "heart_power":      { "name": "하트의 축복",      "desc": "하트 카드마다 +10 점수" },
-        "spade_power":      { "name": "스페이드의 힘",    "desc": "스페이드 카드마다 +10 점수" },
-        "club_power":       { "name": "클럽의 힘",        "desc": "클럽 카드마다 +10 점수" },
-        "pair_a":           { "name": "쌍둥이 반지",      "desc": "페어 점수 2배" },
-        "one_eye":          { "name": "외눈반지",         "desc": "하이카드 3배" },
-        "triple":           { "name": "트리플",           "desc": "트리플 점수 2배" },
-        "two_pair":         { "name": "투페어",           "desc": "투페어 점수 2배" },
-        "avarice":          { "name": "탐욕의 주머니",    "desc": "덱이 30장 이상이면 +30 점수" },
-        "straight_master":  { "name": "스트레이트 장인",  "desc": "스트레이트일 경우 +60 점수" },
-        "relic_g":          { "name": "물의 흐름",        "desc": "FLUSH DRAW 패 활성화 (같은 슈트 4장)" },
-        "relic_f":          { "name": "올인",             "desc": "최종 점수 1.5배" },
-        "pair_tornado":     { "name": "쌍의 폭풍",        "desc": "원 페어로 전체 광역 공격" },
-        "triple_bomb":      { "name": "트리플 폭탄",      "desc": "트리플로 전체 광역 공격" },
-        "relic_i":          { "name": "집중의 불꽃",      "desc": "FLUSH 단일 공격, 배수 2배" },
-        "relic_j":          { "name": "붉은 심장",        "desc": "하트와 다이아를 같은 수트로 인식" },
-        "relic_j2":         { "name": "검은 심장",        "desc": "스페이드와 클로버를 같은 수트로 인식" },
-        "relic_k":          { "name": "황금의 역설",      "desc": "제거 시 보유 골드 2배" },
-        "pair_legacy":      { "name": "페어의 역사",      "desc": "페어 사용 횟수 × 5점 추가" },
-        "triple_legacy":    { "name": "트리플의 전승",    "desc": "트리플 사용 횟수 × 8점 추가" },
-        "straight_legacy":  { "name": "스트레이트의 길",  "desc": "스트레이트 사용 횟수 × 12점 추가" },
-        "mad_deck":         { "name": "광기의 덱",        "desc": "덱에 남은 카드가 15장 이하면 점수 ×2.5" },
-        "battle_chronicle": { "name": "전투 연대기",      "desc": "모든 족보 사용 횟수 합산 × 3점 추가" },
-        "empty_hand":       { "name": "빈손의 도",        "desc": "공격에 쓰지 않은 핸드 카드 1장당 점수 ×1.3" },
-        "low_card_master":  { "name": "소수의 힘",        "desc": "사용한 카드의 숫자 합이 25 미만이면 점수 ×2" },
-        "full_hp_focus":    { "name": "만피의 집중",      "desc": "현재 HP가 최대 HP와 같을 때 점수 ×2" }
+      "shield": {
+        "name": "Shield",
+        "desc": "DEF +3"
       },
-      "ui": {
-        "relicStack_perHand":  "현재 {pts}점 ({usage}회 사용)",
-        "relicStack_total":    "현재 {pts}점 (총 {total}회)"
+      "extra_attack": {
+        "name": "Berserk",
+        "desc": "Attacks per turn +1 (this battle)"
       },
-      "playerUI": {
-        "def_lines":  ["받는 피해를 감소시킵니다", "라운드 종료 시 0으로 초기화"],
-        "atk_lines":  ["카드 점수에 합산됩니다", "레벨업 시 +1 증가"],
-        "suit_S":     ["♠ Spade",    "적 DEF 감소"],
-        "suit_H":     ["♥ Hearts",   "내 HP 회복"],
-        "suit_D":     ["♦ Diamonds", "내 DEF 증가"],
-        "suit_C":     ["♣ Clubs",    "적 ATK 감소"],
-        "suit_cards": "{n} × {sym}장"
+      "hand_expand": {
+        "name": "Hand Expand",
+        "desc": "Hand size +1 (this battle)"
       },
-      "market": {
-        "btn_deck_mgmt":    "카드관리",
-        "btn_shop_refresh": "상점갱신  ({cost}G)",
-        "msg_no_gold":      "골드 부족!",
-        "deck_title":       "DECK  ({n}장)"
+      "field_expand": {
+        "name": "Field Expand",
+        "desc": "Field size +1 (this battle)"
+      },
+      "suit_spade": {
+        "name": "Spade Boost",
+        "desc": "♠ Adaptation level +1"
+      },
+      "suit_heart": {
+        "name": "Heart Boost",
+        "desc": "♥ Adaptation level +1"
+      },
+      "suit_diamond": {
+        "name": "Diamond Boost",
+        "desc": "♦ Adaptation level +1"
+      },
+      "suit_club": {
+        "name": "Club Boost",
+        "desc": "♣ Adaptation level +1"
+      },
+      "copy_scroll": {
+        "name": "Copy Scroll",
+        "desc": "Copy 1 selected card to hand"
+      },
+      "seal_scroll": {
+        "name": "Seal Scroll",
+        "desc": "Randomly enhance 1 selected card with a seal"
+      },
+      "seal_scroll_epic": {
+        "name": "Enhanced Seal Scroll",
+        "desc": "Randomly enhance 3 selected cards with seals (overwrites existing)"
+      },
+      "hand_remover": {
+        "name": "Remove Scroll",
+        "desc": "Remove selected cards (max 2)"
+      },
+      "scroll_high_card": {
+        "name": "High Card Tome",
+        "desc": "Increase High Card multiplier by 1"
+      },
+      "scroll_one_pair": {
+        "name": "Pair Tome",
+        "desc": "Increase Pair multiplier by 1"
+      },
+      "scroll_triple": {
+        "name": "Triple Tome",
+        "desc": "Increase Three multiplier by 1"
+      },
+      "scroll_two_pair": {
+        "name": "Two Pair Tome",
+        "desc": "Increase Two Pair multiplier by 1"
+      },
+      "scroll_straight": {
+        "name": "Straight Tome",
+        "desc": "Increase Straight multiplier by 1"
+      },
+      "scroll_flush": {
+        "name": "Flush Tome",
+        "desc": "Increase Flush multiplier by 1"
+      },
+      "scroll_full_house": {
+        "name": "Full House Tome",
+        "desc": "Increase Full House multiplier by 1"
+      },
+      "scroll_four_of_a_kind": {
+        "name": "Four Card Tome",
+        "desc": "Increase Four Card multiplier by 1"
+      },
+      "scroll_straight_flush": {
+        "name": "STR Flush Tome",
+        "desc": "Increase Straight Flush multiplier by 1"
+      },
+      "scroll_five_card": {
+        "name": "Five Card Tome",
+        "desc": "Increase Five Card multiplier by 1"
+      },
+      "recycle_dummy": {
+        "name": "Recycle Potion",
+        "desc": "Move the last 5 cards from the discard pile to the top of the deck"
+      },
+      "field_refill": {
+        "name": "Field Potion",
+        "desc": "Fill the field with cards up to max capacity"
+      },
+      "alchemist_crucible": {
+        "name": "Alchemist",
+        "desc": "Select 3 hand cards. Randomly copy 1 card's suit & rank to the other 2."
+      },
+      "alchemist_legend": {
+        "name": "Fortify Alchemy",
+        "desc": "Select 4 hand cards. Randomly copy 1 card's suit & rank to the other 3."
       }
+    },
+    "relic": {
+      "diamond_power": {
+        "name": "Diamond Power",
+        "desc": "+10 score per Diamond card"
+      },
+      "heart_power": {
+        "name": "Heart Blessing",
+        "desc": "+10 score per Heart card"
+      },
+      "spade_power": {
+        "name": "Spade Power",
+        "desc": "+10 score per Spade card"
+      },
+      "club_power": {
+        "name": "Club Power",
+        "desc": "+10 score per Club card"
+      },
+      "pair_a": {
+        "name": "Twin Ring",
+        "desc": "Pair score ×2"
+      },
+      "one_eye": {
+        "name": "One-Eye Ring",
+        "desc": "High Card ×3"
+      },
+      "triple": {
+        "name": "Triple Ring",
+        "desc": "Triple score ×2"
+      },
+      "two_pair": {
+        "name": "Two Pair Ring",
+        "desc": "Two Pair score ×2"
+      },
+      "avarice": {
+        "name": "Greed Pouch",
+        "desc": "+30 score if deck has 30+ cards"
+      },
+      "straight_master": {
+        "name": "Straight Master",
+        "desc": "+60 score for Straight"
+      },
+      "relic_g": {
+        "name": "Flow of Water",
+        "desc": "Enables Flush Draw hand (4 of same suit)"
+      },
+      "relic_f": {
+        "name": "All In",
+        "desc": "Final score ×1.5"
+      },
+      "pair_tornado": {
+        "name": "Twin Storm",
+        "desc": "One Pair attacks all enemies"
+      },
+      "triple_bomb": {
+        "name": "Triple Bomb",
+        "desc": "Triple attacks all enemies"
+      },
+      "relic_i": {
+        "name": "Focused Flame",
+        "desc": "Flush targets single enemy, multiplier ×2"
+      },
+      "relic_j": {
+        "name": "Red Heart",
+        "desc": "Hearts and Diamonds treated as same suit"
+      },
+      "relic_j2": {
+        "name": "Black Heart",
+        "desc": "Spades and Clubs treated as same suit"
+      },
+      "relic_k": {
+        "name": "Golden Paradox",
+        "desc": "Gold ×2 when removed"
+      },
+      "pair_legacy": {
+        "name": "Pair Legacy",
+        "desc": "Pair usage count ×5 bonus points"
+      },
+      "triple_legacy": {
+        "name": "Triple Heritage",
+        "desc": "Triple usage count ×8 bonus points"
+      },
+      "straight_legacy": {
+        "name": "Straight Path",
+        "desc": "Straight usage count ×12 bonus points"
+      },
+      "mad_deck": {
+        "name": "Mad Deck",
+        "desc": "Score ×2.5 when 15 or fewer cards remain in deck"
+      },
+      "battle_chronicle": {
+        "name": "Battle Chronicle",
+        "desc": "Total hand usage count ×3 bonus points"
+      },
+      "empty_hand": {
+        "name": "Empty Hand",
+        "desc": "Score ×1.3 per unused hand card"
+      },
+      "low_card_master": {
+        "name": "Low Power",
+        "desc": "Score ×2 if total card value is below 25"
+      },
+      "full_hp_focus": {
+        "name": "Full HP Focus",
+        "desc": "Score ×2 when at full HP"
+      },
+      "straight_ring": {
+        "name": "Straight Ring",
+        "desc": "Straight score ×2"
+      },
+      "flush_ring": {
+        "name": "Flow Ring",
+        "desc": "Flush score ×2"
+      },
+      "full_house_ring": {
+        "name": "Ring of Plenty",
+        "desc": "Full House score ×2"
+      },
+      "four_ring": {
+        "name": "Four Corners Ring",
+        "desc": "Four Card score ×2"
+      },
+      "str_flush_ring": {
+        "name": "Ring of Completion",
+        "desc": "Straight Flush score ×2"
+      },
+      "five_ring": {
+        "name": "Legendary Ring",
+        "desc": "Five Card score ×2"
+      }
+    },
+    "ui": {
+      "relicStack_perHand": "Now {pts}pts ({usage} uses)",
+      "relicStack_total": "Now {pts}pts (total {total})"
+    },
+    "playerUI": {
+      "def_lines": [
+        "Reduces incoming damage",
+        "Reset to 0 at end of round"
+      ],
+      "atk_lines": [
+        "Added to card score",
+        "+1 per level up"
+      ],
+      "suit_S": [
+        "♠ Spade",
+        "Reduces enemy DEF"
+      ],
+      "suit_H": [
+        "♥ Hearts",
+        "Restores your HP"
+      ],
+      "suit_D": [
+        "♦ Diamonds",
+        "Increases your DEF"
+      ],
+      "suit_C": [
+        "♣ Clubs",
+        "Reduces enemy ATK"
+      ],
+      "suit_cards": "{n} × {sym} cards"
+    },
+    "market": {
+      "btn_deck_mgmt": "Deck Mgmt",
+      "btn_shop_refresh": "Refresh  ({cost}G)",
+      "msg_no_gold": "Not enough gold!",
+      "deck_title": "DECK  ({n} cards)"
+    }
+  },
+  "ko": {
+    "hand": {
+      "HIGH_CARD": {
+        "name": "하이카드",
+        "desc": "조합 없음 (가장 높은 카드 기준)"
+      },
+      "ONE_PAIR": {
+        "name": "페어",
+        "desc": "같은 숫자 카드 2장"
+      },
+      "TWO_PAIR": {
+        "name": "투 페어",
+        "desc": "같은 숫자 2장씩 2세트"
+      },
+      "TRIPLE": {
+        "name": "트리플",
+        "desc": "같은 숫자 카드 3장"
+      },
+      "STRAIGHT_DRAW": {
+        "name": "스트레이트Draw",
+        "desc": "숫자가 연속된 카드 4장"
+      },
+      "FLUSH_DRAW": {
+        "name": "플러시Draw",
+        "desc": "숫자가 연속된 카드 4장"
+      },
+      "STRAIGHT": {
+        "name": "스트레이트",
+        "desc": "숫자가 연속된 카드 5장"
+      },
+      "FLUSH": {
+        "name": "플러시",
+        "desc": "같은 무늬 카드 5장"
+      },
+      "FULL_HOUSE": {
+        "name": "풀하우스",
+        "desc": "트리플 + 페어 조합"
+      },
+      "FOUR_OF_A_KIND": {
+        "name": "포카드",
+        "desc": "같은 숫자 카드 4장"
+      },
+      "STRAIGHT_FLUSH": {
+        "name": "스트레이트 플러시",
+        "desc": "같은 무늬 + 연속된 5장"
+      },
+      "FIVE_CARD": {
+        "name": "파이브 카드",
+        "desc": "같은 숫자 카드 5장"
+      }
+    },
+    "item": {
+      "heal_potion": {
+        "name": "치료 물약",
+        "desc": "HP를 20 회복"
+      },
+      "max_hp_up": {
+        "name": "생명력 강화",
+        "desc": "최대 HP +10"
+      },
+      "shield": {
+        "name": "방패",
+        "desc": "DEF +3"
+      },
+      "extra_attack": {
+        "name": "광폭화",
+        "desc": "턴당 공격 횟수 +1 (이번 전투만)"
+      },
+      "hand_expand": {
+        "name": "패 확장",
+        "desc": "핸드 카드 수 +1 (이번 전투만)"
+      },
+      "field_expand": {
+        "name": "필드 확장",
+        "desc": "필드 카드 수 +1 (이번 전투만)"
+      },
+      "suit_spade": {
+        "name": "스페이드 강화",
+        "desc": "♠ 적응 레벨 +1"
+      },
+      "suit_heart": {
+        "name": "하트 강화",
+        "desc": "♥ 적응 레벨 +1"
+      },
+      "suit_diamond": {
+        "name": "다이아 강화",
+        "desc": "♦ 적응 레벨 +1"
+      },
+      "suit_club": {
+        "name": "클럽 강화",
+        "desc": "♣ 적응 레벨 +1"
+      },
+      "copy_scroll": {
+        "name": "복사 두루마리",
+        "desc": "선택한 카드 1장을 복사해서 핸드에 추가"
+      },
+      "seal_scroll": {
+        "name": "씰 두루마리",
+        "desc": "선택한 카드 1장에 씰 랜덤 강화"
+      },
+      "seal_scroll_epic": {
+        "name": "강화 씰 두루마리",
+        "desc": "선택한 카드 3장에 씰 랜덤 강화 (덮어씌움)"
+      },
+      "hand_remover": {
+        "name": "제거 두루마리",
+        "desc": "선택한 카드를 제거 (최대 2장)"
+      },
+      "scroll_high_card": {
+        "name": "하이카드 강화서",
+        "desc": "하이카드의 배수를 1 올려줍니다"
+      },
+      "scroll_one_pair": {
+        "name": "원페어 강화서",
+        "desc": "원페어의 배수를 1 올려줍니다"
+      },
+      "scroll_triple": {
+        "name": "트리플 강화서",
+        "desc": "트리플의 배수를 1 올려줍니다"
+      },
+      "scroll_two_pair": {
+        "name": "투페어 강화서",
+        "desc": "투페어의 배수를 1 올려줍니다"
+      },
+      "scroll_straight": {
+        "name": "스트레이트 강화서",
+        "desc": "스트레이트의 배수를 1 올려줍니다"
+      },
+      "scroll_flush": {
+        "name": "플러쉬 강화서",
+        "desc": "플러쉬의 배수를 1 올려줍니다"
+      },
+      "scroll_full_house": {
+        "name": "풀하우스 강화서",
+        "desc": "풀하우스의 배수를 1 올려줍니다"
+      },
+      "scroll_four_of_a_kind": {
+        "name": "포카드 강화서",
+        "desc": "포카드의 배수를 1 올려줍니다"
+      },
+      "scroll_straight_flush": {
+        "name": "스트레이트 플러쉬 강화서",
+        "desc": "스트레이트 플러쉬의 배수를 1 올려줍니다"
+      },
+      "scroll_five_card": {
+        "name": "파이브카드 강화서",
+        "desc": "파이브카드의 배수를 1 올려줍니다"
+      },
+      "recycle_dummy": {
+        "name": "회수의 물약",
+        "desc": "더미 마지막 5장을 덱 상단으로 이동"
+      },
+      "field_refill": {
+        "name": "공간의 물약",
+        "desc": "필드를 최대치까지 카드로 채움"
+      },
+      "alchemist_crucible": {
+        "name": "연금술",
+        "desc": "핸드에서 3장 선택, 랜덤 1장의 suit/rank를 나머지 2장에 덮어씌움"
+      },
+      "alchemist_legend": {
+        "name": "강화 연금술",
+        "desc": "핸드에서 4장 선택, 랜덤 1장의 suit/rank를 나머지 3장에 덮어씌움"
+      }
+    },
+    "relic": {
+      "diamond_power": {
+        "name": "다이아의 힘",
+        "desc": "다이아 카드마다 +10 점수"
+      },
+      "heart_power": {
+        "name": "하트의 축복",
+        "desc": "하트 카드마다 +10 점수"
+      },
+      "spade_power": {
+        "name": "스페이드의 힘",
+        "desc": "스페이드 카드마다 +10 점수"
+      },
+      "club_power": {
+        "name": "클럽의 힘",
+        "desc": "클럽 카드마다 +10 점수"
+      },
+      "pair_a": {
+        "name": "쌍둥이 반지",
+        "desc": "페어 점수 2배"
+      },
+      "one_eye": {
+        "name": "외눈반지",
+        "desc": "하이카드 3배"
+      },
+      "triple": {
+        "name": "트리플",
+        "desc": "트리플 점수 2배"
+      },
+      "two_pair": {
+        "name": "투페어",
+        "desc": "투페어 점수 2배"
+      },
+      "avarice": {
+        "name": "탐욕의 주머니",
+        "desc": "덱이 30장 이상이면 +30 점수"
+      },
+      "straight_master": {
+        "name": "스트레이트 장인",
+        "desc": "스트레이트일 경우 +60 점수"
+      },
+      "relic_g": {
+        "name": "물의 흐름",
+        "desc": "FLUSH DRAW 패 활성화 (같은 슈트 4장)"
+      },
+      "relic_f": {
+        "name": "올인",
+        "desc": "최종 점수 1.5배"
+      },
+      "pair_tornado": {
+        "name": "쌍의 폭풍",
+        "desc": "원 페어로 전체 광역 공격"
+      },
+      "triple_bomb": {
+        "name": "트리플 폭탄",
+        "desc": "트리플로 전체 광역 공격"
+      },
+      "relic_i": {
+        "name": "집중의 불꽃",
+        "desc": "FLUSH 단일 공격, 배수 2배"
+      },
+      "relic_j": {
+        "name": "붉은 심장",
+        "desc": "하트와 다이아를 같은 수트로 인식"
+      },
+      "relic_j2": {
+        "name": "검은 심장",
+        "desc": "스페이드와 클로버를 같은 수트로 인식"
+      },
+      "relic_k": {
+        "name": "황금의 역설",
+        "desc": "제거 시 보유 골드 2배"
+      },
+      "pair_legacy": {
+        "name": "페어의 역사",
+        "desc": "페어 사용 횟수 × 5점 추가"
+      },
+      "triple_legacy": {
+        "name": "트리플의 전승",
+        "desc": "트리플 사용 횟수 × 8점 추가"
+      },
+      "straight_legacy": {
+        "name": "스트레이트의 길",
+        "desc": "스트레이트 사용 횟수 × 12점 추가"
+      },
+      "mad_deck": {
+        "name": "광기의 덱",
+        "desc": "덱에 남은 카드가 15장 이하면 점수 ×2.5"
+      },
+      "battle_chronicle": {
+        "name": "전투 연대기",
+        "desc": "모든 족보 사용 횟수 합산 × 3점 추가"
+      },
+      "empty_hand": {
+        "name": "빈손의 도",
+        "desc": "공격에 쓰지 않은 핸드 카드 1장당 점수 ×1.3"
+      },
+      "low_card_master": {
+        "name": "소수의 힘",
+        "desc": "사용한 카드의 숫자 합이 25 미만이면 점수 ×2"
+      },
+      "full_hp_focus": {
+        "name": "만피의 집중",
+        "desc": "현재 HP가 최대 HP와 같을 때 점수 ×2"
+      },
+      "straight_ring": {
+        "name": "직선의 반지",
+        "desc": "스트레이트 점수 2배"
+      },
+      "flush_ring": {
+        "name": "흐름의 반지",
+        "desc": "플러쉬 점수 2배"
+      },
+      "full_house_ring": {
+        "name": "풍요의 반지",
+        "desc": "풀하우스 점수 2배"
+      },
+      "four_ring": {
+        "name": "사방의 반지",
+        "desc": "포카드 점수 2배"
+      },
+      "str_flush_ring": {
+        "name": "완성의 반지",
+        "desc": "스트레이트 플러쉬 점수 2배"
+      },
+      "five_ring": {
+        "name": "전설의 반지",
+        "desc": "파이브카드 점수 2배"
+      }
+    },
+    "ui": {
+      "relicStack_perHand": "현재 {pts}점 ({usage}회 사용)",
+      "relicStack_total": "현재 {pts}점 (총 {total}회)"
+    },
+    "playerUI": {
+      "def_lines": [
+        "받는 피해를 감소시킵니다",
+        "라운드 종료 시 0으로 초기화"
+      ],
+      "atk_lines": [
+        "카드 점수에 합산됩니다",
+        "레벨업 시 +1 증가"
+      ],
+      "suit_S": [
+        "♠ Spade",
+        "적 DEF 감소"
+      ],
+      "suit_H": [
+        "♥ Hearts",
+        "내 HP 회복"
+      ],
+      "suit_D": [
+        "♦ Diamonds",
+        "내 DEF 증가"
+      ],
+      "suit_C": [
+        "♣ Clubs",
+        "적 ATK 감소"
+      ],
+      "suit_cards": "{n} × {sym}장"
+    },
+    "market": {
+      "btn_deck_mgmt": "카드관리",
+      "btn_shop_refresh": "상점갱신  ({cost}G)",
+      "msg_no_gold": "골드 부족!",
+      "deck_title": "DECK  ({n}장)"
     }
   }
+}

@@ -4,8 +4,8 @@ import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
 import { TooltipUI } from "./TooltipUI.js";
 import { getLang, getRelicName, getRelicDesc, getItemName, getItemDesc, getUiText } from "../service/langService.js";
 
-const RARITY_STRIP  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
-const RARITY_COLOR  = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
+const RARITY_STRIP  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa, legend: 0xaa8822 };
+const RARITY_COLOR  = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff', legend: '#ffdd44' };
 
 /**
  * ItemUI — 우측 패널: Relic(위) + Item(아래)

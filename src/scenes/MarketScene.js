@@ -13,21 +13,23 @@ import { TooltipUI } from '../ui/TooltipUI.js';
 import { roundManager } from '../manager/roundManager.js';
 import { getLang, getItemName, getItemDesc, getRelicName, getRelicDesc, getMarket } from '../service/langService.js';
 
-// 라운드별 rarity 확률 (round 1: common 60/rare 30/epic 10, round 10: common 20/rare 50/epic 30)
+// 라운드별 rarity 확률 (round 1: common 60/rare 30/epic 10, round 10: common 20/rare 45/epic 27/legend 8)
 function getRarityWeights(round) {
   const t = Math.min(Math.max((round - 1) / 9, 0), 1); // 0(1라운드) ~ 1(10라운드)
   return {
     common: Math.round(60 - 40 * t),  // 60 → 20
-    rare: Math.round(30 + 20 * t),  // 30 → 50
-    epic: Math.round(10 + 20 * t),  // 10 → 30
+    rare:   Math.round(30 + 15 * t),  // 30 → 45
+    epic:   Math.round(10 + 17 * t),  // 10 → 27
+    legend: Math.round(0  +  8 * t),  //  0 →  8
   };
 }
-const ITEM_PRICE = { common: 5, rare: 10, epic: 15 };
-const RELIC_PRICE = { common: 20, rare: 30, epic: 40 };
+const ITEM_PRICE  = { common: 5, rare: 10, epic: 15, legend: 20 };
+const RELIC_PRICE = { common: 20, rare: 30, epic: 40, legend: 50 };
 const RARITY_COLORS = {
   common: { bg: 0x1a3a22, label: '#aaffaa' },
-  rare: { bg: 0x1a2a4a, label: '#aaaaff' },
-  epic: { bg: 0x2a1a3a, label: '#cc88ff' },
+  rare:   { bg: 0x1a2a4a, label: '#aaaaff' },
+  epic:   { bg: 0x2a1a3a, label: '#cc88ff' },
+  legend: { bg: 0x2a1e00, label: '#ffdd44' },
 };
 
 // 레이아웃 상수
