@@ -1,28 +1,22 @@
 import { PLAYER_PANEL_W, GH, HAND_DATA } from "../constants.js";
 import { TS } from "../textStyles.js";
 import { getRequiredExp } from "../manager/playerManager.js";
-import langData from "../data/lang.json";
+import { getLang, getHandName, getHandDesc, getPlayerUI } from "../service/langService.js";
 
 const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
 const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
-const SUIT_DESCS  = {
-  S: ['♠ Spade', '적 DEF 감소', 'Lv × ♠장'],
-  H: ['♥ Hearts', '내 HP 회복',  'Lv × ♥장'],
-  D: ['♦ Diamonds', '내 DEF 증가', 'Lv × ♦장'],
-  C: ['♣ Clubs',  '적 ATK 감소', 'Lv × ♣장'],
-};
 const SUIT_KEYS = ['S', 'H', 'D', 'C'];
 
-const DEF_TOOLTIP = ['DEF', '받는 피해를 감소시킵니다', '라운드 종료 시 0으로 초기화']; //, '실제 피해 = max(0, 피해 - DEF)'
-const ATK_TOOLTIP = ['ATK', '카드 점수에 합산됩니다', '레벨업 시 +1 증가'];             //, '공격력 = 카드 점수 + ATK'
+/** lang.json playerUI 섹션 가져오기 (fallback: ko) */
+const getPUI = getPlayerUI;
 
 // 높은 rank → 낮은 rank 순으로 표시
 const HAND_RANKS_DESC = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
 
-/** lang.json에서 족보 표시 이름 가져오기 */
-function getHandName(rank, lang) {
+/** 족보 rank → 표시 이름 */
+function getHandNameByRank(rank, lang) {
   const key = HAND_DATA[rank]?.key;
-  return langData[lang]?.hand?.[key]?.name ?? key ?? String(rank);
+  return getHandName(lang, key) ?? String(rank);
 }
 
 /**
@@ -153,17 +147,19 @@ export class PlayerUI {
         scene.add.rectangle(px + halfW / 2, rowY + hitH / 2, halfW, hitH, 0xffffff, 0)
           .setDepth(D + 2).setInteractive()
       );
-      defHit.on('pointerover', () => this._showTooltipAt(DEF_TOOLTIP, '#aaaadd', rowY));
+      const getDefTip = () => { const u = getPUI(getLang(scene)); return ['DEF', ...u.def_lines]; };
+      const getAtkTip = () => { const u = getPUI(getLang(scene)); return ['ATK', ...u.atk_lines]; };
+      defHit.on('pointerover', () => this._showTooltipAt(getDefTip(), '#aaaadd', rowY));
       defHit.on('pointerout',  () => this._hideTooltip());
-      defHit.on('pointerdown', () => this._showTooltipAt(DEF_TOOLTIP, '#aaaadd', rowY));
+      defHit.on('pointerdown', () => this._showTooltipAt(getDefTip(), '#aaaadd', rowY));
 
       const atkHit = this._add(
         scene.add.rectangle(PW / 2 + 4 + halfW / 2, rowY + hitH / 2, halfW, hitH, 0xffffff, 0)
           .setDepth(D + 2).setInteractive()
       );
-      atkHit.on('pointerover', () => this._showTooltipAt(ATK_TOOLTIP, '#ffdd44', rowY));
+      atkHit.on('pointerover', () => this._showTooltipAt(getAtkTip(), '#ffdd44', rowY));
       atkHit.on('pointerout',  () => this._hideTooltip());
-      atkHit.on('pointerdown', () => this._showTooltipAt(ATK_TOOLTIP, '#ffdd44', rowY));
+      atkHit.on('pointerdown', () => this._showTooltipAt(getAtkTip(), '#ffdd44', rowY));
     }
 
     ry += ROW + 6;
@@ -191,9 +187,9 @@ export class PlayerUI {
           scene.add.rectangle(hitX, sy + 10, hitW, 26, 0xffffff, 0)
             .setDepth(D + 2).setInteractive()
         );
-        rowHit.on('pointerover', () => this._showTooltip(suit, sy));
+        rowHit.on('pointerover', () => this._showTooltip(suit, sy, getLang(scene)));
         rowHit.on('pointerout',  () => this._hideTooltip());
-        rowHit.on('pointerdown', () => this._showTooltip(suit, sy));
+        rowHit.on('pointerdown', () => this._showTooltip(suit, sy, getLang(scene)));
       });
     });
 
@@ -229,7 +225,7 @@ export class PlayerUI {
       this._add(scene.add.text(px, ry, "HANDS", TS.infoLabel).setDepth(D));
       ry += lineH + 2;
 
-      const lang         = scene.registry?.get('lang') ?? 'ko';
+      const lang         = getLang(scene);
       const enabledHands = p.getEnabledHands?.() ?? new Set(HAND_RANKS_DESC);
       const effHandCfg   = p.getEffectiveHandConfig?.() ?? p.handConfig;
       HAND_RANKS_DESC.filter(rank => enabledHands.has(rank)).forEach(rank => {
@@ -239,7 +235,7 @@ export class PlayerUI {
         const nameColor    = '#aaccaa'; //Aoe 아니어도 훌륭한 hand isAoe ? '#aaccaa' : '#666666';
         const tooltipColor = '#aaccaa'; //Aoe 아니어도 훌륭한 hand isAoe ? '#aaccaa' : '#888888';
         const handKey      = HAND_DATA[rank]?.key;
-        const desc         = langData[lang]?.hand?.[handKey]?.desc ?? '';
+        const desc         = getHandDesc(lang, handKey);
 
         // 반짝 효과용 glow 배경 (fillAlpha=1, 오브젝트 alpha=0으로 초기 숨김)
         const glowBg = this._add(
@@ -247,7 +243,7 @@ export class PlayerUI {
             .setAlpha(0).setDepth(D - 1)
         );
 
-        this._add(scene.add.text(px, rowY, getHandName(rank, lang),
+        this._add(scene.add.text(px, rowY, getHandNameByRank(rank, lang),
           { ...TS.handRank, color: nameColor }).setDepth(D));
 
         const multiTxt = this._add(
@@ -266,9 +262,9 @@ export class PlayerUI {
           scene.add.rectangle(pcx, rowY + lineH / 2, PW - 16, lineH, 0xffffff, 0)
             .setDepth(D + 2).setInteractive()
         );
-        rowHit.on('pointerover', () => this._showTooltipAt([getHandName(rank, lang), desc], tooltipColor, rowY, 285));
+        rowHit.on('pointerover', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], tooltipColor, rowY, 285));
         rowHit.on('pointerout',  () => this._hideTooltip());
-        rowHit.on('pointerdown', () => this._showTooltipAt([getHandName(rank, lang), desc], tooltipColor, rowY, 285));
+        rowHit.on('pointerdown', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], tooltipColor, rowY, 285));
 
         this._handConfigRows[rank] = { multiTxt, aoeDot, glowBg };
         ry += lineH;
@@ -280,8 +276,15 @@ export class PlayerUI {
   }
 
   // ── 툴팁 (내부) ──────────────────────────────────────────────────────────
-  _showTooltip(suit, rowY) {
-    this._showTooltipAt(SUIT_DESCS[suit], SUIT_COLORS[suit], rowY);
+  _showTooltip(suit, rowY, lang = 'ko') {
+    const p       = this.player;
+    const perCard = Math.floor((p.attrs[suit] ?? 1) * (p.adaptability?.[suit] ?? 1));
+    const sym     = { S: '♠', H: '♥', D: '♦', C: '♣' }[suit];
+    const u       = getPUI(lang);
+    const [title, effect] = u[`suit_${suit}`];
+    const cardLine = (u.suit_cards ?? '{n} × {sym}장')
+      .replace('{n}', perCard).replace('{sym}', sym);
+    this._showTooltipAt([title, effect, cardLine], SUIT_COLORS[suit], rowY);
   }
 
   _showTooltipAt(lines, color, rowY, tooltipW = 210) {

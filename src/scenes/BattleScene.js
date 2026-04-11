@@ -9,7 +9,7 @@ import {
   HAND_DATA, HAND_RANK, DEBUG_MODE,
   context
 } from "../constants.js";
-import { getHandName } from "../service/langService.js";
+import { getLang, getHandName } from "../service/langService.js";
 import { relicMap as _relicMap } from "../manager/relicManager.js";
 import { sealMap, getSealTypes } from '../manager/sealManager.js';
 
@@ -1001,7 +1001,7 @@ export class BattleScene extends Phaser.Scene {
     const handRankSealed = rank != null && this.debuffManager.disabledHandRanks.has(rank);
 
     if (score > 0) {
-      const lang = this.registry?.get('lang') ?? 'ko';
+      const lang = getLang(this);
       const key = HAND_DATA[rank]?.key ?? '';
       const name = getHandName(lang, key);
 

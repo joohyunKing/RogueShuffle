@@ -1,6 +1,6 @@
 import debuffData from '../data/debuff.json';
 import { HAND_DATA } from '../constants.js';
-import { getHandName } from '../service/langService.js';
+import { getLang, getHandName } from '../service/langService.js';
 
 export { debuffData };
 export const debuffMap = Object.fromEntries(debuffData.debuffs.map(d => [d.id, d]));
@@ -151,7 +151,7 @@ export class DebuffManager {
   // ── 최다 사용 족보 봉인 (트릭스터B 1페이즈) ──────────────────────────────────
   applyMostUsedHandSeal(sourceName) {
     const { scene } = this;
-    const lang = scene.registry?.get('lang') ?? 'ko';
+    const lang = getLang(scene);
 
     this.activeDebuffs = this.activeDebuffs.filter(d => d.id !== 'seal_hand');
     this.disabledHandRanks.clear();
@@ -182,7 +182,7 @@ export class DebuffManager {
   // ── 최다 + 최근 족보 이중 봉인 (트릭스터B 2페이즈) ──────────────────────────
   applyMostAndLastHandSeal(sourceName) {
     const { scene } = this;
-    const lang = scene.registry?.get('lang') ?? 'ko';
+    const lang = getLang(scene);
 
     this.activeDebuffs = this.activeDebuffs.filter(d => d.id !== 'seal_hand');
     this.disabledHandRanks.clear();

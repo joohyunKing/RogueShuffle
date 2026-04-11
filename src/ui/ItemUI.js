@@ -2,6 +2,7 @@ import { ITEM_PANEL_W, GW, GH, BATTLE_LOG_H } from "../constants.js";
 import { TS } from "../textStyles.js";
 import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
 import { TooltipUI } from "./TooltipUI.js";
+import { getLang, getRelicName, getRelicDesc, getItemName, getItemDesc, getUiText } from "../service/langService.js";
 
 const RARITY_STRIP  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
 const RARITY_COLOR  = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
@@ -48,7 +49,7 @@ export class ItemUI {
 
   // ── 툴팁 헬퍼 ────────────────────────────────────────────────────────────
   _tipLeft() {
-    return this.opts.panelX - 210 - 8;
+    return this.opts.panelX - 273 - 8;
   }
 
   _showTip(cy, title, desc, color) {
@@ -56,7 +57,7 @@ export class ItemUI {
       titleMsg:      title,
       contentMsg:    desc || '',
       titleMsgColor: color,
-      tooltipW:      210,
+      tooltipW:      273,
       left:          this._tipLeft(),
       centerY:       cy,
       clampMin:      BATTLE_LOG_H + 4,
@@ -68,12 +69,42 @@ export class ItemUI {
     });
   }
 
+  _getLang() {
+    return getLang(this.scene);
+  }
+
+  _showRelicTip(cy, relic, color) {
+    const lang = this._getLang();
+    const stackMsg = this._getRelicStackMsg(relic, lang);
+    const desc = getRelicDesc(lang, relic.id, relic.description ?? '');
+    const fullDesc = stackMsg ? `${desc}\n${stackMsg}` : desc;
+    this._showTip(cy, getRelicName(lang, relic.id, relic.name), fullDesc, color);
+  }
+
+  _getRelicStackMsg(relic, lang) {
+    const counts = this.player?.handUseCounts ?? {};
+    for (const effect of (relic.effects ?? [])) {
+      if (effect.type === 'addPerHandUsage') {
+        const usage = counts[effect.condition?.handRank] ?? 0;
+        const pts   = usage * effect.value;
+        return getUiText(lang, 'relicStack_perHand', { pts, usage });
+      }
+      if (effect.type === 'addPerTotalHandUsage') {
+        const total = Object.values(counts).reduce((s, n) => s + n, 0);
+        const pts   = total * effect.value;
+        return getUiText(lang, 'relicStack_total', { pts, total });
+      }
+    }
+    return null;
+  }
+
   _showItemTip(cy, item, color, onUse) {
+    const lang = this._getLang();
     this._tooltip.update({
-      titleMsg:      item.name,
-      contentMsg:    item.desc || '',
+      titleMsg:      getItemName(lang, item.id, item.name),
+      contentMsg:    getItemDesc(lang, item.id, item.desc) || '',
       titleMsgColor: color,
-      tooltipW:      210,
+      tooltipW:      273,
       left:          this._tipLeft(),
       centerY:       cy,
       clampMin:      BATTLE_LOG_H + 4,
@@ -226,7 +257,7 @@ export class ItemUI {
         hit.on('pointerover', () => {
           if (this._isDragging) return;
           if (!this._tipPinned) {
-            this._showTip(cy, relic.name, relic.description, tipC);
+            this._showRelicTip(cy, relic, tipC);
             if (canRemoveRelic) hit.setFillStyle(0xff4444, 0.12);
           }
         });
@@ -262,7 +293,7 @@ export class ItemUI {
               } else {
                 this._tipPinned = true;
                 this._pinnedId  = relicId;
-                this._showTip(cy, relic.name, relic.description, tipC);
+                this._showRelicTip(cy, relic, tipC);
               }
             }
           };
@@ -356,7 +387,8 @@ export class ItemUI {
       hit.on('pointerover', () => {
         hit.setFillStyle(0xffffff, 0.12);
         if (!this._tipPinned) {
-          this._showTip(cy, item.name, item.desc ?? '', tipColor);
+          const lang = this._getLang();
+          this._showTip(cy, getItemName(lang, item.id, item.name), getItemDesc(lang, item.id, item.desc ?? ''), tipColor);
         }
       });
       hit.on('pointerout', () => {
@@ -373,7 +405,8 @@ export class ItemUI {
         if (onItemClick) {
           this._showItemTip(cy, item, tipColor, () => onItemClick(i));
         } else {
-          this._showTip(cy, item.name, item.desc ?? '', tipColor);
+          const lang = this._getLang();
+          this._showTip(cy, getItemName(lang, item.id, item.name), getItemDesc(lang, item.id, item.desc ?? ''), tipColor);
         }
       });
     });

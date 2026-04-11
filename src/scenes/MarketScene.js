@@ -11,6 +11,7 @@ import { ItemUI } from '../ui/ItemUI.js';
 import { OptionUI } from '../ui/OptionUI.js';
 import { TooltipUI } from '../ui/TooltipUI.js';
 import { roundManager } from '../manager/roundManager.js';
+import { getLang, getItemName, getItemDesc, getRelicName, getRelicDesc, getMarket } from '../service/langService.js';
 
 // 라운드별 rarity 확률 (round 1: common 60/rare 30/epic 10, round 10: common 20/rare 50/epic 30)
 function getRarityWeights(round) {
@@ -129,7 +130,7 @@ export class MarketScene extends Phaser.Scene {
   }
 
   _showShopTip(nearX, nearY, title, desc, colorHex, price, canBuy, bought, onBuy) {
-    const TIP_W = 210;
+    const TIP_W = 273;
     let left = nearX - TIP_W - 8;
     if (left < PW + 4) left = nearX + 8;
 
@@ -143,9 +144,9 @@ export class MarketScene extends Phaser.Scene {
       clampMin: 60,
       clampMax: GH - 10,
       onUse: (canBuy && !bought && onBuy) ? onBuy : undefined,
-      btnLabel: `구매  ${price}G`,
+      btnLabel: `${price}G`,
       btnDisabled: (!canBuy && !bought),
-      btnDisabledMsg: '골드 부족!',
+      btnDisabledMsg: getMarket(getLang(this)).msg_no_gold,
       sold: bought,
       depth: 300,
     });
@@ -275,8 +276,9 @@ export class MarketScene extends Phaser.Scene {
     }
 
     // 이름 (중간)
+    const lang = getLang(this);
     const nameY = top + 16 + 80 + 14;
-    this.add.text(cx, nameY, relic.name,
+    this.add.text(cx, nameY, getRelicName(lang, relic.id, relic.name),
       {
         fontFamily: "'PressStart2P',Arial", fontSize: '13px',
         color: relic.bought ? '#555555' : '#ffffff',
@@ -301,7 +303,9 @@ export class MarketScene extends Phaser.Scene {
     const hit = this.add.rectangle(cx, cy, W, H, 0xffffff, 0).setDepth(8).setInteractive();
 
     const showTip = () => {
-      this._showShopTip(cx - W / 2, cy, relic.name, relic.description ?? '',
+      this._showShopTip(cx - W / 2, cy,
+        getRelicName(lang, relic.id, relic.name),
+        getRelicDesc(lang, relic.id, relic.description ?? ''),
         rar.label, price, canBuy, relic.bought,
         canBuy ? () => this._buyRelic(idx) : null);
     };
@@ -381,8 +385,9 @@ export class MarketScene extends Phaser.Scene {
     }
 
     // 이름 (중간)
+    const lang = getLang(this);
     const nameY = top + 16 + 80 + 14;
-    this.add.text(cx, nameY, item.name,
+    this.add.text(cx, nameY, getItemName(lang, item.id, item.name),
       {
         fontFamily: "'PressStart2P',Arial", fontSize: '13px',
         color: item.bought ? '#555555' : '#ffffff',
@@ -406,7 +411,9 @@ export class MarketScene extends Phaser.Scene {
     const hit = this.add.rectangle(cx, cy, W, H, 0xffffff, 0).setDepth(8).setInteractive();
 
     const showTip = () => {
-      this._showShopTip(cx - W / 2, cy, item.name, item.desc ?? '',
+      this._showShopTip(cx - W / 2, cy,
+        getItemName(lang, item.id, item.name),
+        getItemDesc(lang, item.id, item.desc ?? ''),
         rar.label, price, canBuy, item.bought,
         canBuy ? () => this._buyItem(idx) : null);
     };
@@ -452,10 +459,12 @@ export class MarketScene extends Phaser.Scene {
     const mgmtX = CX - BTN_W / 2 - BTN_GAP / 2;
     const rfshX = CX + BTN_W / 2 + BTN_GAP / 2;
 
+    const m = getMarket(getLang(this));
+
     // 카드관리
     const mgmt = this.add.rectangle(mgmtX, btnY, BTN_W, BTN_H, 0x1a3a5a)
       .setDepth(10).setInteractive().setStrokeStyle(2, 0x4a8aaa);
-    this.add.text(mgmtX, btnY, "카드관리",
+    this.add.text(mgmtX, btnY, m.btn_deck_mgmt,
       { fontFamily: "'PressStart2P',Arial", fontSize: '12px', color: '#88ccff' })
       .setOrigin(0.5).setDepth(11);
     mgmt.on("pointerdown", () => this._showDeckPopup());
@@ -469,7 +478,7 @@ export class MarketScene extends Phaser.Scene {
     const rfshBrd = canRefresh ? 0xaa7a3a : 0x444444;
     const rfsh = this.add.rectangle(rfshX, btnY, BTN_W, BTN_H, rfshFill)
       .setDepth(10).setInteractive().setStrokeStyle(2, rfshBrd);
-    this.add.text(rfshX, btnY, `상점갱신  (${REFRESH_COST}G)`,
+    this.add.text(rfshX, btnY, m.btn_shop_refresh.replace('{cost}', REFRESH_COST),
       { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: canRefresh ? '#ffcc66' : '#555555' })
       .setOrigin(0.5).setDepth(11);
     if (canRefresh) {
@@ -538,7 +547,7 @@ export class MarketScene extends Phaser.Scene {
     // 제목
     objs.push(
       this.add.text(panelCX, panelTop + titleH / 2,
-        `덱 조회  (${cards.length}장)`,
+        getMarket(getLang(this)).deck_title.replace('{n}', cards.length),
         { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#ccffcc' })
         .setOrigin(0.5).setDepth(502)
     );
