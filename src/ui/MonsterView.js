@@ -12,8 +12,8 @@ export default class MonsterView {
 
     // ── 위치 기준 계산
     const MON_BOTTOM = 400; // battleScene 값 그대로 쓰거나 외부에서 넘겨도 좋음
-    const BAR_H = 10;
-    const STAT_H = 14;
+    const BAR_H = 14;
+    const STAT_H = 16;
 
     this.barY = MON_BOTTOM - STAT_H - 6 - BAR_H / 2;
     this.statY = MON_BOTTOM - STAT_H / 2;
@@ -43,31 +43,17 @@ export default class MonsterView {
       .setOrigin(0, 0.5)
       .setDepth(17);
 
-    this.hpText = scene.add.text(x, this.barY, '',
-      {
-        fontFamily: "'PressStart2P',Arial",
-        fontSize: '7px',
-        color: '#ffffff',
-        stroke: '#000000',
-        strokeThickness: 2
-      })
+    this.hpText = scene.add.text(x, this.barY, '', TS.monHpText)
       .setOrigin(0.5)
       .setDepth(18);
 
     // ── ATK / DEF
-    const statNumSty = {
-      fontFamily: "'PressStart2P',Arial",
-      fontSize: '8px',
-      stroke: '#000000',
-      strokeThickness: 2
-    };
-
     this.atkIcon = scene.add.image(x - 30, this.statY, "ui_sword")
       .setDisplaySize(5, 14)
       .setDepth(16);
 
     this.atkText = scene.add.text(x - 26, this.statY, '',
-      { ...statNumSty, color: '#ffaaaa' })
+      { ...TS.monStatNum, color: '#ffaaaa' })
       .setOrigin(0, 0.5)
       .setDepth(17);
 
@@ -76,7 +62,7 @@ export default class MonsterView {
       .setDepth(16);
 
     this.defText = scene.add.text(x + 14, this.statY, '',
-      { ...statNumSty, color: '#aaaaff' })
+      { ...TS.monStatNum, color: '#aaaaff' })
       .setOrigin(0, 0.5)
       .setDepth(17);
 

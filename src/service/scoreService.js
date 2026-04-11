@@ -1,24 +1,3 @@
-/*
-사용법
-
-const sample_cards = [
-    { suit: "S", rank: "A", val: 14, baseScore: 11 },
-    { suit: "D", rank: "10", val: 10, baseScore: 10 },
-    { suit: "H", rank: "10", val: 10, baseScore: 10 }
-];
-const sample_context = {
-    handRank: 2,
-    deckCount: 32,
-    cards: [],
-    relics: ["relic_a", "relic_b"],
-    debug: false
-};
-;
-
-console.log(calculateScore(sample_cards, sample_context));
-
-*/
-
 import { HAND_RANK, HAND_DATA } from "../constants.js";
 import { relicMap } from '../manager/relicManager.js';
 import { sealMap } from '../manager/sealManager.js';
@@ -137,6 +116,16 @@ function checkCondition(cond, card, ctx) {
 
     // 덱 조건
     if (cond.deckCountGte && ctx.deckCount < cond.deckCountGte) return false;
+    if (cond.deckCountLte != null && ctx.deckCount > cond.deckCountLte) return false;
+
+    // 카드 값 합 조건 (사용된 카드 기준)
+    if (cond.cardValSumLt != null) {
+        const sum = (ctx.cards ?? []).reduce((s, c) => s + (c.val ?? 0), 0);
+        if (sum >= cond.cardValSumLt) return false;
+    }
+
+    // 만피 조건
+    if (cond.isFullHp && ctx.hp !== ctx.maxHp) return false;
 
     return true;
 }
@@ -150,6 +139,25 @@ function applyEffect(score, effect, card, ctx) {
 
         case "multiply":
             return score * effect.value;
+
+        // 핸드에 남은 카드 수 × value 만큼 배수 추가 (빈손 유물)
+        case "multiplyPerHandRemaining": {
+            const remaining = ctx.handRemainingCount ?? 0;
+            if (remaining <= 0) return score;
+            return score * (1 + effect.value * remaining);
+        }
+
+        // 현재 족보 사용 횟수 × value 점수 가산 (성장형 유물, hand scope 권장)
+        case "addPerHandUsage": {
+            const usage = ctx.handUseCounts?.[ctx.handRank] ?? 0;
+            return score + usage * effect.value;
+        }
+
+        // 전체 족보 사용 횟수 합산 × value 점수 가산 (성장형 유물, final scope 권장)
+        case "addPerTotalHandUsage": {
+            const total = Object.values(ctx.handUseCounts ?? {}).reduce((s, n) => s + n, 0);
+            return score + total * effect.value;
+        }
 
         default:
             return score;

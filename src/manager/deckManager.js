@@ -134,18 +134,18 @@ export default class DeckManager {
 
     // 🔹 특정 카드 제거
     removeCardById(cardUid) {
-        this.cards.filter(card => card.uid !== cardUid);
+        this.cards = this.cards.filter(card => card.uid !== cardUid);
     }
 
     // 🔹 여러 카드 제거
     removeCardsByIds(cardUids) {
         const idSet = new Set(cardUids);
-        this.cards.filter(card => !idSet.has(card.uid));
+        this.cards = this.cards.filter(card => !idSet.has(card.uid));
     }
 
     // 🔹 조건 기반 제거
     removeCardsByCondition(conditionFn) {
-        this.cards.filter(card => !conditionFn(card));
+        this.cards = this.cards.filter(card => !conditionFn(card));
     }
     // 턴 시작. field 로 정해진 갯수
     startTurn(count = 1) {
@@ -210,35 +210,7 @@ export default class DeckManager {
         this.hand = [];
     }
 
-    log(logGb = "xxx") {
-        console.log(logGb);
-        if (logGb.indexOf("all") > -1 || logGb.indexOf("deck") > -1) {
-            console.log(" ==  deck =====");
-            for (let i = 0; i < this.deckPile.length; i++) {
-                console.log(this.deckPile[i].id);
-            }
-        }
-        if (logGb.indexOf("all") > -1 || logGb.indexOf("hand") > -1) {
-            console.log(" ==  hand =====");
-            for (let i = 0; i < this.hand.length; i++) {
-                console.log(this.hand[i].id);
-            }
-        }
-        if (logGb.indexOf("all") > -1 || logGb.indexOf("field") > -1) {
-            console.log(" ==  field =====");
-            for (let i = 0; i < this.field.length; i++) {
-                console.log(this.field[i].id);
-            }
-        }
-        if (logGb.indexOf("all") > -1 || logGb.indexOf("dummy") > -1) {
-            console.log(" ==  dummy =====");
-            for (let i = 0; i < this.dummyPile.length; i++) {
-                console.log(this.dummyPile[i].id);
-            }
-        }
-    }
-
-    // 🔹 상태 가져오기 (save용)
+// 🔹 상태 가져오기 (save용)
     getState() {
         return {
             cards: this.cards,

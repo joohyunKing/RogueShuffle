@@ -410,6 +410,12 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 드래그 ───────────────────────────────────────────────────────────────
   setupDrag() {
+    this.events.once('shutdown', () => {
+      this.input.off('dragstart');
+      this.input.off('drag');
+      this.input.off('dragend');
+    });
+
     this.input.on("dragstart", (pointer, obj) => {
       if (this.isDealing) return;
       this._sfx("sfx_slide");
@@ -930,6 +936,9 @@ export class BattleScene extends Phaser.Scene {
     context.enabledHands = this.player.getEnabledHands();
     context.suitAliases = this.player.getEffectiveSuitAliases();
     context.atk = this.player.atk;
+    context.hp = this.player.hp;
+    context.maxHp = this.player.maxHp;
+    context.handUseCounts = this.player.handUseCounts ?? {};
   }
 
   // ── 디버프 카드 여부 ─────────────────────────────────────────────────────
@@ -980,6 +989,7 @@ export class BattleScene extends Phaser.Scene {
       .map(i => this.handData[i])
       .filter(c => !this._isCardDisabled(c));
     if (activeCards.length === 0) return { score: 0, handName: "" };
+    context.handRemainingCount = this.handData.length - activeCards.length;
     return calculateScore(activeCards, context);
   }
 

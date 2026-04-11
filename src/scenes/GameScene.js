@@ -31,7 +31,11 @@ export class GameScene extends Phaser.Scene {
     const battleLog = data.battleLog ?? [];
 
     const roundData = roundManager.getRoundData(round, battleIndex);
-
+    if (!roundData) {
+      console.error(`[GameScene] roundData not found (round=${round}, battleIndex=${battleIndex})`);
+      this.scene.start('MainMenuScene');
+      return;
+    }
 
     switch (roundData.battleInfo.type) {
       case 'market':

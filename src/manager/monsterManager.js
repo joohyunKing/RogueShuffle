@@ -135,6 +135,7 @@ export class MonsterManager {
     // 점수 계산: disabled 카드 제외 (점수/슈트 효과 기여 안 함, dummy로는 버려짐)
     const selectedCards = [...scene.selected].map(i => scene.handData[i])
       .filter(c => !this._isCardDisabled(c));
+    context.handRemainingCount = scene.handData.length - selectedCards.length;
     const details = getScoreDetails(selectedCards, context);
     if (details.totalScore <= 0) return;
 

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Rogue Shuffle — 아이템 목록</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: #80cbc4;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 24px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .filter-btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid #444;
+      background: #2a2a3e;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { background: #3a3a5e; }
+    .filter-btn.active { border-color: #80cbc4; color: #80cbc4; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #16213e;
+      border-radius: 10px;
+      border: 1px solid #2a2a4e;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.15s;
+    }
+    .card:hover { transform: translateY(-2px); }
+
+    .card.common  { border-left: 4px solid #9e9e9e; }
+    .card.rare    { border-left: 4px solid #42a5f5; }
+    .card.epic    { border-left: 4px solid #ab47bc; }
+    .card.disabled { opacity: 0.4; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .img-box {
+      width: 48px;
+      height: 48px;
+      background: #0f3460;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #555;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .img-box.no-img { color: #444; font-size: 20px; }
+
+    .card-title { flex: 1; }
+    .card-name { font-size: 15px; font-weight: bold; color: #fff; }
+    .card-id   { font-size: 10px; color: #555; margin-top: 2px; }
+
+    .badge-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .badge.common   { background: #424242; color: #bbb; }
+    .badge.rare     { background: #1565c0; color: #90caf9; }
+    .badge.epic     { background: #6a1b9a; color: #ce93d8; }
+    .badge.use-y    { background: #1b5e20; color: #a5d6a7; }
+    .badge.use-n    { background: #b71c1c; color: #ef9a9a; }
+    .badge.scope    { background: #2a3a2a; color: #a5d6a7; font-size: 10px; }
+
+    .desc {
+      font-size: 13px;
+      color: #ccc;
+      line-height: 1.5;
+    }
+
+    .effect-label {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .effect-item {
+      background: #0d1b2a;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 11px;
+      color: #aaa;
+      font-family: 'Consolas', monospace;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .type-tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+      margin-right: 4px;
+      background: #1a2a3a;
+      color: #64b5f6;
+    }
+
+    .count {
+      text-align: center;
+      color: #555;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>⚗ Rogue Shuffle — 아이템 목록</h1>
+<p class="subtitle" id="subtitle">총 0개</p>
+
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">전체</button>
+  <button class="filter-btn" data-filter="common">Common</button>
+  <button class="filter-btn" data-filter="rare">Rare</button>
+  <button class="filter-btn" data-filter="epic">Epic</button>
+  <button class="filter-btn" data-filter="Y">사용 Y</button>
+  <button class="filter-btn" data-filter="N">사용 N</button>
+  <button class="filter-btn" data-filter="battle">배틀 한정</button>
+</div>
+
+<div class="grid" id="grid"></div>
+<p class="count" id="count"></p>
+
+<script>
+const IMG_BASE = './assets/images/item/';
+const HAND_RANK_NAME = {0:'HIGH_CARD',1:'ONE_PAIR',2:'TRIPLE',3:'TWO_PAIR',4:'STRAIGHT',5:'FLUSH_DRAW',6:'STRAIGHT',7:'FLUSH',8:'FULL_HOUSE',9:'FOUR_OF_A_KIND',10:'STRAIGHT_FLUSH',11:'FIVE_CARD'};
+
+let currentFilter = 'all';
+let allItems = [];
+
+function formatEffect(e) {
+  if (!e) return '(없음)';
+  const parts = [];
+  parts.push(`type: ${e.type}`);
+  if (e.value  !== undefined) parts.push(`value: ${e.value}`);
+  if (e.suit   !== undefined) parts.push(`suit: ${e.suit}`);
+  if (e.handRank !== undefined) parts.push(`handRank: ${e.handRank} (${HAND_RANK_NAME[e.handRank] ?? '?'})`);
+  if (e.maxCards !== undefined) parts.push(`maxCards: ${e.maxCards}`);
+  return parts.join('\n');
+}
+
+function render() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  const filtered = allItems.filter(item => {
+    if (currentFilter === 'all')    return true;
+    if (currentFilter === 'Y' || currentFilter === 'N') return item.useYn === currentFilter;
+    if (currentFilter === 'battle') return item.scope === 'battle';
+    return item.rarity === currentFilter;
+  });
+
+  document.getElementById('subtitle').textContent = `총 ${allItems.length}개`;
+  document.getElementById('count').textContent = `표시 중: ${filtered.length} / ${allItems.length}`;
+
+  filtered.forEach(item => {
+    const card = document.createElement('div');
+    card.className = `card ${item.rarity}${item.useYn === 'N' ? ' disabled' : ''}`;
+
+    const imgHtml = item.img
+      ? `<img src="${IMG_BASE}${item.img}" alt="${item.name}" onerror="this.parentElement.innerHTML='?'">`
+      : `<span style="font-size:22px;color:#444">?</span>`;
+
+    const scopeBadge = item.scope === 'battle'
+      ? `<span class="badge scope">배틀 한정</span>`
+      : '';
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="img-box">${imgHtml}</div>
+        <div class="card-title">
+          <div class="card-name">${item.name}</div>
+          <div class="card-id">${item.id}</div>
+        </div>
+      </div>
+      <div class="badge-row">
+        <span class="badge ${item.rarity}">${item.rarity}</span>
+        <span class="badge ${item.useYn === 'Y' ? 'use-y' : 'use-n'}">사용 ${item.useYn}</span>
+        ${scopeBadge}
+      </div>
+      <div class="desc">${item.desc}</div>
+      <div class="effect-label">Effect</div>
+      <div class="effect-item"><span class="type-tag">${item.effect?.type ?? '?'}</span>${formatEffect(item.effect)}</div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+fetch('/dev-data/item.json')
+  .then(r => r.json())
+  .then(data => {
+    allItems = data.items;
+    render();
+  })
+  .catch(err => {
+    document.getElementById('grid').innerHTML =
+      `<p style="color:#f88;grid-column:1/-1">item.json 로드 실패: ${err.message}<br>dev 서버(npm run dev)가 실행 중인지 확인하세요.</p>`;
+  });
+</script>
+</body>
+</html>

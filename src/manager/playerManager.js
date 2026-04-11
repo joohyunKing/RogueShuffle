@@ -61,10 +61,7 @@ export class Player {
         /** 보유 유물 ID 목록 (최대 9개) */
         this.relics = data.relics ?? [];
 
-        /** 테스트를 위해 시작부터 relic 부여할 경우 아래 주석 해제 */
-        //(data.relics ?? _pickStartingRelicIds(3)).slice(0, 9);
-
-        // ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
+// ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
         /** 직업 */
         this.job = data.job ?? "Magician";
         /**

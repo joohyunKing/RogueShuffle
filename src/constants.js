@@ -54,11 +54,15 @@ export const HAND_DATA = {
 
 // ─── context ──────────────────────────────────────────────────────────────
 export const context = {
-    cards: [],      // 선택된 카드
-    relics: [],     //유물
-    deckCount: 0,   //deck 남은 카드
-    dummyCount: 0,  //dummy 카드
-    handRank: 0     //족보 랭크
+    cards: [],           // 선택된 카드
+    relics: [],          // 유물
+    deckCount: 0,        // deck 남은 카드
+    dummyCount: 0,       // dummy 카드
+    handRank: 0,         // 족보 랭크
+    hp: 0,               // 플레이어 현재 HP (만피 조건용)
+    maxHp: 0,            // 플레이어 최대 HP
+    handRemainingCount: 0, // 공격에 사용되지 않은 핸드 카드 수 (빈손 조건용)
+    handUseCounts: {},     // 족보별 누적 사용 횟수 (성장형 유물용)
 };
 
 // ─── 레이아웃 (GW=1280, GH=720 기준) ─────────────────────────────────────────
