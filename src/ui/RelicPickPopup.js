@@ -36,12 +36,17 @@ export function showRelicPickPopup(scene, player, newRelicId, onDone) {
   objs.push(dim);
 
   // panel
-  const panelG = scene.add.graphics().setDepth(D + 1);
-  panelG.fillStyle(0x0d2b18);
-  panelG.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
-  panelG.lineStyle(2, 0xdd4444);
-  panelG.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
-  objs.push(panelG);
+  if (scene.textures.exists("ui_frame")) {
+    const bg = scene.add.nineslice(cx, cy, "ui_frame", 0, pw, ph, 8, 8, 8, 8)
+      .setOrigin(0.5).setDepth(D + 1);
+    objs.push(bg);
+  } else {
+    const panelG = scene.add.graphics({ lineStyle: { width: 4, color: 0x44dd88 } }).setDepth(D + 1);
+    panelG.fillStyle(0x0a1e12, 0.95);
+    panelG.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
+    panelG.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
+    objs.push(panelG);
+  }
 
   objs.push(
     scene.add.text(cx, cy - ph / 2 + 32, "RELIC FULL!", TS.clearTitle).setOrigin(0.5).setDepth(D + 2)

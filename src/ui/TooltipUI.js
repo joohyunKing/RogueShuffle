@@ -92,12 +92,18 @@ export class TooltipUI {
     }
 
     // ── 배경 ──────────────────────────────────────────────────────────────
-    const bg = scene.add.graphics().setDepth(depth);
-    bg.fillStyle(0x0a1e12, 0.97);
-    bg.fillRoundedRect(left, ty, tooltipW, tooltipH, 6);
-    bg.lineStyle(1, colorN);
-    bg.strokeRoundedRect(left, ty, tooltipW, tooltipH, 6);
-    this._objs.push(bg);
+    if (scene.textures.exists("ui_frame")) {
+      const bg = scene.add.nineslice(left, ty, "ui_frame", 0, tooltipW, tooltipH, 8, 8, 8, 8)
+        .setOrigin(0, 0).setDepth(depth);
+      this._objs.push(bg);
+    } else {
+      const bg = scene.add.graphics().setDepth(depth);
+      bg.fillStyle(0x0a1e12, 0.97);
+      bg.fillRoundedRect(left, ty, tooltipW, tooltipH, 6);
+      bg.lineStyle(1, colorN);
+      bg.strokeRoundedRect(left, ty, tooltipW, tooltipH, 6);
+      this._objs.push(bg);
+    }
 
     // ── 제목 ──────────────────────────────────────────────────────────────
     this._objs.push(

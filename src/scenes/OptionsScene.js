@@ -33,13 +33,18 @@ export class OptionsScene extends Phaser.Scene {
   }
 
   _drawBg() {
-    const g = this.add.graphics();
-    g.fillStyle(0x0d2b18);
-    g.fillRect(0, 0, GW, GH);
-    g.fillStyle(0x1a472a);
-    g.fillRoundedRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 20);
-    g.lineStyle(2, 0x2d7a3a);
-    g.strokeRoundedRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 20);
+    this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x0d2b18).setDepth(-1);
+
+    if (this.textures.exists("ui_frame")) {
+      this.add.nineslice(GW / 2, PANEL_Y + PANEL_H / 2, "ui_frame", 0, PANEL_W, PANEL_H, 8, 8, 8, 8)
+        .setOrigin(0.5).setAlpha(0.95);
+    } else {
+      const g = this.add.graphics();
+      g.fillStyle(0x1a472a);
+      g.fillRoundedRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 20);
+      g.lineStyle(2, 0x2d7a3a);
+      g.strokeRoundedRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 20);
+    }
 
     this.add.text(GW / 2, PANEL_Y + 52, "OPTIONS", TS.optTitle).setOrigin(0.5);
   }

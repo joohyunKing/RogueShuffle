@@ -188,7 +188,10 @@ export class MonsterManager {
     const removeCards = () => {
       scene.selected.clear();
       [...selectedIndices].sort((a, b) => b - a)
-        .forEach(i => { scene.dummyData.push(...scene.handData.splice(i, 1)); });
+        .forEach(i => {
+          scene._flyToDummy(handPositions[i].x, HAND_Y, "card_back");
+          scene.dummyData.push(...scene.handData.splice(i, 1));
+        });
       scene.render();
     };
 

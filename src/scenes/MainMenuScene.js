@@ -22,13 +22,18 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   _drawBg() {
-    const g = this.add.graphics();
-    g.fillStyle(0x0d2b18);
-    g.fillRect(0, 0, GW, GH);
-    g.fillStyle(0x1a472a);
-    g.fillRoundedRect(GW / 2 - 420, 80, 840, 580, 24);
-    g.lineStyle(2, 0x2d7a3a);
-    g.strokeRoundedRect(GW / 2 - 420, 80, 840, 580, 24);
+    this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x0d2b18).setDepth(-1);
+
+    if (this.textures.exists("ui_frame")) {
+      this.add.nineslice(GW / 2, 370, "ui_frame", 0, 840, 580, 8, 8, 8, 8)
+        .setOrigin(0.5).setAlpha(0.95);
+    } else {
+      const g = this.add.graphics();
+      g.fillStyle(0x1a472a);
+      g.fillRoundedRect(GW / 2 - 420, 80, 840, 580, 24);
+      g.lineStyle(2, 0x2d7a3a);
+      g.strokeRoundedRect(GW / 2 - 420, 80, 840, 580, 24);
+    }
   }
 
   _drawTitle() {

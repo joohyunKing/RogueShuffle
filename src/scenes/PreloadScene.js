@@ -38,7 +38,8 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     //card back images
-    this.load.image("card_back", "assets/images/ui/card_back.png");
+    this.load.image("card_back", "assets/images/card_back_pixel.png");
+    this.load.image("card_front_pixel", "assets/images/card_front_pixel.png");
     this.load.image("card_back_deck", "assets/images/ui/deck_rembg.png");
     this.load.image("card_back_dummy", "assets/images/ui/dummy_rembg.png");
 
@@ -108,9 +109,9 @@ export class PreloadScene extends Phaser.Scene {
     //ui
     this.load.image("ui_deck", "assets/images/ui/deck.png");
     this.load.image("ui_dummy", "assets/images/ui/dummy.png");
-    this.load.image("ui_option", "assets/images/ui/option_rembg.png");
-    this.load.image("ui_end_turn", "assets/images/ui/end_turn_rembg.png");
-    this.load.image("ui_sort", "assets/images/ui/SuitRank_rembg.png");
+    this.load.image("ui_option", "assets/images/ui/btn_gear_pixel.png");
+    this.load.image("ui_btn_long", "assets/images/ui/btn_long_pixel.png");
+    this.load.image("ui_frame", "assets/images/ui/panel_frame_pixel.png");
     this.load.image("ui_sword", "assets/images/ui/sword.png");
     this.load.image("ui_shield", "assets/images/ui/shield.png");
     this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });

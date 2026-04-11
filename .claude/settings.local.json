@@ -20,7 +20,8 @@
       "Bash(cd:*)",
       "Bash(GITHUB_ACTIONS=true npm run build)",
       "Bash(wc -l 'C:\\\\Users\\\\rundo\\\\Rogue-Shuffle\\\\src\\\\manager'/*.js)",
-      "Bash(gh run:*)"
+      "Bash(gh run:*)",
+      "Bash(wc -l /c/Users/rundo/Rogue-Shuffle/src/manager/*.js /c/Users/rundo/Rogue-Shuffle/src/ui/*.js)"
     ]
   }
 }

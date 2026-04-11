@@ -102,14 +102,23 @@ export class BattleLogUI {
     const maxLines = Math.floor((panelH - BATTLE_LOG_H - 8) / lineH);
 
     // 패널 배경
-    const g = scene.add.graphics().setDepth(500);
-    g.fillStyle(0x050e08, 0.97);
-    g.fillRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
-    g.lineStyle(1, 0x4a7055);
-    g.strokeRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
-    g.lineStyle(1, 0x2a5a38);
-    g.lineBetween(CX, BATTLE_LOG_H, CX + FAW_, BATTLE_LOG_H);
-    this._expandedBg.push(g);
+    if (scene.textures.exists("ui_frame")) {
+      const bg = scene.add.nineslice(CX, 0, "ui_frame", 0, FAW_, panelH, 8, 8, 8, 8)
+        .setOrigin(0, 0).setDepth(500);
+      this._expandedBg.push(bg);
+      
+      const sep = scene.add.rectangle(CX + 8, BATTLE_LOG_H, FAW_ - 16, 1, 0x2a5a38).setDepth(501);
+      this._expandedBg.push(sep);
+    } else {
+      const g = scene.add.graphics().setDepth(500);
+      g.fillStyle(0x050e08, 0.97);
+      g.fillRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
+      g.lineStyle(1, 0x4a7055);
+      g.strokeRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
+      g.lineStyle(1, 0x2a5a38);
+      g.lineBetween(CX, BATTLE_LOG_H, CX + FAW_, BATTLE_LOG_H);
+      this._expandedBg.push(g);
+    }
 
     this._expandedBg.push(
       scene.add.text(cx, BATTLE_LOG_H / 2, '▲ BATTLE LOG', TS.log)

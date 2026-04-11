@@ -69,11 +69,16 @@ export class PlayerUI {
     const ROW = 22;
 
     // ── 패널 배경 ──────────────────────────────────────────────────────────
-    const g = this._add(scene.add.graphics().setDepth(0));
-    g.fillStyle(0x0a1810, 0.92);
-    g.fillRect(0, 0, PW - 4, GH);
-    g.lineStyle(1, 0x2a5a38);
-    g.strokeRect(0, 0, PW - 4, GH);
+    if (scene.textures.exists("ui_frame")) {
+      this._add(scene.add.nineslice(0, 0, "ui_frame", 0, PW - 4, GH, 8, 8, 8, 8)
+        .setOrigin(0, 0).setDepth(0));
+    } else {
+      const g = this._add(scene.add.graphics().setDepth(0));
+      g.fillStyle(0x0a1810, 0.92);
+      g.fillRect(0, 0, PW - 4, GH);
+      g.lineStyle(1, 0x2a5a38);
+      g.strokeRect(0, 0, PW - 4, GH);
+    }
 
     // ── JOB ────────────────────────────────────────────────────────────────
     this._add(scene.add.text(pcx, 12, p.job.toUpperCase(), {

@@ -17,14 +17,14 @@ const SYM_URLS = {
 // 숫자 카드 pip 배치 좌표 (카드 폭/높이 비율)
 const LAYOUTS = {
   2: [[.50, .27], [.50, .73]],
-  3: [[.50, .22], [.50, .50], [.50, .78]],
-  4: [[.32, .27], [.68, .27], [.32, .73], [.68, .73]],
-  5: [[.32, .22], [.68, .22], [.50, .50], [.32, .78], [.68, .78]],
-  6: [[.32, .22], [.68, .22], [.32, .50], [.68, .50], [.32, .78], [.68, .78]],
-  7: [[.32, .20], [.68, .20], [.50, .35], [.32, .52], [.68, .52], [.32, .72], [.68, .72]],
-  8: [[.32, .18], [.68, .18], [.32, .36], [.68, .36], [.32, .55], [.68, .55], [.32, .73], [.68, .73]],
-  9: [[.32, .17], [.68, .17], [.32, .33], [.68, .33], [.50, .50], [.32, .67], [.68, .67], [.32, .83], [.68, .83]],
-  10: [[.32, .15], [.68, .15], [.50, .28], [.32, .40], [.68, .40], [.32, .60], [.68, .60], [.50, .72], [.32, .85], [.68, .85]],
+  3: [[.50, .26], [.50, .50], [.50, .74]],
+  4: [[.38, .27], [.62, .27], [.38, .73], [.62, .73]],
+  5: [[.38, .26], [.62, .26], [.50, .50], [.38, .74], [.62, .74]],
+  6: [[.38, .26], [.62, .26], [.38, .50], [.62, .50], [.38, .74], [.62, .74]],
+  7: [[.38, .24], [.62, .24], [.50, .38], [.38, .54], [.62, .54], [.38, .76], [.62, .76]],
+  8: [[.38, .24], [.62, .24], [.38, .40], [.62, .40], [.38, .60], [.62, .60], [.38, .76], [.62, .76]],
+  9: [[.38, .22], [.62, .22], [.38, .38], [.62, .38], [.50, .50], [.38, .62], [.62, .62], [.38, .78], [.62, .78]],
+  10: [[.38, .20], [.62, .20], [.50, .33], [.38, .44], [.62, .44], [.38, .56], [.62, .56], [.50, .67], [.38, .80], [.62, .80]],
 };
 
 function roundRectPath(ctx, x, y, w, h, r) {
@@ -50,10 +50,10 @@ function drawPip(ctx, symSrc, cx, cy, size, flip) {
 }
 
 function pipSize(count) {
-  if (count <= 2) return 28;
-  if (count <= 4) return 24;
-  if (count <= 7) return 20;
-  return 16;
+  if (count <= 2) return 24;
+  if (count <= 4) return 20;
+  if (count <= 7) return 16;
+  return 14;
 }
 
 const SUIT_SYMS_FB = { S: '♠', H: '♥', D: '♦', C: '♣' };
@@ -113,9 +113,11 @@ export class CardRenderer {
       const sealKey = `seal_${enh.type}`;
       if (scene.textures.exists(sealKey)) {
         const sz = Math.round(Math.min(width, height) * 0.3);
+        const offX = Math.round(width * 0.16);
+        const offY = Math.round(height * 0.14);
         sealImg = scene.add.image(
-          x + width / 2 - sz / 2 - 1,
-          y - height / 2 + sz / 2 + 1,
+          x + width / 2 - sz / 2 - offX,
+          y - height / 2 + sz / 2 + offY,
           sealKey
         ).setDisplaySize(sz, sz).setDepth(depth + 2);
         objs?.push(sealImg);
@@ -220,14 +222,9 @@ export class CardRenderer {
     const ctx = canvas.getContext('2d');
 
     // ── 배경 ──────────────────────────────────────────────────────────────
-    roundRectPath(ctx, 0, 0, W, H, 8);
-    ctx.fillStyle = '#f8f4ee';
-    ctx.fill();
-    ctx.strokeStyle = bdColor;
-    ctx.globalAlpha = 0.45;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
+    const frontSrc = scene.textures.get('card_front_pixel').getSourceImage();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(frontSrc, 0, 0, W, H);
 
     const F = "11px 'PressStart2P', Arial";
     ctx.font = F;
@@ -235,16 +232,16 @@ export class CardRenderer {
     ctx.textBaseline = 'top';
 
     // ── 좌상단 — rank + 작은 심볼 ──────────────────────────────────────
-    ctx.fillText(rank, 5, 4);
-    ctx.drawImage(symSrc, 5, 22, 14, 14);
+    ctx.fillText(rank, 16, 15);
+    ctx.drawImage(symSrc, 14, 28, 16, 16);
 
     // ── 우하단 — rank (반전) ────────────────────────────────────────────
     ctx.save();
     ctx.translate(W, H);
     ctx.rotate(Math.PI);
     ctx.textBaseline = 'top';
-    ctx.fillText(rank, 5, 4);
-    ctx.drawImage(symSrc, 5, 22, 14, 14);
+    ctx.fillText(rank, 16, 15);
+    ctx.drawImage(symSrc, 14, 28, 16, 16);
     ctx.restore();
 
     const valNum = rank === 'A' ? 1
@@ -270,7 +267,9 @@ export class CardRenderer {
       // ── J / Q / K — face card (이미지 추가 예정) ──────────────────────
       const faceColors = { J: '#1144aa', Q: '#aa1144', K: '#774400' };
       const bgCol = faceColors[rank] ?? '#334455';
-      roundRectPath(ctx, 12, 36, W - 24, H - 72, 6);
+      const offX = 22;
+      const offY = 48;
+      roundRectPath(ctx, offX, offY, W - offX * 2, H - offY * 2, 6);
       ctx.fillStyle = bgCol;
       ctx.globalAlpha = 0.18;
       ctx.fill();

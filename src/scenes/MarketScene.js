@@ -179,20 +179,25 @@ export class MarketScene extends Phaser.Scene {
     this.playerUI.create();
 
     // 헤더
-    const hg = this.add.graphics().setDepth(1);
-    hg.fillStyle(0x050e08, 0.88);
-    hg.fillRect(PW, 0, FAW, 54);
-    hg.lineStyle(1, 0x2a5a38);
-    hg.strokeRect(PW, 0, FAW, 54);
+    if (this.textures.exists("ui_frame")) {
+      this.add.nineslice(PW, 0, "ui_frame", 0, FAW, 54, 8, 8, 8, 8)
+        .setOrigin(0, 0).setDepth(1);
+    } else {
+      const hg = this.add.graphics().setDepth(1);
+      hg.fillStyle(0x050e08, 0.88);
+      hg.fillRect(PW, 0, FAW, 54);
+      hg.lineStyle(1, 0x2a5a38);
+      hg.strokeRect(PW, 0, FAW, 54);
+    }
     this.add.text(CX, 14, "MARKET", TS.marketTitle).setOrigin(0.5, 0).setDepth(10);
     this.add.text(CX, 36, `ROUND ${this.round}`, TS.marketSub).setOrigin(0.5, 0).setDepth(10);
 
     // 옵션 버튼
     if (this.textures.exists("ui_option")) {
-      const optImg = this.add.image(IPX - 58, 27, "ui_option")
-        .setDisplaySize(90, 44).setDepth(10).setInteractive();
+      const optImg = this.add.image(GW - 28, 28, "ui_option")
+        .setDisplaySize(40, 40).setDepth(10).setInteractive();
       optImg.on("pointerdown", () => this._showOptions());
-      optImg.on("pointerover", () => optImg.setTint(0xaaddff));
+      optImg.on("pointerover", () => optImg.setTint(0xcccccc));
       optImg.on("pointerout", () => optImg.clearTint());
     }
 
@@ -210,11 +215,16 @@ export class MarketScene extends Phaser.Scene {
     btn.on("pointerout", () => btn.setFillStyle(0x1a5533));
 
     // 우측 아이템 패널
-    const ig = this.add.graphics().setDepth(1);
-    ig.fillStyle(0x080f14, 0.92);
-    ig.fillRect(IPX, 0, IPW, GH);
-    ig.lineStyle(1, 0x2a4a5a);
-    ig.strokeRect(IPX, 0, IPW, GH);
+    if (this.textures.exists("ui_frame")) {
+      this.add.nineslice(IPX, 0, "ui_frame", 0, IPW, GH, 8, 8, 8, 8)
+        .setOrigin(0, 0).setDepth(1);
+    } else {
+      const ig = this.add.graphics().setDepth(1);
+      ig.fillStyle(0x080f14, 0.92);
+      ig.fillRect(IPX, 0, IPW, GH);
+      ig.lineStyle(1, 0x2a4a5a);
+      ig.strokeRect(IPX, 0, IPW, GH);
+    }
 
     this.itemUI = new ItemUI(this, this.player, {
       panelX: IPX, panelW: IPW,
@@ -236,9 +246,14 @@ export class MarketScene extends Phaser.Scene {
     const gridLeft = PW + (FAW - totalW) / 2;
     const secH = RELIC_CARD_TOP + RELIC_H - RELIC_SECTION_TOP + 10;
 
-    const secG = this.add.graphics().setDepth(2);
-    secG.fillStyle(0x050d08, 0.72);
-    secG.fillRoundedRect(PW + 8, RELIC_SECTION_TOP, FAW - 16, secH, 6);
+    if (this.textures.exists("ui_frame")) {
+      this.add.nineslice(PW + 8, RELIC_SECTION_TOP, "ui_frame", 0, FAW - 16, secH, 8, 8, 8, 8)
+        .setOrigin(0, 0).setDepth(2).setAlpha(0.72);
+    } else {
+      const secG = this.add.graphics().setDepth(2);
+      secG.fillStyle(0x050d08, 0.72);
+      secG.fillRoundedRect(PW + 8, RELIC_SECTION_TOP, FAW - 16, secH, 6);
+    }
     this.add.text(CX, RELIC_SECTION_TOP + 8, "RELICS",
       { fontFamily: "'PressStart2P',Arial", fontSize: '12px', color: '#44cc88' })
       .setOrigin(0.5, 0).setDepth(10);
@@ -343,9 +358,14 @@ export class MarketScene extends Phaser.Scene {
     const totalW = ITEM_COLS * ITEM_W + (ITEM_COLS - 1) * ITEM_GAP_X;
     const gridLeft = PW + (FAW - totalW) / 2;
 
-    const secG = this.add.graphics().setDepth(2);
-    secG.fillStyle(0x050d08, 0.72);
-    secG.fillRoundedRect(PW + 8, ITEM_SECTION_TOP, FAW - 16, secH, 6);
+    if (this.textures.exists("ui_frame")) {
+      this.add.nineslice(PW + 8, ITEM_SECTION_TOP, "ui_frame", 0, FAW - 16, secH, 8, 8, 8, 8)
+        .setOrigin(0, 0).setDepth(2).setAlpha(0.72);
+    } else {
+      const secG = this.add.graphics().setDepth(2);
+      secG.fillStyle(0x050d08, 0.72);
+      secG.fillRoundedRect(PW + 8, ITEM_SECTION_TOP, FAW - 16, secH, 6);
+    }
     this.add.text(CX, ITEM_SECTION_TOP + 6, "ITEMS",
       { fontFamily: "'PressStart2P',Arial", fontSize: '12px', color: '#44cc88' })
       .setOrigin(0.5, 0).setDepth(10);
@@ -450,9 +470,14 @@ export class MarketScene extends Phaser.Scene {
 
   // ── 카드 관리 섹션 ────────────────────────────────────────────────────────
   _drawCardMgmtSection() {
-    const secG = this.add.graphics().setDepth(2);
-    secG.fillStyle(0x050d08, 0.72);
-    secG.fillRoundedRect(PW + 8, CARD_MGMT_TOP, FAW - 16, CARD_MGMT_H, 6);
+    if (this.textures.exists("ui_frame")) {
+      this.add.nineslice(PW + 8, CARD_MGMT_TOP, "ui_frame", 0, FAW - 16, CARD_MGMT_H, 8, 8, 8, 8)
+        .setOrigin(0, 0).setDepth(2).setAlpha(0.72);
+    } else {
+      const secG = this.add.graphics().setDepth(2);
+      secG.fillStyle(0x050d08, 0.72);
+      secG.fillRoundedRect(PW + 8, CARD_MGMT_TOP, FAW - 16, CARD_MGMT_H, 6);
+    }
 
     const btnY = CARD_MGMT_TOP + CARD_MGMT_H / 2;
     const BTN_W = 170, BTN_H = 42, BTN_GAP = 14;
@@ -541,10 +566,17 @@ export class MarketScene extends Phaser.Scene {
     objs.push(dim);
 
     // 패널 배경
-    objs.push(
-      this.add.rectangle(panelCX, panelTop + panelH / 2, panelW, panelH, 0x0a1e12, 0.97)
-        .setDepth(501).setStrokeStyle(1, 0x3a7a4a)
-    );
+    if (this.textures.exists("ui_frame")) {
+      objs.push(
+        this.add.nineslice(panelCX, panelTop + panelH / 2, "ui_frame", 0, panelW, panelH, 8, 8, 8, 8)
+          .setOrigin(0.5).setDepth(501).setAlpha(0.97)
+      );
+    } else {
+      objs.push(
+        this.add.rectangle(panelCX, panelTop + panelH / 2, panelW, panelH, 0x0a1e12, 0.97)
+          .setDepth(501).setStrokeStyle(1, 0x3a7a4a)
+      );
+    }
 
     // 제목
     objs.push(
