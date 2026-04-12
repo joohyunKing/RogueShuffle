@@ -84,8 +84,7 @@
       "round": 3,
       "bg": "03_village_to_castle.jpg",
       "races": [
-        "zombie",
-        "goblin"
+        "zombie"
       ],
       "baseStat": {
         "hp": 110,
@@ -126,7 +125,7 @@
       "round": 4,
       "bg": "04_old_stone_castle.jpg",
       "races": [
-        "human"
+        "goblin"
       ],
       "baseStat": {
         "hp": 190,
@@ -167,7 +166,8 @@
       "round": 5,
       "bg": "05_old_stone_castle_2.jpg",
       "races": [
-        "undead"
+        "goblin",
+        "orc"
       ],
       "baseStat": {
         "hp": 320,
@@ -208,7 +208,8 @@
       "round": 6,
       "bg": "06_cave.jpg",
       "races": [
-        "undead"
+        "goblin",
+        "orc"
       ],
       "baseStat": {
         "hp": 550,
@@ -249,7 +250,7 @@
       "round": 7,
       "bg": "07_cave_to_hell.jpg",
       "races": [
-        "undead"
+        "human"
       ],
       "baseStat": {
         "hp": 950,
@@ -290,7 +291,7 @@
       "round": 8,
       "bg": "08_hell.jpg",
       "races": [
-        "undead"
+        "human"
       ],
       "baseStat": {
         "hp": 1600,
@@ -331,7 +332,7 @@
       "round": 9,
       "bg": "09_hell_to_space.jpg",
       "races": [
-        "undead"
+        "human"
       ],
       "baseStat": {
         "hp": 2800,
@@ -372,7 +373,7 @@
       "round": 10,
       "bg": "10_space.jpg",
       "races": [
-        "undead"
+        "human"
       ],
       "baseStat": {
         "hp": 4500,
