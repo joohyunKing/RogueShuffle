@@ -18,17 +18,17 @@ function getRarityWeights(round) {
   const t = Math.min(Math.max((round - 1) / 9, 0), 1); // 0(1라운드) ~ 1(10라운드)
   return {
     common: Math.round(60 - 40 * t),  // 60 → 20
-    rare:   Math.round(30 + 15 * t),  // 30 → 45
-    epic:   Math.round(10 + 17 * t),  // 10 → 27
-    legend: Math.round(0  +  8 * t),  //  0 →  8
+    rare: Math.round(30 + 15 * t),  // 30 → 45
+    epic: Math.round(10 + 17 * t),  // 10 → 27
+    legend: Math.round(0 + 8 * t),  //  0 →  8
   };
 }
-const ITEM_PRICE  = { common: 5, rare: 10, epic: 15, legend: 20 };
+const ITEM_PRICE = { common: 5, rare: 10, epic: 15, legend: 20 };
 const RELIC_PRICE = { common: 20, rare: 30, epic: 40, legend: 50 };
 const RARITY_COLORS = {
   common: { bg: 0x1a3a22, label: '#aaffaa' },
-  rare:   { bg: 0x1a2a4a, label: '#aaaaff' },
-  epic:   { bg: 0x2a1a3a, label: '#cc88ff' },
+  rare: { bg: 0x1a2a4a, label: '#aaaaff' },
+  epic: { bg: 0x2a1a3a, label: '#cc88ff' },
   legend: { bg: 0x2a1e00, label: '#ffdd44' },
 };
 
@@ -164,7 +164,7 @@ export class MarketScene extends Phaser.Scene {
     // 배경
     const bgKey = this._bgKey ?? `bg_${this.round}`;
     if (this.textures.exists(bgKey)) {
-      this.add.image(GW / 2, GH, bgKey).setOrigin(0.5, 1).setDisplaySize(GW, GW).setDepth(-1);
+      this.add.image(GW / 2, GH / 2, bgKey).setOrigin(0.5, 0.5).setDisplaySize(GW, GW).setDepth(-1);
     } else {
       this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x0d2b18).setDepth(-1);
     }
@@ -282,7 +282,7 @@ export class MarketScene extends Phaser.Scene {
 
     // 이미지 (상단)
     const imgKey = `relic_${relic.id}`;
-    const imgY = top + 10 + 35; 
+    const imgY = top + 10 + 35;
     const IMG_SZ = 64;
     if (this.textures.exists(imgKey)) {
       this.add.image(cx, imgY, imgKey)
@@ -502,7 +502,7 @@ export class MarketScene extends Phaser.Scene {
     const rfsh = this.add.image(rfshX, btnY, "ui_btn_iron")
       .setDisplaySize(BTN_W, BTN_H + 4).setDepth(10).setInteractive();
     if (!canRefresh) rfsh.setAlpha(0.6).setTint(0x666666);
-    
+
     this.add.text(rfshX, btnY, m.btn_shop_refresh.replace('{cost}', REFRESH_COST),
       { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: canRefresh ? TS.goldValue.color : TS.infoLabel.color })
       .setOrigin(0.5).setDepth(11);
