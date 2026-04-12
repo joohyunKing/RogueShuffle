@@ -97,6 +97,10 @@ export class PreloadScene extends Phaser.Scene {
       // });
     });
 
+    //bgm
+    this.load.audio("bgm_0", "assets/audio/bgm/Midnight_on_the_Platform.mp3");
+    this.load.audio("bgm_1", "assets/audio/bgm/Pillars_of_Sun_and_Stone.mp3");
+
     //sfx
     this.load.audio("sfx_shuffle", "assets/audio/sfx/card-shuffle.ogg");
     this.load.audio("sfx_fan", "assets/audio/sfx/card-fan-1.ogg");
@@ -123,6 +127,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("ui_hp_bar", "assets/images/ui/hp_bar.png");
     this.load.image("ui_sword", "assets/images/ui/sword.png");
     this.load.image("ui_shield", "assets/images/ui/shield.png");
+    this.load.image("ui_popup", "assets/images/ui/popup.png");
     this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
 
 

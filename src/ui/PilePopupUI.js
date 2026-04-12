@@ -37,8 +37,9 @@ export class PilePopupUI {
     const RANK_LIST = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
     const CW_ = FIELD_CW, CH_ = FIELD_CH;
     const GAP_X = CW_ + 4, ROW_H = CH_ + 16, LABEL_W = 26, PAD = 20;
-    const panelX = PLAYER_PANEL_W + PAD;
     const panelW = GW - PLAYER_PANEL_W - PAD * 2;
+    const panelCX = GW / 2;
+    const panelX = panelCX - panelW / 2;
 
     const bySuit = { S: [], H: [], C: [], D: [] };
     for (const card of pileData) {
@@ -54,14 +55,14 @@ export class PilePopupUI {
     const titleH = 38, closeH = 40;
     const panelH = titleH + SUITS.length * ROW_H + closeH;
     const panelTop = Math.max(BATTLE_LOG_H + 6, (GH - panelH) / 2);
-    const panelCX = panelX + panelW / 2;
 
     const dim = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x000000, 0.78)
       .setDepth(600).setInteractive();
     objs.push(dim);
     objs.push(
-      scene.add.rectangle(panelCX, panelTop + panelH / 2, panelW, panelH, 0x0a1e12, 0.97)
-        .setDepth(601).setStrokeStyle(1, 0x3a7a4a)
+      scene.add.image(panelCX, panelTop + panelH / 2, 'ui_popup')
+        .setDisplaySize(panelW, panelH)
+        .setDepth(601)
     );
     objs.push(
       scene.add.text(panelCX, panelTop + titleH / 2,
@@ -78,9 +79,11 @@ export class PilePopupUI {
       const cy = rowsY + si * ROW_H + CH_ / 2 + 8;
       const cards = bySuit[suit];
       objs.push(
+        /*
         scene.add.text(panelX + LABEL_W / 2, cy, SUIT_SYMS[suit],
           { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }
         ).setOrigin(0.5).setDepth(602)
+        */
       );
       cards.forEach((card, ci) => {
         const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
@@ -89,13 +92,13 @@ export class PilePopupUI {
         img.on('pointerover', () => {
           scene.tweens.add({ targets: img, displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100 });
           img.setDepth(650);
-          sealImg?.setVisible(false);
+          sealImg?.setDepth(651);
           CardRenderer.showSealTooltip(scene, card, cx, cy, CH_, 700);
         });
         img.on('pointerout', () => {
           scene.tweens.add({ targets: img, displayWidth: CW_, displayHeight: CH_, duration: 100 });
           img.setDepth(602);
-          sealImg?.setVisible(true);
+          sealImg?.setDepth(603);
           CardRenderer.hideSealTooltip();
         });
       });

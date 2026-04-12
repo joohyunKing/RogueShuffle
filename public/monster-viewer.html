@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Rogue Shuffle — 몬스터 목록</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: #f0c040;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 24px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .filter-btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid #444;
+      background: #2a2a3e;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { background: #3a3a5e; }
+    .filter-btn.active { border-color: #f0c040; color: #f0c040; background: #2a2a3e; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #16213e;
+      border-radius: 10px;
+      border: 1px solid #2a2a4e;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.15s;
+    }
+    .card:hover { transform: translateY(-2px); }
+    .card.disabled { opacity: 0.4; }
+
+    /* race 색상 */
+    .card.zombie   { border-left: 4px solid #78909c; }
+    .card.goblin   { border-left: 4px solid #66bb6a; }
+    .card.skeleton { border-left: 4px solid #b0bec5; }
+    .card.orc      { border-left: 4px solid #ef5350; }
+    .card.human    { border-left: 4px solid #42a5f5; }
+    .card.undead   { border-left: 4px solid #ab47bc; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .img-box {
+      width: 64px;
+      height: 64px;
+      background: #0f3460;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #666;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .card-title { flex: 1; }
+    .card-name {
+      font-size: 15px;
+      font-weight: bold;
+      color: #fff;
+    }
+    .card-id {
+      font-size: 10px;
+      color: #555;
+      margin-top: 2px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .badge.race-zombie   { background: #37474f; color: #b0bec5; }
+    .badge.race-goblin   { background: #1b5e20; color: #a5d6a7; }
+    .badge.race-skeleton { background: #424242; color: #e0e0e0; }
+    .badge.race-orc      { background: #7f0000; color: #ef9a9a; }
+    .badge.race-human    { background: #0d47a1; color: #90caf9; }
+    .badge.race-undead   { background: #4a148c; color: #ce93d8; }
+
+    .badge.job-warrior  { background: #3e2723; color: #ffab91; }
+    .badge.job-archer   { background: #1a237e; color: #9fa8da; }
+    .badge.job-thief    { background: #1b5e20; color: #c8e6c9; }
+    .badge.job-sniper   { background: #0d47a1; color: #bbdefb; }
+    .badge.job-champion { background: #b71c1c; color: #ffcdd2; }
+    .badge.job-knight   { background: #212121; color: #f5f5f5; }
+    .badge.job-mage     { background: #4a148c; color: #e1bee7; }
+    .badge.job-lancer   { background: #006064; color: #b2ebf2; }
+    .badge.job-default  { background: #2a2a3e; color: #ccc; }
+
+    .badge.cost {
+      background: #f57f17;
+      color: #fff3e0;
+    }
+    .badge.use-y { background: #1b5e20; color: #a5d6a7; }
+    .badge.use-n { background: #b71c1c; color: #ef9a9a; }
+
+    .skill-box {
+      background: #0d1b2a;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 11px;
+      color: #aaa;
+      font-family: 'Consolas', monospace;
+      line-height: 1.6;
+    }
+    .skill-label {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .skill-type-damage  { color: #ef5350; font-weight: bold; }
+    .skill-type-debuff  { color: #ab47bc; font-weight: bold; }
+
+    .count {
+      text-align: center;
+      color: #555;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>👾 Rogue Shuffle — 몬스터 목록</h1>
+<p class="subtitle" id="subtitle">총 0개</p>
+
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">전체</button>
+  <button class="filter-btn" data-filter="zombie">Zombie</button>
+  <button class="filter-btn" data-filter="goblin">Goblin</button>
+  <button class="filter-btn" data-filter="skeleton">Skeleton</button>
+  <button class="filter-btn" data-filter="orc">Orc</button>
+  <button class="filter-btn" data-filter="human">Human</button>
+  <button class="filter-btn" data-filter="undead">Undead</button>
+  <button class="filter-btn" data-filter="Y">사용 Y</button>
+  <button class="filter-btn" data-filter="N">사용 N</button>
+</div>
+
+<div class="grid" id="grid"></div>
+<p class="count" id="count"></p>
+
+<script>
+const IMG_BASE = './assets/images/monster/';
+
+let currentFilter = 'all';
+let allMonsters = [];
+
+function jobBadgeClass(job) {
+  const known = ['warrior','archer','thief','sniper','champion','knight','mage','lancer'];
+  return known.includes(job) ? `job-${job}` : 'job-default';
+}
+
+function formatSkill(skill) {
+  if (!skill) return null;
+  const lines = [];
+  lines.push(`type: <span class="skill-type-${skill.type}">${skill.type}</span>`);
+  if (skill.name)        lines.push(`name: ${skill.name}`);
+  if (skill.probability) lines.push(`확률: ${skill.probability}%`);
+  if (skill.damMult)     lines.push(`배율: ×${skill.damMult}`);
+  if (skill.debuffId)    lines.push(`debuff: ${skill.debuffId}`);
+  return lines.join('<br>');
+}
+
+function render() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  const filtered = allMonsters.filter(m => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'Y' || currentFilter === 'N') return m.useYn === currentFilter;
+    return m.race === currentFilter;
+  });
+
+  document.getElementById('subtitle').textContent = `총 ${allMonsters.length}개`;
+  document.getElementById('count').textContent = `표시 중: ${filtered.length} / ${allMonsters.length}`;
+
+  filtered.forEach(m => {
+    const card = document.createElement('div');
+    card.className = `card ${m.race}${m.useYn === 'N' ? ' disabled' : ''}`;
+
+    const skillHtml = m.skill
+      ? `<div class="skill-label">Skill</div>
+         <div class="skill-box">${formatSkill(m.skill)}</div>`
+      : '';
+
+    const imgSrc = m.img ? `${IMG_BASE}${m.img}` : '';
+    const imgTag = imgSrc
+      ? `<img src="${imgSrc}" alt="${m.name}" onerror="this.style.display='none';this.parentElement.textContent='no img'">`
+      : 'no img';
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="img-box">${imgTag}</div>
+        <div class="card-title">
+          <div class="card-name">${m.name}</div>
+          <div class="card-id">${m.id}</div>
+        </div>
+      </div>
+      <div class="badge-row">
+        <span class="badge race-${m.race}">${m.race}</span>
+        <span class="badge ${jobBadgeClass(m.job)}">${m.job}</span>
+        <span class="badge cost">cost ${m.cost}</span>
+        <span class="badge ${m.useYn === 'Y' ? 'use-y' : 'use-n'}">사용 ${m.useYn}</span>
+      </div>
+      ${skillHtml}
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+fetch('/dev-data/monsters.json')
+  .then(r => r.json())
+  .then(data => {
+    allMonsters = data.monsters;
+    render();
+  })
+  .catch(err => {
+    document.getElementById('grid').innerHTML =
+      `<p style="color:#f88;grid-column:1/-1">monsters.json 로드 실패: ${err.message}<br>dev 서버(npm run dev)가 실행 중인지 확인하세요.</p>`;
+  });
+</script>
+</body>
+</html>

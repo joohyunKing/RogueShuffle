@@ -52,6 +52,38 @@ export class BattleScene extends Phaser.Scene {
     this.sound.play(key, { volume: sfxVol * 0.6 });
   }
 
+  // ── BGM ─────────────────────────────────────────────────────────────────
+  _BGM_KEYS = ['bgm_0', 'bgm_1'];
+  _bgmSound = null;
+  _lastBgmKey = null;
+
+  _playBgm() {
+    const vol = (this.registry.get("bgmVolume") ?? 7) / 10;
+    if (vol <= 0) return;
+
+    // 이전과 다른 트랙 선택 (2곡이면 교대, 그 이상이면 랜덤)
+    const candidates = this._BGM_KEYS.length > 1
+      ? this._BGM_KEYS.filter(k => k !== this._lastBgmKey)
+      : this._BGM_KEYS;
+    const key = candidates[Math.floor(Math.random() * candidates.length)];
+    this._lastBgmKey = key;
+
+    this._bgmSound = this.sound.add(key, { volume: vol });
+    this._bgmSound.once('complete', () => {
+      this._bgmSound = null;
+      if (this.scene.isActive('BattleScene')) this._playBgm();
+    });
+    this._bgmSound.play();
+  }
+
+  _stopBgm() {
+    if (this._bgmSound) {
+      this._bgmSound.stop();
+      this._bgmSound.destroy();
+      this._bgmSound = null;
+    }
+  }
+
   // ── create ───────────────────────────────────────────────────────────────
   create() {
     const data = this.scene.settings.data || {};
@@ -143,7 +175,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.monsterViews = this.monsterManager.monsters.map((mon, idx) => {
       const { x, y } = positions[idx];
-      const scale   = mon.isBoss ? 1.8 : mon.isSummoned ? 1.0 : this.monsterImgScale;
+      const scale = mon.isBoss ? 1.8 : mon.isSummoned ? 1.0 : this.monsterImgScale;
       const offsetY = mon.isBoss ? 40 : 0;
 
       return new MonsterView(this, mon, idx, x, y, (i) => {
@@ -163,6 +195,9 @@ export class BattleScene extends Phaser.Scene {
       this.monsterViews[0].hideStats();
     }
 
+    // BGM
+    this._playBgm();
+    this.events.once('shutdown', () => this._stopBgm());
   }
 
   // ── 배경 & 패널 ──────────────────────────────────────────────────────────
@@ -176,8 +211,8 @@ export class BattleScene extends Phaser.Scene {
 
     const bgKey = this._bgKey ?? `bg_${this.round}`;
     if (this.textures.exists(bgKey)) {
-      this.add.image(GW / 2, GH / 3, bgKey)
-        .setOrigin(0.5, 0.5).setDisplaySize(GH * 1.5, GH * 1.5).setDepth(-1);
+      this.add.image(GW / 2, GH / 2, bgKey)
+        .setOrigin(0.5, 0.5).setDisplaySize(GW, GW).setDepth(-1);
     }
 
     const frameKey = "ui_frame";
@@ -187,23 +222,23 @@ export class BattleScene extends Phaser.Scene {
         .setOrigin(0, 0).setDepth(0);
 
       // ── 몬스터 영역 배경 제거됨
- 
+
       // ── 필드 / 핸드 공통 백그라운드 ──────────────────────────────────────────
       const boardY = FIELD_Y - FIELD_CH / 2 - 18;
       this.add.image(CX, boardY, "ui_field_hand")
         .setOrigin(0, 0).setDisplaySize(FAW_, GH - boardY - 5).setDepth(0);
- 
+
       // ── 아이템 패널 (우측) ──────────────────────────────────────────────
       this.add.nineslice(IPX, 0, frameKey, 0, IPW, GH, 8, 8, 8, 8)
         .setOrigin(0, 0).setDepth(0);
- 
+
       this.add.rectangle(IPX + 8, BATTLE_LOG_H, IPW - 16, 1, 0x2a4a5a).setDepth(1);
     } else {
       const g = this.add.graphics().setDepth(0);
       const boardY = FIELD_Y - FIELD_CH / 2 - 18;
       g.fillStyle(0x000000, 1.0);
       g.fillRect(CX, 0, FAW_, BATTLE_LOG_H);
- 
+
       // 몬스터 영역 배경 제거됨
 
       // 텍스처가 없을 경우를 대비한 대체 드로잉 (이미지가 있으면 이미지가 덮어씌움)
