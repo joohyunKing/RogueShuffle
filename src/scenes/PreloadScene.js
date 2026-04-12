@@ -6,7 +6,7 @@ import itemData from '../data/item.json';
 import relicData from "../data/relic.json";
 import debuffData from '../data/debuff.json';
 import monsterJson from '../data/monsters.json';
-import bossJson   from '../data/boss.json';
+import bossJson from '../data/boss.json';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() { super("PreloadScene"); }
@@ -38,7 +38,7 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     //card back images
-    this.load.image("card_back", "assets/images/card_back_pixel.png");
+    this.load.image("card_back", "assets/images/ui/card_back.png");
     this.load.image("card_front_pixel", "assets/images/card_front_pixel.png");
     this.load.image("card_back_deck", "assets/images/ui/deck_rembg.png");
     this.load.image("card_back_dummy", "assets/images/ui/dummy_rembg.png");
@@ -106,7 +106,6 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio("sfx_lightning", "assets/audio/sfx/sfx_lightning.wav");
     this.load.audio("sfx_explosion", "assets/audio/sfx/sfx_explosion.wav");
 
-    //ui
     this.load.image("ui_deck", "assets/images/ui/deck.png");
     this.load.image("ui_dummy", "assets/images/ui/dummy.png");
     this.load.image("ui_option", "assets/images/ui/btn_gear_pixel.png");
@@ -116,8 +115,10 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("ui_panel_parchment", "assets/images/ui/parchment_v.png");
     this.load.image("ui_panel_stone", "assets/images/ui/panel_stone.png");
     this.load.image("ui_divider_iron", "assets/images/ui/divider_iron.png");
+    this.load.image("ui_card_front", "assets/images/ui/card_front.png");
     this.load.image("ui_panel_item", "assets/images/ui/itemUi.png");
     this.load.image("ui_field_hand", "assets/images/ui/field_hand.png");
+    this.load.image("ui_hp_bar", "assets/images/ui/hp_bar.png");
     this.load.image("ui_sword", "assets/images/ui/sword.png");
     this.load.image("ui_shield", "assets/images/ui/shield.png");
     this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
@@ -129,14 +130,14 @@ export class PreloadScene extends Phaser.Scene {
   create() {
     // sprite animation 등록
     const monsters = monsterJson.monsters;
-  
+
     monsters.forEach(monster => {
       Object.keys(monster.sprite).forEach(action => {
         const key = `${monster.id}_${action}`;
-  
+
         // 이미 있으면 skip
         if (this.anims.exists(key)) return;
-  
+
         const validFrames = this._countValidFrames(this.textures, key);
         //console.log("validFrames : " + validFrames);
 
@@ -173,12 +174,12 @@ export class PreloadScene extends Phaser.Scene {
       this.scene.start("GameScene", data);
     });
   }
-  
+
   // ── 스프라이트시트 유효 프레임 수 감지 ─────────────────────────────────────
   _countValidFrames(textures, texKey) {
 
-    const tex    = textures.get(texKey);
-    const total  = tex.frameTotal - 1;
+    const tex = textures.get(texKey);
+    const total = tex.frameTotal - 1;
     const srcImg = tex.getSourceImage();
     const FW = 384, FH = 384, COLS = 3;
 

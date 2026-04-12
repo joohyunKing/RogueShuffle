@@ -175,7 +175,7 @@ export class BattleScene extends Phaser.Scene {
     const frameKey = "ui_frame";
     if (this.textures.exists(frameKey)) {
       // ── 배틀 로그 헤더 (상단) ──────────────────────────────────────────
-      this.add.nineslice(CX, 0, frameKey, 0, FAW_, BATTLE_LOG_H, 8, 8, 8, 8)
+      this.add.rectangle(CX, 0, FAW_, BATTLE_LOG_H, 0x000000)
         .setOrigin(0, 0).setDepth(0);
 
       // ── 몬스터 영역 ────────────────────────────────────────────────────
@@ -195,10 +195,8 @@ export class BattleScene extends Phaser.Scene {
     } else {
       const g = this.add.graphics().setDepth(0);
       const boardY = FIELD_Y - FIELD_CH / 2 - 18;
-      g.fillStyle(0x050e08, 0.88);
-      g.fillRoundedRect(CX, 0, FAW_, BATTLE_LOG_H, { tl: 0, tr: 0, bl: 10, br: 10 });
-      g.lineStyle(1, 0x4a7055);
-      g.strokeRoundedRect(CX, 0, FAW_, BATTLE_LOG_H, { tl: 0, tr: 0, bl: 10, br: 10 });
+      g.fillStyle(0x000000, 1.0);
+      g.fillRect(CX, 0, FAW_, BATTLE_LOG_H);
 
       g.fillStyle(0x000000, 0.30);
       g.fillRoundedRect(CX, MONSTER_AREA_TOP, FAW_, MONSTER_AREA_H, 10);
@@ -400,6 +398,10 @@ export class BattleScene extends Phaser.Scene {
     let card_width = (toY === FIELD_Y) ? FIELD_CW : CW;
     let card_height = (toY === FIELD_Y) ? FIELD_CH : CH;
 
+    /* size 줄이자 */
+    card_width = card_width * 0.85;
+    card_height = card_height * 0.85;
+
 
     const img = this.add.image(fromX, fromY, "card_back").setDisplaySize(card_width, card_height).setDepth(200);
     this.animObjs.push(img);
@@ -435,7 +437,7 @@ export class BattleScene extends Phaser.Scene {
     const FAW = GW - PW - ITEM_PANEL_W;   // 880
     const gap = 10;
     const areaW = FAW - 85;               // 795
-    const baseW = Math.round(CW * 0.95);
+    const baseW = Math.round(CW * 0.85);
     const scale = count >= 9 ? Math.max(0.65, 8 / count) : 1;
     const cardW = Math.round(baseW * scale);
     const spacing = count === 1 ? 0 : Math.min(cardW + gap, (areaW - cardW) / (count - 1));
@@ -914,9 +916,9 @@ export class BattleScene extends Phaser.Scene {
     const comboCardSet = new Set(combo.cards ?? []);
 
     const count = this.handData.length;
-    // 기본 크기: CW * 0.95, 9장 이상이면 추가 축소
-    const baseW = Math.round(CW * 0.95);
-    const baseH = Math.round(CH * 0.95);
+    // 기본 크기: CW * 0.85, 9장 이상이면 추가 축소
+    const baseW = Math.round(CW * 0.85);
+    const baseH = Math.round(CH * 0.85);
     const scale = count >= 9 ? Math.max(0.65, 8 / count) : 1;
     const cardW = Math.round(baseW * scale);
     const cardH = Math.round(baseH * scale);

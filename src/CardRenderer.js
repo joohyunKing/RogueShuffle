@@ -222,8 +222,8 @@ export class CardRenderer {
     const ctx = canvas.getContext('2d');
 
     // ── 배경 ──────────────────────────────────────────────────────────────
-    const frontSrc = scene.textures.get('card_front_pixel').getSourceImage();
-    ctx.imageSmoothingEnabled = false;
+    const frontSrc = scene.textures.get('ui_card_front').getSourceImage();
+    ctx.imageSmoothingEnabled = true;
     ctx.drawImage(frontSrc, 0, 0, W, H);
 
     const F = "11px 'PressStart2P', Arial";

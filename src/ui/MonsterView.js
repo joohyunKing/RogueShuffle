@@ -33,13 +33,16 @@ export default class MonsterView {
       this.sprite.play(idleKey);
     }
 
-    // ── HP 바
-    const barW = 88;
+    // ── HP 바 (Ornate Frame)
+    const frameW = 110;
+    const frameH = 28;
+    this.barW = 84; 
 
-    this.hpBarBg = scene.add.rectangle(x, this.barY, barW, BAR_H, 0x1a1a1a)
+    this.hpBarBg = scene.add.image(x, this.barY, "ui_hp_bar")
+      .setDisplaySize(frameW, frameH)
       .setDepth(16);
 
-    this.hpBar = scene.add.rectangle(x - barW / 2, this.barY, barW, BAR_H, 0x44cc44)
+    this.hpBar = scene.add.rectangle(x - this.barW / 2, this.barY, this.barW, 10, 0x44cc44)
       .setOrigin(0, 0.5)
       .setDepth(17);
 
@@ -83,8 +86,6 @@ export default class MonsterView {
     this.hitArea.on("pointerdown", () => {
       if (this.onClick) this.onClick(this.idx);
     });
-
-    this.barW = barW;
   }
 
   update(mon, x, canBeTarget = false) {

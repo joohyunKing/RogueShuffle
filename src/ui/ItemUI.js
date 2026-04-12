@@ -4,37 +4,37 @@ import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
 import { TooltipUI } from "./TooltipUI.js";
 import { getLang, getRelicName, getRelicDesc, getItemName, getItemDesc, getUiText } from "../service/langService.js";
 
-const RARITY_STRIP  = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa, legend: 0xaa8822 };
-const RARITY_COLOR  = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff', legend: '#ffdd44' };
+const RARITY_STRIP = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa, legend: 0xaa8822 };
+const RARITY_COLOR = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff', legend: '#ffdd44' };
 
 /**
  * ItemUI — 우측 패널: Relic(위) + Item(아래)
  */
 export class ItemUI {
   constructor(scene, player, opts = {}) {
-    this.scene  = scene;
+    this.scene = scene;
     this.player = player;
-    this.opts   = {
-      panelX:        GW - ITEM_PANEL_W,
-      panelW:        ITEM_PANEL_W,
-      startY:        BATTLE_LOG_H + 19,
-      draggable:     false,
-      onItemClick:   null,
-      onRelicSell:   null,
-      onItemSell:    null,
-      depth:         9,
+    this.opts = {
+      panelX: GW - ITEM_PANEL_W,
+      panelW: ITEM_PANEL_W,
+      startY: BATTLE_LOG_H + 19,
+      draggable: false,
+      onItemClick: null,
+      onRelicSell: null,
+      onItemSell: null,
+      depth: 9,
       ...opts,
     };
-    this._objs       = [];
-    this._tooltip    = new TooltipUI(scene, {});
-    this._relicObjs  = {};
+    this._objs = [];
+    this._tooltip = new TooltipUI(scene, {});
+    this._relicObjs = {};
     this._isDragging = false;
-    this._dragGhost    = null;
+    this._dragGhost = null;
     this._dragGhostTxt = null;
-    this._sellZone     = null;
-    this._sellTxt      = null;
-    this._tipPinned  = false;
-    this._pinnedId   = null;
+    this._sellZone = null;
+    this._sellTxt = null;
+    this._tipPinned = false;
+    this._pinnedId = null;
   }
 
   _add(obj) { this._objs.push(obj); return obj; }
@@ -88,7 +88,7 @@ export class ItemUI {
   _clearTip() {
     this._tooltip.hide();
     this._tipPinned = false;
-    this._pinnedId  = null;
+    this._pinnedId = null;
   }
 
   _showSellZone() { if (this._sellZone) { this._sellZone.setVisible(true); this._sellTxt?.setVisible(true); } }
@@ -207,7 +207,7 @@ export class ItemUI {
 
     // ─── ITEM 섹션 ───────────────────────────────────────────────────────
     // 이미지 내부의 ITEMS 텍스트 아래 공간으로 위치 조정
-    const itemStartY = dividerY + 140; 
+    const itemStartY = dividerY + 140;
     if (items.length > 0) {
       const ITM_SZ = 56, ITM_IMG = 44, ITM_COLS = 3, ITM_GAPX = 8, ITM_GAPY = 8;
       const ITM_PAD = Math.floor((panelW - ITM_COLS * ITM_SZ - (ITM_COLS - 1) * ITM_GAPX) / 2);
@@ -244,7 +244,7 @@ export class ItemUI {
       });
     } else {
       // 아이템이 없을 때 빈 표시 "—"
-      this._add(scene.add.text(ipcx, itemStartY + 30, "—", { ...TS.infoLabel, color: "#444" }).setOrigin(0.5, 0).setDepth(D + 1));
+      //this._add(scene.add.text(ipcx, itemStartY + 30, "—", { ...TS.infoLabel, color: "#444" }).setOrigin(0.5, 0).setDepth(D + 1));
     }
 
     return this;
@@ -252,7 +252,7 @@ export class ItemUI {
 
   pulseRelic(relicId) {
     const entry = this._relicObjs[relicId]; if (!entry) return;
-    entry.objs.forEach(o => { const baseScale = o.scaleX; this.scene.tweens.killTweensOf(o); this.scene.tweens.add({ targets: o, scaleX: baseScale * 1.1, scaleY: baseScale * 1.1, duration: 120, yoyo: true, ease: 'Sine.easeInOut', onComplete: () => { try { o.setScale(baseScale); } catch (_) {} } }); });
+    entry.objs.forEach(o => { const baseScale = o.scaleX; this.scene.tweens.killTweensOf(o); this.scene.tweens.add({ targets: o, scaleX: baseScale * 1.1, scaleY: baseScale * 1.1, duration: 120, yoyo: true, ease: 'Sine.easeInOut', onComplete: () => { try { o.setScale(baseScale); } catch (_) { } } }); });
   }
 
   rattleRelics(ids = []) {
@@ -265,5 +265,5 @@ export class ItemUI {
   }
 
   refresh() { this.destroy(); this.create(); return this; }
-  destroy() { this._clearTip(); this._isDragging = false; if (this._dragGhost) { try { this._dragGhost.destroy(); } catch(_) {} this._dragGhost = null; } if (this._dragGhostTxt) { try { this._dragGhostTxt.destroy(); } catch(_) {} this._dragGhostTxt = null; } this._objs.forEach(o => { try { o?.destroy(); } catch (_) {} }); this._objs = []; this._relicObjs = {}; this._sellZone = null; this._sellTxt = null; }
+  destroy() { this._clearTip(); this._isDragging = false; if (this._dragGhost) { try { this._dragGhost.destroy(); } catch (_) { } this._dragGhost = null; } if (this._dragGhostTxt) { try { this._dragGhostTxt.destroy(); } catch (_) { } this._dragGhostTxt = null; } this._objs.forEach(o => { try { o?.destroy(); } catch (_) { } }); this._objs = []; this._relicObjs = {}; this._sellZone = null; this._sellTxt = null; }
 }

@@ -23,8 +23,8 @@ export const TS = {
   menuTitle: { fontFamily: F, fontSize: '38px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 8 },
 
   // ── 배틀 로그 ──────────────────────────────────────────────────────────────
-  log: { fontFamily: F, fontSize: '14px', color: C.GOLD, stroke: C.DARK, strokeThickness: 2 },
-  msg: { fontFamily: F, fontSize: '17px', color: C.GOLD, stroke: C.DARK, strokeThickness: 3 },
+  log: { fontFamily: F, fontSize: '14px', color: '#ffbb33', stroke: '#000000', strokeThickness: 2 },
+  msg: { fontFamily: F, fontSize: '17px', color: '#ffbb33', stroke: '#000000', strokeThickness: 2 },
 
   // ── UI 패널 정보 (PlayerUI 등) ──────────────────────────────────────────────
   infoLabel: { fontFamily: F, fontSize: '12px', color: C.LABEL },
@@ -53,9 +53,9 @@ export const TS = {
   // ── 몬스터 ─────────────────────────────────────────────────────────────────
   monName: { fontFamily: F, fontSize: '13px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 2 },
   monStat: { fontFamily: F, fontSize: '12px', color: C.VALUE },
-  monHpText: { fontFamily: F, fontSize: '11px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 2 },
-  monStatNum: { fontFamily: F, fontSize: '11px', stroke: C.DARK, strokeThickness: 2 },
-  monTarget: { fontFamily: F, fontSize: '13px', color: C.GOLD, stroke: C.DARK, strokeThickness: 2 },
+  monHpText: { fontFamily: F, fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
+  monStatNum: { fontFamily: F, fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
+  monTarget: { fontFamily: F, fontSize: '13px', color: C.GOLD, stroke: '#000000', strokeThickness: 2 },
   monDead: { fontFamily: F, fontSize: '32px', color: C.HP },
 
   // ── 전투 이펙트 ────────────────────────────────────────────────────────────

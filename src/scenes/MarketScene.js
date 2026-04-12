@@ -39,16 +39,16 @@ const IPX = GW - IPW;
 const FAW = GW - PW - IPW;
 const CX = PW + FAW / 2;
 
-// 유물 카드
-const RELIC_W = 150, RELIC_H = 186, RELIC_GAP = 22;
-const RELIC_SECTION_TOP = 58;
-const RELIC_CARD_TOP = 76;
+// 유물 카드 (사이즈 축소)
+const RELIC_W = 120, RELIC_H = 150, RELIC_GAP = 18;
+const RELIC_SECTION_TOP = 64;
+const RELIC_CARD_TOP = 82;
 
-// 아이템 카드 (유물과 동일 크기, 4×1 그리드)
-const ITEM_W = 150, ITEM_H = 186, ITEM_GAP_X = 16, ITEM_GAP_Y = 16;
+// 아이템 카드 (유물과 동일 크기)
+const ITEM_W = 120, ITEM_H = 150, ITEM_GAP_X = 14, ITEM_GAP_Y = 14;
 const ITEM_COLS = 5;
-const ITEM_SECTION_TOP = RELIC_CARD_TOP + RELIC_H + 14;  // ~276
-const ITEM_CARD_TOP = ITEM_SECTION_TOP + 18;           // ~294
+const ITEM_SECTION_TOP = RELIC_CARD_TOP + RELIC_H + 10;
+const ITEM_CARD_TOP = ITEM_SECTION_TOP + 18;
 
 // 카드 관리 섹션 (아이템 1행)
 const CARD_MGMT_TOP = ITEM_CARD_TOP + ITEM_H + ITEM_GAP_Y + 10;  // ~516
@@ -251,14 +251,10 @@ export class MarketScene extends Phaser.Scene {
     const gridLeft = PW + (FAW - totalW) / 2;
     const secH = RELIC_CARD_TOP + RELIC_H - RELIC_SECTION_TOP + 10;
 
-    if (this.textures.exists("ui_frame")) {
-      this.add.nineslice(PW + 8, RELIC_SECTION_TOP, "ui_frame", 0, FAW - 16, secH, 8, 8, 8, 8)
-        .setOrigin(0, 0).setDepth(2).setAlpha(0.72);
-    } else {
-      const secG = this.add.graphics().setDepth(2);
-      secG.fillStyle(0x050d08, 0.72);
-      secG.fillRoundedRect(PW + 8, RELIC_SECTION_TOP, FAW - 16, secH, 6);
-    }
+    // 섹션 배경 (테두리 제거, 단색/투명 배경)
+    const secG = this.add.graphics().setDepth(2);
+    secG.fillStyle(0x000000, 0.4);
+    secG.fillRoundedRect(PW + 8, RELIC_SECTION_TOP, FAW - 16, secH, 6);
     this.add.text(CX, RELIC_SECTION_TOP + 8, "RELICS",
       { fontFamily: "'PressStart2P',Arial", fontSize: '12px', color: '#44cc88' })
       .setOrigin(0.5, 0).setDepth(10);
@@ -286,10 +282,11 @@ export class MarketScene extends Phaser.Scene {
 
     // 이미지 (상단)
     const imgKey = `relic_${relic.id}`;
-    const imgY = top + 16 + 40;
+    const imgY = top + 10 + 35; 
+    const IMG_SZ = 64;
     if (this.textures.exists(imgKey)) {
       this.add.image(cx, imgY, imgKey)
-        .setDisplaySize(80, 80).setDepth(6).setAlpha(alpha);
+        .setDisplaySize(IMG_SZ, IMG_SZ).setDepth(6).setAlpha(alpha);
     } else {
       this.add.rectangle(cx, imgY, 80, 80, 0x333333, 0.3).setDepth(6).setAlpha(alpha);
       this.add.text(cx, imgY, '?',
@@ -299,12 +296,12 @@ export class MarketScene extends Phaser.Scene {
 
     // 이름 (중간)
     const lang = getLang(this);
-    const nameY = top + 16 + 80 + 14;
+    const nameY = imgY + 38;
     this.add.text(cx, nameY, getRelicName(lang, relic.id, relic.name),
       {
-        fontFamily: "'PressStart2P',Arial", fontSize: '13px',
+        fontFamily: "'PressStart2P',Arial", fontSize: '11px',
         color: relic.bought ? '#555555' : '#ffffff',
-        wordWrap: { width: W - 14 }, align: 'center'
+        wordWrap: { width: W - 10 }, align: 'center'
       })
       .setOrigin(0.5, 0).setDepth(6).setAlpha(alpha);
 
@@ -363,14 +360,10 @@ export class MarketScene extends Phaser.Scene {
     const totalW = ITEM_COLS * ITEM_W + (ITEM_COLS - 1) * ITEM_GAP_X;
     const gridLeft = PW + (FAW - totalW) / 2;
 
-    if (this.textures.exists("ui_frame")) {
-      this.add.nineslice(PW + 8, ITEM_SECTION_TOP, "ui_frame", 0, FAW - 16, secH, 8, 8, 8, 8)
-        .setOrigin(0, 0).setDepth(2).setAlpha(0.72);
-    } else {
-      const secG = this.add.graphics().setDepth(2);
-      secG.fillStyle(0x050d08, 0.72);
-      secG.fillRoundedRect(PW + 8, ITEM_SECTION_TOP, FAW - 16, secH, 6);
-    }
+    // 섹션 배경 (테두리 제거)
+    const secG = this.add.graphics().setDepth(2);
+    secG.fillStyle(0x000000, 0.4);
+    secG.fillRoundedRect(PW + 8, ITEM_SECTION_TOP, FAW - 16, secH, 6);
     this.add.text(CX, ITEM_SECTION_TOP + 6, "ITEMS",
       { fontFamily: "'PressStart2P',Arial", fontSize: '12px', color: '#44cc88' })
       .setOrigin(0.5, 0).setDepth(10);
@@ -399,26 +392,26 @@ export class MarketScene extends Phaser.Scene {
 
     // 이미지 (상단)
     const imgKey = `item_${item.id}`;
-    const imgY = top + 16 + 40;
-    const IMG_SZ = 80;
+    const imgY = top + 10 + 35;
+    const IMG_SZ = 64;
     if (this.textures.exists(imgKey)) {
       this.add.image(cx, imgY, imgKey)
         .setDisplaySize(IMG_SZ, IMG_SZ).setDepth(6).setAlpha(alpha);
     } else {
       this.add.rectangle(cx, imgY, IMG_SZ, IMG_SZ, 0x333333, 0.3).setDepth(6).setAlpha(alpha);
       this.add.text(cx, imgY, '?',
-        { fontFamily: 'Arial', fontSize: '24px', color: rar.label })
+        { fontFamily: 'Arial', fontSize: '20px', color: rar.label })
         .setOrigin(0.5).setDepth(7).setAlpha(alpha);
     }
 
     // 이름 (중간)
     const lang = getLang(this);
-    const nameY = top + 16 + 80 + 14;
+    const nameY = imgY + 38;
     this.add.text(cx, nameY, getItemName(lang, item.id, item.name),
       {
-        fontFamily: "'PressStart2P',Arial", fontSize: '13px',
+        fontFamily: "'PressStart2P',Arial", fontSize: '11px',
         color: item.bought ? '#555555' : '#ffffff',
-        wordWrap: { width: W - 14 }, align: 'center'
+        wordWrap: { width: W - 10 }, align: 'center'
       })
       .setOrigin(0.5, 0).setDepth(6).setAlpha(alpha);
 

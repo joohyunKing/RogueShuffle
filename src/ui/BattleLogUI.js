@@ -42,8 +42,8 @@ export class BattleLogUI {
     const IPW  = ITEM_PANEL_W;
     const FAW  = GW - PW - IPW;
     const cx   = PW + FAW / 2;
-    const FAW_ = FAW - 20;
-    const CX   = PW + 10;
+    const FAW_ = FAW;
+    const CX   = PW;
 
     this._cx   = cx;
     this._FAW_ = FAW_;
@@ -101,28 +101,14 @@ export class BattleLogUI {
     const lineH  = 20;
     const maxLines = Math.floor((panelH - BATTLE_LOG_H - 8) / lineH);
 
-    // 패널 배경
-    if (scene.textures.exists("ui_frame")) {
-      const bg = scene.add.nineslice(CX, 0, "ui_frame", 0, FAW_, panelH, 8, 8, 8, 8)
-        .setOrigin(0, 0).setDepth(500);
-      this._expandedBg.push(bg);
-      
-      const sep = scene.add.rectangle(CX + 8, BATTLE_LOG_H, FAW_ - 16, 1, 0x2a5a38).setDepth(501);
-      this._expandedBg.push(sep);
-    } else {
-      const g = scene.add.graphics().setDepth(500);
-      g.fillStyle(0x050e08, 0.97);
-      g.fillRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
-      g.lineStyle(1, 0x4a7055);
-      g.strokeRoundedRect(CX, 0, FAW_, panelH, { tl: 0, tr: 0, bl: 10, br: 10 });
-      g.lineStyle(1, 0x2a5a38);
-      g.lineBetween(CX, BATTLE_LOG_H, CX + FAW_, BATTLE_LOG_H);
-      this._expandedBg.push(g);
-    }
+    // 패널 배경 (Solid Black, No Border)
+    const bg = scene.add.rectangle(CX, 0, FAW_, panelH, 0x000000)
+      .setOrigin(0, 0).setDepth(500);
+    this._expandedBg.push(bg);
 
     this._expandedBg.push(
       scene.add.text(cx, BATTLE_LOG_H / 2, '▲ BATTLE LOG', TS.log)
-        .setOrigin(0.5).setDepth(501).setColor('#44ffaa')
+        .setOrigin(0.5).setDepth(501).setColor('#ffbb33')
     );
 
     this._logScrollOffset = Math.max(0, this._logs.length - maxLines);
@@ -179,7 +165,7 @@ export class BattleLogUI {
       const alpha  = isLast ? 1.0 : 0.4 + 0.55 * (i / Math.max(1, slice.length - 1));
       this._expandedLines.push(
         scene.add.text(cx, BATTLE_LOG_H + 6 + i * lineH, line, TS.log)
-          .setColor(isLast ? '#ffff88' : '#ffcc44')
+          .setColor(isLast ? '#ffbb33' : '#aa8844')
           .setAlpha(alpha).setOrigin(0.5, 0).setDepth(503)
       );
     });
@@ -189,8 +175,8 @@ export class BattleLogUI {
       this._expandedLines.push(
         scene.add.text(cx, panelH - 6,
           `${start + 1}-${end} / ${logs.length}`,
-          { fontFamily: "'PressStart2P', Arial", fontSize: '7px', color: '#446655' })
-          .setOrigin(0.5, 1).setDepth(503)
+          { fontFamily: "'PressStart2P', Arial", fontSize: '8px', color: '#ffbb33' })
+          .setOrigin(0.5, 1).setDepth(503).setAlpha(0.6)
       );
     }
   }
