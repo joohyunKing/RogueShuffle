@@ -207,12 +207,12 @@ export class MarketScene extends Phaser.Scene {
 
     // CONTINUE 버튼
     const btnY = GH - 42;
-    const btn = this.add.rectangle(CX, btnY, 220, 50, 0x1a5533)
-      .setDepth(10).setInteractive().setStrokeStyle(2, 0x44dd88);
+    const btn = this.add.image(CX, btnY, "ui_btn_iron")
+      .setDisplaySize(220, 56).setDepth(10).setInteractive();
     this.add.text(CX, btnY, "CONTINUE  ▶", TS.marketContinue).setOrigin(0.5).setDepth(11);
     btn.on("pointerdown", () => this._proceed());
-    btn.on("pointerover", () => btn.setFillStyle(0x2a7744));
-    btn.on("pointerout", () => btn.setFillStyle(0x1a5533));
+    btn.on("pointerover", () => btn.setTint(0xcccccc));
+    btn.on("pointerout", () => btn.clearTint());
 
     // 우측 아이템 패널
     if (this.textures.exists("ui_frame")) {
@@ -494,29 +494,29 @@ export class MarketScene extends Phaser.Scene {
     const m = getMarket(getLang(this));
 
     // 카드관리
-    const mgmt = this.add.rectangle(mgmtX, btnY, BTN_W, BTN_H, 0x1a3a5a)
-      .setDepth(10).setInteractive().setStrokeStyle(2, 0x4a8aaa);
+    const mgmt = this.add.image(mgmtX, btnY, "ui_btn_iron")
+      .setDisplaySize(BTN_W, BTN_H + 4).setDepth(10).setInteractive();
     this.add.text(mgmtX, btnY, m.btn_deck_mgmt,
-      { fontFamily: "'PressStart2P',Arial", fontSize: '12px', color: '#88ccff' })
+      { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: TS.infoValue.color })
       .setOrigin(0.5).setDepth(11);
     mgmt.on("pointerdown", () => this._showDeckPopup());
-    mgmt.on("pointerover", () => mgmt.setFillStyle(0x2a5a7a));
-    mgmt.on("pointerout", () => mgmt.setFillStyle(0x1a3a5a));
+    mgmt.on("pointerover", () => mgmt.setTint(0xcccccc));
+    mgmt.on("pointerout", () => mgmt.clearTint());
 
     // 상점갱신 (5G)
     const REFRESH_COST = 5;
     const canRefresh = this.player.gold >= REFRESH_COST;
-    const rfshFill = canRefresh ? 0x3a2a1a : 0x202020;
-    const rfshBrd = canRefresh ? 0xaa7a3a : 0x444444;
-    const rfsh = this.add.rectangle(rfshX, btnY, BTN_W, BTN_H, rfshFill)
-      .setDepth(10).setInteractive().setStrokeStyle(2, rfshBrd);
+    const rfsh = this.add.image(rfshX, btnY, "ui_btn_iron")
+      .setDisplaySize(BTN_W, BTN_H + 4).setDepth(10).setInteractive();
+    if (!canRefresh) rfsh.setAlpha(0.6).setTint(0x666666);
+    
     this.add.text(rfshX, btnY, m.btn_shop_refresh.replace('{cost}', REFRESH_COST),
-      { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: canRefresh ? '#ffcc66' : '#555555' })
+      { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: canRefresh ? TS.goldValue.color : TS.infoLabel.color })
       .setOrigin(0.5).setDepth(11);
     if (canRefresh) {
       rfsh.on("pointerdown", () => this._refreshShop());
-      rfsh.on("pointerover", () => rfsh.setFillStyle(0x5a4a2a));
-      rfsh.on("pointerout", () => rfsh.setFillStyle(rfshFill));
+      rfsh.on("pointerover", () => rfsh.setTint(0xcccccc));
+      rfsh.on("pointerout", () => rfsh.clearTint());
     }
   }
 
@@ -630,12 +630,14 @@ export class MarketScene extends Phaser.Scene {
 
     // 닫기 버튼
     const closeY = panelTop + panelH - closeH / 2;
-    const closeBg = this.add.rectangle(panelCX, closeY, 130, 28, 0x1a3a22)
-      .setDepth(502).setStrokeStyle(1, 0x4a9a5a);
-    const closeTxt = this.add.text(panelCX, closeY, 'CLOSE',
-      { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: '#aaffaa' })
+    const closeBg = this.add.image(panelCX, closeY, "ui_btn_iron")
+      .setDisplaySize(130, 36).setDepth(502).setInteractive();
+    const closeTxt = this.add.text(panelCX, closeY, 'CLOSE', TS.menuBtn)
       .setOrigin(0.5).setDepth(503).setInteractive();
     closeTxt.on('pointerdown', () => this._closeDeckPopup());
+    closeBg.on('pointerdown', () => this._closeDeckPopup());
+    closeBg.on('pointerover', () => closeBg.setTint(0xcccccc));
+    closeBg.on('pointerout', () => closeBg.clearTint());
     dim.on('pointerdown', () => this._closeDeckPopup());
     objs.push(closeBg, closeTxt);
   }

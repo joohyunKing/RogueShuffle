@@ -163,8 +163,8 @@ export class BattleScene extends Phaser.Scene {
     const IPW = ITEM_PANEL_W;
     const IPX = GW - IPW;
     const FAW = GW - PW - IPW;
-    const CX = PW + 10;
-    const FAW_ = FAW - 20;
+    const CX = PW;
+    const FAW_ = FAW;
 
     const bgKey = this._bgKey ?? `bg_${this.round}`;
     if (this.textures.exists(bgKey)) {
@@ -182,47 +182,39 @@ export class BattleScene extends Phaser.Scene {
       this.add.nineslice(CX, MONSTER_AREA_TOP, frameKey, 0, FAW_, MONSTER_AREA_H, 8, 8, 8, 8)
         .setOrigin(0, 0).setDepth(0).setAlpha(0.6);
 
-      // ── 필드 영역 ──────────────────────────────────────────────────────
-      const fpY = FIELD_Y - FIELD_CH / 2 - 18;
-      this.add.nineslice(CX, fpY, frameKey, 0, FAW_, FIELD_CH + 36, 8, 8, 8, 8)
-        .setOrigin(0, 0).setDepth(0);
-
-      // ── 핸드 영역 ──────────────────────────────────────────────────────
-      const hpY = HAND_Y - CH / 2 - 18;
-      this.add.nineslice(CX, hpY, frameKey, 0, FAW_, CH + 36, 8, 8, 8, 8)
-        .setOrigin(0, 0).setDepth(0);
+      // ── 필드 / 핸드 공통 백그라운드 ──────────────────────────────────────────
+      const boardY = FIELD_Y - FIELD_CH / 2 - 18;
+      this.add.image(CX, boardY, "ui_field_hand")
+        .setOrigin(0, 0).setDisplaySize(FAW_, GH - boardY - 5).setDepth(0);
 
       // ── 아이템 패널 (우측) ──────────────────────────────────────────────
       this.add.nineslice(IPX, 0, frameKey, 0, IPW, GH, 8, 8, 8, 8)
         .setOrigin(0, 0).setDepth(0);
-      
+
       this.add.rectangle(IPX + 8, BATTLE_LOG_H, IPW - 16, 1, 0x2a4a5a).setDepth(1);
     } else {
       const g = this.add.graphics().setDepth(0);
-      const fpY = FIELD_Y - FIELD_CH / 2 - 18;
-      const hpY = HAND_Y - CH / 2 - 18;
+      const boardY = FIELD_Y - FIELD_CH / 2 - 18;
       g.fillStyle(0x050e08, 0.88);
       g.fillRoundedRect(CX, 0, FAW_, BATTLE_LOG_H, { tl: 0, tr: 0, bl: 10, br: 10 });
       g.lineStyle(1, 0x4a7055);
       g.strokeRoundedRect(CX, 0, FAW_, BATTLE_LOG_H, { tl: 0, tr: 0, bl: 10, br: 10 });
+
       g.fillStyle(0x000000, 0.30);
       g.fillRoundedRect(CX, MONSTER_AREA_TOP, FAW_, MONSTER_AREA_H, 10);
       g.lineStyle(1, 0x4a7055, 1);
       g.strokeRoundedRect(CX, MONSTER_AREA_TOP, FAW_, MONSTER_AREA_H, 10);
-      g.fillStyle(0x050e08, 0.88);
-      g.fillRoundedRect(CX, fpY, FAW_, FIELD_CH + 36, 12);
-      g.lineStyle(1, 0x4a7055, 1);
-      g.strokeRoundedRect(CX, fpY, FAW_, FIELD_CH + 36, 12);
-      g.fillStyle(0x050e08, 0.88);
-      g.fillRoundedRect(CX, hpY, FAW_, CH + 36, 12);
-      g.lineStyle(1, 0x4a7055, 1);
-      g.strokeRoundedRect(CX, hpY, FAW_, CH + 36, 12);
-      g.fillStyle(0x080f14, 0.92);
-      g.fillRect(IPX, 0, IPW, GH);
-      g.lineStyle(1, 0x2a4a5a);
-      g.strokeRect(IPX, 0, IPW, GH);
-      g.lineStyle(1, 0x2a4a5a);
-      g.strokeRect(IPX, BATTLE_LOG_H, IPW, 38);
+
+      // 텍스처가 없을 경우를 대비한 대체 드로잉 (이미지가 있으면 이미지가 덮어씌움)
+      if (this.textures.exists("ui_field_hand")) {
+        this.add.image(CX, boardY, "ui_field_hand")
+          .setOrigin(0, 0).setDisplaySize(FAW_, GH - boardY - 5).setDepth(0);
+      } else {
+        g.fillStyle(0x050e08, 0.88);
+        g.fillRoundedRect(CX, boardY, FAW_, GH - boardY - 5, 12);
+        g.lineStyle(1, 0x4a7055, 1);
+        g.strokeRoundedRect(CX, boardY, FAW_, GH - boardY - 5, 12);
+      }
     }
   }
 
@@ -299,39 +291,46 @@ export class BattleScene extends Phaser.Scene {
         .setOrigin(1, 1).setDepth(50)
       : null;
 
-    // ── OPT 버튼 — 아이템 패널 상단 ─────────────────────────────────────
-    const optImg = this.add.image(IPCX, 30, "ui_option")
-      .setDisplaySize(46, 46).setDepth(60).setInteractive();
-    optImg.on("pointerdown", () => this._showOptions());
-    optImg.on("pointerover", () => optImg.setTint(0xcccccc));
-    optImg.on("pointerout", () => optImg.clearTint());
+
 
     // ── TURN END 버튼 — 아이템 패널 하단 ────────────────────────────────
     const turnBtnX = IPCX;
     const turnBtnY = HAND_Y + CH / 2 - 15;
-    this.turnEndBtn = this.add.image(turnBtnX, turnBtnY, "ui_btn_long")
-      .setDisplaySize(130, 50).setDepth(60).setInteractive();
-    this.add.text(turnBtnX, turnBtnY, "END TURN", { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: '#ffcc88' })
+    this.turnEndBtn = this.add.image(turnBtnX, turnBtnY, "ui_btn_iron")
+      .setDisplaySize(140, 52).setDepth(60).setInteractive();
+    this.add.text(turnBtnX, turnBtnY, "END TURN", TS.turnEndBtn)
       .setOrigin(0.5).setDepth(61);
     this.turnEndBtn.on("pointerdown", () => { if (!this.isDealing) this.onTurnEnd(); });
     this.turnEndBtn.on("pointerover", () => this.turnEndBtn.setTint(0xdddddd));
     this.turnEndBtn.on("pointerout", () => this.turnEndBtn.clearTint());
 
-    this._attackTxt = this.add.text(turnBtnX, turnBtnY - 40, "", TS.infoLabel)
+    this._attackTxt = this.add.text(turnBtnX, turnBtnY - 35, "", TS.infoValue)
       .setOrigin(0.5, 1).setDepth(61);
 
     this.refreshPlayerStats();
   }
 
-  // ── 정렬 버튼 ────────────────────────────────────────────────────────────
+  // ── 좌측 하단 버튼들 (정렬 / 옵션) ──────────────────────────────────────────
   createSortButton() {
     const sortCH = 50;
     const sortBottom = HAND_Y + CH / 2;
     const sortY = sortBottom - sortCH / 2;
-    const sortCX = PLAYER_PANEL_W / 2; 
-    this.sortBg = this.add.image(sortCX, sortY, "ui_btn_long")
-      .setDisplaySize(130, sortCH).setDepth(60).setInteractive();
-    this.add.text(sortCX, sortY, "SUIT/RANK", { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: '#aaddff' })
+    const sortCX = PLAYER_PANEL_W / 2;
+
+    // 1. 옵션 버튼 (정렬 버튼 위쪽)
+    const optY = sortY - 60;
+    const optBg = this.add.image(sortCX, optY, "ui_btn_iron")
+      .setDisplaySize(140, sortCH + 2).setDepth(60).setInteractive();
+    this.add.text(sortCX, optY, "OPTIONS", TS.sortBtn)
+      .setOrigin(0.5).setDepth(61);
+    optBg.on("pointerdown", () => this._showOptions());
+    optBg.on("pointerover", () => optBg.setTint(0xdddddd));
+    optBg.on("pointerout", () => optBg.clearTint());
+
+    // 2. 정렬 버튼
+    this.sortBg = this.add.image(sortCX, sortY, "ui_btn_iron")
+      .setDisplaySize(140, sortCH + 2).setDepth(60).setInteractive();
+    this.sortLabel = this.add.text(sortCX, sortY, (this.sortMode || "SUIT").toUpperCase(), TS.sortBtn)
       .setOrigin(0.5).setDepth(61);
     this.sortBg.on("pointerdown", () => {
       if (this.isDealing) return;
@@ -664,7 +663,7 @@ export class BattleScene extends Phaser.Scene {
 
       this.deck.startTurn(needed);
       const slotPositions = this.calcFieldPositions(maxField);
-      
+
       // 새로 추가된 데이터만 필터링해서 좌표 할당
       const newItems = this.deck.field.slice(currentCount).map((c, i) => ({
         ...c,
@@ -1237,7 +1236,7 @@ export class BattleScene extends Phaser.Scene {
     const used = this.attackCount;
     const max = this.player.attacksPerTurn;
     this._attackTxt.setText(`ATK ${used}/${max}`);
-    this._attackTxt.setColor(used >= max ? '#ff6666' : '#aaffcc');
+    //this._attackTxt.setColor(used >= max ? '#ff6666' : '#1a1d1a');
   }
 
   refreshPlayerStats() {
@@ -1503,6 +1502,12 @@ export class BattleScene extends Phaser.Scene {
     this.sortMode === mode
       ? (this.sortAsc = !this.sortAsc)
       : (this.sortMode = mode, this.sortAsc = true);
+
+    // 버튼 텍스트 업데이트
+    if (this.sortLabel) {
+      this.sortLabel.setText(mode.toUpperCase());
+    }
+
     this.doSorting(mode);
     this.selected.clear();
     this.render();

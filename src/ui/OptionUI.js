@@ -68,15 +68,15 @@ export class OptionUI {
     objs.push(
       scene.add.text(cx, bgmY - 28, "BGM", TS.optLabel).setOrigin(0.5).setDepth(D + 2)
     );
-    const bgmMinus = scene.add.rectangle(cx - 80, bgmY, 44, 44, 0x335544)
-      .setDepth(D + 2).setInteractive();
+    const bgmMinus = scene.add.image(cx - 80, bgmY, "ui_btn_iron")
+      .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
     objs.push(bgmMinus,
       scene.add.text(cx - 80, bgmY, "-", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
     const bgmTxt = scene.add.text(cx, bgmY, String(bgm), TS.optValue)
       .setOrigin(0.5).setDepth(D + 2);
     objs.push(bgmTxt);
-    const bgmPlus = scene.add.rectangle(cx + 80, bgmY, 44, 44, 0x335544)
-      .setDepth(D + 2).setInteractive();
+    const bgmPlus = scene.add.image(cx + 80, bgmY, "ui_btn_iron")
+      .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
     objs.push(bgmPlus,
       scene.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
     const bgmBarBg = scene.add.rectangle(cx, bgmY + 28, 204, 7, 0x224433).setDepth(D + 2);
@@ -93,10 +93,10 @@ export class OptionUI {
     };
     bgmMinus.on("pointerdown", () => updateBgm(bgm - 1));
     bgmPlus.on("pointerdown",  () => updateBgm(bgm + 1));
-    bgmMinus.on("pointerover", () => bgmMinus.setFillStyle(0x447766));
-    bgmMinus.on("pointerout",  () => bgmMinus.setFillStyle(0x335544));
-    bgmPlus.on("pointerover",  () => bgmPlus.setFillStyle(0x447766));
-    bgmPlus.on("pointerout",   () => bgmPlus.setFillStyle(0x335544));
+    bgmMinus.on("pointerover", () => bgmMinus.setTint(0xcccccc));
+    bgmMinus.on("pointerout",  () => bgmMinus.clearTint());
+    bgmPlus.on("pointerover",  () => bgmPlus.setTint(0xcccccc));
+    bgmPlus.on("pointerout",   () => bgmPlus.clearTint());
 
     // ── SFX ──────────────────────────────────────────────────────────────
     let sfx = scene.registry.get("sfxVolume") ?? 7;
@@ -104,15 +104,15 @@ export class OptionUI {
     objs.push(
       scene.add.text(cx, sfxY - 28, "SFX", TS.optLabel).setOrigin(0.5).setDepth(D + 2)
     );
-    const sfxMinus = scene.add.rectangle(cx - 80, sfxY, 44, 44, 0x335544)
-      .setDepth(D + 2).setInteractive();
+    const sfxMinus = scene.add.image(cx - 80, sfxY, "ui_btn_iron")
+      .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
     objs.push(sfxMinus,
       scene.add.text(cx - 80, sfxY, "-", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
     const sfxTxt = scene.add.text(cx, sfxY, String(sfx), TS.optValue)
       .setOrigin(0.5).setDepth(D + 2);
     objs.push(sfxTxt);
-    const sfxPlus = scene.add.rectangle(cx + 80, sfxY, 44, 44, 0x335544)
-      .setDepth(D + 2).setInteractive();
+    const sfxPlus = scene.add.image(cx + 80, sfxY, "ui_btn_iron")
+      .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
     objs.push(sfxPlus,
       scene.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
     const sfxBarBg = scene.add.rectangle(cx, sfxY + 28, 204, 7, 0x224433).setDepth(D + 2);
@@ -129,31 +129,31 @@ export class OptionUI {
     };
     sfxMinus.on("pointerdown", () => updateSfx(sfx - 1));
     sfxPlus.on("pointerdown",  () => updateSfx(sfx + 1));
-    sfxMinus.on("pointerover", () => sfxMinus.setFillStyle(0x447766));
-    sfxMinus.on("pointerout",  () => sfxMinus.setFillStyle(0x335544));
-    sfxPlus.on("pointerover",  () => sfxPlus.setFillStyle(0x447766));
-    sfxPlus.on("pointerout",   () => sfxPlus.setFillStyle(0x335544));
+    sfxMinus.on("pointerover", () => sfxMinus.setTint(0xcccccc));
+    sfxMinus.on("pointerout",  () => sfxMinus.clearTint());
+    sfxPlus.on("pointerover",  () => sfxPlus.setTint(0xcccccc));
+    sfxPlus.on("pointerout",   () => sfxPlus.clearTint());
 
     // ── 버튼 ─────────────────────────────────────────────────────────────
     const btnY = cy + ph / 2 - 48;
 
-    const exitBtn = scene.add.rectangle(cx - 80, btnY, 140, 48, 0x882211)
-      .setDepth(D + 2).setInteractive();
+    const exitBtn = scene.add.image(cx - 80, btnY, "ui_btn_iron")
+      .setDisplaySize(150, 52).setDepth(D + 2).setInteractive();
     objs.push(exitBtn,
       scene.add.text(cx - 80, btnY, "MAIN MENU", TS.menuBtn).setOrigin(0.5).setDepth(D + 3));
     exitBtn.on("pointerdown", () => {
       this.opts.onMainMenu?.();
     });
-    exitBtn.on("pointerover", () => exitBtn.setFillStyle(0xaa2222));
-    exitBtn.on("pointerout",  () => exitBtn.setFillStyle(0x882211));
+    exitBtn.on("pointerover", () => exitBtn.setTint(0xcccccc));
+    exitBtn.on("pointerout",  () => exitBtn.clearTint());
 
-    const closeBtn = scene.add.rectangle(cx + 80, btnY, 140, 48, 0x335544)
-      .setDepth(D + 2).setInteractive();
+    const closeBtn = scene.add.image(cx + 80, btnY, "ui_btn_iron")
+      .setDisplaySize(150, 52).setDepth(D + 2).setInteractive();
     objs.push(closeBtn,
       scene.add.text(cx + 80, btnY, "CLOSE", TS.menuBtn).setOrigin(0.5).setDepth(D + 3));
     closeBtn.on("pointerdown", () => this.close());
-    closeBtn.on("pointerover", () => closeBtn.setFillStyle(0x447766));
-    closeBtn.on("pointerout",  () => closeBtn.setFillStyle(0x335544));
+    closeBtn.on("pointerover", () => closeBtn.setTint(0xcccccc));
+    closeBtn.on("pointerout",  () => closeBtn.clearTint());
   }
 
   close() {

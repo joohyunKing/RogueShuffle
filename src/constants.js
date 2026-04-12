@@ -75,8 +75,8 @@ export const context = {
 // 535 ── 715   : 핸드 패널  (HAND_Y=625, 카드: 625±73)
 // 715 ── 720   : 하단 여백
 //
-export const PLAYER_PANEL_W = 200;            // 왼쪽 플레이어 정보 패널 폭
-export const ITEM_PANEL_W = 200;            // 오른쪽 아이템 패널 폭
+export const PLAYER_PANEL_W = 260;            // 왼쪽 플레이어 정보 패널 폭
+export const ITEM_PANEL_W = 260;            // 오른쪽 아이템 패널 폭
 
 export const BATTLE_LOG_H = 70;
 export const MONSTER_AREA_TOP = 80;

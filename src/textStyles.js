@@ -6,93 +6,73 @@
 
 const F = "'PressStart2P', Arial";
 
+// ── 공통 색상 팔레트 ────────────────────────────────────────────────────────
+const C = {
+  LABEL: '#1a1d1a', // 진한 잉크색 (기존 레이블)
+  VALUE: '#1a1d1a', // 진한 잉크색 (기존 수치)
+  GOLD: '#4a3a1a', // 진한 갈색/금색 (강조용)
+  HP: '#7a2d2d', // 더 진한 핏빛 (체력용)
+  STAT: '#1a1d1a', // 진한 잉크색 (스탯용)
+  BRIGHT: '#e8e0c8', // 밝은 크림색 (제목/버튼용)
+  DARK: '#f0e8d0', // 밝은 배경용 역스트로크 (필요시)
+};
+
 export const TS = {
-  // ── 게임 헤더 ──────────────────────────────────────────────────────────────
-  gameTitle:         { fontFamily: F, fontSize: '17px', color: '#ffffff' },
+  // ── 게임 헤더 / 제목 ────────────────────────────────────────────────────────
+  gameTitle: { fontFamily: F, fontSize: '17px', color: C.BRIGHT },
+  menuTitle: { fontFamily: F, fontSize: '38px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 8 },
 
   // ── 배틀 로그 ──────────────────────────────────────────────────────────────
-  log:               { fontFamily: F, fontSize: '14px', color: '#ffcc44', stroke: '#0a1a10', strokeThickness: 2 },
-  msg:               { fontFamily: F, fontSize: '17px', color: '#ffcc44', stroke: '#1a472a', strokeThickness: 3 },
+  log: { fontFamily: F, fontSize: '14px', color: C.GOLD, stroke: C.DARK, strokeThickness: 2 },
+  msg: { fontFamily: F, fontSize: '17px', color: C.GOLD, stroke: C.DARK, strokeThickness: 3 },
 
-  // ── 몬스터 영역 정보 ────────────────────────────────────────────────────────
-  infoLabel:         { fontFamily: F, fontSize: '12px', color: '#5fad6d' },
-  infoValue:         { fontFamily: F, fontSize: '14px', color: '#aabbaa' },
-  levelValue:        { fontFamily: F, fontSize: '17px', color: '#aaffcc' },
+  // ── UI 패널 정보 (PlayerUI 등) ──────────────────────────────────────────────
+  infoLabel: { fontFamily: F, fontSize: '12px', color: C.LABEL },
+  infoValue: { fontFamily: F, fontSize: '14px', color: C.VALUE },
+  goldValue: { fontFamily: F, fontSize: '14px', color: C.GOLD },
+  levelValue: { fontFamily: F, fontSize: '17px', color: C.VALUE },
 
-  // ── 플레이어 스탯 ──────────────────────────────────────────────────────────
-  playerHp:          { fontFamily: F, fontSize: '14px', color: '#ff9999' },
-  playerDef:         { fontFamily: F, fontSize: '14px', color: '#88ccff' },
+  playerHp: { fontFamily: F, fontSize: '14px', color: C.HP },
+  playerDef: { fontFamily: F, fontSize: '14px', color: C.STAT },
+  playerAtk: { fontFamily: F, fontSize: '14px', color: C.GOLD },
 
-  handRank:           { fontFamily: F, fontSize: '11px', color: '#aaccaa'  },
-  handMulti:           { fontFamily: F, fontSize: '11px', color: '#ffdd44'  },
+  // ── 족보 / 카드 정보 ────────────────────────────────────────────────────────
+  handRank: { fontFamily: F, fontSize: '11px', color: C.VALUE },
+  handMulti: { fontFamily: F, fontSize: '11px', color: C.GOLD },
+  comboLabel: { fontFamily: F, fontSize: '16px', color: C.LABEL },
+  comboScore: { fontFamily: F, fontSize: '16px', color: C.GOLD },
 
-  // ── 족보 프리뷰 ────────────────────────────────────────────────────────────
-  comboLabel:        { fontFamily: F, fontSize: '16px', color: '#88ffaa' },
-  comboScore:        { fontFamily: F, fontSize: '16px', color: '#ffdd66' },
+  // ── 패널 레이블 (FIELD / HAND / ITEMS) ──────────────────────────────────────
+  panelLabel: { fontFamily: F, fontSize: '13px', color: C.LABEL, letterSpacing: 4 },
 
-  // ── 패널 레이블 (FIELD / HAND) ─────────────────────────────────────────────
-  panelLabel:        { fontFamily: F, fontSize: '13px', color: '#5fad6d', letterSpacing: 4 },
-
-  // ── 정렬 버튼 ──────────────────────────────────────────────────────────────
-  sortBtn:           { fontFamily: F, fontSize: '14px', color: '#aaffcc' },
-
-  // ── 하단 버튼 ──────────────────────────────────────────────────────────────
-  menuBtn:           { fontFamily: F, fontSize: '15px', color: '#ffffff' },
-  turnEndBtn:        { fontFamily: F, fontSize: '15px', color: '#ffffff' },
+  // ── 버튼 ───────────────────────────────────────────────────────────────────
+  sortBtn: { fontFamily: F, fontSize: '13px', color: C.BRIGHT },
+  menuBtn: { fontFamily: F, fontSize: '15px', color: C.BRIGHT },
+  turnEndBtn: { fontFamily: F, fontSize: '13px', color: C.BRIGHT },
 
   // ── 몬스터 ─────────────────────────────────────────────────────────────────
-  monName:           { fontFamily: F, fontSize: '13px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
-  monStat:           { fontFamily: F, fontSize: '12px', color: '#cccccc' },
-  monHpText:         { fontFamily: F, fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
-  monStatNum:        { fontFamily: F, fontSize: '11px', stroke: '#000000', strokeThickness: 2 },
-  monTarget:         { fontFamily: F, fontSize: '13px', color: '#ffdd44', stroke: '#000000', strokeThickness: 2 },
-  monDead:           { fontFamily: F, fontSize: '32px', color: '#cc2222' },
+  monName: { fontFamily: F, fontSize: '13px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 2 },
+  monStat: { fontFamily: F, fontSize: '12px', color: C.VALUE },
+  monHpText: { fontFamily: F, fontSize: '11px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 2 },
+  monStatNum: { fontFamily: F, fontSize: '11px', stroke: C.DARK, strokeThickness: 2 },
+  monTarget: { fontFamily: F, fontSize: '13px', color: C.GOLD, stroke: C.DARK, strokeThickness: 2 },
+  monDead: { fontFamily: F, fontSize: '32px', color: C.HP },
 
   // ── 전투 이펙트 ────────────────────────────────────────────────────────────
-  damageHit:         { fontFamily: F, fontSize: '20px', color: '#ff5555', stroke: '#000000', strokeThickness: 3 },
-  damageBlocked:     { fontFamily: F, fontSize: '20px', color: '#88ccff', stroke: '#000000', strokeThickness: 3 },
+  damageHit: { fontFamily: F, fontSize: '20px', color: C.HP, stroke: C.DARK, strokeThickness: 3 },
+  damageBlocked: { fontFamily: F, fontSize: '20px', color: C.STAT, stroke: C.DARK, strokeThickness: 3 },
 
-  // ── 라운드 클리어 오버레이 ──────────────────────────────────────────────────
-  clearTitle:        { fontFamily: F, fontSize: '24px', color: '#44ff88', stroke: '#000000', strokeThickness: 4 },
-  clearSub:          { fontFamily: F, fontSize: '17px', color: '#aaffcc' },
-  clearNote:         { fontFamily: F, fontSize: '14px', color: '#88bb99' },
-
-  // ── 게임 오버 오버레이 ──────────────────────────────────────────────────────
-  gameOverTitle:     { fontFamily: F, fontSize: '30px', color: '#ff4444', stroke: '#000000', strokeThickness: 5 },
-  gameOverScoreLabel:{ fontFamily: F, fontSize: '17px', color: '#88bb99' },
-  gameOverScore:     { fontFamily: F, fontSize: '26px', color: '#ffdd00' },
-  overlayBtn:        { fontFamily: F, fontSize: '17px', color: '#ffffff' },
-
-  // ── 메인 메뉴 ──────────────────────────────────────────────────────────────
-  menuTitle:         { fontFamily: F, fontSize: '38px', color: '#ffffff', stroke: '#0a2a14', strokeThickness: 8 },
-  menuSub:           { fontFamily: F, fontSize: '15px', color: '#88bb99' },
-  menuPlayBtn:       { fontFamily: F, fontSize: '20px', color: '#ffffff' },
-  menuOptBtn:        { fontFamily: F, fontSize: '17px', color: '#aaffcc' },
-  version:           { fontFamily: F, fontSize: '12px', color: '#446655' },
-
-  // ── 옵션 씬 ────────────────────────────────────────────────────────────────
-  optTitle:          { fontFamily: F, fontSize: '24px', color: '#ffffff', letterSpacing: 4 },
-  optLabel:          { fontFamily: F, fontSize: '17px', color: '#aaffcc' },
-  optValue:          { fontFamily: F, fontSize: '22px', color: '#ffdd00' },
-  optBtn:            { fontFamily: F, fontSize: '24px', color: '#ffffff' },
-  optLangBtn:        { fontFamily: F, fontSize: '17px', color: '#ffffff' },
-  optBackBtn:        { fontFamily: F, fontSize: '17px', color: '#ffffff' },
+  // ── 시스템 오버레이 (클리어/오버) ─────────────────────────────────────────────
+  clearTitle: { fontFamily: F, fontSize: '24px', color: C.GOLD, stroke: C.DARK, strokeThickness: 4 },
+  clearSub: { fontFamily: F, fontSize: '17px', color: C.VALUE },
+  gameOverTitle: { fontFamily: F, fontSize: '30px', color: C.HP, stroke: C.DARK, strokeThickness: 5 },
+  gameOverScore: { fontFamily: F, fontSize: '26px', color: C.GOLD },
 
   // ── 마켓 씬 ────────────────────────────────────────────────────────────────
-  marketTitle:       { fontFamily: F, fontSize: '22px', color: '#44ffaa' },
-  marketSub:         { fontFamily: F, fontSize: '12px', color: '#88cc88' },
-  marketContinue:    { fontFamily: F, fontSize: '16px', color: '#aaffcc' },
+  marketTitle: { fontFamily: F, fontSize: '22px', color: C.BRIGHT },
+  marketSub: { fontFamily: F, fontSize: '12px', color: C.LABEL },
 
-  // ── 아이템 카드 ────────────────────────────────────────────────────────────
-  itemName:          { fontFamily: F, fontSize: '12px', color: '#aaffaa' },
-  itemDesc:          { fontFamily: F, fontSize: '11px', color: '#cccccc' },
-  itemCost:          { fontFamily: F, fontSize: '13px', color: '#ffdd44' },
-  itemCostNA:        { fontFamily: F, fontSize: '13px', color: '#ff4444' },
-  itemBuy:           { fontFamily: F, fontSize: '12px', color: '#aaffcc' },
-  itemBought:        { fontFamily: F, fontSize: '12px', color: '#666666' },
-
-  // ── 팝업 공통 ──────────────────────────────────────────────────────────────
-  popupTitle:        { fontFamily: F, fontSize: '15px', color: '#ccffcc' },
-  popupClose:        { fontFamily: F, fontSize: '14px', color: '#aaffaa' },
-  logPopupTitle:     { fontFamily: F, fontSize: '17px', color: '#44ffaa' },
+  itemName: { fontFamily: F, fontSize: '12px', color: C.VALUE },
+  itemDesc: { fontFamily: F, fontSize: '11px', color: C.VALUE, alpha: 0.8 },
+  itemCost: { fontFamily: F, fontSize: '13px', color: C.GOLD },
 };

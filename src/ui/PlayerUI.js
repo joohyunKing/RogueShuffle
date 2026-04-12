@@ -3,8 +3,8 @@ import { TS } from "../textStyles.js";
 import { getRequiredExp } from "../manager/playerManager.js";
 import { getLang, getHandName, getHandDesc, getPlayerUI } from "../service/langService.js";
 
-const SUIT_COLORS = { S: '#aaaaff', H: '#ff6666', D: '#ff9966', C: '#aaffaa' };
-const SUIT_SYMS   = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
+const SUIT_COLORS = { S: '#7a8da3', H: '#a35d5d', D: '#a37a5d', C: '#5d8a66' };
+const SUIT_SYMS = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
 const SUIT_KEYS = ['S', 'H', 'D', 'C'];
 
 /** lang.json playerUI 섹션 가져오기 (fallback: ko) */
@@ -30,29 +30,29 @@ function getHandNameByRank(rank, lang) {
  */
 export class PlayerUI {
   constructor(scene, player, opts = {}) {
-    this.scene  = scene;
+    this.scene = scene;
     this.player = player;
-    this.opts   = {
+    this.opts = {
       round: 1, battleLabel: null,
       showDeckCounts: false,
       showHandConfig: false,
       depth: 12,
       ...opts,
     };
-    this._objs        = [];
+    this._objs = [];
     this._tooltipObjs = [];
     // mutable refs
-    this.roundTxt        = null;
-    this.goldTxt         = null;
+    this.roundTxt = null;
+    this.goldTxt = null;
     this._playerLevelTxt = null;
-    this._xpBarFill      = null;
-    this.playerHpTxt     = null;
-    this._hpBarFill      = null;
-    this.playerDefTxt    = null;
-    this.playerAtkTxt    = null;
-    this._attrTxts       = {};
-    this._deckCountTxt   = null;
-    this._dummyCountTxt  = null;
+    this._xpBarFill = null;
+    this.playerHpTxt = null;
+    this._hpBarFill = null;
+    this.playerDefTxt = null;
+    this.playerAtkTxt = null;
+    this._attrTxts = {};
+    this._deckCountTxt = null;
+    this._dummyCountTxt = null;
     // handConfig 표시용 mutable refs (rank → { multiTxt, aoeDot })
     this._handConfigRows = {};
   }
@@ -61,29 +61,36 @@ export class PlayerUI {
 
   create() {
     const { scene, player: p, opts } = this;
-    const D   = opts.depth;
-    const PW  = PLAYER_PANEL_W;
-    const px  = 10;
+    const D = opts.depth;
+    const PW = PLAYER_PANEL_W;
+    const px = 10;
     const pcx = PW / 2 - 2;
-    const R   = PW - 10;
+    const R = PW - 10;
     const ROW = 22;
 
     // ── 패널 배경 ──────────────────────────────────────────────────────────
-    if (scene.textures.exists("ui_frame")) {
-      this._add(scene.add.nineslice(0, 0, "ui_frame", 0, PW - 4, GH, 8, 8, 8, 8)
+    if (scene.textures.exists("ui_panel_parchment")) {
+      // 배경을 검은색으로 먼저 채움 (이미지 뒤쪽)
+      const g = this._add(scene.add.graphics().setDepth(0));
+      g.fillStyle(0x000000, 1.0);
+      g.fillRect(0, 0, PW - 4, GH);
+
+      this._add(scene.add.image(0, 0, "ui_panel_parchment")
+        .setOrigin(0, 0).setDisplaySize(PW, GH).setDepth(1));
+    } else if (scene.textures.exists("ui_frame")) {
+      this._add(scene.add.nineslice(0, 0, "ui_frame", 0, PW, GH, 8, 8, 8, 8)
         .setOrigin(0, 0).setDepth(0));
     } else {
       const g = this._add(scene.add.graphics().setDepth(0));
       g.fillStyle(0x0a1810, 0.92);
-      g.fillRect(0, 0, PW - 4, GH);
+      g.fillRect(0, 0, PW, GH);
       g.lineStyle(1, 0x2a5a38);
-      g.strokeRect(0, 0, PW - 4, GH);
+      g.strokeRect(0, 0, PW, GH);
     }
 
     // ── JOB ────────────────────────────────────────────────────────────────
-    this._add(scene.add.text(pcx, 12, p.job.toUpperCase(), {
-      fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffdd88',
-    }).setOrigin(0.5, 0).setDepth(D));
+    this._add(scene.add.text(pcx, 12, p.job.toUpperCase(), TS.gameTitle)
+      .setOrigin(0.5, 0).setDepth(D));
 
     let ry = 36;
 
@@ -100,7 +107,7 @@ export class PlayerUI {
     ry += ROW;
     this._add(scene.add.text(px, ry, "GOLD", TS.infoLabel).setDepth(D));
     this.goldTxt = this._add(
-      scene.add.text(R, ry, `${p.gold}`, TS.levelValue).setOrigin(1, 0).setDepth(D)
+      scene.add.text(R, ry, `${p.gold}`, TS.goldValue).setOrigin(1, 0).setDepth(D)
     );
 
     // ── LV + XP 바 ─────────────────────────────────────────────────────────
@@ -111,9 +118,9 @@ export class PlayerUI {
     );
 
     ry += ROW;
-    this._add(scene.add.rectangle(px, ry, PW - 24, 5, 0x224433).setOrigin(0, 0.5).setDepth(D));
+    this._add(scene.add.rectangle(px, ry, PW - 24, 5, 0x1a2a1a).setOrigin(0, 0.5).setDepth(D));
     this._xpBarFill = this._add(
-      scene.add.rectangle(px, ry, 1, 5, 0x44ddaa).setOrigin(0, 0.5).setDepth(D + 1)
+      scene.add.rectangle(px, ry, 1, 5, 0x4d6655).setOrigin(0, 0.5).setDepth(D + 1)
     );
 
     ry += 14;
@@ -127,9 +134,9 @@ export class PlayerUI {
     );
 
     ry += ROW;
-    this._add(scene.add.rectangle(px, ry, PW - 24, 7, 0x2a3a2a).setOrigin(0, 0.5).setDepth(D));
+    this._add(scene.add.rectangle(px, ry, PW - 24, 7, 0x2a1a1a).setOrigin(0, 0.5).setDepth(D));
     this._hpBarFill = this._add(
-      scene.add.rectangle(px, ry, 1, 7, 0xdd3333).setOrigin(0, 0.5).setDepth(D + 1)
+      scene.add.rectangle(px, ry, 1, 7, 0xa34d4d).setOrigin(0, 0.5).setDepth(D + 1)
     );
 
     // ── DEF + ATK (같은 행) ─────────────────────────────────────────────────
@@ -140,40 +147,40 @@ export class PlayerUI {
     );
     this._add(scene.add.text(PW / 2 + 4, ry, "ATK", TS.infoLabel).setDepth(D));
     this.playerAtkTxt = this._add(
-      scene.add.text(R, ry, `${p.atk}`, TS.playerDef).setOrigin(1, 0).setDepth(D)
+      scene.add.text(R, ry, `${p.atk}`, TS.playerAtk).setOrigin(1, 0).setDepth(D)
     );
 
     // DEF / ATK 툴팁 히트 영역 (rowY를 const로 고정해 클로저 캡처 오류 방지)
     {
-      const rowY   = ry;
-      const hitH   = ROW;
-      const halfW  = PW / 2 - 8;
+      const rowY = ry;
+      const hitH = ROW;
+      const halfW = PW / 2 - 8;
       const defHit = this._add(
         scene.add.rectangle(px + halfW / 2, rowY + hitH / 2, halfW, hitH, 0xffffff, 0)
           .setDepth(D + 2).setInteractive()
       );
       const getDefTip = () => { const u = getPUI(getLang(scene)); return ['DEF', ...u.def_lines]; };
       const getAtkTip = () => { const u = getPUI(getLang(scene)); return ['ATK', ...u.atk_lines]; };
-      defHit.on('pointerover', () => this._showTooltipAt(getDefTip(), '#aaaadd', rowY));
-      defHit.on('pointerout',  () => this._hideTooltip());
-      defHit.on('pointerdown', () => this._showTooltipAt(getDefTip(), '#aaaadd', rowY));
+      defHit.on('pointerover', () => this._showTooltipAt(getDefTip(), TS.playerDef.color, rowY));
+      defHit.on('pointerout', () => this._hideTooltip());
+      defHit.on('pointerdown', () => this._showTooltipAt(getDefTip(), TS.playerDef.color, rowY));
 
       const atkHit = this._add(
         scene.add.rectangle(PW / 2 + 4 + halfW / 2, rowY + hitH / 2, halfW, hitH, 0xffffff, 0)
           .setDepth(D + 2).setInteractive()
       );
-      atkHit.on('pointerover', () => this._showTooltipAt(getAtkTip(), '#ffdd44', rowY));
-      atkHit.on('pointerout',  () => this._hideTooltip());
-      atkHit.on('pointerdown', () => this._showTooltipAt(getAtkTip(), '#ffdd44', rowY));
+      atkHit.on('pointerover', () => this._showTooltipAt(getAtkTip(), TS.playerAtk.color, rowY));
+      atkHit.on('pointerout', () => this._hideTooltip());
+      atkHit.on('pointerdown', () => this._showTooltipAt(getAtkTip(), TS.playerAtk.color, rowY));
     }
 
     ry += ROW + 6;
     this._add(scene.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(D));
 
     // ── Suit 레벨 (2×2 grid) ────────────────────────────────────────────────
-    const SUIT_ROW  = 30;
+    const SUIT_ROW = 30;
     const SUIT_COLS = [['S', 'H'], ['D', 'C']];
-    const colX      = [px, PW / 2];
+    const colX = [px, PW / 2];
     ry += 12;
     SUIT_COLS.forEach((pair, rowIdx) => {
       const sy = ry + rowIdx * SUIT_ROW;
@@ -193,7 +200,7 @@ export class PlayerUI {
             .setDepth(D + 2).setInteractive()
         );
         rowHit.on('pointerover', () => this._showTooltip(suit, sy, getLang(scene)));
-        rowHit.on('pointerout',  () => this._hideTooltip());
+        rowHit.on('pointerout', () => this._hideTooltip());
         rowHit.on('pointerdown', () => this._showTooltip(suit, sy, getLang(scene)));
       });
     });
@@ -218,29 +225,27 @@ export class PlayerUI {
 
     // ── 족보 배수 / AoE 목록 (선택) ─────────────────────────────────────────
     if (opts.showHandConfig) {
-      const lineH  = 14;
+      const lineH = 14;
       const multiX = PW - 32;  // ×N 오른쪽 정렬
-      const aoeX   = R;        // ● 오른쪽 정렬
+      const aoeX = R;        // ● 오른쪽 정렬
 
       // 섹션 높이 계산 후 추적
       if (opts.showDeckCounts) ry += ROW + 6;
-      else                      ry += 2 * SUIT_ROW + 8;
+      else ry += 2 * SUIT_ROW + 8;
       this._add(scene.add.rectangle(pcx, ry, PW - 20, 1, 0x2a5a38).setDepth(D));
       ry += 8;
       this._add(scene.add.text(px, ry, "HANDS", TS.infoLabel).setDepth(D));
       ry += lineH + 2;
 
-      const lang         = getLang(scene);
+      const lang = getLang(scene);
       const enabledHands = p.getEnabledHands?.() ?? new Set(HAND_RANKS_DESC);
-      const effHandCfg   = p.getEffectiveHandConfig?.() ?? p.handConfig;
+      const effHandCfg = p.getEffectiveHandConfig?.() ?? p.handConfig;
       HAND_RANKS_DESC.filter(rank => enabledHands.has(rank)).forEach(rank => {
-        const rowY   = ry;  // 클로저용 고정값
-        const cfg    = effHandCfg?.[rank] ?? { multi: 1, aoe: false };
-        const isAoe  = cfg.aoe;
-        const nameColor    = '#aaccaa'; //Aoe 아니어도 훌륭한 hand isAoe ? '#aaccaa' : '#666666';
-        const tooltipColor = '#aaccaa'; //Aoe 아니어도 훌륭한 hand isAoe ? '#aaccaa' : '#888888';
-        const handKey      = HAND_DATA[rank]?.key;
-        const desc         = getHandDesc(lang, handKey);
+        const rowY = ry;  // 클로저용 고정값
+        const cfg = effHandCfg?.[rank] ?? { multi: 1, aoe: false };
+        const isAoe = cfg.aoe;
+        const handKey = HAND_DATA[rank]?.key;
+        const desc = getHandDesc(lang, handKey);
 
         // 반짝 효과용 glow 배경 (fillAlpha=1, 오브젝트 alpha=0으로 초기 숨김)
         const glowBg = this._add(
@@ -249,7 +254,7 @@ export class PlayerUI {
         );
 
         this._add(scene.add.text(px, rowY, getHandNameByRank(rank, lang),
-          { ...TS.handRank, color: nameColor }).setDepth(D));
+          TS.handRank).setDepth(D));
 
         const multiTxt = this._add(
           scene.add.text(multiX, rowY, `x${cfg.multi}`, TS.handMulti)
@@ -258,7 +263,7 @@ export class PlayerUI {
 
         const aoeDot = this._add(
           scene.add.text(aoeX, rowY, isAoe ? '\u25cf' : '',
-            { fontFamily: 'Arial', fontSize: '10px', color: '#44ffaa' })
+            { fontFamily: 'Arial', fontSize: '10px', color: TS.infoValue.color })
             .setOrigin(1, 0).setDepth(D)
         );
 
@@ -267,9 +272,9 @@ export class PlayerUI {
           scene.add.rectangle(pcx, rowY + lineH / 2, PW - 16, lineH, 0xffffff, 0)
             .setDepth(D + 2).setInteractive()
         );
-        rowHit.on('pointerover', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], tooltipColor, rowY, 285));
-        rowHit.on('pointerout',  () => this._hideTooltip());
-        rowHit.on('pointerdown', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], tooltipColor, rowY, 285));
+        rowHit.on('pointerover', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.handRank.color, rowY, 285));
+        rowHit.on('pointerout', () => this._hideTooltip());
+        rowHit.on('pointerdown', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.handRank.color, rowY, 285));
 
         this._handConfigRows[rank] = { multiTxt, aoeDot, glowBg };
         ry += lineH;
@@ -282,10 +287,10 @@ export class PlayerUI {
 
   // ── 툴팁 (내부) ──────────────────────────────────────────────────────────
   _showTooltip(suit, rowY, lang = 'ko') {
-    const p       = this.player;
+    const p = this.player;
     const perCard = Math.floor((p.attrs[suit] ?? 1) * (p.adaptability?.[suit] ?? 1));
-    const sym     = { S: '♠', H: '♥', D: '♦', C: '♣' }[suit];
-    const u       = getPUI(lang);
+    const sym = { S: '♠', H: '♥', D: '♦', C: '♣' }[suit];
+    const u = getPUI(lang);
     const [title, effect] = u[`suit_${suit}`];
     const cardLine = (u.suit_cards ?? '{n} × {sym}장')
       .replace('{n}', perCard).replace('{sym}', sym);
@@ -295,11 +300,11 @@ export class PlayerUI {
   _showTooltipAt(lines, color, rowY, tooltipW = 210) {
     this._hideTooltip();
     const { scene } = this;
-    const PW     = PLAYER_PANEL_W;
-    const tx     = PW + 12;
-    const ty     = Math.min(rowY, GH - 100);
-    const tw     = tooltipW, lineH = 20, pad = 12;
-    const th     = pad * 2 + lines.length * lineH;
+    const PW = PLAYER_PANEL_W;
+    const tx = PW + 12;
+    const ty = Math.min(rowY, GH - 100);
+    const tw = tooltipW, lineH = 20, pad = 12;
+    const th = pad * 2 + lines.length * lineH;
     const colorN = parseInt(color.replace('#', ''), 16);
 
     const g = scene.add.graphics().setDepth(300);
@@ -327,8 +332,8 @@ export class PlayerUI {
 
   // ── 갱신 ─────────────────────────────────────────────────────────────────
   refresh() {
-    const p    = this.player;
-    const PW   = PLAYER_PANEL_W;
+    const p = this.player;
+    const PW = PLAYER_PANEL_W;
     const barW = PW - 24;
 
     this.goldTxt?.setText(`${p.gold}`);
@@ -348,8 +353,8 @@ export class PlayerUI {
   }
 
   refreshLevel() {
-    const p      = this.player;
-    const req    = getRequiredExp(p.level);
+    const p = this.player;
+    const req = getRequiredExp(p.level);
     const xpFill = Math.max(1, Math.round((PLAYER_PANEL_W - 24) * Math.min(1, p.xp / req)));
     this._playerLevelTxt?.setText(String(p.level));
     this._xpBarFill?.setDisplaySize(xpFill, 5);
@@ -363,7 +368,7 @@ export class PlayerUI {
     HAND_RANKS_DESC.forEach(rank => {
       const row = this._handConfigRows[rank];
       if (!row) return;
-      const cfg   = handConfig?.[rank] ?? { multi: 1, aoe: false };
+      const cfg = handConfig?.[rank] ?? { multi: 1, aoe: false };
       const isAoe = cfg.aoe;
       row.multiTxt.setText(`x${cfg.multi}`);
       row.multiTxt.setColor(isAoe ? '#ffdd44' : '#888888');
@@ -436,7 +441,7 @@ export class PlayerUI {
 
   destroy() {
     this._hideTooltip();
-    this._objs.forEach(o => { try { o?.destroy(); } catch (_) {} });
+    this._objs.forEach(o => { try { o?.destroy(); } catch (_) { } });
     this._objs = [];
   }
 }

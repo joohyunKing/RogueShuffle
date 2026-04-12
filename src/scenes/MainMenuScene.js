@@ -48,30 +48,30 @@ export class MainMenuScene extends Phaser.Scene {
     
     if (saveExists) {
         // ── NEW GAME ──────────────────────────────────────────────────────
-        newBg = this.add.rectangle(cx, 380, 280, 56, 0x22aa44).setInteractive();
+        newBg = this.add.image(cx, 380, "ui_btn_iron").setDisplaySize(280, 56).setInteractive();
         this.add.text(cx, 380, "NEW GAME", TS.menuPlayBtn).setOrigin(0.5);
 
         // ── CONTINUE ──────────────────────────────────────────────────────
-        contBg = this.add.rectangle(cx, 454, 280, 56, 0x1a8833).setInteractive();
+        contBg = this.add.image(cx, 454, "ui_btn_iron").setDisplaySize(280, 56).setInteractive();
         this.add.text(cx, 454, "CONTINUE", TS.menuPlayBtn).setOrigin(0.5);
 
         // ── OPTIONS ───────────────────────────────────────────────────────
-        optBg = this.add.rectangle(cx, 530, 280, 48, 0x335544).setInteractive();
+        optBg = this.add.image(cx, 530, "ui_btn_iron").setDisplaySize(280, 48).setInteractive();
         this.add.text(cx, 530, "OPTIONS", TS.menuOptBtn).setOrigin(0.5);
     } else {
         // ── NEW GAME ──────────────────────────────────────────────────────
-        newBg = this.add.rectangle(cx, 420, 280, 64, 0x22aa44).setInteractive();
+        newBg = this.add.image(cx, 420, "ui_btn_iron").setDisplaySize(280, 64).setInteractive();
         this.add.text(cx, 420, "NEW GAME", TS.menuPlayBtn).setOrigin(0.5);
 
         // ── OPTIONS ───────────────────────────────────────────────────────
-        optBg = this.add.rectangle(cx, 510, 280, 56, 0x335544).setInteractive();
+        optBg = this.add.image(cx, 510, "ui_btn_iron").setDisplaySize(280, 56).setInteractive();
         this.add.text(cx, 510, "OPTIONS", TS.menuOptBtn).setOrigin(0.5);
     }
     
     // ── New event ───────────────────────────────────────────────────────
     newBg.on("pointerdown", () => { deleteSave(); this.scene.start("PreloadScene", {}); });
-    newBg.on("pointerover", () => newBg.setFillStyle(0x33cc55));
-    newBg.on("pointerout", () => newBg.setFillStyle(0x22aa44));
+    newBg.on("pointerover", () => newBg.setTint(0xcccccc));
+    newBg.on("pointerout", () => newBg.clearTint());
 
     // ── Continue event ───────────────────────────────────────────────────────
     if (contBg) {  // saveExists가 false일 때 선언되지 않음
@@ -81,14 +81,14 @@ export class MainMenuScene extends Phaser.Scene {
             
             this.scene.start("PreloadScene", save);
         });
-        contBg.on("pointerover", () => contBg.setFillStyle(0x2dbb55));
-        contBg.on("pointerout", () => contBg.setFillStyle(0x1a8833));
+        contBg.on("pointerover", () => contBg.setTint(0xcccccc));
+        contBg.on("pointerout", () => contBg.clearTint());
     }
 
     // ── OPTIONS event ───────────────────────────────────────────────────────
     optBg.on("pointerdown", () => this.scene.start("OptionsScene"));
-    optBg.on("pointerover", () => optBg.setFillStyle(0x447766));
-    optBg.on("pointerout", () => optBg.setFillStyle(0x335544));
+    optBg.on("pointerover", () => optBg.setTint(0xcccccc));
+    optBg.on("pointerout", () => optBg.clearTint());
     
     // ── 버전 ────────────────────────────────────────────────────────────
     this.add.text(GW - 20, GH - 12, "v0.1.0", TS.version).setOrigin(1, 1);
