@@ -71,23 +71,31 @@ export class MonsterManager {
       || dm.disabledSuits.has(card.suit);
   }
 
-  // ── 몬스터 애니메이션 재생 후 idle 복귀 ──────────────────────────────────
-  // animType 키가 없으면 fallbackType 으로 시도
+  // ── 몬스터 애니메이션 재생 ────────────────────────────────────────────────
+  // [기존 sprite 방식 주석 처리 — MonsterView tween으로 대체]
   _playMonAnim(monIdx, animType, fallbackType = 'attack') {
     const { scene } = this;
-    const sprite = scene._monsterSprites?.[monIdx];
-    if (!(sprite instanceof Phaser.GameObjects.Sprite)) return;
-    const mon = scene.monsters[monIdx];
-    if (!mon) return;
-    const key     = `${mon.id}_${animType}`;
-    const playKey = scene.anims.exists(key) ? key
-      : (scene.anims.exists(`${mon.id}_${fallbackType}`) ? `${mon.id}_${fallbackType}` : null);
-    if (!playKey) return;
-    sprite.play(playKey);
-    sprite.once('animationcomplete', () => {
-      const idleKey = `${mon.id}_idle`;
-      if (scene.anims.exists(idleKey)) sprite.play(idleKey);
-    });
+    const view = scene.monsterViews?.[monIdx];
+    if (!view) return;
+    if (animType === 'skill') {
+      view.playSkill();
+    } else {
+      view.playAttack();
+    }
+    // [기존 코드 주석 처리]
+    // const sprite = scene._monsterSprites?.[monIdx];
+    // if (!(sprite instanceof Phaser.GameObjects.Sprite)) return;
+    // const mon = scene.monsters[monIdx];
+    // if (!mon) return;
+    // const key     = `${mon.id}_${animType}`;
+    // const playKey = scene.anims.exists(key) ? key
+    //   : (scene.anims.exists(`${mon.id}_${fallbackType}`) ? `${mon.id}_${fallbackType}` : null);
+    // if (!playKey) return;
+    // sprite.play(playKey);
+    // sprite.once('animationcomplete', () => {
+    //   const idleKey = `${mon.id}_idle`;
+    //   if (scene.anims.exists(idleKey)) sprite.play(idleKey);
+    // });
   }
 
   // ── 피격 이펙트 (flash + sfx + 데미지 라벨) ──────────────────────────────
@@ -251,11 +259,12 @@ export class MonsterManager {
     scene.effects.hitExplosion(aoeX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, aliveSprites);
 
     aliveMonsters.forEach(m => {
+      const monIdx = scene.monsters.indexOf(m);
       const dmg = Math.floor(Math.max(0, score - m.def));
       m.hp = Math.max(0, m.hp - dmg);
       if (scene.isBoss && m === scene.monsters[0]) m._damageTaken = (m._damageTaken ?? 0) + dmg;
       scene.addBattleLog(`${m.name}에게 ${dmg} 데미지!`);
-      if (m.hp <= 0) this._onKill(m); // AOE: _playDie 생략, render() 가 처리
+      if (m.hp <= 0) this._onKill(m, monIdx);
     });
 
     scene.isDealing = false;
@@ -311,10 +320,21 @@ export class MonsterManager {
       monSprite ?? null
     );
 
-    const damagedKey = `${mon.id}_damaged`;
-    if (monSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
-      monSprite.play(damagedKey);
-      monSprite.once('animationcomplete', () => {
+    // [기존 damaged 스프라이트 애니메이션 주석 처리 — MonsterView.playHit으로 대체]
+    // const damagedKey = `${mon.id}_damaged`;
+    // if (monSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
+    //   monSprite.play(damagedKey);
+    //   monSprite.once('animationcomplete', () => {
+    //     scene.isDealing = false;
+    //     this._afterAttack(mon, monIdx, overkill, bullseye);
+    //   });
+    // } else {
+    //   scene.isDealing = false;
+    //   this._afterAttack(mon, monIdx, overkill, bullseye);
+    // }
+    const view = scene.monsterViews?.[monIdx];
+    if (view) {
+      view.playHit(() => {
         scene.isDealing = false;
         this._afterAttack(mon, monIdx, overkill, bullseye);
       });
@@ -428,10 +448,17 @@ export class MonsterManager {
           onDone?.();
         }
       } else {
-        const damagedKey = `${target.id}_damaged`;
-        if (toSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
-          toSprite.play(damagedKey);
-          toSprite.once('animationcomplete', () => onDone?.());
+        // [기존 damaged 스프라이트 애니메이션 주석 처리 — MonsterView.playHit으로 대체]
+        // const damagedKey = `${target.id}_damaged`;
+        // if (toSprite instanceof Phaser.GameObjects.Sprite && scene.anims.exists(damagedKey)) {
+        //   toSprite.play(damagedKey);
+        //   toSprite.once('animationcomplete', () => onDone?.());
+        // } else {
+        //   onDone?.();
+        // }
+        const targetView = scene.monsterViews?.[idx];
+        if (targetView) {
+          targetView.playHit(() => onDone?.());
         } else {
           onDone?.();
         }
@@ -449,8 +476,10 @@ export class MonsterManager {
     const view = this.scene.monsterViews?.[monIdx];
     if (!view) return;
     view.updateStats(mon);
-    const dieKey = `${mon.id}_die`;
-    if (this.scene.anims.exists(dieKey)) view.sprite.play(dieKey);
+    // [기존 sprite 애니메이션 주석 처리 — MonsterView.playDie으로 대체]
+    // const dieKey = `${mon.id}_die`;
+    // if (this.scene.anims.exists(dieKey)) view.sprite.play(dieKey);
+    view.playDie();
   }
 
   // ── 몬스터 행동 결정 (일반 공격 or 스킬) ─────────────────────────────────
@@ -498,9 +527,7 @@ export class MonsterManager {
     const positions = this.calcMonsterPositions(scene.monsters.length);
     const mX        = positions[monIdx]?.x ?? GW / 2;
     const monSprite = scene._monsterSprites?.[monIdx];
-    const fromY     = monSprite instanceof Phaser.GameObjects.Sprite
-      ? monSprite.y - 30
-      : MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
+    const fromY     = monSprite ? monSprite.y - 30 : MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
 
     this._playMonAnim(monIdx, 'attack');
     scene.effects.throwOrb(mX, fromY, ATK_ORB.x, ATK_ORB.y, 0xff4444);

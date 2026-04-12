@@ -327,7 +327,7 @@ export default class effectManager {
 
         this.scene.tweens.add({
             targets: monster,
-            scale: 1.1,
+            scale: 1.04,
             duration: 80,
             yoyo: true
         });

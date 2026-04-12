@@ -4,7 +4,7 @@
       "round": 1,
       "bg": "01_forest_night.jpg",
       "races": [
-        "skell"
+        "skeleton"
       ],
       "baseStat": {
         "hp": 50,
@@ -42,8 +42,8 @@
       "round": 2,
       "bg": "02_village.jpg",
       "races": [
-        "skell",
-        "orc"
+        "zombie",
+        "skeleton"
       ],
       "baseStat": {
         "hp": 75,
@@ -84,7 +84,8 @@
       "round": 3,
       "bg": "03_village_to_castle.jpg",
       "races": [
-        "orc"
+        "zombie",
+        "goblin"
       ],
       "baseStat": {
         "hp": 110,

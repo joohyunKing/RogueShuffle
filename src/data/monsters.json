@@ -1,16 +1,114 @@
 {
   "monsters": [
     {
-      "id":"skeleton_warrior",
-      "name": "스켈레톤 전사",
+      "id": "zombie_warrior",
+      "name": "좀비 전사",
+      "useYn": "Y",
       "cost": 1,
-      "race": "skell",
+      "race": "zombie",
       "job": "warrior",
-      "skill":{
-        "type":"damage",
-        "probability":15,
-        "name" : "strike",
-        "damMult":1.5
+      "img": "zombie_warrior.png",
+      "skill": {
+        "type": "damage",
+        "probability": 15,
+        "name": "strike",
+        "damMult": 1.5
+      }
+    },
+    {
+      "id": "zombie_archer",
+      "name": "좀비 궁수",
+      "useYn": "Y",
+      "cost": 1,
+      "race": "zombie",
+      "job": "archer",
+      "img": "zombie_archer.png"
+    },
+    {
+      "id": "zombie_sniper",
+      "name": "좀비 저격수",
+      "useYn": "Y",
+      "cost": 2,
+      "race": "zombie",
+      "job": "sniper",
+      "img": "zombie_sniper.png"
+    },
+    {
+      "id": "zombie_champion",
+      "name": "좀비 챔피언",
+      "useYn": "Y",
+      "cost": 2,
+      "race": "zombie",
+      "job": "champion",
+      "img": "zombie_champion.png",
+      "skill": {
+        "type": "damage",
+        "probability": 15,
+        "name": "bash",
+        "damMult": 1.5
+      }
+    },
+    {
+      "id": "goblin_warrior",
+      "name": "고블린 전사",
+      "useYn": "Y",
+      "cost": 1,
+      "race": "goblin",
+      "job": "warrior",
+      "img": "goblin_warrior.png",
+      "skill": {
+        "type": "damage",
+        "probability": 15,
+        "name": "strike",
+        "damMult": 1.5
+      }
+    },
+    {
+      "id": "goblin_archer",
+      "name": "고블린 궁수",
+      "useYn": "Y",
+      "cost": 1,
+      "race": "goblin",
+      "job": "archer",
+      "img": "goblin_archer.png"
+    },
+    {
+      "id": "goblin_thief",
+      "name": "고블린 도적",
+      "useYn": "Y",
+      "cost": 2,
+      "race": "goblin",
+      "job": "thief",
+      "img": "goblin_thief.png"
+    },
+    {
+      "id": "goblin_champion",
+      "name": "고블린 챔피언",
+      "useYn": "Y",
+      "cost": 2,
+      "race": "goblin",
+      "job": "champion",
+      "img": "goblin_champion.png",
+      "skill": {
+        "type": "damage",
+        "probability": 15,
+        "name": "bash",
+        "damMult": 1.5
+      }
+    },
+    {
+      "id": "skeleton_warrior",
+      "name": "스켈레톤 전사",
+      "useYn": "Y",
+      "cost": 1,
+      "race": "skeleton",
+      "job": "warrior",
+      "img": "skeleton_warrior.png",
+      "skill": {
+        "type": "damage",
+        "probability": 15,
+        "name": "strike",
+        "damMult": 1.5
       },
       "sprite": {
         "idle": "skell_warrior_idle.png",
@@ -20,14 +118,16 @@
       }
     },
     {
-      "id":"skeleton_archer",
+      "id": "skeleton_archer",
       "name": "스켈레톤 궁수",
+      "useYn": "Y",
       "cost": 1,
-      "race": "skell",
+      "race": "skeleton",
       "job": "archer",
-      "skill":{
-        "type":"debuff",
-        "probability":15,
+      "img": "skeleton_archer.png",
+      "skill": {
+        "type": "debuff",
+        "probability": 15,
         "debuffId": "weakness"
       },
       "sprite": {
@@ -38,11 +138,13 @@
       }
     },
     {
-      "id":"orc_archer",
+      "id": "orc_archer",
       "name": "오크 궁수",
+      "useYn": "Y",
       "cost": 1,
       "race": "orc",
       "job": "archer",
+      "img": "orc_archer.png",
       "sprite": {
         "idle": "orc_archer_idle.png",
         "attack": "orc_archer_attack.png",
@@ -52,11 +154,13 @@
       }
     },
     {
-      "id":"orc_warrior",
+      "id": "orc_warrior",
       "name": "오크 전사",
+      "useYn": "Y",
       "cost": 1,
       "race": "orc",
       "job": "warrior",
+      "img": "orc_warrior.png",
       "sprite": {
         "idle": "orc_warrior_idle.png",
         "attack": "orc_warrior_attack.png",
@@ -65,11 +169,13 @@
       }
     },
     {
-      "id":"orc_mage",
+      "id": "orc_mage",
       "name": "오크 마법사",
+      "useYn": "Y",
       "cost": 2,
       "race": "orc",
       "job": "mage",
+      "img": "orc_mage.png",
       "sprite": {
         "idle": "orc_mage_idle.png",
         "attack": "orc_mage_attack.png",
@@ -79,11 +185,13 @@
       }
     },
     {
-      "id":"human_warrior",
+      "id": "human_warrior",
       "name": "인간 전사",
-      "cost": 2,
+      "useYn": "Y",
+      "cost": 1,
       "race": "human",
       "job": "warrior",
+      "img": "human_warrior.png",
       "sprite": {
         "idle": "human_warrior_idle.png",
         "attack": "human_warrior_attack.png",
@@ -93,8 +201,25 @@
       }
     },
     {
-      "id":"human_archer",
+      "id": "human_thief",
+      "name": "인간 도적",
+      "useYn": "Y",
+      "cost": 1,
+      "race": "human",
+      "job": "thief",
+      "img": "human_thief.png",
+      "sprite": {
+        "idle": "human_thief_idle.png",
+        "attack": "human_thief_attack.png",
+        "skill": "human_thief_skill.png",
+        "damaged": "human_thief_damaged.png",
+        "die": "human_warrior_die.png"
+      }
+    },
+    {
+      "id": "human_archer",
       "name": "인간 궁수",
+      "useYn": "N",
       "cost": 2,
       "race": "human",
       "job": "archer",
@@ -107,14 +232,16 @@
       }
     },
     {
-      "id":"human_knight",
+      "id": "human_knight",
       "name": "인간 기사",
+      "useYn": "Y",
       "cost": 2,
       "race": "human",
       "job": "knight",
-      "skill":{
-        "type":"debuff",
-        "probability":15,
+      "img": "human_knight.png",
+      "skill": {
+        "type": "debuff",
+        "probability": 15,
         "debuffId": "weakness"
       },
       "sprite": {
@@ -126,14 +253,15 @@
       }
     },
     {
-      "id":"undead_lancer",
+      "id": "undead_lancer",
       "name": "언데드 랜서",
+      "useYn": "N",
       "cost": 1,
       "race": "undead",
       "job": "lancer",
-      "skill":{
-        "type":"debuff",
-        "probability":15,
+      "skill": {
+        "type": "debuff",
+        "probability": 15,
         "debuffId": "small_field"
       },
       "sprite": {
@@ -144,16 +272,17 @@
       }
     },
     {
-      "id":"undead_mage",
+      "id": "undead_mage",
       "name": "언데드 메이지",
+      "useYn": "N",
       "cost": 2,
       "race": "undead",
       "job": "mage",
-      "skill":{
-        "type":"damage",
-        "probability":30,
-        "name" : "fireball",
-        "damMult":1.5
+      "skill": {
+        "type": "damage",
+        "probability": 30,
+        "name": "fireball",
+        "damMult": 1.5
       },
       "sprite": {
         "idle": "undead_mage_idle.png",
@@ -164,15 +293,16 @@
       }
     },
     {
-      "id":"undead_knight",
+      "id": "undead_knight",
       "name": "언데드 기사",
+      "useYn": "N",
       "cost": 3,
       "race": "undead",
       "job": "knight",
-      "skill":{
-        "type":"debuff",
-        "probability":30,
-        "debuffId":"confusion"
+      "skill": {
+        "type": "debuff",
+        "probability": 30,
+        "debuffId": "confusion"
       },
       "sprite": {
         "idle": "undead_knight_idle.png",
@@ -182,16 +312,17 @@
       }
     },
     {
-      "id":"undead_warrior",
+      "id": "undead_warrior",
       "name": "언데드 전사",
+      "useYn": "N",
       "cost": 1,
       "race": "undead",
       "job": "warrior",
-      "skill":{
-        "type":"damage",
-        "probability":30,
-        "name" : "bash",
-        "damMult":2.0
+      "skill": {
+        "type": "damage",
+        "probability": 30,
+        "name": "bash",
+        "damMult": 2.0
       },
       "sprite": {
         "idle": "undead_warrior_idle.png",
@@ -202,6 +333,4 @@
       }
     }
   ]
-
 }
-  

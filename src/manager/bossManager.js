@@ -176,11 +176,13 @@ export class BossManager {
     target.state  = 'idle';
 
     const targetIdx = scene.monsters.indexOf(target);
-    const sprite    = scene._monsterSprites?.[targetIdx];
-    if (sprite instanceof Phaser.GameObjects.Sprite) {
-      const idleKey = `${target.id}_idle`;
-      if (scene.anims.exists(idleKey)) sprite.play(idleKey);
-    }
+    // [기존 sprite 애니메이션 주석 처리 — MonsterView.revive()로 대체]
+    // const sprite    = scene._monsterSprites?.[targetIdx];
+    // if (sprite instanceof Phaser.GameObjects.Sprite) {
+    //   const idleKey = `${target.id}_idle`;
+    //   if (scene.anims.exists(idleKey)) sprite.play(idleKey);
+    // }
+    scene.monsterViews?.[targetIdx]?.revive();
 
     this._playAnim(boss, monIdx, 'skill');
     scene.renderMonsters();
@@ -250,28 +252,32 @@ export class BossManager {
     const positions = scene.monsterManager.calcMonsterPositions(scene.monsters.length);
     const mX = positions[monIdx]?.x ?? GW / 2;
     const sprite = scene._monsterSprites?.[monIdx];
-    const mY = sprite instanceof Phaser.GameObjects.Sprite
-      ? sprite.y - 30
-      : MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
+    const mY = sprite ? sprite.y - 30 : MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
     return { mX, mY };
   }
 
   // ── 애니메이션 재생 ──────────────────────────────────────────────────────
   _playAnim(boss, monIdx, animType) {
     const { scene } = this;
-    const sprite = scene._monsterSprites?.[monIdx];
-    if (!(sprite instanceof Phaser.GameObjects.Sprite)) return;
-
-    const key     = `${boss.id}_${animType}`;
-    const playKey = scene.anims.exists(key) ? key : `${boss.id}_attack`;
-    const idleKey = `${boss.id}_idle`;
-
-    if (scene.anims.exists(playKey)) {
-      sprite.play(playKey);
-      sprite.once('animationcomplete', () => {
-        if (scene.anims.exists(idleKey)) sprite.play(idleKey);
-      });
+    const view = scene.monsterViews?.[monIdx];
+    if (!view) return;
+    if (animType === 'skill') {
+      view.playSkill();
+    } else {
+      view.playAttack();
     }
+    // [기존 sprite 방식 주석 처리]
+    // const sprite = scene._monsterSprites?.[monIdx];
+    // if (!(sprite instanceof Phaser.GameObjects.Sprite)) return;
+    // const key     = `${boss.id}_${animType}`;
+    // const playKey = scene.anims.exists(key) ? key : `${boss.id}_attack`;
+    // const idleKey = `${boss.id}_idle`;
+    // if (scene.anims.exists(playKey)) {
+    //   sprite.play(playKey);
+    //   sprite.once('animationcomplete', () => {
+    //     if (scene.anims.exists(idleKey)) sprite.play(idleKey);
+    //   });
+    // }
   }
 
   // ── 통합 이펙트 표시 (flash + sfx + 떠오르는 텍스트) ────────────────────────

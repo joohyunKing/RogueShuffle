@@ -27,7 +27,8 @@ export class GameScene extends Phaser.Scene {
     const round = data.round ?? 1;
     const player = data.player ?? null;
     const deck = data.deck ?? null;
-    const battleIndex = data.battleIndex ?? data.battle?.battleIndex ?? 0;
+    const battle = data.battle ?? null;
+    const battleIndex = data.battleIndex ?? battle?.battleIndex ?? 0;
     const battleLog = data.battleLog ?? [];
 
     const roundData = roundManager.getRoundData(round, battleIndex);
@@ -45,7 +46,10 @@ export class GameScene extends Phaser.Scene {
       case 'normal':
       case 'elite':
       case 'boss':
-        this.scene.start('BattleScene', { round, battleIndex, player, deck, roundData, battleLog });
+        this.scene.start('BattleScene', {
+          round, battleIndex, player, deck, roundData, battleLog,
+          monsters: battle?.monsters ?? null,
+        });
         break;
     }
   }

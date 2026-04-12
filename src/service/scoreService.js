@@ -2,78 +2,19 @@ import { HAND_RANK, HAND_DATA } from "../constants.js";
 import { relicMap } from '../manager/relicManager.js';
 import { sealMap } from '../manager/sealManager.js';
 
-//최종 점수
+const ADD_TYPES      = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage"]);
+const MULTIPLY_TYPES = new Set(["multiply", "multiplyPerHandRemaining"]);
+
+// calculateScore — getScoreDetails의 경량 wrapper (프리뷰용)
 export function calculateScore(cards, context) {
-    const relics = getRelicsFromContext(context);
-
-    // 1. 족보 계산
-    const enabledHands = context.enabledHands
-        ?? new Set(Object.entries(HAND_DATA).filter(([,d]) => d.enabled !== false).map(([k]) => Number(k)));
-    const handResult = evaluateHand(cards, enabledHands, context.suitAliases ?? null);
-
-    const ctx = {
-        ...context,
-        handRank: handResult.rank,
-        handName: HAND_DATA[handResult.rank].key,
-        cards: handResult.cards // 실제 사용된 5장
-    };
-
-    // 2. 기본 점수
-    let score = calcHandScore(ctx.cards, ctx, relics);
-
-    // 3. final scope: add 먼저, multiply 나중
-    for (const relic of relics) {
-        for (const effect of relic.effects) {
-            if (effect.scope !== "final" || effect.type !== "add") continue;
-            score = applyEffect(score, effect, null, ctx);
-        }
-    }
-    for (const relic of relics) {
-        for (const effect of relic.effects) {
-            if (effect.scope !== "final" || effect.type !== "multiply") continue;
-            score = applyEffect(score, effect, null, ctx);
-        }
-    }
-
+    const d = getScoreDetails(cards, context);
     return {
-        rank: ctx.handRank,
-        handName: ctx.handName,
-        score,
-        cards: ctx.cards,
-        aoe: ctx.handConfig?.[handResult.rank]?.aoe ?? handResult.aoe ?? false,
+        rank: d.handRank,
+        handName: d.handName,
+        score: d.totalScore,
+        cards: d.cards,
+        aoe: d.aoe,
     };
-}
-
-//핸드 점수
-function calcHandScore(cards, ctx, relics) {
-    let total = 0;
-
-    for (const card of cards) {
-        total += calcCardScore(card, ctx, relics);
-    }
-
-    // atk을 multi 적용 전에 합산
-    total += ctx.atk ?? 0;
-
-    // multi 적용
-    const multiple = ctx.handConfig?.[ctx.handRank]?.multi ?? 1;
-    total = total * multiple;
-
-    // hand scope: add 먼저, multiply 나중
-    for (const relic of relics) {
-        for (const effect of relic.effects) {
-            if (effect.scope !== "hand" || effect.type !== "add") continue;
-            total = applyEffect(total, effect, null, ctx);
-        }
-    }
-    for (const relic of relics) {
-        for (const effect of relic.effects) {
-            if (effect.scope !== "hand" || effect.type !== "multiply") continue;
-            total = applyEffect(total, effect, null, ctx);
-        }
-    }
-
-    return total;
 }
 
 //카드 점수
@@ -220,24 +161,27 @@ export function getScoreDetails(cards, context) {
 
     // ── running total ─────────────────────────────────────────────────────
     let running = cardDetails.reduce((s, d) => s + d.total, 0) + atk;
-    running *= multi;
 
-    // ── hand-scope relics (add first, multiply second) ────────────────────
+    // ── hand ADD 유물: multi 이전 가산 (pair_legacy 등 multi에 곱해져야 하는 보너스)
     const handRelicDeltas = [];
     for (const relic of relics) {
         let delta = 0;
         for (const effect of relic.effects) {
-            if (effect.scope !== "hand" || effect.type !== "add") continue;
+            if (effect.scope !== "hand" || !ADD_TYPES.has(effect.type)) continue;
             const before = running;
             running = applyEffect(running, effect, null, ctx);
             delta += running - before;
         }
         if (delta !== 0) handRelicDeltas.push({ relicId: relic.id, delta });
     }
+
+    running *= multi;
+
+    // ── hand MULTIPLY 유물: multi 이후 추가 배율
     for (const relic of relics) {
         let delta = 0;
         for (const effect of relic.effects) {
-            if (effect.scope !== "hand" || effect.type !== "multiply") continue;
+            if (effect.scope !== "hand" || !MULTIPLY_TYPES.has(effect.type)) continue;
             const before = running;
             running = applyEffect(running, effect, null, ctx);
             delta += running - before;
@@ -250,7 +194,7 @@ export function getScoreDetails(cards, context) {
     for (const relic of relics) {
         let delta = 0;
         for (const effect of relic.effects) {
-            if (effect.scope !== "final" || effect.type !== "add") continue;
+            if (effect.scope !== "final" || !ADD_TYPES.has(effect.type)) continue;
             const before = running;
             running = applyEffect(running, effect, null, ctx);
             delta += running - before;
@@ -260,7 +204,7 @@ export function getScoreDetails(cards, context) {
     for (const relic of relics) {
         let delta = 0;
         for (const effect of relic.effects) {
-            if (effect.scope !== "final" || effect.type !== "multiply") continue;
+            if (effect.scope !== "final" || !MULTIPLY_TYPES.has(effect.type)) continue;
             const before = running;
             running = applyEffect(running, effect, null, ctx);
             delta += running - before;
@@ -270,6 +214,7 @@ export function getScoreDetails(cards, context) {
 
     return {
         atk,
+        cards: ctx.cards,
         cardDetails,
         multi,
         handRank: ctx.handRank,

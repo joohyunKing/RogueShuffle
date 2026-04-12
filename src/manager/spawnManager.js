@@ -38,6 +38,7 @@ export class SpawnManager {
      */
     getMonsterPool(roundData) {
         return this.monsters.filter(m =>
+            m.useYn !== 'N' &&
             roundData.races.includes(m.race)
         );
     }
@@ -125,6 +126,8 @@ export class SpawnManager {
         let result = {};
 
         switch (race) {
+            case "zombie": result = { "hp": 0.9, "atk": 1.1, "def": 1.0 }; break;
+            case "goblin": result = { "hp": 0.8, "atk": 1.2, "def": 0.9 }; break;
             case "human": result = { "hp": 1.0, "atk": 1.0, "def": 1.0 }; break;
             case "skell": result = { "hp": 0.8, "atk": 1.2, "def": 0.9 }; break;
             case "undead": result = { "hp": 0.8, "atk": 1.2, "def": 0.9 }; break;
@@ -141,8 +144,11 @@ export class SpawnManager {
         switch (job) {
             case "warrior": result = { "hp": 1.1, "atk": 1.1, "def": 0.8 }; break;
             case "archer": result = { "hp": 0.9, "atk": 1.4, "def": 0.7 }; break;
+            case "thief": result = { "hp": 0.9, "atk": 1.7, "def": 0.7 }; break;
+            case "sniper": result = { "hp": 0.9, "atk": 1.7, "def": 0.7 }; break;
             case "lancer": result = { "hp": 1.1, "atk": 0.8, "def": 1.1 }; break;
-            case "knight": result = { "hp": 1.2, "atk": 1.2, "def": 1.5 }; break;
+            case "champion": result = { "hp": 1.4, "atk": 1.3, "def": 1.2 }; break;
+            case "knight": result = { "hp": 1.2, "atk": 1.2, "def": 1.6 }; break;
             case "mage": result = { "hp": 0.8, "atk": 1.7, "def": 0.8 }; break;
             default: result = { "hp": 1.0, "atk": 1.0, "def": 1.0 };
         }

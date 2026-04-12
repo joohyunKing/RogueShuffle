@@ -69,30 +69,32 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     //monster
-    // 몬스터 PNG 스프라이트시트 (frameWidth:384 frameHeight:384, 3col 고정)
-    const monsters = monsterJson.monsters;
-
-    monsters.forEach(monster => {
-      Object.entries(monster.sprite).forEach(([action, fileName]) => {
-        const key = `${monster.id}_${action}`;
-
-        this.load.spritesheet(key, `assets/images/monster/${fileName}`, {
-          frameWidth: 384,
-          frameHeight: 384
-        });
-      });
+    monsterJson.monsters.forEach(monster => {
+      if (monster.img && !this.textures.exists(`mon_${monster.id}`)) {
+        this.load.image(`mon_${monster.id}`, `assets/images/monster/${monster.img}`);
+      }
+      // sprite 스프라이트시트 preload 일단 제외
+      // Object.entries(monster.sprite ?? {}).forEach(([action, fileName]) => {
+      //   const key = `${monster.id}_${action}`;
+      //   this.load.spritesheet(key, `assets/images/monster/${fileName}`, {
+      //     frameWidth: 384, frameHeight: 384
+      //   });
+      // });
     });
 
     //boss
     bossJson.bosses.forEach(boss => {
-      Object.entries(boss.sprite).forEach(([action, fileName]) => {
-        const key = `${boss.id}_${action}`;
-        if (!this.textures.exists(key))
-          this.load.spritesheet(key, `assets/images/monster/${fileName}`, {
-            frameWidth: 384,
-            frameHeight: 384
-          });
-      });
+      if (boss.img && !this.textures.exists(`mon_${boss.id}`)) {
+        this.load.image(`mon_${boss.id}`, `assets/images/monster/${boss.img}`);
+      }
+      // sprite 스프라이트시트 preload 일단 제외
+      // Object.entries(boss.sprite ?? {}).forEach(([action, fileName]) => {
+      //   const key = `${boss.id}_${action}`;
+      //   if (!this.textures.exists(key))
+      //     this.load.spritesheet(key, `assets/images/monster/${fileName}`, {
+      //       frameWidth: 384, frameHeight: 384
+      //     });
+      // });
     });
 
     //sfx
@@ -124,50 +126,43 @@ export class PreloadScene extends Phaser.Scene {
     this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
 
 
+    // 임시 몬스터 샘플 이미지 (tween 애니메이션용)
+    this.load.image('mon_sample', 'assets/images/monster/mon_sample.png');
+
     //this.load.images();
   }
 
   create() {
-    // sprite animation 등록
-    const monsters = monsterJson.monsters;
-
-    monsters.forEach(monster => {
-      Object.keys(monster.sprite).forEach(action => {
-        const key = `${monster.id}_${action}`;
-
-        // 이미 있으면 skip
-        if (this.anims.exists(key)) return;
-
-        const validFrames = this._countValidFrames(this.textures, key);
-        //console.log("validFrames : " + validFrames);
-
-        this.anims.create({
-          key: key,
-          frames: this.anims.generateFrameNumbers(key, {
-            start: 0,
-            end: validFrames - 1 // 3col → 0,1,2
-          }),
-          frameRate: 6,
-          repeat: action === 'idle' ? -1 : 0
-        });
-      });
-    });
+    // sprite animation 등록 일단 제외
+    // monsterJson.monsters.forEach(monster => {
+    //   Object.keys(monster.sprite ?? {}).forEach(action => {
+    //     const key = `${monster.id}_${action}`;
+    //     if (this.anims.exists(key)) return;
+    //     const validFrames = this._countValidFrames(this.textures, key);
+    //     this.anims.create({
+    //       key,
+    //       frames: this.anims.generateFrameNumbers(key, { start: 0, end: validFrames - 1 }),
+    //       frameRate: 6,
+    //       repeat: action === 'idle' ? -1 : 0
+    //     });
+    //   });
+    // });
 
 
-    // 보스 애니메이션 등록
-    bossJson.bosses.forEach(boss => {
-      Object.keys(boss.sprite).forEach(action => {
-        const key = `${boss.id}_${action}`;
-        if (this.anims.exists(key)) return;
-        const validFrames = this._countValidFrames(this.textures, key);
-        this.anims.create({
-          key,
-          frames: this.anims.generateFrameNumbers(key, { start: 0, end: validFrames - 1 }),
-          frameRate: 6,
-          repeat: action === 'idle' ? -1 : 0
-        });
-      });
-    });
+    // 보스 애니메이션 등록 일단 제외
+    // bossJson.bosses.forEach(boss => {
+    //   Object.keys(boss.sprite ?? {}).forEach(action => {
+    //     const key = `${boss.id}_${action}`;
+    //     if (this.anims.exists(key)) return;
+    //     const validFrames = this._countValidFrames(this.textures, key);
+    //     this.anims.create({
+    //       key,
+    //       frames: this.anims.generateFrameNumbers(key, { start: 0, end: validFrames - 1 }),
+    //       frameRate: 6,
+    //       repeat: action === 'idle' ? -1 : 0
+    //     });
+    //   });
+    // });
 
     const data = this.scene.settings.data || {};
     this.time.delayedCall(500, () => {

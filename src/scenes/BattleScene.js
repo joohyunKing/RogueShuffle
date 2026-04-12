@@ -90,7 +90,14 @@ export class BattleScene extends Phaser.Scene {
       onOpen: () => { this.isDealing = true; },
       onClose: () => { this.isDealing = false; },
       onMainMenu: () => {
-        writeSave(this.round, this.player.toData(), this.deck.getState(), { battleIndex: this.battleIndex });
+        writeSave(this.round, this.player.toData(), this.deck.getState(), {
+          isBoss: this.isBoss,
+          battleIndex: this.battleIndex,
+          normalCount: this.normalCount,
+          monsterTier: this.monsterTier,
+          totalCost: this.totalCost,
+          monsters: this.monsterManager.monsters,
+        });
         this.scene.start("MainMenuScene");
       },
     });
@@ -136,11 +143,12 @@ export class BattleScene extends Phaser.Scene {
 
     this.monsterViews = this.monsterManager.monsters.map((mon, idx) => {
       const { x, y } = positions[idx];
-      const scale = mon.isBoss ? 1.8 : mon.isSummoned ? 1.0 : this.monsterImgScale;
+      const scale   = mon.isBoss ? 1.8 : mon.isSummoned ? 1.0 : this.monsterImgScale;
+      const offsetY = mon.isBoss ? 40 : 0;
 
       return new MonsterView(this, mon, idx, x, y, (i) => {
         if (!this.isDealing) this.monsterManager.attackMonster(i);
-      }, scale);
+      }, scale, offsetY);
     });
 
     this._monsterSprites = this.monsterViews.map(v => v.sprite);
@@ -178,30 +186,25 @@ export class BattleScene extends Phaser.Scene {
       this.add.rectangle(CX, 0, FAW_, BATTLE_LOG_H, 0x000000)
         .setOrigin(0, 0).setDepth(0);
 
-      // ── 몬스터 영역 ────────────────────────────────────────────────────
-      this.add.nineslice(CX, MONSTER_AREA_TOP, frameKey, 0, FAW_, MONSTER_AREA_H, 8, 8, 8, 8)
-        .setOrigin(0, 0).setDepth(0).setAlpha(0.6);
-
+      // ── 몬스터 영역 배경 제거됨
+ 
       // ── 필드 / 핸드 공통 백그라운드 ──────────────────────────────────────────
       const boardY = FIELD_Y - FIELD_CH / 2 - 18;
       this.add.image(CX, boardY, "ui_field_hand")
         .setOrigin(0, 0).setDisplaySize(FAW_, GH - boardY - 5).setDepth(0);
-
+ 
       // ── 아이템 패널 (우측) ──────────────────────────────────────────────
       this.add.nineslice(IPX, 0, frameKey, 0, IPW, GH, 8, 8, 8, 8)
         .setOrigin(0, 0).setDepth(0);
-
+ 
       this.add.rectangle(IPX + 8, BATTLE_LOG_H, IPW - 16, 1, 0x2a4a5a).setDepth(1);
     } else {
       const g = this.add.graphics().setDepth(0);
       const boardY = FIELD_Y - FIELD_CH / 2 - 18;
       g.fillStyle(0x000000, 1.0);
       g.fillRect(CX, 0, FAW_, BATTLE_LOG_H);
-
-      g.fillStyle(0x000000, 0.30);
-      g.fillRoundedRect(CX, MONSTER_AREA_TOP, FAW_, MONSTER_AREA_H, 10);
-      g.lineStyle(1, 0x4a7055, 1);
-      g.strokeRoundedRect(CX, MONSTER_AREA_TOP, FAW_, MONSTER_AREA_H, 10);
+ 
+      // 몬스터 영역 배경 제거됨
 
       // 텍스처가 없을 경우를 대비한 대체 드로잉 (이미지가 있으면 이미지가 덮어씌움)
       if (this.textures.exists("ui_field_hand")) {

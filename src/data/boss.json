@@ -4,6 +4,7 @@
       "id": "berserker",
       "useYn": "Y",
       "name": "광전사",
+      "img": "orc_lord.png",
       "sprite": {
         "idle": "berserker_idle.png",
         "attack": "berserker_attack.png",
@@ -63,6 +64,7 @@
       "id": "summoner",
       "useYn": "Y",
       "name": "소환사",
+      "img": "summoner.png",
       "sprite": {
         "idle": "summoner_idle.png",
         "attack": "summoner_attack.png",
@@ -118,6 +120,7 @@
       "id": "trickster",
       "useYn": "Y",
       "name": "트릭스터",
+      "img": "trickster.png",
       "sprite": {
         "idle": "trickster_idle.png",
         "attack": "trickster_attack.png",
@@ -174,6 +177,7 @@
       "id": "tricksterB",
       "useYn": "Y",
       "name": "트릭스터B",
+      "img": "tricksterB.png",
       "sprite": {
         "idle": "trickster_idle.png",
         "attack": "trickster_attack.png",
@@ -230,6 +234,7 @@
       "id": "troll",
       "useYn": "Y",
       "name": "트롤",
+      "img": "troll.png",
       "sprite": {
         "idle": "troll_idle.png",
         "attack": "troll_attack.png",
@@ -367,6 +372,7 @@
       "id": "iron_fortress",
       "useYn": "Y",
       "name": "방어의 화신",
+      "img": "iron_fortress.png",
       "sprite": {
         "idle": "human_knight_idle.png",
         "attack": "human_knight_attack.png",
