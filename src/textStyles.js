@@ -38,7 +38,7 @@ export const TS = {
 
   // ── 족보 / 카드 정보 ────────────────────────────────────────────────────────
   handRank: { fontFamily: F, fontSize: '11px', color: C.VALUE },
-  handMulti: { fontFamily: F, fontSize: '11px', color: C.GOLD },
+  handMulti: { fontFamily: F, fontSize: '11px', color: C.VALUE },
   comboLabel: { fontFamily: F, fontSize: '16px', color: C.LABEL },
   comboScore: { fontFamily: F, fontSize: '16px', color: C.GOLD },
 
@@ -75,4 +75,7 @@ export const TS = {
   itemName: { fontFamily: F, fontSize: '12px', color: C.VALUE },
   itemDesc: { fontFamily: F, fontSize: '11px', color: C.VALUE, alpha: 0.8 },
   itemCost: { fontFamily: F, fontSize: '13px', color: C.GOLD },
+
+  // ── 컬러 ────────────────────────────────────────────────────────────────
+  color: C,
 };

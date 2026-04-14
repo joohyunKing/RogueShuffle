@@ -327,7 +327,7 @@
     },
     "market": {
       "btn_deck_mgmt": "Deck Mgmt",
-      "btn_shop_refresh": "Refresh  ({cost}G)",
+      "btn_shop_refresh": "Refresh({cost}G)",
       "msg_no_gold": "Not enough gold!",
       "deck_title": "DECK  ({n} cards)"
     }
@@ -660,7 +660,7 @@
     },
     "market": {
       "btn_deck_mgmt": "카드관리",
-      "btn_shop_refresh": "상점갱신  ({cost}G)",
+      "btn_shop_refresh": "상점갱신({cost}G)",
       "msg_no_gold": "골드 부족!",
       "deck_title": "DECK  ({n}장)"
     }

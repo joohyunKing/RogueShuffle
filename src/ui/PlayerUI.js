@@ -3,7 +3,7 @@ import { TS } from "../textStyles.js";
 import { getRequiredExp } from "../manager/playerManager.js";
 import { getLang, getHandName, getHandDesc, getPlayerUI } from "../service/langService.js";
 
-const SUIT_COLORS = { S: '#7a8da3', H: '#a35d5d', D: '#a37a5d', C: '#5d8a66' };
+const SUIT_COLORS = { S: '#293c52ff', H: '#893131ff', D: '#d0712dff', C: '#1b4b24ff' };
 const SUIT_SYMS = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
 const SUIT_KEYS = ['S', 'H', 'D', 'C'];
 
@@ -36,6 +36,7 @@ export class PlayerUI {
       round: 1, battleLabel: null,
       showDeckCounts: false,
       showHandConfig: false,
+      onOptions: null,
       depth: 12,
       ...opts,
     };
@@ -161,17 +162,17 @@ export class PlayerUI {
       );
       const getDefTip = () => { const u = getPUI(getLang(scene)); return ['DEF', ...u.def_lines]; };
       const getAtkTip = () => { const u = getPUI(getLang(scene)); return ['ATK', ...u.atk_lines]; };
-      defHit.on('pointerover', () => this._showTooltipAt(getDefTip(), TS.playerDef.color, rowY));
+      defHit.on('pointerover', () => this._showTooltipAt(getDefTip(), TS.color.BRIGHT, rowY));
       defHit.on('pointerout', () => this._hideTooltip());
-      defHit.on('pointerdown', () => this._showTooltipAt(getDefTip(), TS.playerDef.color, rowY));
+      defHit.on('pointerdown', () => this._showTooltipAt(getDefTip(), TS.color.BRIGHT, rowY));
 
       const atkHit = this._add(
         scene.add.rectangle(PW / 2 + 4 + halfW / 2, rowY + hitH / 2, halfW, hitH, 0xffffff, 0)
           .setDepth(D + 2).setInteractive()
       );
-      atkHit.on('pointerover', () => this._showTooltipAt(getAtkTip(), TS.playerAtk.color, rowY));
+      atkHit.on('pointerover', () => this._showTooltipAt(getAtkTip(), TS.color.BRIGHT, rowY));
       atkHit.on('pointerout', () => this._hideTooltip());
-      atkHit.on('pointerdown', () => this._showTooltipAt(getAtkTip(), TS.playerAtk.color, rowY));
+      atkHit.on('pointerdown', () => this._showTooltipAt(getAtkTip(), TS.color.BRIGHT, rowY));
     }
 
     ry += ROW + 6;
@@ -272,13 +273,27 @@ export class PlayerUI {
           scene.add.rectangle(pcx, rowY + lineH / 2, PW - 16, lineH, 0xffffff, 0)
             .setDepth(D + 2).setInteractive()
         );
-        rowHit.on('pointerover', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.handRank.color, rowY, 285));
+
+        rowHit.on('pointerover', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.color.BRIGHT, rowY, 285));
         rowHit.on('pointerout', () => this._hideTooltip());
-        rowHit.on('pointerdown', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.handRank.color, rowY, 285));
+        rowHit.on('pointerdown', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.color.BRIGHT, rowY, 285));
 
         this._handConfigRows[rank] = { multiTxt, aoeDot, glowBg };
         ry += lineH;
       });
+    }
+
+    // ── OPTIONS 버튼 ────────────────────────────────────────────────────────
+    if (opts.onOptions) {
+      const optY = GH - 108;
+      const optBg = this._add(
+        scene.add.image(pcx, optY, "ui_btn_iron")
+          .setDisplaySize(140, 52).setDepth(D + 2).setInteractive()
+      );
+      this._add(scene.add.text(pcx, optY, "OPTIONS", TS.sortBtn).setOrigin(0.5).setDepth(D + 3));
+      optBg.on("pointerdown", () => opts.onOptions());
+      optBg.on("pointerover", () => optBg.setTint(0xdddddd));
+      optBg.on("pointerout", () => optBg.clearTint());
     }
 
     this.refresh();
@@ -370,8 +385,9 @@ export class PlayerUI {
       if (!row) return;
       const cfg = handConfig?.[rank] ?? { multi: 1, aoe: false };
       const isAoe = cfg.aoe;
+
       row.multiTxt.setText(`x${cfg.multi}`);
-      row.multiTxt.setColor(isAoe ? '#ffdd44' : '#888888');
+      //row.multiTxt.setColor(isAoe ? '#ffdd44' : '#888888');
       row.aoeDot.setText(isAoe ? '\u25cf' : '');
     });
     return this;

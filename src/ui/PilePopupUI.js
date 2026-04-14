@@ -41,6 +41,7 @@ export class PilePopupUI {
     const panelCX = GW / 2;
     const panelX = panelCX - panelW / 2;
 
+    // 슈트별 카드 분류 및 정렬
     const bySuit = { S: [], H: [], C: [], D: [] };
     for (const card of pileData) {
       const s = card.key[0];
@@ -52,18 +53,32 @@ export class PilePopupUI {
       )
     );
 
+    // 슈트별 필요 행 수 계산
+    const cardAreaW = panelW - LABEL_W - 6;
+    const maxPerRow = Math.max(1, Math.floor(cardAreaW / GAP_X));
+    const suitRows = {};
+    SUITS.forEach(s => {
+      suitRows[s] = Math.max(1, Math.ceil(bySuit[s].length / maxPerRow));
+    });
+    const totalRows = SUITS.reduce((sum, s) => sum + suitRows[s], 0);
+
     const titleH = 38, closeH = 40;
-    const panelH = titleH + SUITS.length * ROW_H + closeH;
+    const panelH = titleH + totalRows * ROW_H + closeH;
     const panelTop = Math.max(BATTLE_LOG_H + 6, (GH - panelH) / 2);
 
+    // 딤
     const dim = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x000000, 0.78)
       .setDepth(600).setInteractive();
     objs.push(dim);
+
+    // 패널 배경
     objs.push(
       scene.add.image(panelCX, panelTop + panelH / 2, 'ui_popup')
         .setDisplaySize(panelW, panelH)
         .setDepth(601)
     );
+
+    // 제목
     objs.push(
       scene.add.text(panelCX, panelTop + titleH / 2,
         `${title}  (${pileData.length})`,
@@ -71,40 +86,40 @@ export class PilePopupUI {
       ).setOrigin(0.5).setDepth(602)
     );
 
-    const SUIT_SYMS = { S: '♠', H: '♥', C: '♣', D: '♦' };
-    const SUIT_COLORS = { S: '#8888ff', H: '#ff6666', C: '#8888ff', D: '#ff6666' };
-    const rowsY = panelTop + titleH;
-
-    SUITS.forEach((suit, si) => {
-      const cy = rowsY + si * ROW_H + CH_ / 2 + 8;
+    // 슈트별 카드 렌더
+    let rowOffset = 0;
+    SUITS.forEach((suit) => {
       const cards = bySuit[suit];
-      objs.push(
-        /*
-        scene.add.text(panelX + LABEL_W / 2, cy, SUIT_SYMS[suit],
-          { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }
-        ).setOrigin(0.5).setDepth(602)
-        */
-      );
-      cards.forEach((card, ci) => {
-        const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
-        const { cardImg: img, sealImg } = CardRenderer.drawCard(scene, cx, cy, card, { width: CW_, height: CH_, depth: 602, objs });
-        img.setInteractive();
-        img.on('pointerover', () => {
-          scene.tweens.add({ targets: img, displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100 });
-          img.setDepth(650);
-          sealImg?.setDepth(651);
-          CardRenderer.showSealTooltip(scene, card, cx, cy, CH_, 700);
+      const numRows = suitRows[suit];
+
+      for (let row = 0; row < numRows; row++) {
+        const rowCards = cards.slice(row * maxPerRow, (row + 1) * maxPerRow);
+        const cy = panelTop + titleH + (rowOffset + row) * ROW_H + CH_ / 2 + 8;
+
+        rowCards.forEach((card, ci) => {
+          const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
+          const { cardImg: img, sealImg } = CardRenderer.drawCard(scene, cx, cy, card, { width: CW_, height: CH_, depth: 602, objs });
+          img.setInteractive();
+          img.on('pointerover', () => {
+            scene.tweens.add({ targets: img, displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100 });
+            img.setDepth(650);
+            sealImg?.setDepth(651);
+            CardRenderer.showSealTooltip(scene, card, cx, cy, CH_, 700);
+          });
+          img.on('pointerout', () => {
+            scene.tweens.add({ targets: img, displayWidth: CW_, displayHeight: CH_, duration: 100 });
+            img.setDepth(602);
+            sealImg?.setDepth(603);
+            CardRenderer.hideSealTooltip();
+          });
         });
-        img.on('pointerout', () => {
-          scene.tweens.add({ targets: img, displayWidth: CW_, displayHeight: CH_, duration: 100 });
-          img.setDepth(602);
-          sealImg?.setDepth(603);
-          CardRenderer.hideSealTooltip();
-        });
-      });
+      }
+
+      rowOffset += numRows;
     });
 
-    const closeY = rowsY + SUITS.length * ROW_H + closeH / 2;
+    // 닫기 버튼
+    const closeY = panelTop + panelH - closeH / 2;
     const closeBg = scene.add.rectangle(panelCX, closeY, 130, 28, 0x1a3a22)
       .setDepth(602).setStrokeStyle(1, 0x4a9a5a);
     const closeTxt = scene.add.text(panelCX, closeY, 'CLOSE',

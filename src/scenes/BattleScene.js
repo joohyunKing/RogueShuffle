@@ -197,7 +197,22 @@ export class BattleScene extends Phaser.Scene {
 
     // BGM
     this._playBgm();
-    this.events.once('shutdown', () => this._stopBgm());
+    this.registry.events.on('changedata-bgmVolume', (_parent, value) => {
+      if (this._bgmSound) {
+        const vol = value / 10;
+        if (vol <= 0) {
+          this._stopBgm();
+        } else {
+          this._bgmSound.setVolume(vol);
+        }
+      } else if (value > 0) {
+        this._playBgm();
+      }
+    }, this);
+    this.events.once('shutdown', () => {
+      this.registry.events.off('changedata-bgmVolume', undefined, this);
+      this._stopBgm();
+    });
   }
 
   // ── 배경 & 패널 ──────────────────────────────────────────────────────────
@@ -272,6 +287,7 @@ export class BattleScene extends Phaser.Scene {
       battleLabel,
       showDeckCounts: true,
       showHandConfig: true,
+      onOptions: () => this._optionUI.show(),
     });
     this.playerUI.create();
 
@@ -346,24 +362,14 @@ export class BattleScene extends Phaser.Scene {
     this.refreshPlayerStats();
   }
 
-  // ── 좌측 하단 버튼들 (정렬 / 옵션) ──────────────────────────────────────────
+  // ── 좌측 하단 정렬 버튼 ──────────────────────────────────────────────────
   createSortButton() {
     const sortCH = 50;
     const sortBottom = HAND_Y + CH / 2;
     const sortY = sortBottom - sortCH / 2;
     const sortCX = PLAYER_PANEL_W / 2;
 
-    // 1. 옵션 버튼 (정렬 버튼 위쪽)
-    const optY = sortY - 60;
-    const optBg = this.add.image(sortCX, optY, "ui_btn_iron")
-      .setDisplaySize(140, sortCH + 2).setDepth(60).setInteractive();
-    this.add.text(sortCX, optY, "OPTIONS", TS.sortBtn)
-      .setOrigin(0.5).setDepth(61);
-    optBg.on("pointerdown", () => this._showOptions());
-    optBg.on("pointerover", () => optBg.setTint(0xdddddd));
-    optBg.on("pointerout", () => optBg.clearTint());
-
-    // 2. 정렬 버튼
+    // 정렬 버튼
     this.sortBg = this.add.image(sortCX, sortY, "ui_btn_iron")
       .setDisplaySize(140, sortCH + 2).setDepth(60).setInteractive();
     this.sortLabel = this.add.text(sortCX, sortY, (this.sortMode || "SUIT").toUpperCase(), TS.sortBtn)
