@@ -98,23 +98,40 @@ export class MonsterManager {
     // });
   }
 
-  // ── 피격 이펙트 (flash + sfx + 데미지 라벨) ──────────────────────────────
-  // mX: 라벨 X 위치, opts: { flashColor, flashAlpha, sfx, tint? }
-  _showHitEffect(mX, damage, {
-    flashColor = 0xcc0000, flashAlpha = 0.22,
+  // ── 플레이어 피격 이펙트 (카메라 shake + 패널 flash + HP 위치 데미지 라벨) ──
+  // opts: { sfx, tint, shakeIntensity, flashColor }
+  _showPlayerHitEffect(damage, {
     sfx = 'sfx_chop', tint = null,
+    shakeIntensity = 0.012,
+    flashColor = 0xff2200,
   } = {}) {
     const { scene } = this;
-    const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, flashColor, flashAlpha).setDepth(500);
-    scene.tweens.add({ targets: flash, alpha: 0, duration: 480, onComplete: () => flash.destroy() });
+
+    // 카메라 흔들기
+    scene.cameras.main.shake(200, shakeIntensity);
+
+    // 플레이어 패널(좌측) 집중 플래시
+    const flash = scene.add.rectangle(PLAYER_PANEL_W / 2, GH / 2, PLAYER_PANEL_W + 20, GH, flashColor, 0.48)
+      .setDepth(500);
+    scene.tweens.add({ targets: flash, alpha: 0, duration: 380, ease: 'Power2.In', onComplete: () => flash.destroy() });
+
     scene._sfx(sfx);
 
+    // 데미지 라벨: 플레이어 HP바 위치에서 위로 올라옴
     const label = damage > 0 ? `-${damage} HP` : 'BLOCKED!';
-    const style = (damage > 0 || tint) ? TS.damageHit : TS.damageBlocked;
-    const txt   = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, style)
-      .setOrigin(0.5, 0).setDepth(501);
+    const style = damage > 0 ? TS.damageHit : TS.damageBlocked;
+    const txt = scene.add.text(ATK_ORB.x, ATK_ORB.y, label, style)
+      .setOrigin(0.5, 1).setDepth(501);
     if (tint) txt.setTint(tint);
-    scene.tweens.add({ targets: txt, y: 128, alpha: 0, duration: 480, delay: 80, ease: 'Power1.In', onComplete: () => txt.destroy() });
+    scene.tweens.add({
+      targets: txt,
+      y: ATK_ORB.y - 55,
+      alpha: 0,
+      duration: 550,
+      delay: 50,
+      ease: 'Power1.Out',
+      onComplete: () => txt.destroy(),
+    });
   }
 
   // ── 처치 공통 처리 (XP/골드 획득, 로그, 레벨업) ───────────────────────────
@@ -500,8 +517,6 @@ export class MonsterManager {
   _useMonsterSkill(monIdx, m) {
     const { scene } = this;
     const skill = m.skill;
-    const positions = this.calcMonsterPositions(scene.monsters.length);
-    const mX = positions[monIdx]?.x ?? GW / 2;
 
     this._playMonAnim(monIdx, 'skill');
 
@@ -510,27 +525,31 @@ export class MonsterManager {
       const dmg = Math.max(0, raw - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
       scene.addBattleLog(`${m.name}의 ${skill.name}! ${dmg} 데미지!`);
-      this._showHitEffect(mX, dmg, { flashColor: 0x880088, flashAlpha: 0.25, sfx: 'sfx_knifeSlice', tint: 0xee44ff });
+      // 스킬은 보라빛 플래시 + 약간 더 강한 shake
+      scene.time.delayedCall(80, () => {
+        this._showPlayerHitEffect(dmg, {
+          sfx: 'sfx_knifeSlice',
+          tint: 0xee44ff,
+          shakeIntensity: 0.018,
+          flashColor: 0x880088,
+        });
+      });
 
     } else if (skill.type === 'debuff') {
       scene.debuffManager.applyDebuff(skill.debuffId ?? skill.value, m.name);
       scene.render();
-      const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x440044, 0.20).setDepth(500);
+      scene.cameras.main.shake(180, 0.009);
+      const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x440044, 0.22).setDepth(500);
       scene.tweens.add({ targets: flash, alpha: 0, duration: 600, onComplete: () => flash.destroy() });
       scene._sfx("sfx_chop");
     }
   }
 
   // ── 몬스터 일반 공격 연출 ────────────────────────────────────────────────
+  // orb 없이: 돌진 tween 피크(~190ms)에 플레이어 패널 피격 효과 발동
   _showMonsterAttack(monIdx, damage) {
     const { scene } = this;
-    const positions = this.calcMonsterPositions(scene.monsters.length);
-    const mX        = positions[monIdx]?.x ?? GW / 2;
-    const monSprite = scene._monsterSprites?.[monIdx];
-    const fromY     = monSprite ? monSprite.y - 30 : MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
-
     this._playMonAnim(monIdx, 'attack');
-    scene.effects.throwOrb(mX, fromY, ATK_ORB.x, ATK_ORB.y, 0xff4444);
-    this._showHitEffect(mX, damage);
+    scene.time.delayedCall(190, () => this._showPlayerHitEffect(damage));
   }
 }

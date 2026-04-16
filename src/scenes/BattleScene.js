@@ -330,16 +330,20 @@ export class BattleScene extends Phaser.Scene {
     // ── 메시지 텍스트 ──────────────────────────────────────────────────────
     this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg).setOrigin(0.5, 0).setDepth(100);
 
-    // ── 핸드 이름 ──────────────────────────────
-    const handTextY = MONSTER_AREA_TOP + MONSTER_AREA_H + 8;
-    this._handText = this.add.text(faCX, handTextY, "",
-      { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: '#888888' })
-      .setOrigin(0, 0.5).setDepth(31).setVisible(false);
+
+    // ── DEBUG
+    const debugTextX = PW + FAW - 8;
+    const debugTextY = MONSTER_AREA_TOP + MONSTER_AREA_H - 8;
+
+    // ── DEBUG: 핸드 이름 ──────────────────────────────
+    this._handText = DEBUG_MODE
+      ? this.add.text(debugTextX, debugTextY - 20, "", TS.countTxt)
+        .setOrigin(1, 1).setDepth(31).setVisible(false)
+      : null;
 
     // ── DEBUG: 점수 프리뷰 (몬스터 영역 우측 하단) ────────────────────────
     this.previewScoreTxt = DEBUG_MODE
-      ? this.add.text(PW + FAW - 8, MONSTER_AREA_TOP + MONSTER_AREA_H - 8, "",
-        { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffdd44' })
+      ? this.add.text(debugTextX, debugTextY, "", TS.countTxt)
         .setOrigin(1, 1).setDepth(50)
       : null;
 
@@ -1253,22 +1257,16 @@ export class BattleScene extends Phaser.Scene {
       const name = getHandName(lang, key);
 
       if (handRankSealed) {
-        this._handText
-          .setText(`${name} [봉인]`)
-          .setColor('#ff6666')
-          .setVisible(true);
+        this._handText?.setText(`${name} [봉인]`).setVisible(true);
         this.playerUI?.highlightHand(null);
         this.itemUI?.rattleRelics([]);
       } else {
-        this._handText
-          .setText(name)
-          .setColor('#ccddcc')
-          .setVisible(true);
+        this._handText?.setText(name).setVisible(true);
         this.playerUI?.highlightHand(rank);
         this.itemUI?.rattleRelics(this._getApplicableRelicIds(rank));
       }
     } else {
-      this._handText.setVisible(false);
+      this._handText?.setVisible(false);
 
       this.playerUI?.highlightHand(null);
       this.itemUI?.rattleRelics([]);

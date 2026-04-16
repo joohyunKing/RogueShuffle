@@ -111,17 +111,20 @@ export default class MonsterView {
     });
   }
 
-  // ── 공격 tween (우 → 좌 돌진 → 복귀) ────────────────────────────────────
+  // ── 공격 tween (준비 → 돌진 → 복귀) ──────────────────────────────────────
+  // 타이밍: 0~100ms 준비(뒤로+찌그러짐), 100~200ms 돌진(앞으로+늘어남), 200~400ms 복귀
+  // 피크(190ms 부근)에 _showPlayerHitEffect 호출하면 타이밍이 맞음
   playAttack() {
     if (this._isDead) return;
     const baseX = this.sprite.x;
+    const baseScaleX = this.sprite.scaleX;
     this._idleTween?.pause();
     this.scene.tweens.chain({
       targets: this.sprite,
       tweens: [
-        { x: baseX + 12, duration: 80, ease: 'Power2.Out' },
-        { x: baseX - 18, duration: 100, ease: 'Power2.In' },
-        { x: baseX,      duration: 150, ease: 'Bounce.Out' },
+        { x: baseX + 16, scaleX: baseScaleX * 0.88, duration: 100, ease: 'Power2.Out' },
+        { x: baseX - 32, scaleX: baseScaleX * 1.14, duration: 110, ease: 'Power3.In' },
+        { x: baseX,      scaleX: baseScaleX,         duration: 220, ease: 'Bounce.Out' },
       ],
       onComplete: () => { this._idleTween?.resume(); }
     });
