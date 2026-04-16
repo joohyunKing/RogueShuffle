@@ -98,8 +98,12 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     //bgm
-    this.load.audio("bgm_0", "assets/audio/bgm/Midnight_on_the_Platform.mp3");
-    this.load.audio("bgm_1", "assets/audio/bgm/Pillars_of_Sun_and_Stone.mp3");
+    this.load.audio("bgm_0", "assets/audio/bgm/Below_the_Iron_Throne.mp3");
+    this.load.audio("bgm_1", "assets/audio/bgm/Beneath_the_Stone_Spire.mp3");
+    /*
+    this.load.audio("bgm_2", "assets/audio/bgm/Midnight_on_the_Platform.mp3");
+    this.load.audio("bgm_3", "assets/audio/bgm/Pillars_of_Sun_and_Stone.mp3");
+    */
 
     //sfx
     this.load.audio("sfx_shuffle", "assets/audio/sfx/card-shuffle.ogg");
