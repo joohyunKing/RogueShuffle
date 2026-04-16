@@ -115,8 +115,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("ui_deck", "assets/images/ui/deck.png");
     this.load.image("ui_dummy", "assets/images/ui/dummy.png");
     this.load.image("ui_option", "assets/images/ui/btn_gear_pixel.png");
-    this.load.image("ui_btn_long", "assets/images/ui/btn_long_pixel.png");
-    this.load.image("ui_btn_iron", "assets/images/ui/btn_iron.png");
+    this.load.image("ui_btn", "assets/images/ui/button.png");
     this.load.image("ui_frame", "assets/images/ui/panel_frame_pixel.png");
     this.load.image("ui_panel_parchment", "assets/images/ui/parchment_v.png");
     this.load.image("ui_panel_stone", "assets/images/ui/panel_stone.png");
@@ -128,6 +127,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("ui_sword", "assets/images/ui/sword.png");
     this.load.image("ui_shield", "assets/images/ui/shield.png");
     this.load.image("ui_popup", "assets/images/ui/popup.png");
+    this.load.image("ui_battle_popup", "assets/images/ui/battle_popup.png");
     this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
 
 

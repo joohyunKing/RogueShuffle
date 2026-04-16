@@ -15,11 +15,11 @@ import { saveOptionsByRegistry } from "../manager/optionManager.js";
 export class OptionUI {
   constructor(scene, opts = {}) {
     this.scene = scene;
-    this.opts  = {
+    this.opts = {
       onMainMenu: null,
-      onOpen:     null,
-      onClose:    null,
-      depth:      600,
+      onOpen: null,
+      onClose: null,
+      depth: 600,
       ...opts,
     };
     this._objs = null;
@@ -32,7 +32,7 @@ export class OptionUI {
     this.opts.onOpen?.();
 
     const { scene } = this;
-    const D  = this.opts.depth;
+    const D = this.opts.depth;
     const objs = this._objs = [];
     const cx = GW / 2, cy = GH / 2;
     const pw = 400, ph = 360;
@@ -68,19 +68,19 @@ export class OptionUI {
     objs.push(
       scene.add.text(cx, bgmY - 28, "BGM", TS.optLabel).setOrigin(0.5).setDepth(D + 2)
     );
-    const bgmMinus = scene.add.image(cx - 80, bgmY, "ui_btn_iron")
+    const bgmMinus = scene.add.image(cx - 80, bgmY, "ui_btn")
       .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
     objs.push(bgmMinus,
       scene.add.text(cx - 80, bgmY, "-", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
     const bgmTxt = scene.add.text(cx, bgmY, String(bgm), TS.optValue)
       .setOrigin(0.5).setDepth(D + 2);
     objs.push(bgmTxt);
-    const bgmPlus = scene.add.image(cx + 80, bgmY, "ui_btn_iron")
+    const bgmPlus = scene.add.image(cx + 80, bgmY, "ui_btn")
       .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
     objs.push(bgmPlus,
       scene.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
     const bgmBarBg = scene.add.rectangle(cx, bgmY + 28, 204, 7, 0x224433).setDepth(D + 2);
-    const bgmBar   = scene.add.rectangle(cx - 102, bgmY + 28, bgm * 20.4, 7, 0x44dd88)
+    const bgmBar = scene.add.rectangle(cx - 102, bgmY + 28, bgm * 20.4, 7, 0x44dd88)
       .setOrigin(0, 0.5).setDepth(D + 3);
     objs.push(bgmBarBg, bgmBar);
 
@@ -92,11 +92,11 @@ export class OptionUI {
       saveOptionsByRegistry(scene.registry);
     };
     bgmMinus.on("pointerdown", () => updateBgm(bgm - 1));
-    bgmPlus.on("pointerdown",  () => updateBgm(bgm + 1));
+    bgmPlus.on("pointerdown", () => updateBgm(bgm + 1));
     bgmMinus.on("pointerover", () => bgmMinus.setTint(0xcccccc));
-    bgmMinus.on("pointerout",  () => bgmMinus.clearTint());
-    bgmPlus.on("pointerover",  () => bgmPlus.setTint(0xcccccc));
-    bgmPlus.on("pointerout",   () => bgmPlus.clearTint());
+    bgmMinus.on("pointerout", () => bgmMinus.clearTint());
+    bgmPlus.on("pointerover", () => bgmPlus.setTint(0xcccccc));
+    bgmPlus.on("pointerout", () => bgmPlus.clearTint());
 
     // ── SFX ──────────────────────────────────────────────────────────────
     let sfx = scene.registry.get("sfxVolume") ?? 7;
@@ -104,19 +104,19 @@ export class OptionUI {
     objs.push(
       scene.add.text(cx, sfxY - 28, "SFX", TS.optLabel).setOrigin(0.5).setDepth(D + 2)
     );
-    const sfxMinus = scene.add.image(cx - 80, sfxY, "ui_btn_iron")
+    const sfxMinus = scene.add.image(cx - 80, sfxY, "ui_btn")
       .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
     objs.push(sfxMinus,
       scene.add.text(cx - 80, sfxY, "-", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
     const sfxTxt = scene.add.text(cx, sfxY, String(sfx), TS.optValue)
       .setOrigin(0.5).setDepth(D + 2);
     objs.push(sfxTxt);
-    const sfxPlus = scene.add.image(cx + 80, sfxY, "ui_btn_iron")
+    const sfxPlus = scene.add.image(cx + 80, sfxY, "ui_btn")
       .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
     objs.push(sfxPlus,
       scene.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
     const sfxBarBg = scene.add.rectangle(cx, sfxY + 28, 204, 7, 0x224433).setDepth(D + 2);
-    const sfxBar   = scene.add.rectangle(cx - 102, sfxY + 28, sfx * 20.4, 7, 0x44dd88)
+    const sfxBar = scene.add.rectangle(cx - 102, sfxY + 28, sfx * 20.4, 7, 0x44dd88)
       .setOrigin(0, 0.5).setDepth(D + 3);
     objs.push(sfxBarBg, sfxBar);
 
@@ -128,16 +128,16 @@ export class OptionUI {
       saveOptionsByRegistry(scene.registry);
     };
     sfxMinus.on("pointerdown", () => updateSfx(sfx - 1));
-    sfxPlus.on("pointerdown",  () => updateSfx(sfx + 1));
+    sfxPlus.on("pointerdown", () => updateSfx(sfx + 1));
     sfxMinus.on("pointerover", () => sfxMinus.setTint(0xcccccc));
-    sfxMinus.on("pointerout",  () => sfxMinus.clearTint());
-    sfxPlus.on("pointerover",  () => sfxPlus.setTint(0xcccccc));
-    sfxPlus.on("pointerout",   () => sfxPlus.clearTint());
+    sfxMinus.on("pointerout", () => sfxMinus.clearTint());
+    sfxPlus.on("pointerover", () => sfxPlus.setTint(0xcccccc));
+    sfxPlus.on("pointerout", () => sfxPlus.clearTint());
 
     // ── 버튼 ─────────────────────────────────────────────────────────────
     const btnY = cy + ph / 2 - 48;
 
-    const exitBtn = scene.add.image(cx - 80, btnY, "ui_btn_iron")
+    const exitBtn = scene.add.image(cx - 80, btnY, "ui_btn")
       .setDisplaySize(150, 52).setDepth(D + 2).setInteractive();
     objs.push(exitBtn,
       scene.add.text(cx - 80, btnY, "MAIN MENU", TS.menuBtn).setOrigin(0.5).setDepth(D + 3));
@@ -145,20 +145,20 @@ export class OptionUI {
       this.opts.onMainMenu?.();
     });
     exitBtn.on("pointerover", () => exitBtn.setTint(0xcccccc));
-    exitBtn.on("pointerout",  () => exitBtn.clearTint());
+    exitBtn.on("pointerout", () => exitBtn.clearTint());
 
-    const closeBtn = scene.add.image(cx + 80, btnY, "ui_btn_iron")
+    const closeBtn = scene.add.image(cx + 80, btnY, "ui_btn")
       .setDisplaySize(150, 52).setDepth(D + 2).setInteractive();
     objs.push(closeBtn,
       scene.add.text(cx + 80, btnY, "CLOSE", TS.menuBtn).setOrigin(0.5).setDepth(D + 3));
     closeBtn.on("pointerdown", () => this.close());
     closeBtn.on("pointerover", () => closeBtn.setTint(0xcccccc));
-    closeBtn.on("pointerout",  () => closeBtn.clearTint());
+    closeBtn.on("pointerout", () => closeBtn.clearTint());
   }
 
   close() {
     if (!this._objs) return;
-    this._objs.forEach(o => { try { o?.destroy(); } catch(_) {} });
+    this._objs.forEach(o => { try { o?.destroy(); } catch (_) { } });
     this._objs = null;
     this.opts.onClose?.();
   }

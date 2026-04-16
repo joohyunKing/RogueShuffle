@@ -38,11 +38,12 @@ export class TooltipUI {
 
     const PAD = 12;
     const TITLE_H = 28;
-    const LINE_H = 18;
+    const LINE_H = 20;
     const BTN_H = 34;
     const BTN_GAP = 10;
     const innerW = tooltipW - PAD * 2;
-    const charsPerLine = Math.max(1, Math.floor(innerW / 7));
+    // 한국어 포함 혼합 텍스트 기준 글자폭 9px (ASCII 7px, 한글 13px 절충)
+    const charsPerLine = Math.max(1, Math.floor(innerW / 9));
     const contentLines = contentMsg
       ? Math.max(1, Math.ceil(contentMsg.length / charsPerLine))
       : 0;
@@ -78,7 +79,7 @@ export class TooltipUI {
     const scene = this.scene;
     const PAD = 12;
     const TITLE_H = 28;
-    const LINE_H = 18;
+    const LINE_H = 20;
     const BTN_H = 34;
     const BTN_GAP = 10;
     const colorN = parseInt(titleMsgColor.replace('#', ''), 16);
@@ -137,7 +138,7 @@ export class TooltipUI {
         this._objs.push(
           scene.add.text(btnCX, btnY, 'SOLD', {
             fontFamily: "'PressStart2P', Arial",
-            fontSize: '10px',
+            fontSize: '13px',
             color: '#555555',
           }).setOrigin(0.5).setDepth(depth + 1)
         );
@@ -147,7 +148,7 @@ export class TooltipUI {
           .setDepth(depth + 1).setStrokeStyle(1, 0x44dd88).setInteractive();
         const btnTxt = scene.add.text(btnCX, btnY, btnLabel, {
           fontFamily: "'PressStart2P', Arial",
-          fontSize: '10px',
+          fontSize: '13px',
           color: '#aaffaa',
         }).setOrigin(0.5).setDepth(depth + 2);
         btn.on('pointerdown', () => { this.hide(); onUse(); });
@@ -160,7 +161,7 @@ export class TooltipUI {
           .setDepth(depth + 1).setStrokeStyle(1, 0x554444).setInteractive();
         const btnTxt = scene.add.text(btnCX, btnY, btnLabel, {
           fontFamily: "'PressStart2P', Arial",
-          fontSize: '10px',
+          fontSize: '13px',
           color: '#aa6644',
         }).setOrigin(0.5).setDepth(depth + 2);
         if (btnDisabledMsg) {

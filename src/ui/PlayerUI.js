@@ -287,7 +287,7 @@ export class PlayerUI {
     if (opts.onOptions) {
       const optY = GH - 108;
       const optBg = this._add(
-        scene.add.image(pcx, optY, "ui_btn_iron")
+        scene.add.image(pcx, optY, "ui_btn")
           .setDisplaySize(140, 52).setDepth(D + 2).setInteractive()
       );
       this._add(scene.add.text(pcx, optY, "OPTIONS", TS.sortBtn).setOrigin(0.5).setDepth(D + 3));

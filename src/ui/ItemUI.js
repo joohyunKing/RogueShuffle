@@ -1,6 +1,7 @@
 import { ITEM_PANEL_W, GW, GH, BATTLE_LOG_H } from "../constants.js";
 import { TS } from "../textStyles.js";
-import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
+import { relicMap as RELIC_MAP, maxRelicCount } from "../manager/relicManager.js";
+import { maxItemCount } from "../manager/itemManager.js";
 import { TooltipUI } from "./TooltipUI.js";
 import { getLang, getRelicName, getRelicDesc, getItemName, getItemDesc, getUiText } from "../service/langService.js";
 
@@ -197,10 +198,22 @@ export class ItemUI {
       });
     }
 
+    // Relic 카운트 (섹션 우측 하단)
+    {
+      const relicMaxRows = Math.ceil(maxRelicCount / REL_COLS);
+      const relicSectionBottom = relicContentY + relicMaxRows * REL_ROW_H;
+      //const countColor = relics.length >= maxRelicCount ? '#ffaa44' : '#667766';
+      this._add(scene.add.text(
+        panelX + panelW - 16, dividerY + 60,
+        `${relics.length}/${maxRelicCount}`,
+        TS.countTxt
+      ).setOrigin(1, 0).setDepth(D + 1));
+    }
+
     // ─── SELL 존 ────────────────────────────────────────────────────────
-    const sellZoneY = dividerY - 18;
+    const sellZoneY = dividerY + 80;
     if (canSellRelic || canSellItem) {
-      const rz = scene.add.rectangle(ipcx, sellZoneY, panelW - 40, 24, 0x000000, 0).setDepth(D + 3).setVisible(false);
+      const rz = scene.add.rectangle(ipcx + 6, sellZoneY, panelW - 28, 24, 0x000000, 0).setDepth(D + 3).setVisible(false);
       const rt = scene.add.text(ipcx, sellZoneY, "[ SELL ]", { fontFamily: "'PressStart2P',Arial", fontSize: '9px', color: '#aa4444' }).setOrigin(0.5).setDepth(D + 4).setVisible(false);
       this._sellZone = rz; this._sellTxt = rt; this._add(rz); this._add(rt);
     }
@@ -208,9 +221,10 @@ export class ItemUI {
     // ─── ITEM 섹션 ───────────────────────────────────────────────────────
     // 이미지 내부의 ITEMS 텍스트 아래 공간으로 위치 조정
     const itemStartY = dividerY + 140;
+    const ITM_SZ = 56, ITM_IMG = 44, ITM_COLS = 3, ITM_GAPX = 8, ITM_GAPY = 8;
+    const ITM_PAD = Math.floor((panelW - ITM_COLS * ITM_SZ - (ITM_COLS - 1) * ITM_GAPX) / 2);
+
     if (items.length > 0) {
-      const ITM_SZ = 56, ITM_IMG = 44, ITM_COLS = 3, ITM_GAPX = 8, ITM_GAPY = 8;
-      const ITM_PAD = Math.floor((panelW - ITM_COLS * ITM_SZ - (ITM_COLS - 1) * ITM_GAPX) / 2);
       const onItemClick = opts.onItemClick ?? null;
 
       items.forEach((item, i) => {
@@ -224,7 +238,7 @@ export class ItemUI {
         if (useKey) this._add(scene.add.image(cx, cy, useKey).setDisplaySize(ITM_IMG, ITM_IMG).setDepth(D + 1));
         else { this._add(scene.add.rectangle(cx, cy, ITM_IMG, ITM_IMG, stripColor, 0.22).setDepth(D + 1)); this._add(scene.add.text(cx, cy, '?', { fontFamily: 'Arial', fontSize: '18px', color: tipColor }).setOrigin(0.5).setDepth(D + 2)); }
         const hit = this._add(scene.add.rectangle(cx, cy, ITM_SZ, ITM_SZ, 0xffffff, 0).setDepth(D + 2).setInteractive());
-        hit.on('pointerover', () => { if (!this._isDragging) { if (canSellItem) hit.setFillStyle(0xff4444, 0.12); else hit.setFillStyle(0xffffff, 0.12); if (!this._tipPinned) { const lang = this._getLang(); this._showTip(cy, getItemName(lang, item.id, item.name), getItemDesc(lang, item.id, item.desc ?? ''), tipColor); } } });
+        hit.on('pointerover', () => { if (!this._isDragging) { if (canSellItem) hit.setFillStyle(0xff4444, 0.12); else hit.setFillStyle(0xffffff, 0.12); if (!this._tipPinned) { if (onItemClick) this._showItemTip(cy, item, tipColor, () => onItemClick(i)); else { const lang = this._getLang(); this._showTip(cy, getItemName(lang, item.id, item.name), getItemDesc(lang, item.id, item.desc ?? ''), tipColor); } } } });
         hit.on('pointerout', () => { if (!this._isDragging) { hit.setFillStyle(0xffffff, 0); if (!this._tipPinned) this._clearTip(); } });
         hit.on('pointerdown', (pointer) => {
           if (this._isDragging) return;
@@ -242,9 +256,18 @@ export class ItemUI {
           scene.input.on('pointermove', onMove); scene.input.on('pointerup', onUpCheck);
         });
       });
-    } else {
-      // 아이템이 없을 때 빈 표시 "—"
-      //this._add(scene.add.text(ipcx, itemStartY + 30, "—", { ...TS.infoLabel, color: "#444" }).setOrigin(0.5, 0).setDepth(D + 1));
+    }
+
+    // Item 카운트 (섹션 우측 하단)
+    {
+      const itemMaxRows = Math.ceil(maxItemCount / ITM_COLS);
+      const itemSectionBottom = itemStartY + itemMaxRows * (ITM_SZ + ITM_GAPY);
+      //const countColor = items.length >= maxItemCount ? '#ffaa44' : '#667766';
+      this._add(scene.add.text(
+        panelX + panelW - 16, itemSectionBottom + 2,
+        `${items.length}/${maxItemCount}`,
+        TS.countTxtDark
+      ).setOrigin(1, 0).setDepth(D + 1));
     }
 
     return this;

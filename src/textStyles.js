@@ -15,6 +15,7 @@ const C = {
   STAT: '#1a1d1a', // 진한 잉크색 (스탯용)
   BRIGHT: '#e8e0c8', // 밝은 크림색 (제목/버튼용)
   DARK: '#f0e8d0', // 밝은 배경용 역스트로크 (필요시)
+  ORANGE: '#ffaa44', // 어두운 배경에 주황색 표시
 };
 
 export const TS = {
@@ -63,10 +64,11 @@ export const TS = {
   damageBlocked: { fontFamily: F, fontSize: '20px', color: C.STAT, stroke: C.DARK, strokeThickness: 3 },
 
   // ── 시스템 오버레이 (클리어/오버) ─────────────────────────────────────────────
-  clearTitle: { fontFamily: F, fontSize: '24px', color: C.GOLD, stroke: C.DARK, strokeThickness: 4 },
+  clearTitle: { fontFamily: F, fontSize: '24px', color: C.LABEL, stroke: C.DARK, strokeThickness: 4 },
   clearSub: { fontFamily: F, fontSize: '17px', color: C.VALUE },
+  clearNote: { fontFamily: F, fontSize: '17px', color: C.VALUE },
   gameOverTitle: { fontFamily: F, fontSize: '30px', color: C.HP, stroke: C.DARK, strokeThickness: 5 },
-  gameOverScore: { fontFamily: F, fontSize: '26px', color: C.GOLD },
+  gameOverScore: { fontFamily: F, fontSize: '26px', color: C.HP },
 
   // ── 마켓 씬 ────────────────────────────────────────────────────────────────
   marketTitle: { fontFamily: F, fontSize: '22px', color: C.BRIGHT },
@@ -75,6 +77,15 @@ export const TS = {
   itemName: { fontFamily: F, fontSize: '12px', color: C.VALUE },
   itemDesc: { fontFamily: F, fontSize: '11px', color: C.VALUE, alpha: 0.8 },
   itemCost: { fontFamily: F, fontSize: '13px', color: C.GOLD },
+
+  // ── 툴팁 ────────────────────────────────────────────────────────────────
+  tooltipTxt: { fontFamily: F, fontSize: '13px', color: '#ffffff' },
+
+
+  // ── 숫자 ────────────────────────────────────────────────────────────────
+  countTxt: { fontFamily: F, fontSize: '10px', color: C.ORANGE },
+  countTxtDark: { fontFamily: F, fontSize: '10px', color: C.LABEL },
+  countTxtBright: { fontFamily: F, fontSize: '10px', color: C.BRIGHT },
 
   // ── 컬러 ────────────────────────────────────────────────────────────────
   color: C,

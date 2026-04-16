@@ -200,7 +200,7 @@ export class MarketScene extends Phaser.Scene {
     // CONTINUE 버튼
     const btnX = GW - IPW / 2;
     const btnY = GH - 42;
-    const btn = this.add.image(btnX, btnY, "ui_btn_iron")
+    const btn = this.add.image(btnX, btnY, "ui_btn")
       .setDisplaySize(220, 56).setDepth(10).setInteractive();
     this.add.text(btnX, btnY, "CONTINUE", TS.sortBtn).setOrigin(0.5).setDepth(11);
     btn.on("pointerdown", () => this._proceed());
@@ -461,26 +461,6 @@ export class MarketScene extends Phaser.Scene {
 
   // ── 카드 관리 섹션 ────────────────────────────────────────────────────────
   _drawCardMgmtSection() {
-    /*
-    if (this.textures.exists("ui_frame")) {
-      this.add.nineslice(PW + 8, CARD_MGMT_TOP, "ui_frame", 0, FAW - 16, CARD_MGMT_H, 8, 8, 8, 8)
-        .setOrigin(0, 0).setDepth(2).setAlpha(0.72);
-    } else {
-      const secG = this.add.graphics().setDepth(2);
-      secG.fillStyle(0x050d08, 0.72);
-      secG.fillRoundedRect(PW + 8, CARD_MGMT_TOP, FAW - 16, CARD_MGMT_H, 6);
-    }
-    const btnY = GH - 42;
-    const btn = this.add.image(CX, btnY
-    
-    // CONTINUE 버튼
-    const btnX = GW - IPW / 2;
-    const btnY = GH - 42;
-    const btn = this.add.image(btnX, btnY, "ui_btn_iron")
-      .setDisplaySize(220, 56).setDepth(10).setInteractive();
-    this.add.text(btnX, btnY, "CONTINUE", TS.sortBtn).setOrigin(0.5).setDepth(11);
-      */
-
     //const btnY = CARD_MGMT_TOP + CARD_MGMT_H / 2;
     const btnY = GH - 42;
     //const BTN_W = 170, BTN_H = 42, BTN_GAP = 14;
@@ -493,7 +473,7 @@ export class MarketScene extends Phaser.Scene {
     const m = getMarket(getLang(this));
 
     // 카드관리
-    const mgmt = this.add.image(mgmtX, btnY, "ui_btn_iron")
+    const mgmt = this.add.image(mgmtX, btnY, "ui_btn")
       .setDisplaySize(BTN_W, BTN_H + 4).setDepth(10).setInteractive();
     this.add.text(mgmtX, btnY, m.btn_deck_mgmt, TS.sortBtn)
       .setOrigin(0.5).setDepth(11);
@@ -508,7 +488,7 @@ export class MarketScene extends Phaser.Scene {
     // 상점갱신 (5G)
     const REFRESH_COST = 5;
     const canRefresh = this.player.gold >= REFRESH_COST;
-    const rfsh = this.add.image(rfshX, btnY, "ui_btn_iron")
+    const rfsh = this.add.image(rfshX, btnY, "ui_btn")
       .setDisplaySize(BTN_W, BTN_H + 4).setDepth(10).setInteractive();
     if (!canRefresh) rfsh.setAlpha(0.6).setTint(0x666666);
 

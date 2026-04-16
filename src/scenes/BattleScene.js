@@ -318,14 +318,14 @@ export class BattleScene extends Phaser.Scene {
 
     // ── 파일 hover 툴팁 ──────────────────────────────────────────────────
     this._tooltipBg = this.add.rectangle(0, 0, 70, 26, 0x000000, 0.85).setDepth(200).setVisible(false);
-    this._tooltipTxt = this.add.text(0, 0, "", { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#ffffff' })
+    this._tooltipTxt = this.add.text(0, 0, "", TS.tooltipTxt)
       .setOrigin(0.5).setDepth(201).setVisible(false);
 
     // ── FIELD / HAND 카운트 (각 패널 우측 하단) ─────────────────────────
     const cornerX = GW - ITEM_PANEL_W - 16;
     //const cornerStyle = { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#556655' };
-    this._fieldCountCornerTxt = this.add.text(cornerX, FIELD_Y + FIELD_CH / 2 + 10, "", TS.handRank).setOrigin(1, 1).setDepth(15);
-    this._handCountCornerTxt = this.add.text(cornerX, HAND_Y + CH / 2 + 10, "", TS.handRank).setOrigin(1, 1).setDepth(15);
+    this._fieldCountCornerTxt = this.add.text(cornerX, FIELD_Y + FIELD_CH / 2 + 10, "", TS.countTxt).setOrigin(1, 1).setDepth(15);
+    this._handCountCornerTxt = this.add.text(cornerX, HAND_Y + CH / 2 + 10, "", TS.countTxt).setOrigin(1, 1).setDepth(15);
 
     // ── 메시지 텍스트 ──────────────────────────────────────────────────────
     this.msgTxt = this.add.text(faCX, BATTLE_LOG_H + 8, "", TS.msg).setOrigin(0.5, 0).setDepth(100);
@@ -348,7 +348,7 @@ export class BattleScene extends Phaser.Scene {
     // ── TURN END 버튼 — 아이템 패널 하단 ────────────────────────────────
     const turnBtnX = IPCX;
     const turnBtnY = HAND_Y + CH / 2 - 15;
-    this.turnEndBtn = this.add.image(turnBtnX, turnBtnY, "ui_btn_iron")
+    this.turnEndBtn = this.add.image(turnBtnX, turnBtnY, "ui_btn")
       .setDisplaySize(140, 52).setDepth(60).setInteractive();
     this.add.text(turnBtnX, turnBtnY, "END TURN", TS.turnEndBtn)
       .setOrigin(0.5).setDepth(61);
@@ -370,9 +370,9 @@ export class BattleScene extends Phaser.Scene {
     const sortCX = PLAYER_PANEL_W / 2;
 
     // 정렬 버튼
-    this.sortBg = this.add.image(sortCX, sortY, "ui_btn_iron")
+    this.sortBg = this.add.image(sortCX, sortY, "ui_btn")
       .setDisplaySize(140, sortCH + 2).setDepth(60).setInteractive();
-    this.sortLabel = this.add.text(sortCX, sortY, (this.sortMode || "SUIT").toUpperCase(), TS.sortBtn)
+    this.sortLabel = this.add.text(sortCX, sortY, (this.sortMode || "rank").toUpperCase(), TS.sortBtn)
       .setOrigin(0.5).setDepth(61);
     this.sortBg.on("pointerdown", () => {
       if (this.isDealing) return;
@@ -1674,14 +1674,16 @@ export class BattleScene extends Phaser.Scene {
       ? null
       : roundManager.getRoundData(next.round, next.battleIndex)?.battleInfo?.type;
 
-    const g = this.add.graphics().setDepth(300);
-    g.fillStyle(0x000000, 0.6);
-    g.fillRect(0, 0, GW, GH);
-    const pw = 480, ph = 280, px = GW / 2 - 240, py = GH / 2 - 140;
-    g.fillStyle(0x0a2a10, 1);
-    g.fillRoundedRect(px, py, pw, ph, 20);
-    g.lineStyle(3, 0x44dd88);
-    g.strokeRoundedRect(px, py, pw, ph, 20);
+    // 딤
+    this.add.rectangle(GW / 2, GH / 2, GW, GH, 0x000000, 0.6).setDepth(300);
+
+    const pw = 580, ph = 330;
+    const cx = GW / 2, cy = GH / 2;
+    const py = cy - ph / 2;
+
+    // 팝업 배경 이미지
+    this.add.image(cx, cy, "ui_battle_popup")
+      .setDisplaySize(pw, ph).setDepth(301);
 
     const titleText = next.isGameEnd ? "GAME CLEAR!" : (next.isNextRound ? "ROUND CLEAR!" : "BATTLE CLEAR!");
     const subText = `ROUND ${this.round}-${this.battleIndex + 1}  SCORE: ${this.player.score}`;
@@ -1690,16 +1692,16 @@ export class BattleScene extends Phaser.Scene {
         next.isNextRound ? "다음 라운드로..." :
           "다음 전투로...";
 
-    this.add.text(GW / 2, py + 60, titleText, TS.clearTitle).setOrigin(0.5).setDepth(301);
-    this.add.text(GW / 2, py + 118, subText, TS.clearSub).setOrigin(0.5).setDepth(301);
-    this.add.text(GW / 2, py + 158, noteText, TS.clearNote).setOrigin(0.5).setDepth(301);
+    this.add.text(cx, py + 70, titleText, TS.clearTitle).setOrigin(0.5).setDepth(302);
+    this.add.text(cx, py + 118, subText, TS.clearSub).setOrigin(0.5).setDepth(302);
+    this.add.text(cx, py + 158, noteText, TS.clearNote).setOrigin(0.5).setDepth(302);
 
-    const btn = this.add.rectangle(GW / 2, py + ph - 46, 180, 44, 0x1e4e99)
-      .setDepth(302).setInteractive();
-    this.add.text(GW / 2, py + ph - 46, "CONTINUE", TS.overlayBtn)
-      .setOrigin(0.5).setDepth(303);
-    btn.on("pointerover", () => btn.setFillStyle(0x2d66cc));
-    btn.on("pointerout", () => btn.setFillStyle(0x1e4e99));
+    const btnY = py + ph - 66;
+    const btn = this.add.image(cx, btnY, "ui_btn")
+      .setDisplaySize(180, 44).setDepth(302).setInteractive();
+    this.add.text(cx, btnY, "CONTINUE", TS.overlayBtn).setOrigin(0.5).setDepth(303);
+    btn.on("pointerover", () => btn.setTint(0xcccccc));
+    btn.on("pointerout", () => btn.clearTint());
     btn.on("pointerdown", () => {
       this.deck.resetForNextBattle();
 
