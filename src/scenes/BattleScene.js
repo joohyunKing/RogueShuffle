@@ -144,6 +144,10 @@ export class BattleScene extends Phaser.Scene {
     this._battleItemEffects = []; // 배틀 한정 아이템 효과 기록 (종료 시 되돌리기)
     this._pilePopup = new PilePopupUI(this, () => this._hideCardPreview());
     this._cardPreviewObjs = null;
+    this._handDropIndicator = null;
+    this._pendingToggleIdx = null;   // pointerdown 후 drag 없이 pointerup 시 선택 처리
+    this._dragSealImg = null;        // drag 중인 카드의 seal 이미지 추적
+    this._pendingDrawCards = [];     // 드로우 애니메이션 대기 카드 (handData 미추가 상태)
 
     CardRenderer.createAll(this);
 
@@ -468,6 +472,62 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  // ── 단일 카드 드로우 애니메이션 (self-contained, animObjs 미사용) ─────────
+  _flyDrawCard(card, fromX, fromY, toX, toY, onComplete) {
+    const W = Math.round(CW * 0.85);
+    const H = Math.round(CH * 0.85);
+    const img = this.add.image(fromX, fromY, 'card_back')
+      .setDisplaySize(W, H).setDepth(200);
+
+    this.tweens.add({
+      targets: img, x: toX, y: toY, duration: 320, ease: 'Power2.Out',
+      onComplete: () => {
+        this.tweens.add({
+          targets: img, displayWidth: 1, duration: 70, ease: 'Linear',
+          onComplete: () => {
+            img.setTexture(card.key);
+            img.setDisplaySize(1, H);
+            this.tweens.add({
+              targets: img, displayWidth: W, duration: 70, ease: 'Linear',
+              onComplete: () => { img.destroy(); onComplete?.(); },
+            });
+          },
+        });
+      },
+    });
+  }
+
+  // ── 복수 카드 드로우 애니메이션 ─────────────────────────────────────────
+  // cards: deckData에서 이미 제거되었지만 handData에는 아직 없는 카드 배열
+  // 애니메이션 완료 후 handData / deck.hand에 추가, render() → onComplete 호출
+  _animateDraw(cards, onComplete) {
+    if (!cards?.length) { onComplete?.(); return; }
+    const deckX  = PLAYER_PANEL_W + 50;
+    const deckY  = FIELD_Y;
+    const baseLen = this.handData.length;
+    const allPos  = this.calcHandPositions(baseLen + cards.length);
+
+    let delay    = 0;
+    let completed = 0;
+
+    cards.forEach((card, ci) => {
+      const pos = allPos[baseLen + ci];
+      this.time.delayedCall(delay, () => {
+        this._sfx('sfx_slide');
+        this._flyDrawCard(card, deckX, deckY, pos?.x ?? GW / 2, HAND_Y, () => {
+          this.handData.push(card);
+          this.deck.hand.push(card);
+          completed++;
+          if (completed >= cards.length) {
+            this.render();
+            onComplete?.();
+          }
+        });
+      });
+      delay += DEAL_DELAY;
+    });
+  }
+
   // ── 위치 계산 ────────────────────────────────────────────────────────────
   calcFieldPositions(count) {
     const PW = PLAYER_PANEL_W;
@@ -495,6 +555,9 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 드래그 ───────────────────────────────────────────────────────────────
   setupDrag() {
+    // 짧은 클릭이 drag로 오인되지 않도록 threshold 설정
+    this.input.dragDistanceThreshold = 6;
+
     this.events.once('shutdown', () => {
       this.input.off('dragstart');
       this.input.off('drag');
@@ -510,6 +573,29 @@ export class BattleScene extends Phaser.Scene {
         // 아이템 컨테이너
         this.tweens.killTweensOf(obj);
         this.tweens.add({ targets: obj, scaleX: 0.9, scaleY: 0.9, duration: 60 });
+      } else if (obj.getData("handIndex") !== undefined) {
+        // 핸드 카드 — drag 시작 시 pending 선택 취소 (pointerup에서 처리 예정이었던 것)
+        this._pendingToggleIdx = null;
+        this._lastWiggleObj = null;
+        this.tweens.killTweensOf(obj);
+        obj.setY(HAND_Y);
+        // cardObjs에서 제거 — drag 중 render() 호출 시 파괴되지 않도록
+        const cIdx = this.cardObjs.indexOf(obj);
+        if (cIdx !== -1) this.cardObjs.splice(cIdx, 1);
+        const hIdx = this.handCardObjs?.indexOf(obj);
+        if (hIdx !== -1 && hIdx !== undefined) this.handCardObjs?.splice(hIdx, 1);
+        // sealImg도 함께 추적 — drag 중 card와 같이 이동
+        const seal = obj.getData("sealImg");
+        if (seal?.active) {
+          this._dragSealImg = seal;
+          this._dragSealOffsetX = seal.x - obj.x;
+          this._dragSealOffsetY = seal.y - obj.y;
+          seal.setDepth(201);
+          const sIdx = this.cardObjs.indexOf(seal);
+          if (sIdx !== -1) this.cardObjs.splice(sIdx, 1);
+        } else {
+          this._dragSealImg = null;
+        }
       } else {
         // 필드 카드
         obj.setDisplaySize(Math.round(CW * 0.9), Math.round(CH * 0.9));
@@ -521,6 +607,14 @@ export class BattleScene extends Phaser.Scene {
     this.input.on("drag", (pointer, obj, dragX, dragY) => {
       obj.x = dragX;
       obj.y = dragY;
+      // 핸드 카드 이동 중: 지나치는 카드 wiggle + sealImg 추적
+      if (obj.getData("handIndex") !== undefined) {
+        this._wiggleNearestHandCard(pointer.x);
+        if (this._dragSealImg?.active) {
+          this._dragSealImg.x = dragX + this._dragSealOffsetX;
+          this._dragSealImg.y = dragY + this._dragSealOffsetY;
+        }
+      }
     });
 
     this.input.on("dragend", (pointer, obj) => {
@@ -539,6 +633,46 @@ export class BattleScene extends Phaser.Scene {
             onComplete: () => { obj.destroy(); this.render(); },
           });
         }
+        return;
+      }
+
+      // ── 핸드 카드 순서 변경 drag ─────────────────────────────────────
+      if (obj.getData("handIndex") !== undefined) {
+        this._lastWiggleObj = null;
+        this._dragSealImg?.destroy();
+        this._dragSealImg = null;
+        const fromIdx = obj.getData("handIndex");
+        const positions = this.calcHandPositions(this.handData.length);
+
+        // 드롭 위치에서 가장 가까운 슬롯 탐색
+        let toIdx = fromIdx;
+        let minDist = Infinity;
+        positions.forEach((p, i) => {
+          const dist = Math.abs(pointer.x - p.x);
+          if (dist < minDist) { minDist = dist; toIdx = i; }
+        });
+
+        if (toIdx !== fromIdx) {
+          const [card] = this.handData.splice(fromIdx, 1);
+          this.handData.splice(toIdx, 0, card);
+
+          // 선택 인덱스 보정
+          const newSel = new Set();
+          for (const idx of this.selected) {
+            if (idx === fromIdx) {
+              newSel.add(toIdx > fromIdx ? toIdx - 1 : toIdx);
+            } else if (fromIdx < toIdx && idx > fromIdx && idx <= toIdx) {
+              newSel.add(idx - 1);
+            } else if (fromIdx > toIdx && idx >= toIdx && idx < fromIdx) {
+              newSel.add(idx + 1);
+            } else {
+              newSel.add(idx);
+            }
+          }
+          this.selected = newSel;
+        }
+        obj.destroy();
+        this.render();
         return;
       }
 
@@ -565,6 +699,35 @@ export class BattleScene extends Phaser.Scene {
       } else {
         this._snapBack(obj);
       }
+    });
+  }
+
+  // ── 핸드 카드 드래그 중 근처 카드 wiggle ────────────────────────────────
+  _wiggleNearestHandCard(mouseX) {
+    if (!this.handCardObjs?.length) return;
+
+    // 드래그 중인 카드를 제외한 핸드 카드 중 가장 가까운 것 탐색
+    let nearestObj = null;
+    let minDist = Infinity;
+    this.handCardObjs.forEach(cardObj => {
+      if (!cardObj?.active) return;
+      const dist = Math.abs(mouseX - cardObj.x);
+      if (dist < minDist) { minDist = dist; nearestObj = cardObj; }
+    });
+
+    // 이전과 같은 카드면 skip, 너무 멀면 skip
+    if (!nearestObj || minDist > 65 || nearestObj === this._lastWiggleObj) return;
+    this._lastWiggleObj = nearestObj;
+
+    const baseX = nearestObj.x;
+    this.tweens.killTweensOf(nearestObj);
+    this.tweens.chain({
+      targets: nearestObj,
+      tweens: [
+        { x: baseX - 7, duration: 50, ease: 'Power2.Out' },
+        { x: baseX + 7, duration: 50, ease: 'Power2.Out' },
+        { x: baseX,     duration: 50, ease: 'Back.Out'   },
+      ],
     });
   }
 
@@ -817,6 +980,13 @@ export class BattleScene extends Phaser.Scene {
     this.refreshPlayerStats();
     this.refreshAttackCount();
     this.refreshBattleLog();
+
+    // 대기 중인 드로우 카드 애니메이션 실행 (공격 후 purple 씰 등)
+    if (this._pendingDrawCards?.length > 0) {
+      const pending = [...this._pendingDrawCards];
+      this._pendingDrawCards = [];
+      this._animateDraw(pending);
+    }
   }
 
   renderDeckPile() {
@@ -982,10 +1152,20 @@ export class BattleScene extends Phaser.Scene {
 
       const isDisabled = this._isCardDisabled(card);
       const { cardImg: img, sealImg } = CardRenderer.drawCard(this, x, y, card, { width: cardW, height: cardH, depth: sel ? 32 : 30, disabled: isDisabled, objs: this.cardObjs });
+
+      // 핸드 카드는 항상 드래그 가능 (순서 변경)
       img.setInteractive();
+      this.input.setDraggable(img);
+      img.setData("handIndex", i);
+      img.setData("sealImg", sealImg ?? null);
 
       if (canPick) {
-        img.on("pointerdown", () => { if (!this.isDragging && !this.isDealing) this.toggleHand(i); });
+        // pointerdown: drag 여부 판단을 위해 pending만 설정, 실제 선택은 pointerup에서 처리
+        img.on("pointerdown", () => { if (!this.isDealing) this._pendingToggleIdx = i; });
+        img.on("pointerup", () => {
+          if (this._pendingToggleIdx === i && !this.isDealing) this.toggleHand(i);
+          this._pendingToggleIdx = null;
+        });
         img.on("pointerover", () => {
           if (!this.isDragging) {
             this.tweens.add({ targets: img, displayWidth: hoverW, displayHeight: hoverH, y: y - 8, duration: 100 });
@@ -1223,6 +1403,12 @@ export class BattleScene extends Phaser.Scene {
           const healAmt = sealMap['pink']?.healBonus ?? 5;
           this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
           this.addBattleLog(`[씰] ${card.key} → HP +${healAmt} 회복!`);
+        } else if (enh.type === 'purple') {
+          if (this.deckData.length > 0 && this.handData.length < this.player.handSizeLimit) {
+            const drawn = this.deckData.pop();
+            this._pendingDrawCards.push(drawn);  // render() 후 애니메이션으로 handData에 추가
+            this.addBattleLog(`[씰] ${card.key} → 덱에서 ${drawn.key} 드로우!`);
+          }
         }
       }
     }
@@ -1637,23 +1823,43 @@ export class BattleScene extends Phaser.Scene {
   startTurn() {
     this.time.delayedCall(420, () => {
       try {
+        // ── 필드 보충 ──────────────────────────────────────────────────────────
         const slotPos = this.calcFieldPositions(this.player.fieldSize);
         const draw = Math.min(this.player.fieldSize, this.deckData.length);
         const newCards = Array.from({ length: draw }, () => this.deckData.pop());
         this.deck.field = newCards;
         this.fieldData = newCards.map((c, k) => ({ ...c, slotX: slotPos[k].x }));
 
+        // ── 핸드 최솟값 보충 (드로우 애니메이션용: handData에 즉시 추가 안 함) ──
+        const handMin   = this.player.handSizeMinimum ?? 0;
+        const drawLimit = this.player.turnStartDrawLimit ?? 0;
+        const shortage  = handMin - this.handData.length;
+        const drawnCards = [];
+        if (shortage > 0 && drawLimit > 0 && this.deckData.length > 0) {
+          const toDraw = Math.min(shortage, drawLimit, this.deckData.length);
+          for (let i = 0; i < toDraw; i++) drawnCards.push(this.deckData.pop());
+        }
+
         this.debuffManager.tick();
         this.fieldPickCount = 0;
         this.attackCount = 0;
         this.selected.clear();
         this._applySortToHand();
-        this.render();
-        this._saveTurnState();
+        this.render();  // 현재 핸드(드로우 전) + 필드 렌더
+
+        if (drawnCards.length > 0) {
+          // isDealing은 애니메이션이 끝날 때 해제
+          this._animateDraw(drawnCards, () => {
+            this.isDealing = false;
+            this._saveTurnState();
+          });
+        } else {
+          this.isDealing = false;
+          this._saveTurnState();
+        }
       } catch (e) {
         console.error("[startTurn timer]", e);
-      } finally {
-        this.isDealing = false;
+        this.isDealing = false;  // 예외 시 failsafe
       }
     });
   }

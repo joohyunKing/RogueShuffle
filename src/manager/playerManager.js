@@ -6,6 +6,10 @@
 import { HAND_DATA, DEBUG_MODE } from "../constants.js";
 import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice, maxRelicCount } from './relicManager.js';
 import { getItemPrice } from './itemManager.js';
+import deckData from '../data/deck.json';
+
+/** 기본 덱 설정 (usable:true 중 첫 번째, 없으면 첫 번째) */
+const DEFAULT_DECK = deckData.decks.find(d => d.usable) ?? deckData.decks[0];
 
 // HAND_DATA에서 { multi, aoe } 만 추출한 기본 handConfig
 const DEFAULT_HAND_CONFIG = Object.fromEntries(
@@ -52,7 +56,7 @@ export class Player {
         this.gold = data.gold ?? 0;
         this.level = data.level ?? 1;
         /** 턴당 공격 가능 횟수 */
-        this.attacksPerTurn = data.attacksPerTurn ?? 2;
+        this.attacksPerTurn = data.attacksPerTurn ?? DEFAULT_DECK.attacksPerTurn;
         /** 공격력 (기본 카드 점수에 합산) */
         this.atk = data.atk ?? 5;
         /** 슈트별 레벨 { S, H, D, C } */
@@ -62,9 +66,9 @@ export class Player {
         /** 보유 유물 ID 목록 (최대 9개) */
         this.relics = data.relics ?? [];
 
-// ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
+        // ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
         /** 직업 */
-        this.job = data.job ?? "Magician";
+        this.deckId = data.deckId ?? "standard";
         /**
          * 슈트별 적응도 (기본 1.0 = 100%)
          * 효과: suitLevel * adaptability * 해당 suit 카드 수
@@ -75,18 +79,19 @@ export class Player {
          */
         this.adaptability = data.adaptability ?? { S: 1.0, H: 1.0, D: 1.0, C: 1.0 };
 
-        // ── 게임플레이 수치 (LevelConfig 기본값, 아이템/버프로 변경 가능) ─────────
+        // ── 게임플레이 수치 (deck.json 기본값, 아이템/버프로 변경 가능) ──────────
         const lc = {
-
-            handSize: 7,
-            handSizeLimit: 8,
-            turnStartDrawLimit: 3,
-            fieldSize: 5,
-            fieldSizeLimit: this.fieldSize, //6,
-            fieldPickLimit: this.fieldSize, //1,
+            handSize: DEFAULT_DECK.handSize,
+            handSizeMinimum: DEFAULT_DECK.handSizeMinimum,
+            handSizeLimit: DEFAULT_DECK.handSizeLimit,
+            turnStartDrawLimit: DEFAULT_DECK.turnStartDrawLimit,
+            fieldSize: DEFAULT_DECK.fieldSize,
+            fieldSizeLimit: DEFAULT_DECK.fieldSize,
+            fieldPickLimit: DEFAULT_DECK.fieldSize,
         };
 
         this.handSize = data.handSize ?? lc.handSize;
+        this.handSizeMinimum = data.handSizeMinimum ?? lc.handSizeMinimum;
         this.handSizeLimit = data.handSizeLimit ?? lc.handSizeLimit;
         this.turnStartDrawLimit = data.turnStartDrawLimit ?? lc.turnStartDrawLimit;
         this.fieldSize = data.fieldSize ?? lc.fieldSize;
@@ -245,9 +250,10 @@ export class Player {
             attacksPerTurn: this.attacksPerTurn,
             atk: this.atk,
             attrs: { ...this.attrs },
-            job: this.job,
+            deckId: this.deckId,
             adaptability: { ...this.adaptability },
             handSize: this.handSize,
+            handSizeMinimum: this.handSizeMinimum,
             handSizeLimit: this.handSizeLimit,
             turnStartDrawLimit: this.turnStartDrawLimit,
             fieldSize: this.fieldSize,

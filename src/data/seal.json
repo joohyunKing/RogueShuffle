@@ -40,6 +40,15 @@
       "usable": true
     },
     {
+      "id": "purple",
+      "name": "Purple Seal",
+      "desc": "공격 시 덱에서 핸드로 1장 드로우",
+      "border": "#aa66ff",
+      "shopLabel": "+1드로우",
+      "img": "purple_seal.png",
+      "usable": true
+    },
+    {
       "id": "rainbow",
       "name": "Rainbow Seal",
       "desc": "미구현",

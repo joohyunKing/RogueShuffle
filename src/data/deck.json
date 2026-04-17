@@ -1,0 +1,41 @@
+{
+  "decks": [
+    {
+      "deckId": "standard",
+      "deckName": "Standard Deck",
+      "desc": "기본 덱",
+      "back_img": "card_back.png",
+      "handSize": 7,
+      "handSizeMinimum": 5,
+      "handSizeLimit": 8,
+      "turnStartDrawLimit": 2,
+      "fieldSize": 5,
+      "attacksPerTurn": 2,
+      "maxItemCount": 6,
+      "maxRelicCount": 9,
+      "suits": [
+        "S",
+        "H",
+        "D",
+        "C"
+      ],
+      "ranks": [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K"
+      ],
+      "debuff": {},
+      "usable": true
+    }
+  ]
+}

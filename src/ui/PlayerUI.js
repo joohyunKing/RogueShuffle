@@ -2,6 +2,11 @@ import { PLAYER_PANEL_W, GH, HAND_DATA } from "../constants.js";
 import { TS } from "../textStyles.js";
 import { getRequiredExp } from "../manager/playerManager.js";
 import { getLang, getHandName, getHandDesc, getPlayerUI } from "../service/langService.js";
+import deckData from "../data/deck.json";
+
+function getDeckDisplayName(deckId) {
+    return deckData.decks.find(d => d.deckId === deckId)?.deckName ?? deckId;
+}
 
 const SUIT_COLORS = { S: '#293c52ff', H: '#893131ff', D: '#d0712dff', C: '#1b4b24ff' };
 const SUIT_SYMS = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
@@ -89,8 +94,8 @@ export class PlayerUI {
       g.strokeRect(0, 0, PW, GH);
     }
 
-    // ── JOB ────────────────────────────────────────────────────────────────
-    this._add(scene.add.text(pcx, 12, p.job.toUpperCase(), TS.gameTitle)
+    // ── DeckName ────────────────────────────────────────────────────────────────
+    this._add(scene.add.text(pcx, 12, getDeckDisplayName(p.deckId).toUpperCase(), TS.gameTitle)
       .setOrigin(0.5, 0).setDepth(D));
 
     let ry = 36;

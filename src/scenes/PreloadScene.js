@@ -137,6 +137,7 @@ export class PreloadScene extends Phaser.Scene {
 
     // 임시 몬스터 샘플 이미지 (tween 애니메이션용)
     this.load.image('mon_sample', 'assets/images/monster/mon_sample.png');
+    this.load.image('seal_purple', 'assets/images/symbol/purple_seal.png');
 
     //this.load.images();
   }

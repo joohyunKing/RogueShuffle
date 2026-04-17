@@ -2,6 +2,13 @@
 import {
     SUITS, RANKS
 } from "../constants.js";
+import deckData from '../data/deck.json';
+
+function getDeckConfig(deckId) {
+    return deckData.decks.find(d => d.deckId === deckId)
+        ?? deckData.decks.find(d => d.usable)
+        ?? deckData.decks[0];
+}
 
 
 /*
@@ -22,8 +29,12 @@ export default class DeckManager {
 
         //save 없음 만들자
         if (!data.cards) {
-            this.cards = SUITS.flatMap(suit =>
-                RANKS.map(rank => this.makeCard(suit, rank))
+            const deckCfg = getDeckConfig(player.deckId);
+            const suits = deckCfg.suits ?? SUITS;
+            const ranks = deckCfg.ranks ?? RANKS;
+
+            this.cards = suits.flatMap(suit =>
+                ranks.map(rank => this.makeCard(suit, rank))
             );
 
             //deck 에 전체 카드 등록
