@@ -272,6 +272,20 @@ export class MonsterManager {
     return damage;
   }
 
+  _applySuitPlayerEffects(suitCounts, suitEff) {
+    const { scene } = this;
+    if (suitCounts.H > 0) {
+      const eff = suitEff('H');
+      scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
+      if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
+    }
+    if (suitCounts.D > 0) {
+      const eff = suitEff('D');
+      scene.player.def += eff;
+      if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
+    }
+  }
+
   // ── 광역 공격 처리 ────────────────────────────────────────────────────────
   _resolveAoe(score, handName, suitCounts, suitEff, positions, attackCtx = {}) {
     const { scene } = this;
@@ -293,16 +307,7 @@ export class MonsterManager {
         });
       }
     }
-    if (suitCounts.H > 0) {
-      const eff = suitEff('H');
-      scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
-      if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
-    }
-    if (suitCounts.D > 0) {
-      const eff = suitEff('D');
-      scene.player.def += eff;
-      if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
-    }
+    this._applySuitPlayerEffects(suitCounts, suitEff);
 
     scene.player.score += score;
     scene.addBattleLog(`${handName}! 전체에 ${score}점 광역 공격!`);
@@ -356,16 +361,7 @@ export class MonsterManager {
     this._refreshHP(monIdx, mon);
 
     // 슈트 적응 효과 (데미지 후: ♥HP회복, ♦DEF증가)
-    if (suitCounts.H > 0) {
-      const eff = suitEff('H');
-      scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
-      if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
-    }
-    if (suitCounts.D > 0) {
-      const eff = suitEff('D');
-      scene.player.def += eff;
-      if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
-    }
+    this._applySuitPlayerEffects(suitCounts, suitEff);
 
     scene.addBattleLog(`${mon.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
     scene._sfx("sfx_knifeSlice");
