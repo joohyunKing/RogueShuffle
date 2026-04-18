@@ -296,7 +296,7 @@
     },
     {
       "id": "hexweaver",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "저주술사",
       "sprite": {
         "idle": "undead_mage_idle.png",

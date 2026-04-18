@@ -182,6 +182,11 @@ export function getScoreDetails(cards, context) {
         for (const enh of (card.enhancements ?? [])) {
             if (enh.type === 'red') baseScore += sealMap['red']?.scoreBonus ?? 20;
         }
+        // 슈트 적응 보너스: (레벨-1) × 적응도 (레벨 1이면 0)
+        if (ctx.attrs && ctx.adaptability) {
+            const s = card.suit;
+            baseScore += Math.floor((ctx.attrs[s] - 1) * ctx.adaptability[s]);
+        }
 
         let deltaBase = baseScore;
         let deltaMulti = 0;

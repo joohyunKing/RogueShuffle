@@ -204,8 +204,8 @@ export class MonsterManager {
     scene.attackCount++;
     scene.isDealing = true;
 
-    // 씰 효과 (골드/아이템) 적용
-    scene._applySealEffects?.(selectedCards);
+    // 씰 효과 (골드/아이템) 적용 — 족보 구성 카드만
+    scene._applySealEffects?.(details.cards);
 
     const removeCards = () => {
       scene.selected.clear();

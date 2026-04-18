@@ -1284,6 +1284,8 @@ export class BattleScene extends Phaser.Scene {
     context.hp = this.player.hp;
     context.maxHp = this.player.maxHp;
     context.handUseCounts = this.player.handUseCounts ?? {};
+    context.attrs = this.player.attrs;
+    context.adaptability = this.player.adaptability;
   }
 
   // ── 디버프 카드 여부 (DebuffManager에 위임) ────────────────────────────────
