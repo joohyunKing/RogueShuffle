@@ -252,7 +252,7 @@ export class BattleAnimationManager {
         queue.push(next => {
           pulseCard(info.obj);
           throwOrb(info.fromX, info.fromY, 0xffdd44);
-          this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + cd.deltaBase, ANIM_SPEED.countUp, next));
+          this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + cd.baseScore, ANIM_SPEED.countUp, next));
         });
 
         cd.cardRelicDeltas.forEach(({ relicId, type, delta }) => {

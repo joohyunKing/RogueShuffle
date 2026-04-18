@@ -98,6 +98,13 @@ export class MarketScene extends Phaser.Scene {
   create() {
     CardRenderer.createAll(this);
 
+    // BGM
+    this._playBgm();
+    this._bgmListener = (_parent, value) => {
+      if (this._bgmSound) this._bgmSound.setVolume(value / 10);
+    };
+    this.registry.events.on('changedata-bgmVolume', this._bgmListener);
+
     const data = this.scene.settings.data || {};
     this.round = data.round ?? 1;
     this.player = new Player(data.player ?? {});
@@ -124,6 +131,21 @@ export class MarketScene extends Phaser.Scene {
     this._pilePopup = new PilePopupUI(this);
 
     this._drawScene();
+  }
+
+  // ── BGM ─────────────────────────────────────────────────────────────────
+  _playBgm() {
+    const vol = (this.registry.get("bgmVolume") ?? 7) / 10;
+    this._bgmSound = this.sound.add("bgm_market", { volume: vol, loop: true });
+    this._bgmSound.play();
+  }
+
+  _stopBgm() {
+    if (this._bgmSound) {
+      this._bgmSound.stop();
+      this._bgmSound.destroy();
+      this._bgmSound = null;
+    }
   }
 
   // ── 툴팁 ────────────────────────────────────────────────────────────────
@@ -517,6 +539,9 @@ export class MarketScene extends Phaser.Scene {
   }
 
   _proceed() {
+    this.registry.events.off('changedata-bgmVolume', this._bgmListener);
+    this._stopBgm();
+
     const next = roundManager.getNextStep(this.round, this.battleIndex);
 
     this.scene.start('GameScene', {

@@ -29,6 +29,7 @@ src/
     seal.json           # 씰 데이터 (id/name/desc/border/scoreBonus/goldBonus/healBonus/shopLabel/img/usable)
     round.json          # 라운드 데이터 (rounds[]: round/battles[]/bg/races/bossId/baseStat)
     debuff.json         # 디버프 정의 (id/name/type/duration/durationValue/value/img)
+    gimmicks.json       # 엘리트 기믹 정의 (id/name/img/description/type/damageMultiplier/defMultiplier 등)
     lang.json           # 다국어 텍스트 (ko/en: hand/playerUI/market/item/relic/ui)
   manager/
     roundManager.js     # RoundManager — 라운드/배틀 순서 관리
