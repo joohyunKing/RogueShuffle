@@ -1,3 +1,5 @@
+import { TS } from "../textStyles.js";
+
 /**
  * TooltipUI — 범용 툴팁 컴포넌트
  *
@@ -109,7 +111,7 @@ export class TooltipUI {
     // ── 제목 ──────────────────────────────────────────────────────────────
     this._objs.push(
       scene.add.text(left + PAD, ty + PAD, titleMsg, {
-        fontFamily: "'PressStart2P', Arial",
+        fontFamily: TS.defaultFont,
         fontSize: '16px',
         color: titleMsgColor,
       }).setOrigin(0, 0).setDepth(depth + 1)
@@ -137,7 +139,7 @@ export class TooltipUI {
       if (sold) {
         this._objs.push(
           scene.add.text(btnCX, btnY, 'SOLD', {
-            fontFamily: "'PressStart2P', Arial",
+            fontFamily: TS.defaultFont,
             fontSize: '13px',
             color: '#555555',
           }).setOrigin(0.5).setDepth(depth + 1)
@@ -147,7 +149,7 @@ export class TooltipUI {
         const btn = scene.add.rectangle(btnCX, btnY, btnW, BTN_H, 0x1a5533)
           .setDepth(depth + 1).setStrokeStyle(1, 0x44dd88).setInteractive();
         const btnTxt = scene.add.text(btnCX, btnY, btnLabel, {
-          fontFamily: "'PressStart2P', Arial",
+          fontFamily: TS.defaultFont,
           fontSize: '13px',
           color: '#aaffaa',
         }).setOrigin(0.5).setDepth(depth + 2);
@@ -160,7 +162,7 @@ export class TooltipUI {
         const btn = scene.add.rectangle(btnCX, btnY, btnW, BTN_H, 0x2a1a1a)
           .setDepth(depth + 1).setStrokeStyle(1, 0x554444).setInteractive();
         const btnTxt = scene.add.text(btnCX, btnY, btnLabel, {
-          fontFamily: "'PressStart2P', Arial",
+          fontFamily: TS.defaultFont,
           fontSize: '13px',
           color: '#aa6644',
         }).setOrigin(0.5).setDepth(depth + 2);

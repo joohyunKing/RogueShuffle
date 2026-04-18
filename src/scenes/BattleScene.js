@@ -342,7 +342,7 @@ export class BattleScene extends Phaser.Scene {
 
     // ── FIELD / HAND 카운트 (각 패널 우측 하단) ─────────────────────────
     const cornerX = GW - ITEM_PANEL_W - 16;
-    //const cornerStyle = { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#556655' };
+    //const cornerStyle = { fontFamily: TS.defaultFont, fontSize: '9px', color: '#556655' };
     this._fieldCountCornerTxt = this.add.text(cornerX, FIELD_Y + FIELD_CH / 2 + 10, "", TS.countTxt).setOrigin(1, 1).setDepth(15);
     this._handCountCornerTxt = this.add.text(cornerX, HAND_Y + CH / 2 + 10, "", TS.countTxt).setOrigin(1, 1).setDepth(15);
 
@@ -1215,13 +1215,13 @@ export class BattleScene extends Phaser.Scene {
       const imgKey = active.id;
       const icon = this.textures.exists(imgKey)
         ? this.add.image(x, iconY, imgKey).setDisplaySize(SIZE - 4, SIZE - 4).setDepth(21)
-        : this.add.text(x, iconY, def.name[0], { fontFamily: "'PressStart2P', Arial", fontSize: '9px', color: '#cc88ff' }).setOrigin(0.5).setDepth(21);
+        : this.add.text(x, iconY, def.name[0], { fontFamily: TS.defaultFont, fontSize: '9px', color: '#cc88ff' }).setOrigin(0.5).setDepth(21);
       this._debuffObjs.push(icon);
 
       // 남은 턴 / B 표시
       const durLabel = active.turnsLeft > 0 ? `${active.turnsLeft}` : 'B';
       const dur = this.add.text(x + SIZE / 2 - 1, iconY + SIZE / 2 - 1, durLabel,
-        { fontFamily: "'PressStart2P', Arial", fontSize: '7px', color: '#ffff44' })
+        { fontFamily: TS.defaultFont, fontSize: '7px', color: '#ffff44' })
         .setOrigin(1, 1).setDepth(22);
       this._debuffObjs.push(dur);
 
@@ -1257,7 +1257,7 @@ export class BattleScene extends Phaser.Scene {
 
     lines.forEach((line, i) => {
       const style = i === 0
-        ? { fontFamily: "'PressStart2P', Arial", fontSize: '10px', color }
+        ? { fontFamily: TS.defaultFont, fontSize: '10px', color }
         : { fontFamily: 'Arial', fontSize: '14px', color: '#aaccbb' };
       this._debuffTipObjs.push(
         this.add.text(tx + pad, tipY + pad + i * lineH, line, style)
@@ -1648,7 +1648,7 @@ export class BattleScene extends Phaser.Scene {
       const bx = btnX0 + idx * btnGap;
       const btnBg = this.add.rectangle(bx, btnY, btnW, btnH, 0xffffff, 0).setDepth(D + 2).setInteractive();
 
-      const fontStyle = { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: suitColors[suit] };
+      const fontStyle = { fontFamily: TS.defaultFont, fontSize: '11px', color: suitColors[suit] };
 
       modal.addObj(btnBg);
       modal.addObj(this.add.text(bx, btnY - 12, SUIT_SYMS[suit], { fontFamily: 'Arial', fontSize: '24px', color: suitColors[suit] }).setOrigin(0.5).setDepth(D + 3));

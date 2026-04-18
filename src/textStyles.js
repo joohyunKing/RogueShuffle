@@ -4,7 +4,7 @@
  * PressStart2P 픽셀 폰트 기준. 한글은 Arial fallback.
  */
 
-const F = "'PressStart2P', 'NeoDGM', Arial";
+const defaultFont = "'PressStart2P', 'NeoDGM', Arial";
 
 // ── 공통 색상 팔레트 ────────────────────────────────────────────────────────
 const C = {
@@ -21,77 +21,78 @@ const C = {
 export const suitColors = { S: '#293c52ff', H: '#893131ff', D: '#d0712dff', C: '#1b4b24ff' };
 
 export const TS = {
+  defaultFont,
   // ── 게임 헤더 / 제목 ────────────────────────────────────────────────────────
-  gameTitle: { fontFamily: F, fontSize: '17px', color: C.BRIGHT },
-  menuTitle: { fontFamily: F, fontSize: '38px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 8 },
+  gameTitle: { fontFamily: defaultFont, fontSize: '17px', color: C.BRIGHT },
+  menuTitle: { fontFamily: defaultFont, fontSize: '38px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 8 },
 
   // ── 배틀 로그 ──────────────────────────────────────────────────────────────
-  log: { fontFamily: F, fontSize: '14px', color: '#ffbb33', stroke: '#000000', strokeThickness: 2 },
-  msg: { fontFamily: F, fontSize: '17px', color: '#ffbb33', stroke: '#000000', strokeThickness: 2 },
+  log: { fontFamily: defaultFont, fontSize: '14px', color: '#ffbb33', stroke: '#000000', strokeThickness: 2 },
+  msg: { fontFamily: defaultFont, fontSize: '17px', color: '#ffbb33', stroke: '#000000', strokeThickness: 2 },
 
   // ── 팝업 ──────────────────────────────────────────────
-  popupTitle: { fontFamily: F, fontSize: '15px', color: C.LABEL },
-  popupContent: { fontFamily: F, fontSize: '14px', color: C.VALUE },
+  popupTitle: { fontFamily: defaultFont, fontSize: '15px', color: C.LABEL },
+  popupContent: { fontFamily: defaultFont, fontSize: '14px', color: C.VALUE },
 
   // ── UI 패널 정보 (PlayerUI 등) ──────────────────────────────────────────────
-  infoLabel: { fontFamily: F, fontSize: '12px', color: C.LABEL },
-  infoValue: { fontFamily: F, fontSize: '14px', color: C.VALUE },
-  goldValue: { fontFamily: F, fontSize: '14px', color: C.GOLD },
-  levelValue: { fontFamily: F, fontSize: '17px', color: C.VALUE },
+  infoLabel: { fontFamily: defaultFont, fontSize: '12px', color: C.LABEL },
+  infoValue: { fontFamily: defaultFont, fontSize: '14px', color: C.VALUE },
+  goldValue: { fontFamily: defaultFont, fontSize: '14px', color: C.GOLD },
+  levelValue: { fontFamily: defaultFont, fontSize: '17px', color: C.VALUE },
 
-  playerHp: { fontFamily: F, fontSize: '14px', color: C.HP },
-  playerDef: { fontFamily: F, fontSize: '14px', color: C.STAT },
-  playerAtk: { fontFamily: F, fontSize: '14px', color: C.GOLD },
+  playerHp: { fontFamily: defaultFont, fontSize: '14px', color: C.HP },
+  playerDef: { fontFamily: defaultFont, fontSize: '14px', color: C.STAT },
+  playerAtk: { fontFamily: defaultFont, fontSize: '14px', color: C.GOLD },
 
   // ── 족보 / 카드 정보 ────────────────────────────────────────────────────────
-  handRank: { fontFamily: F, fontSize: '12px', color: C.VALUE, padding: { bottom: 4 } },
-  handMulti: { fontFamily: F, fontSize: '12px', color: C.VALUE, padding: { bottom: 4 } },
-  comboLabel: { fontFamily: F, fontSize: '16px', color: C.LABEL },
-  comboScore: { fontFamily: F, fontSize: '16px', color: C.GOLD },
+  handRank: { fontFamily: defaultFont, fontSize: '12px', color: C.VALUE, padding: { bottom: 4 } },
+  handMulti: { fontFamily: defaultFont, fontSize: '12px', color: C.VALUE, padding: { bottom: 4 } },
+  comboLabel: { fontFamily: defaultFont, fontSize: '16px', color: C.LABEL },
+  comboScore: { fontFamily: defaultFont, fontSize: '16px', color: C.GOLD },
 
   // ── 패널 레이블 (FIELD / HAND / ITEMS) ──────────────────────────────────────
-  panelLabel: { fontFamily: F, fontSize: '13px', color: C.LABEL, letterSpacing: 4 },
+  panelLabel: { fontFamily: defaultFont, fontSize: '13px', color: C.LABEL, letterSpacing: 4 },
 
   // ── 버튼 ───────────────────────────────────────────────────────────────────
-  sortBtn: { fontFamily: F, fontSize: '13px', color: C.BRIGHT },
-  menuBtn: { fontFamily: F, fontSize: '15px', color: C.BRIGHT },
-  turnEndBtn: { fontFamily: F, fontSize: '13px', color: C.BRIGHT },
+  sortBtn: { fontFamily: defaultFont, fontSize: '13px', color: C.BRIGHT },
+  menuBtn: { fontFamily: defaultFont, fontSize: '15px', color: C.BRIGHT },
+  turnEndBtn: { fontFamily: defaultFont, fontSize: '13px', color: C.BRIGHT },
 
   // ── 몬스터 ─────────────────────────────────────────────────────────────────
-  monName: { fontFamily: F, fontSize: '13px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 2 },
-  monStat: { fontFamily: F, fontSize: '12px', color: C.VALUE },
-  monHpText: { fontFamily: F, fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
-  monStatNum: { fontFamily: F, fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
-  monTarget: { fontFamily: F, fontSize: '13px', color: C.GOLD, stroke: '#000000', strokeThickness: 2 },
-  monDead: { fontFamily: F, fontSize: '32px', color: C.HP },
+  monName: { fontFamily: defaultFont, fontSize: '13px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 2 },
+  monStat: { fontFamily: defaultFont, fontSize: '12px', color: C.VALUE },
+  monHpText: { fontFamily: defaultFont, fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
+  monStatNum: { fontFamily: defaultFont, fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
+  monTarget: { fontFamily: defaultFont, fontSize: '13px', color: C.GOLD, stroke: '#000000', strokeThickness: 2 },
+  monDead: { fontFamily: defaultFont, fontSize: '32px', color: C.HP },
 
   // ── 전투 이펙트 ────────────────────────────────────────────────────────────
-  damageHit: { fontFamily: F, fontSize: '20px', color: C.HP, stroke: C.DARK, strokeThickness: 3 },
-  damageBlocked: { fontFamily: F, fontSize: '20px', color: C.STAT, stroke: C.DARK, strokeThickness: 3 },
+  damageHit: { fontFamily: defaultFont, fontSize: '20px', color: C.HP, stroke: C.DARK, strokeThickness: 3 },
+  damageBlocked: { fontFamily: defaultFont, fontSize: '20px', color: C.STAT, stroke: C.DARK, strokeThickness: 3 },
 
   // ── 시스템 오버레이 (클리어/오버) ─────────────────────────────────────────────
-  clearTitle: { fontFamily: F, fontSize: '24px', color: C.LABEL, stroke: C.DARK, strokeThickness: 4 },
-  clearSub: { fontFamily: F, fontSize: '17px', color: C.VALUE },
-  clearNote: { fontFamily: F, fontSize: '17px', color: C.VALUE },
-  gameOverTitle: { fontFamily: F, fontSize: '30px', color: C.HP, stroke: C.DARK, strokeThickness: 5 },
-  gameOverScore: { fontFamily: F, fontSize: '26px', color: C.HP },
+  clearTitle: { fontFamily: defaultFont, fontSize: '24px', color: C.LABEL, stroke: C.DARK, strokeThickness: 4 },
+  clearSub: { fontFamily: defaultFont, fontSize: '17px', color: C.VALUE },
+  clearNote: { fontFamily: defaultFont, fontSize: '17px', color: C.VALUE },
+  gameOverTitle: { fontFamily: defaultFont, fontSize: '30px', color: C.HP, stroke: C.DARK, strokeThickness: 5 },
+  gameOverScore: { fontFamily: defaultFont, fontSize: '26px', color: C.HP },
 
   // ── 마켓 씬 ────────────────────────────────────────────────────────────────
-  marketTitle: { fontFamily: F, fontSize: '22px', color: C.BRIGHT },
-  marketSub: { fontFamily: F, fontSize: '12px', color: C.LABEL },
+  marketTitle: { fontFamily: defaultFont, fontSize: '22px', color: C.BRIGHT },
+  marketSub: { fontFamily: defaultFont, fontSize: '12px', color: C.LABEL },
 
-  itemName: { fontFamily: F, fontSize: '12px', color: C.VALUE },
-  itemDesc: { fontFamily: F, fontSize: '11px', color: C.VALUE, alpha: 0.8 },
-  itemCost: { fontFamily: F, fontSize: '13px', color: C.GOLD },
+  itemName: { fontFamily: defaultFont, fontSize: '12px', color: C.VALUE },
+  itemDesc: { fontFamily: defaultFont, fontSize: '11px', color: C.VALUE, alpha: 0.8 },
+  itemCost: { fontFamily: defaultFont, fontSize: '13px', color: C.GOLD },
 
   // ── 툴팁 ────────────────────────────────────────────────────────────────
-  tooltipTxt: { fontFamily: F, fontSize: '13px', color: '#ffffff' },
+  tooltipTxt: { fontFamily: defaultFont, fontSize: '13px', color: '#ffffff' },
 
 
   // ── 숫자 ────────────────────────────────────────────────────────────────
-  countTxt: { fontFamily: F, fontSize: '10px', color: C.ORANGE },
-  countTxtDark: { fontFamily: F, fontSize: '10px', color: C.LABEL },
-  countTxtBright: { fontFamily: F, fontSize: '10px', color: C.BRIGHT },
+  countTxt: { fontFamily: defaultFont, fontSize: '10px', color: C.ORANGE },
+  countTxtDark: { fontFamily: defaultFont, fontSize: '10px', color: C.LABEL },
+  countTxtBright: { fontFamily: defaultFont, fontSize: '10px', color: C.BRIGHT },
 
   // ── 컬러 ────────────────────────────────────────────────────────────────
   color: C,

@@ -195,7 +195,7 @@ export class PlayerUI {
           { fontFamily: 'Arial', fontSize: '18px', color: suitColors[suit] }).setDepth(D));
         this._attrTxts[suit] = this._add(scene.add.text(sx + 24, sy + 2,
           `Lv${p.attrs[suit]}`,
-          { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: suitColors[suit] })
+          { fontFamily: TS.defaultFont, fontSize: '11px', color: suitColors[suit] })
           .setDepth(D));
 
         const hitW = PW / 2 - 8;
@@ -335,7 +335,7 @@ export class PlayerUI {
 
     lines.forEach((line, i) => {
       const style = i === 0
-        ? { fontFamily: "'PressStart2P', Arial", fontSize: '13px', color }
+        ? { fontFamily: TS.defaultFont, fontSize: '13px', color }
         : { fontFamily: 'Arial', fontSize: '16px', color: '#aaccbb' };
       this._tooltipObjs.push(
         scene.add.text(tx + pad, ty + pad + i * lineH, line, style)

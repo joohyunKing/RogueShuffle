@@ -11,7 +11,7 @@ Phaser 3 + Vite(ES Modules) 구성.
 - 캔버스 크기: **1280 × 720** (16:9, `Phaser.Scale.FIT + CENTER_BOTH`)
 - **PressStart2P** 픽셀 폰트 (`src/assets/fonts/PressStart2P-Regular.ttf`)
   - `main.js`에서 `FontFace` API로 Phaser 시작 전에 미리 로드
-  - 한글은 Arial fallback (`"'PressStart2P', Arial"`)
+  - 한글은 NeoDGM  (`"'PressStart2P', 'NeoDGM', Arial"`)
 
 ## 파일 구조
 ```

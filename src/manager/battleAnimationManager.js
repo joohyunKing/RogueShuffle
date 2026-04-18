@@ -1,8 +1,9 @@
-import { 
-  GW, GH, CW, CH, FIELD_CW, FIELD_CH, 
-  PLAYER_PANEL_W, ITEM_PANEL_W, 
-  FIELD_Y, HAND_Y, DEAL_DELAY, ANIM_SPEED 
+import {
+  GW, GH, CW, CH, FIELD_CW, FIELD_CH,
+  PLAYER_PANEL_W, ITEM_PANEL_W,
+  FIELD_Y, HAND_Y, DEAL_DELAY, ANIM_SPEED
 } from "../constants.js";
+import { TS } from "../textStyles.js";
 
 /**
  * BattleAnimationManager - 전투 중의 복잡한 애니메이션을 담당
@@ -50,7 +51,7 @@ export class BattleAnimationManager {
           onComplete: () => {
             img.setTexture(cardData.key);
             img.setDisplaySize(1, cardHeight);
-            this.scene.tweens.add({ 
+            this.scene.tweens.add({
               targets: img, displayWidth: cardWidth, duration: 70, ease: "Linear",
               onComplete: () => options.onComplete?.(img)
             });
@@ -128,7 +129,7 @@ export class BattleAnimationManager {
     };
 
     const scoreTxt = this.scene.add.text(cX, scoreY, getScoreStr(), {
-      fontFamily: "'PressStart2P', Arial",
+      fontFamily: TS.defaultFont,
       fontSize: '30px', color: '#ffdd44',
       stroke: '#000000', strokeThickness: 5,
     }).setOrigin(0.5, 0).setDepth(400);
@@ -305,7 +306,7 @@ export class BattleAnimationManager {
       isMerged = true;
       currentScore = currentBase * currentMulti;
       scoreTxt.setText(getScoreStr());
-      
+
       this.scene._sfx("sfx_chop");
       this.scene.tweens.add({
         targets: scoreTxt, scaleX: { from: 1, to: 1.5 }, scaleY: { from: 1, to: 1.5 },
@@ -359,12 +360,12 @@ export class BattleAnimationManager {
 
   animateDraw(cards, handData, onComplete) {
     if (!cards?.length) { onComplete?.(); return; }
-    const deckX  = PLAYER_PANEL_W + 50;
-    const deckY  = FIELD_Y;
+    const deckX = PLAYER_PANEL_W + 50;
+    const deckY = FIELD_Y;
     const baseLen = handData.length;
-    const allPos  = this.scene.calcHandPositions(baseLen + cards.length);
+    const allPos = this.scene.calcHandPositions(baseLen + cards.length);
 
-    let delay    = 0;
+    let delay = 0;
     let completed = 0;
 
     cards.forEach((card, ci) => {
@@ -372,15 +373,15 @@ export class BattleAnimationManager {
       this.scene.time.delayedCall(delay, () => {
         this.scene._sfx('sfx_slide');
         this.flyCard(card, deckX, deckY, pos?.x ?? GW / 2, HAND_Y, {
-            onComplete: (img) => {
-                img.destroy();
-                handData.push(card);
-                this.scene.render();
-                completed++;
-                if (completed >= cards.length) {
-                    onComplete?.();
-                }
+          onComplete: (img) => {
+            img.destroy();
+            handData.push(card);
+            this.scene.render();
+            completed++;
+            if (completed >= cards.length) {
+              onComplete?.();
             }
+          }
         });
       });
       delay += DEAL_DELAY;

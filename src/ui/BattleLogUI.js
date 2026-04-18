@@ -14,22 +14,22 @@ export class BattleLogUI {
   constructor(scene, logs = [], opts = {}) {
     this.scene = scene;
     this._logs = logs;
-    this.opts  = { depth: 10, ...opts };
+    this.opts = { depth: 10, ...opts };
 
-    this._objs   = [];
+    this._objs = [];
     this._logLine1 = null;
     this._logLine2 = null;
 
-    this._expanded           = false;
-    this._expandedBg         = null;
-    this._expandedLines      = null;
-    this._logScrollOffset    = 0;
-    this._logWheelHandler    = null;
+    this._expanded = false;
+    this._expandedBg = null;
+    this._expandedLines = null;
+    this._logScrollOffset = 0;
+    this._logWheelHandler = null;
     this._logPointerHandlers = null;
 
     // create() 시 결정
-    this._cx   = 0;
-    this._CX   = 0;
+    this._cx = 0;
+    this._CX = 0;
     this._FAW_ = 0;
   }
 
@@ -37,17 +37,17 @@ export class BattleLogUI {
 
   create() {
     const { scene, opts } = this;
-    const D    = opts.depth;
-    const PW   = PLAYER_PANEL_W;
-    const IPW  = ITEM_PANEL_W;
-    const FAW  = GW - PW - IPW;
-    const cx   = PW + FAW / 2;
+    const D = opts.depth;
+    const PW = PLAYER_PANEL_W;
+    const IPW = ITEM_PANEL_W;
+    const FAW = GW - PW - IPW;
+    const cx = PW + FAW / 2;
     const FAW_ = FAW;
-    const CX   = PW;
+    const CX = PW;
 
-    this._cx   = cx;
+    this._cx = cx;
     this._FAW_ = FAW_;
-    this._CX   = CX;
+    this._CX = CX;
 
     this._logLine1 = this._add(
       scene.add.text(cx, 18, "", TS.log).setOrigin(0.5, 0.5).setDepth(D).setAlpha(0.55)
@@ -89,16 +89,16 @@ export class BattleLogUI {
 
   showExpanded() {
     if (this._expanded) return;
-    this._expanded      = true;
-    this._expandedBg    = [];
+    this._expanded = true;
+    this._expandedBg = [];
     this._expandedLines = [];
 
-    const scene  = this.scene;
-    const cx     = this._cx;
-    const CX     = this._CX;
-    const FAW_   = this._FAW_;
+    const scene = this.scene;
+    const cx = this._cx;
+    const CX = this._CX;
+    const FAW_ = this._FAW_;
     const panelH = MONSTER_AREA_TOP + MONSTER_AREA_H;
-    const lineH  = 20;
+    const lineH = 20;
     const maxLines = Math.floor((panelH - BATTLE_LOG_H - 8) / lineH);
 
     // 패널 배경 (Solid Black, No Border)
@@ -118,7 +118,7 @@ export class BattleLogUI {
     this._logWheelHandler = (_p, _g, _dx, dy) => {
       const maxOff = Math.max(0, this._logs.length - maxLines);
       if (dy > 0) this._logScrollOffset = Math.min(maxOff, this._logScrollOffset + 3);
-      else        this._logScrollOffset = Math.max(0, this._logScrollOffset - 3);
+      else this._logScrollOffset = Math.max(0, this._logScrollOffset - 3);
       this._updateExpandedLines();
     };
     scene.input.on('wheel', this._logWheelHandler);
@@ -127,7 +127,7 @@ export class BattleLogUI {
     let dragStartY = null, dragStartOffset = 0;
     const onDown = (pointer) => {
       const inPanel = pointer.x >= CX && pointer.x <= CX + FAW_ &&
-                      pointer.y >= 0  && pointer.y <= panelH;
+        pointer.y >= 0 && pointer.y <= panelH;
       if (!inPanel) { this.hideExpanded(); return; }
       dragStartY = pointer.y;
       dragStartOffset = this._logScrollOffset;
@@ -143,7 +143,7 @@ export class BattleLogUI {
 
     scene.input.on('pointerdown', onDown);
     scene.input.on('pointermove', onMove);
-    scene.input.on('pointerup',   onUp);
+    scene.input.on('pointerup', onUp);
     this._logPointerHandlers = { onDown, onMove, onUp };
   }
 
@@ -151,18 +151,18 @@ export class BattleLogUI {
     this._expandedLines.forEach(o => o.destroy());
     this._expandedLines = [];
 
-    const scene    = this.scene;
-    const cx       = this._cx;
-    const panelH   = MONSTER_AREA_TOP + MONSTER_AREA_H;
-    const lineH    = 20;
+    const scene = this.scene;
+    const cx = this._cx;
+    const panelH = MONSTER_AREA_TOP + MONSTER_AREA_H;
+    const lineH = 20;
     const maxLines = Math.floor((panelH - BATTLE_LOG_H - 8) / lineH);
-    const logs     = this._logs;
-    const start    = Math.max(0, Math.min(this._logScrollOffset, Math.max(0, logs.length - maxLines)));
-    const slice    = logs.slice(start, start + maxLines);
+    const logs = this._logs;
+    const start = Math.max(0, Math.min(this._logScrollOffset, Math.max(0, logs.length - maxLines)));
+    const slice = logs.slice(start, start + maxLines);
 
     slice.forEach((line, i) => {
       const isLast = i === slice.length - 1;
-      const alpha  = isLast ? 1.0 : 0.4 + 0.55 * (i / Math.max(1, slice.length - 1));
+      const alpha = isLast ? 1.0 : 0.4 + 0.55 * (i / Math.max(1, slice.length - 1));
       this._expandedLines.push(
         scene.add.text(cx, BATTLE_LOG_H + 6 + i * lineH, line, TS.log)
           .setColor(isLast ? '#ffbb33' : '#aa8844')
@@ -175,7 +175,7 @@ export class BattleLogUI {
       this._expandedLines.push(
         scene.add.text(cx, panelH - 6,
           `${start + 1}-${end} / ${logs.length}`,
-          { fontFamily: "'PressStart2P', Arial", fontSize: '8px', color: '#ffbb33' })
+          { fontFamily: TS.defaultFont, fontSize: '8px', color: '#ffbb33' })
           .setOrigin(0.5, 1).setDepth(503).setAlpha(0.6)
       );
     }
@@ -185,7 +185,7 @@ export class BattleLogUI {
     if (!this._expanded) return;
     this._expanded = false;
     [...(this._expandedBg ?? []), ...(this._expandedLines ?? [])].forEach(o => o.destroy());
-    this._expandedBg    = null;
+    this._expandedBg = null;
     this._expandedLines = null;
 
     if (this._logWheelHandler) {
@@ -196,14 +196,14 @@ export class BattleLogUI {
       const { onDown, onMove, onUp } = this._logPointerHandlers;
       this.scene.input.off('pointerdown', onDown);
       this.scene.input.off('pointermove', onMove);
-      this.scene.input.off('pointerup',   onUp);
+      this.scene.input.off('pointerup', onUp);
       this._logPointerHandlers = null;
     }
   }
 
   destroy() {
     this.hideExpanded();
-    this._objs.forEach(o => { try { o?.destroy(); } catch (_) {} });
+    this._objs.forEach(o => { try { o?.destroy(); } catch (_) { } });
     this._objs = [];
   }
 }
