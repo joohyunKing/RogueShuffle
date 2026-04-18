@@ -23,21 +23,26 @@ export class MonsterManager {
 
   // ── 몬스터 위치 계산 ───────────────────────────────────────────────────────
   calcMonsterPositions(count) {
-    const PW  = PLAYER_PANEL_W;
+    const PW = PLAYER_PANEL_W;
     const FAW = GW - PW - ITEM_PANEL_W;
-    const cx  = PW + FAW / 2;
+    const cx = PW + FAW / 2;
     if (count <= 1) return [{ x: cx }];
-    const margin = 100;
-    const gap    = Math.min(130, Math.floor((FAW - margin * 2) / (count - 1)));
-    const x0     = Math.round(cx - gap * (count - 1) / 2);
+
+    const isElite = this.scene?.battleType === 'elite';
+    const margin = isElite ? 80 : 100;
+    const natural = Math.floor((FAW - margin * 2) / (count - 1));
+    const gap = isElite
+      ? Math.min(210, natural) //Math.max(Math.round(156 * 1.4) + 20, Math.min(natural, Math.round(156 * 1.4 * 1.7)))
+      : Math.min(130, natural);
+    const x0 = Math.round(cx - gap * (count - 1) / 2);
     return Array.from({ length: count }, (_, i) => ({ x: x0 + i * gap }));
   }
 
   // ── 스프라이트시트 유효 프레임 수 감지 ─────────────────────────────────────
   _countValidFrames(texKey) {
     const { scene } = this;
-    const tex    = scene.textures.get(texKey);
-    const total  = tex.frameTotal - 1;
+    const tex = scene.textures.get(texKey);
+    const total = tex.frameTotal - 1;
     const srcImg = tex.getSourceImage();
     const FW = 384, FH = 384, COLS = 3;
 
@@ -183,8 +188,8 @@ export class MonsterManager {
 
     // 카드 위치 · 슈트 카운트 캡처 (제거 전) — 슈트 효과도 활성 카드만
     const selectedIndices = [...scene.selected].sort((a, b) => a - b);
-    const handPositions   = scene.calcHandPositions(scene.handData.length);
-    const suitCounts      = { S: 0, H: 0, D: 0, C: 0 };
+    const handPositions = scene.calcHandPositions(scene.handData.length);
+    const suitCounts = { S: 0, H: 0, D: 0, C: 0 };
     selectedIndices.forEach(i => {
       const c = scene.handData[i];
       if (!this._isCardDisabled(c)) suitCounts[c.suit]++;
@@ -218,24 +223,60 @@ export class MonsterManager {
     };
 
     const positions = this.calcMonsterPositions(scene.monsters.length);
-    const suitEff   = (s) => Math.floor(
+    const suitEff = (s) => Math.floor(
       scene.player.attrs[s] * scene.player.adaptability[s] * suitCounts[s]
     );
 
+    const attackCtx = { isAoe: aoe, suitCounts, cardCount: selectedCards.length };
+
     scene.playAttackAnimation(details, cardFlyInfo, removeCards, () => {
       if (aoe) {
-        this._resolveAoe(score, handName, suitCounts, suitEff, positions);
+        this._resolveAoe(score, handName, suitCounts, suitEff, positions, attackCtx);
       } else {
-        this._resolveSingle(mon, monIdx, score, handName, suitCounts, suitEff, positions);
+        this._resolveSingle(mon, monIdx, score, handName, suitCounts, suitEff, positions, attackCtx);
       }
     });
   }
 
+  // ── 기믹: 유효 DEF (first_turn_def 적용) ──────────────────────────────────
+  _getEffectiveDef(mon) {
+    const g = mon.gimmick;
+    if (g?.type === 'first_turn_def' && g.firstTurnActive) {
+      return Math.floor(mon.def * g.defMultiplier);
+    }
+    return mon.def;
+  }
+
+  // ── 기믹: 데미지 감소 여부 판정 ───────────────────────────────────────────
+  _applyGimmickResist(mon, damage, attackCtx) {
+    const g = mon.gimmick;
+    if (!g) return damage;
+
+    let resisted = false;
+    switch (g.type) {
+      case 'aoe_resist':
+        resisted = attackCtx.isAoe;
+        break;
+      case 'suit_resist':
+        resisted = (attackCtx.suitCounts?.[g.suit] ?? 0) > 0;
+        break;
+      case 'small_hand_resist':
+        resisted = attackCtx.cardCount < (g.threshold ?? 4);
+        break;
+    }
+
+    if (resisted && damage > 0) {
+      this.scene.addBattleLog(`[${g.name}] ${mon.name} 저항! 데미지 반감`);
+      return Math.floor(damage * g.damageMultiplier);
+    }
+    return damage;
+  }
+
   // ── 광역 공격 처리 ────────────────────────────────────────────────────────
-  _resolveAoe(score, handName, suitCounts, suitEff, positions) {
+  _resolveAoe(score, handName, suitCounts, suitEff, positions, attackCtx = {}) {
     const { scene } = this;
     const aliveMonsters = scene.monsters.filter(m => !m.isDead);
-    const aliveSprites  = scene._monsterSprites?.filter((_, i) => !scene.monsters[i]?.isDead) ?? [];
+    const aliveSprites = scene._monsterSprites?.filter((_, i) => !scene.monsters[i]?.isDead) ?? [];
 
     // 슈트 적응 효과 (전체 대상)
     if (suitCounts.S > 0) {
@@ -274,7 +315,8 @@ export class MonsterManager {
 
     aliveMonsters.forEach(m => {
       const monIdx = scene.monsters.indexOf(m);
-      const dmg = Math.floor(Math.max(0, score - m.def));
+      const rawDmg = Math.floor(Math.max(0, score - this._getEffectiveDef(m)));
+      const dmg = this._applyGimmickResist(m, rawDmg, attackCtx);
       m.hp = Math.max(0, m.hp - dmg);
       if (scene.isBoss && m === scene.monsters[0]) m._damageTaken = (m._damageTaken ?? 0) + dmg;
       scene.addBattleLog(`${m.name}에게 ${dmg} 데미지!`);
@@ -287,7 +329,7 @@ export class MonsterManager {
   }
 
   // ── 단일 타겟 공격 처리 ──────────────────────────────────────────────────
-  _resolveSingle(mon, monIdx, score, handName, suitCounts, suitEff, positions) {
+  _resolveSingle(mon, monIdx, score, handName, suitCounts, suitEff, positions, attackCtx = {}) {
     const { scene } = this;
 
     // 슈트 적응 효과 (데미지 전: ♠DEF감소, ♣ATK감소)
@@ -297,15 +339,16 @@ export class MonsterManager {
       if (eff > 0) scene.addBattleLog(`♠ 적응: ${mon.name} DEF -${eff}`);
     }
     if (suitCounts.C > 0) {
-      const eff    = suitEff('C');
+      const eff = suitEff('C');
       const reduced = Math.min(eff, mon.atk);
       mon.atk = Math.max(0, mon.atk - eff);
       if (reduced > 0) scene.addBattleLog(`♣ 적응: ${mon.name} ATK -${reduced}`);
     }
 
-    const damage   = Math.floor(Math.max(0, score - mon.def));
-    const prevHp   = mon.hp;
-    mon.hp         = Math.max(0, mon.hp - damage);
+    const rawDamage = Math.floor(Math.max(0, score - this._getEffectiveDef(mon)));
+    const damage = this._applyGimmickResist(mon, rawDamage, attackCtx);
+    const prevHp = mon.hp;
+    mon.hp = Math.max(0, mon.hp - damage);
     if (scene.isBoss) mon._damageTaken = (mon._damageTaken ?? 0) + damage;
     const overkill = Math.max(0, damage - prevHp);
     const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
@@ -397,8 +440,8 @@ export class MonsterManager {
       .filter(({ m, i }) => !m.isDead && i !== fromIdx);
     if (aliveTargets.length === 0) { onDone?.(); return; }
 
-    const positions   = this.calcMonsterPositions(scene.monsters.length);
-    const aoeX        = positions[fromIdx].x;
+    const positions = this.calcMonsterPositions(scene.monsters.length);
+    const aoeX = positions[fromIdx].x;
     const aliveSprites = aliveTargets.map(({ i }) => scene._monsterSprites?.[i]).filter(Boolean);
     scene.effects.hitExplosion(aoeX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, aliveSprites);
 
@@ -433,24 +476,24 @@ export class MonsterManager {
     }
     if (idx === -1) { onDone?.(); return; }
 
-    const positions  = this.calcMonsterPositions(scene.monsters.length);
+    const positions = this.calcMonsterPositions(scene.monsters.length);
     const fromSprite = scene._monsterSprites?.[fromIdx];
-    const toSprite   = scene._monsterSprites?.[idx];
+    const toSprite = scene._monsterSprites?.[idx];
     scene.effects.hitChainLightning(
       fromSprite?.x ?? positions[fromIdx].x,
       fromSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
-      toSprite?.x   ?? positions[idx].x,
-      toSprite?.y   ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
+      toSprite?.x ?? positions[idx].x,
+      toSprite?.y ?? (MONSTER_AREA_TOP + MONSTER_AREA_H / 2),
       toSprite ?? null
     );
     scene._sfx("sfx_knifeSlice");
 
     scene.time.delayedCall(120, () => {
-      const target    = scene.monsters[idx];
+      const target = scene.monsters[idx];
       const actualDmg = Math.max(0, dmg - target.def);
-      const prevHp    = target.hp;
-      target.hp       = Math.max(0, target.hp - actualDmg);
-      const chain     = Math.max(0, actualDmg - prevHp);
+      const prevHp = target.hp;
+      target.hp = Math.max(0, target.hp - actualDmg);
+      const chain = Math.max(0, actualDmg - prevHp);
       this._refreshHP(idx, target);
       scene.addBattleLog(`오버킬! ${target.name}에게 ${actualDmg} 연쇄!`);
 

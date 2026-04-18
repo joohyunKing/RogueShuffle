@@ -1454,6 +1454,13 @@ export class BattleScene extends Phaser.Scene {
   onTurnEnd() {
     this.isDealing = true;
 
+    // first_turn_def 기믹 해제
+    this.monsters?.forEach(m => {
+      if (m.gimmick?.type === 'first_turn_def' && m.gimmick.firstTurnActive) {
+        m.gimmick.firstTurnActive = false;
+      }
+    });
+
     const onMonstersDone = () => {
       try { this.render(); } catch (e) { console.error("[onTurnEnd render]", e); }
       this.bossHPBar?.update(this.monsters[0], this.bossManager, false);

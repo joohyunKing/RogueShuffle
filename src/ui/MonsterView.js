@@ -1,4 +1,5 @@
 import { TS } from "../textStyles.js";
+import { TooltipUI } from "./TooltipUI.js";
 
 export default class MonsterView {
   constructor(scene, mon, idx, x, y, onClick, imgScale = 1.0, offsetY = 0) {
@@ -76,6 +77,25 @@ export default class MonsterView {
       .setOrigin(0, 0.5)
       .setDepth(17);
 
+    // ── 기믹 아이콘 (HP 바 왼쪽)
+    const ICON_SIZE = 2;
+    const HP_FRAME_HALF = 55; // frameW(110) / 2
+    const iconX = x - HP_FRAME_HALF - ICON_SIZE / 2 - 5;
+    const iconY = this.barY + 10;
+    this._gimmickIconOffsetX = -(HP_FRAME_HALF + 12);
+    this._gimmickIconY = iconY;
+    this._tooltip = null;
+
+    this.gimmickIcon = scene.add.image(iconX, iconY, '__DEFAULT')
+      .setDisplaySize(ICON_SIZE, ICON_SIZE)
+      .setDepth(22)
+      .setVisible(false)
+      .setInteractive();
+
+    this.gimmickIcon.on('pointerover', () => this._showGimmickTip());
+    this.gimmickIcon.on('pointerdown', () => this._showGimmickTip());
+    this.gimmickIcon.on('pointerout', () => this._hideGimmickTip());
+
     // ── ATTACK 표시
     this.attackText = scene.add.text(x, this.spriteY - imgH / 2 - 10, "ATTACK!", TS.monTarget)
       .setOrigin(0.5, 1)
@@ -124,7 +144,7 @@ export default class MonsterView {
       tweens: [
         { x: baseX + 16, scaleX: baseScaleX * 0.88, duration: 100, ease: 'Power2.Out' },
         { x: baseX - 32, scaleX: baseScaleX * 1.14, duration: 110, ease: 'Power3.In' },
-        { x: baseX,      scaleX: baseScaleX,         duration: 220, ease: 'Bounce.Out' },
+        { x: baseX, scaleX: baseScaleX, duration: 220, ease: 'Bounce.Out' },
       ],
       onComplete: () => { this._idleTween?.resume(); }
     });
@@ -143,7 +163,7 @@ export default class MonsterView {
         { x: baseX - 9, duration: 40 },
         { x: baseX + 6, duration: 40 },
         { x: baseX - 6, duration: 40 },
-        { x: baseX,     duration: 40 },
+        { x: baseX, duration: 40 },
       ],
       onComplete: () => {
         this.sprite.clearTint();
@@ -219,13 +239,14 @@ export default class MonsterView {
 
     this.attackText.setX(x);
     this.hitArea.setX(x);
+    this.gimmickIcon.setX(x + this._gimmickIconOffsetX);
 
     // ── HP
     const hpRatio = Math.max(0, mon.hp / mon.maxHp);
     const hpColor =
       hpRatio > 0.5 ? 0x44cc44 :
-      hpRatio > 0.25 ? 0xddaa00 :
-      0xdd3333;
+        hpRatio > 0.25 ? 0xddaa00 :
+          0xdd3333;
 
     this.hpBar.width = Math.max(1, this.barW * hpRatio);
     this.hpBar.fillColor = hpColor;
@@ -235,6 +256,17 @@ export default class MonsterView {
     // ── ATK / DEF
     this.atkText.setText(mon.atk);
     this.defText.setText(mon.def);
+
+    // ── 기믹 아이콘
+    if (mon.gimmick) {
+      const g = mon.gimmick;
+      const key = `gimmick_${g.id}`;
+      if (this.scene.textures.exists(key)) this.gimmickIcon.setTexture(key);
+      const active = g.type !== 'first_turn_def' || g.firstTurnActive;
+      this.gimmickIcon.setAlpha(active ? 1 : 0.35).setVisible(true);
+    } else {
+      this.gimmickIcon.setVisible(false);
+    }
 
     // ── ATTACK 표시
     if (canBeTarget) {
@@ -251,8 +283,8 @@ export default class MonsterView {
     const hpRatio = Math.max(0, mon.hp / mon.maxHp);
     const hpColor =
       hpRatio > 0.5 ? 0x44cc44 :
-      hpRatio > 0.25 ? 0xddaa00 :
-      0xdd3333;
+        hpRatio > 0.25 ? 0xddaa00 :
+          0xdd3333;
     this.hpBar.width = Math.max(1, this.barW * hpRatio);
     this.hpBar.fillColor = hpColor;
     this.hpText.setText(`${mon.hp}/${mon.maxHp}`);
@@ -268,14 +300,39 @@ export default class MonsterView {
     [this.hpBarBg, this.hpBar, this.hpText].forEach(o => o?.setVisible(false));
   }
 
+  _showGimmickTip() {
+    const g = this.mon?.gimmick;
+    if (!g) return;
+    this._hideGimmickTip();
+    const iconX = this.gimmickIcon.x;
+    const left = iconX > 640 ? iconX - 225 : iconX + 20;
+    this._tooltip = new TooltipUI(this.scene, {
+      titleMsg: g.name,
+      contentMsg: g.description,
+      titleMsgColor: '#ffcc44',
+      tooltipW: 200,
+      left,
+      centerY: this._gimmickIconY,
+      depth: 350,
+    });
+    this._tooltip.show();
+  }
+
+  _hideGimmickTip() {
+    this._tooltip?.hide();
+    this._tooltip = null;
+  }
+
   destroy() {
     this._idleTween?.stop();
     this._idleTween = null;
+    this._hideGimmickTip();
     [
       this.sprite,
       this.hpBarBg, this.hpBar, this.hpText,
       this.atkIcon, this.atkText,
       this.defIcon, this.defText,
+      this.gimmickIcon,
       this.attackText,
       this.hitArea
     ].forEach(obj => obj.destroy());

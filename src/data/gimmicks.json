@@ -1,0 +1,37 @@
+{
+  "gimmicks": [
+    {
+      "id": "aoe_resist",
+      "name": "광역 저항",
+      "img": "aoe.png",
+      "description": "광역 공격 시 데미지 50% 감소",
+      "type": "aoe_resist",
+      "damageMultiplier": 0.5
+    },
+    {
+      "id": "suit_resist",
+      "name": "슈트 저항",
+      "img": "suit.png",
+      "description": "{suit} 카드 공격 시 데미지 50% 감소",
+      "type": "suit_resist",
+      "damageMultiplier": 0.5
+    },
+    {
+      "id": "small_hand_resist",
+      "name": "소수 저항",
+      "img": "under4.png",
+      "description": "4장 미만 공격 시 데미지 50% 감소",
+      "type": "small_hand_resist",
+      "threshold": 4,
+      "damageMultiplier": 0.5
+    },
+    {
+      "id": "first_turn_def",
+      "name": "초반 철벽",
+      "img": "def.png",
+      "description": "첫 턴에는 DEF 3배",
+      "type": "first_turn_def",
+      "defMultiplier": 3
+    }
+  ]
+}

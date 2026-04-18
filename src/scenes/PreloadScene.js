@@ -7,6 +7,7 @@ import relicData from "../data/relic.json";
 import debuffData from '../data/debuff.json';
 import monsterJson from '../data/monsters.json';
 import bossJson from '../data/boss.json';
+import gimmickJson from '../data/gimmicks.json';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() { super("PreloadScene"); }
@@ -68,6 +69,12 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image(`debuff_${d.id}`, `assets/images/debuff/${d.img}`);
     });
 
+    //gimmick images
+    gimmickJson.gimmicks.forEach(g => {
+      if (g.img && !this.textures.exists(`gimmick_${g.id}`))
+        this.load.image(`gimmick_${g.id}`, `assets/images/gimmick/${g.img}`);
+    });
+
     //monster
     monsterJson.monsters.forEach(monster => {
       if (monster.img && !this.textures.exists(`mon_${monster.id}`)) {
@@ -100,6 +107,7 @@ export class PreloadScene extends Phaser.Scene {
     //bgm
     this.load.audio("bgm_0", "assets/audio/bgm/Below_the_Iron_Throne.mp3");
     this.load.audio("bgm_1", "assets/audio/bgm/Beneath_the_Stone_Spire.mp3");
+    this.load.audio("bgm_market", "assets/audio/bgm/Cobblestone_Waltz.mp3");
     /*
     this.load.audio("bgm_2", "assets/audio/bgm/Midnight_on_the_Platform.mp3");
     this.load.audio("bgm_3", "assets/audio/bgm/Pillars_of_Sun_and_Stone.mp3");

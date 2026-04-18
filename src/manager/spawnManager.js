@@ -1,6 +1,9 @@
 import monsterJson from '../data/monsters.json';
 import bossData from '../data/boss.json';
+import gimmickData from '../data/gimmicks.json';
 import { roundManager } from './roundManager.js';
+
+const SUIT_SYMBOLS = { S: '♠', H: '♥', D: '♦', C: '♣' };
 
 function randomPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -30,7 +33,9 @@ export class SpawnManager {
 
         const picks = this.pickByCost(pool, totalCost);
 
-        return picks.map(m => this.createMonster(m, roundData, statMulti));
+        const monsters = picks.map(m => this.createMonster(m, roundData, statMulti));
+        if (type === 'elite') monsters.forEach(m => this._assignGimmick(m));
+        return monsters;
     }
 
     /**
@@ -120,6 +125,22 @@ export class SpawnManager {
             xp: Math.floor(baseXp * statMulti * rnd()),
             gold: Math.floor(baseGold * statMulti * rnd())
         };
+    }
+
+    _assignGimmick(monster) {
+        const templates = gimmickData.gimmicks;
+        const template = randomPick(templates);
+        const gimmick = { ...template };
+
+        if (gimmick.type === 'suit_resist') {
+            gimmick.suit = randomPick(['S', 'H', 'D', 'C']);
+            gimmick.description = gimmick.description.replace('{suit}', SUIT_SYMBOLS[gimmick.suit]);
+        }
+        if (gimmick.type === 'first_turn_def') {
+            gimmick.firstTurnActive = true;
+        }
+
+        monster.gimmick = gimmick;
     }
 
     getRaceStatMult(race) {
