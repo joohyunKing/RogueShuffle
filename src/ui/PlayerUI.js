@@ -230,7 +230,7 @@ export class PlayerUI {
 
     // ── 족보 배수 / AoE 목록 (선택) ─────────────────────────────────────────
     if (opts.showHandConfig) {
-      const lineH = 14;
+      const lineH = 18;
       const multiX = PW - 32;  // ×N 오른쪽 정렬
       const aoeX = R;        // ● 오른쪽 정렬
 

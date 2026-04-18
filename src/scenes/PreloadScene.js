@@ -64,7 +64,7 @@ export class PreloadScene extends Phaser.Scene {
 
     //debuffs images
     debuffData.debuffs.forEach(d => {
-      if (d.img && !this.textures.exists(`relic_${d.id}`))
+      if (d.img && !this.textures.exists(`debuff_${d.id}`))
         this.load.image(`debuff_${d.id}`, `assets/images/debuff/${d.img}`);
     });
 
@@ -116,14 +116,14 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio("sfx_lightning", "assets/audio/sfx/sfx_lightning.wav");
     this.load.audio("sfx_explosion", "assets/audio/sfx/sfx_explosion.wav");
 
-    this.load.image("ui_deck", "assets/images/ui/deck.png");
-    this.load.image("ui_dummy", "assets/images/ui/dummy.png");
-    this.load.image("ui_option", "assets/images/ui/btn_gear_pixel.png");
+    // this.load.image("ui_deck", "assets/images/ui/deck.png");
+    // this.load.image("ui_dummy", "assets/images/ui/dummy.png");
+    // this.load.image("ui_option", "assets/images/ui/btn_gear_pixel.png");
     this.load.image("ui_btn", "assets/images/ui/button.png");
     this.load.image("ui_frame", "assets/images/ui/panel_frame_pixel.png");
     this.load.image("ui_panel_parchment", "assets/images/ui/parchment_v.png");
-    this.load.image("ui_panel_stone", "assets/images/ui/panel_stone.png");
-    this.load.image("ui_divider_iron", "assets/images/ui/divider_iron.png");
+    // this.load.image("ui_panel_stone", "assets/images/ui/panel_stone.png");
+    // this.load.image("ui_divider_iron", "assets/images/ui/divider_iron.png");
     this.load.image("ui_card_front", "assets/images/ui/card_front.png");
     this.load.image("ui_panel_item", "assets/images/ui/itemUi.png");
     this.load.image("ui_field_hand", "assets/images/ui/field_hand.png");
@@ -133,11 +133,11 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("ui_popup", "assets/images/ui/popup.png");
     this.load.image("ui_battle_popup", "assets/images/ui/battle_popup.png");
     this.load.image("ui_battle_popup_v", "assets/images/ui/battle_popup_v.png");
-    this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
+    // this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
 
 
     // 임시 몬스터 샘플 이미지 (tween 애니메이션용)
-    this.load.image('mon_sample', 'assets/images/monster/mon_sample.png');
+    // this.load.image('mon_sample', 'assets/images/monster/mon_sample.png');
 
     //this.load.images();
   }

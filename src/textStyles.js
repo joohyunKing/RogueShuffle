@@ -4,7 +4,7 @@
  * PressStart2P 픽셀 폰트 기준. 한글은 Arial fallback.
  */
 
-const F = "'PressStart2P', Arial";
+const F = "'PressStart2P', 'NeoDGM', Arial";
 
 // ── 공통 색상 팔레트 ────────────────────────────────────────────────────────
 const C = {
@@ -44,8 +44,8 @@ export const TS = {
   playerAtk: { fontFamily: F, fontSize: '14px', color: C.GOLD },
 
   // ── 족보 / 카드 정보 ────────────────────────────────────────────────────────
-  handRank: { fontFamily: F, fontSize: '11px', color: C.VALUE },
-  handMulti: { fontFamily: F, fontSize: '11px', color: C.VALUE },
+  handRank: { fontFamily: F, fontSize: '12px', color: C.VALUE, padding: { bottom: 4 } },
+  handMulti: { fontFamily: F, fontSize: '12px', color: C.VALUE, padding: { bottom: 4 } },
   comboLabel: { fontFamily: F, fontSize: '16px', color: C.LABEL },
   comboScore: { fontFamily: F, fontSize: '16px', color: C.GOLD },
 

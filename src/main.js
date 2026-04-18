@@ -6,10 +6,12 @@ import { GameScene     } from "./scenes/GameScene.js";
 import { BattleScene   } from "./scenes/BattleScene.js";
 import { MarketScene   } from "./scenes/MarketScene.js";
 import { GW, GH } from "./constants.js";
-// PressStart2P 폰트를 브라우저에 등록 후 Phaser 게임 시작
-const font = new FontFace("PressStart2P", `url(${import.meta.env.BASE_URL}assets/fonts/PressStart2P-Regular.ttf)`);
-font.load().then(loaded => {
-  document.fonts.add(loaded);
+// 폰트를 브라우저에 등록 후 Phaser 게임 시작
+const font1 = new FontFace("PressStart2P", `url(${import.meta.env.BASE_URL}assets/fonts/PressStart2P-Regular.ttf)`);
+const font2 = new FontFace("NeoDGM", `url(${import.meta.env.BASE_URL}assets/fonts/neodgm.ttf)`);
+Promise.all([font1.load(), font2.load()]).then(([loaded1, loaded2]) => {
+  document.fonts.add(loaded1);
+  document.fonts.add(loaded2);
   new Phaser.Game({
     type:            Phaser.AUTO,
     width:           GW,
