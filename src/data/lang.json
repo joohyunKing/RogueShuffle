@@ -351,11 +351,11 @@
         "desc": "같은 숫자 카드 3장"
       },
       "STRAIGHT_DRAW": {
-        "name": "스트레이트Draw",
+        "name": "스트레이트 드로우",
         "desc": "숫자가 연속된 카드 4장"
       },
       "FLUSH_DRAW": {
-        "name": "플러시Draw",
+        "name": "플러시 드로우",
         "desc": "숫자가 연속된 카드 4장"
       },
       "STRAIGHT": {

@@ -3,7 +3,7 @@
     {
       "id": "diamond_power",
       "name": "다이아의 힘",
-      "description": "다이아 카드마다 +10 점수",
+      "description": "다이아 카드마다 +20 점수",
       "rarity": "common",
       "img": "dia_relic.png",
       "useYn": "Y",
@@ -11,7 +11,7 @@
         {
           "scope": "card",
           "type": "add",
-          "value": 10,
+          "value": 20,
           "condition": {
             "suit": "D"
           }
@@ -21,7 +21,7 @@
     {
       "id": "heart_power",
       "name": "하트의 축복",
-      "description": "하트 카드마다 +10 점수",
+      "description": "하트 카드마다 +20 점수",
       "rarity": "common",
       "img": "heart_relic.png",
       "useYn": "Y",
@@ -29,7 +29,7 @@
         {
           "scope": "card",
           "type": "add",
-          "value": 10,
+          "value": 20,
           "condition": {
             "suit": "H"
           }
@@ -39,7 +39,7 @@
     {
       "id": "spade_power",
       "name": "스페이드의 힘",
-      "description": "스페이드 카드마다 +10 점수",
+      "description": "스페이드 카드마다 +20 점수",
       "rarity": "common",
       "img": "spade_relic.png",
       "useYn": "Y",
@@ -47,7 +47,7 @@
         {
           "scope": "card",
           "type": "add",
-          "value": 10,
+          "value": 20,
           "condition": {
             "suit": "S"
           }
@@ -57,7 +57,7 @@
     {
       "id": "club_power",
       "name": "클럽의 힘",
-      "description": "클럽 카드마다 +10 점수",
+      "description": "클럽 카드마다 +20 점수",
       "rarity": "common",
       "img": "club_relic.png",
       "useYn": "Y",
@@ -65,7 +65,7 @@
         {
           "scope": "card",
           "type": "add",
-          "value": 10,
+          "value": 20,
           "condition": {
             "suit": "C"
           }
@@ -75,7 +75,7 @@
     {
       "id": "pair_a",
       "name": "쌍둥이 반지",
-      "description": "페어 점수 2배",
+      "description": "페어 점수에 +6 배수를 더합니다.",
       "rarity": "common",
       "img": "pair.png",
       "useYn": "Y",
@@ -83,7 +83,7 @@
         {
           "scope": "hand",
           "type": "plus_multi",
-          "value": 2,
+          "value": 6,
           "condition": {
             "handRank": 1
           }
@@ -93,7 +93,7 @@
     {
       "id": "one_eye",
       "name": "외눈반지",
-      "description": "하이카드 3배",
+      "description": "하이카드에 +8 배수를 더합니다.",
       "rarity": "common",
       "img": "one_eye.png",
       "useYn": "Y",
@@ -101,7 +101,7 @@
         {
           "scope": "hand",
           "type": "plus_multi",
-          "value": 3,
+          "value": 8,
           "condition": {
             "handRank": 0
           }
@@ -111,7 +111,7 @@
     {
       "id": "triple",
       "name": "트리플",
-      "description": "트리플 점수 2배",
+      "description": "트리플 점수에 +7 배수를 더합니다.",
       "rarity": "common",
       "img": "triple.png",
       "useYn": "Y",
@@ -119,7 +119,7 @@
         {
           "scope": "hand",
           "type": "plus_multi",
-          "value": 2,
+          "value": 7,
           "condition": {
             "handRank": 2
           }
@@ -129,7 +129,7 @@
     {
       "id": "two_pair",
       "name": "투페어",
-      "description": "투페어 점수 2배",
+      "description": "투페어 점수에 +8 배수를 더합니다",
       "rarity": "common",
       "img": "two_pair.png",
       "useYn": "Y",
@@ -137,7 +137,7 @@
         {
           "scope": "hand",
           "type": "plus_multi",
-          "value": 2,
+          "value": 8,
           "condition": {
             "handRank": 3
           }
@@ -147,18 +147,16 @@
     {
       "id": "avarice",
       "name": "탐욕의 주머니",
-      "description": "덱이 30장 이상이면 +30 점수",
+      "description": "덱이 30장 초과 시 초과 장당 +5 점수 (곱셈 전)",
       "rarity": "common",
       "img": "avarice.png",
       "useYn": "Y",
       "effects": [
         {
-          "scope": "final",
-          "type": "add",
-          "value": 30,
-          "condition": {
-            "deckCountGte": 30
-          }
+          "scope": "hand",
+          "type": "addPerExcessDeck",
+          "threshold": 30,
+          "value": 5
         }
       ]
     },
@@ -375,7 +373,7 @@
       "effects": [
         {
           "scope": "final",
-          "type": "plus_multi",
+          "type": "times_multi",
           "value": 2.5,
           "condition": {
             "deckCountLte": 15
@@ -416,15 +414,15 @@
     {
       "id": "low_card_master",
       "name": "소수의 힘",
-      "description": "사용한 카드의 숫자 합이 25 미만이면 점수 ×2",
+      "description": "사용한 카드의 숫자 합이 25 미만이면 점수 ×1.5",
       "rarity": "rare",
       "img": "one_eye.png",
       "useYn": "Y",
       "effects": [
         {
           "scope": "final",
-          "type": "plus_multi",
-          "value": 2,
+          "type": "times_multi",
+          "value": 1.5,
           "condition": {
             "cardValSumLt": 25
           }
@@ -434,15 +432,15 @@
     {
       "id": "full_hp_focus",
       "name": "만피의 집중",
-      "description": "현재 HP가 최대 HP와 같을 때 점수 ×2",
+      "description": "현재 HP가 최대 HP와 같을 때 점수 ×1.5",
       "rarity": "epic",
       "img": "heart_relic.png",
       "useYn": "Y",
       "effects": [
         {
           "scope": "final",
-          "type": "plus_multi",
-          "value": 2,
+          "type": "times_multi",
+          "value": 1.5,
           "condition": {
             "isFullHp": true
           }
@@ -568,6 +566,21 @@
         {
           "scope": "special",
           "type": "sideAmplify",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "vertical_mirror",
+      "name": "상하 공명석",
+      "description": "위아래에 배치된 유물의 효과를 2배로 적용합니다.",
+      "rarity": "epic",
+      "img": "up_down.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "verticalAmplify",
           "value": 2
         }
       ]

@@ -2,7 +2,7 @@ import { HAND_RANK, HAND_DATA } from "../constants.js";
 import { relicMap } from '../manager/relicManager.js';
 import { sealMap } from '../manager/sealManager.js';
 
-const ADD_TYPES      = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage"]);
+const ADD_TYPES      = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage", "addPerExcessDeck"]);
 const PLUS_MULTI_TYPES = new Set(["plus_multi", "plusMultiPerHandRemaining"]);
 const TIMES_MULTI_TYPES = new Set(["times_multi"]);
 
@@ -52,17 +52,17 @@ function buildAmplifierMap(relics, relicSlots) {
     if (!relicSlots) return map;
     for (const relic of relics) {
         for (const eff of (relic.effects ?? [])) {
-            if (eff.scope !== 'special' || eff.type !== 'sideAmplify') continue;
+            if (eff.scope !== 'special') continue;
             const idx = relicSlots.indexOf(relic.id);
             if (idx < 0) continue;
-            const col = idx % 3;
-            if (col > 0) {
-                const leftId = relicSlots[idx - 1];
-                if (leftId) map[leftId] = (map[leftId] ?? 1) * eff.value;
-            }
-            if (col < 2) {
-                const rightId = relicSlots[idx + 1];
-                if (rightId) map[rightId] = (map[rightId] ?? 1) * eff.value;
+
+            if (eff.type === 'sideAmplify') {
+                const col = idx % 3;
+                if (col > 0) { const id = relicSlots[idx - 1]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
+                if (col < 2) { const id = relicSlots[idx + 1]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
+            } else if (eff.type === 'verticalAmplify') {
+                if (idx >= 3)  { const id = relicSlots[idx - 3]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
+                if (idx < 6)   { const id = relicSlots[idx + 3]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
             }
         }
     }
@@ -146,6 +146,12 @@ function applyEffect(score, effect, card, ctx) {
         case "addPerTotalHandUsage": {
             const total = Object.values(ctx.handUseCounts ?? {}).reduce((s, n) => s + n, 0);
             return score + total * effect.value;
+        }
+
+        // 덱 초과 장수 × value 점수 가산 (hand scope, 곱셈 전)
+        case "addPerExcessDeck": {
+            const excess = Math.max(0, (ctx.deckCount ?? 0) - (effect.threshold ?? 0));
+            return score + excess * effect.value;
         }
 
         default:
