@@ -6,8 +6,6 @@ export const itemMap = Object.fromEntries(itemData.items.map(i => [i.id, i])); /
 export function getAllItems() { return itemList; }
 export function getItemById(id) { return itemMap[id] ?? null; }
 
-export const maxItemCount = 6;
-
 const ITEM_PRICE = { common: 5, rare: 10, epic: 15, legend: 20 };
 export function getItemPrice(itemId) {
   const item = itemMap[itemId];

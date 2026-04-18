@@ -1,7 +1,7 @@
 import { 
   GW, GH, CW, CH, FIELD_CW, FIELD_CH, 
   PLAYER_PANEL_W, ITEM_PANEL_W, 
-  FIELD_Y, HAND_Y, DEAL_DELAY 
+  FIELD_Y, HAND_Y, DEAL_DELAY, ANIM_SPEED 
 } from "../constants.js";
 
 /**
@@ -116,9 +116,18 @@ export class BattleAnimationManager {
     const scoreY = 80 + 14; // MONSTER_AREA_TOP = 80
 
     const tmpObjs = [];
+    let currentBase = 0;
+    let currentMulti = 0;
+    let currentTimes = 1;
+    let isMerged = false;
     let currentScore = 0;
 
-    const scoreTxt = this.scene.add.text(cX, scoreY, '0', {
+    const getScoreStr = () => {
+      if (isMerged) return String(Math.floor(currentScore));
+      return `${Math.floor(currentBase)} X ${parseFloat(currentMulti.toFixed(1))}`;
+    };
+
+    const scoreTxt = this.scene.add.text(cX, scoreY, getScoreStr(), {
       fontFamily: "'PressStart2P', Arial",
       fontSize: '30px', color: '#ffdd44',
       stroke: '#000000', strokeThickness: 5,
@@ -138,7 +147,7 @@ export class BattleAnimationManager {
       const t = { v: 0 };
 
       this.scene.tweens.add({
-        targets: t, v: 1, duration: 220, ease: 'Sine.easeIn',
+        targets: t, v: 1, duration: ANIM_SPEED.orbFlight, ease: 'Sine.easeIn',
         onUpdate: () => {
           const s = t.v, r = 1 - s;
           const x = r * r * fromX + 2 * r * s * cpX + s * s * orbTargetX;
@@ -150,30 +159,48 @@ export class BattleAnimationManager {
           this.scene.tweens.add({
             targets: [orb, glow],
             scaleX: 3.5, scaleY: 3.5, alpha: 0,
-            duration: 130, ease: 'Sine.easeOut',
+            duration: ANIM_SPEED.orbFade, ease: 'Sine.easeOut',
           });
         },
       });
     };
 
-    const countUp = (target, duration, onDone) => {
+    const getCountUpTweenObj = () => {
       this.scene._sfx("sfx_orb");
-      const tweenObj = { val: currentScore };
       this.scene.tweens.killTweensOf(scoreTxt);
       scoreTxt.y = scoreY;
       this.scene.tweens.add({
         targets: scoreTxt, y: scoreY - 12,
-        duration: Math.min(140, duration * 0.4),
+        duration: 56, // 140 * 0.4
         yoyo: true, ease: 'Sine.easeOut',
       });
+      return { base: currentBase, multi: currentMulti, score: currentScore };
+    };
+
+    const countUpBase = (targetBase, duration, onDone) => {
+      const tweenObj = getCountUpTweenObj();
       this.scene.tweens.add({
-        targets: tweenObj, val: target, duration, ease: 'Circular.In',
-        onUpdate: () => { scoreTxt.setText(String(Math.floor(tweenObj.val))); },
-        onComplete: () => {
-          currentScore = target;
-          scoreTxt.setText(String(Math.floor(target)));
-          onDone?.();
-        },
+        targets: tweenObj, base: targetBase, duration, ease: 'Circular.In',
+        onUpdate: () => { currentBase = tweenObj.base; scoreTxt.setText(getScoreStr()); },
+        onComplete: () => { currentBase = targetBase; scoreTxt.setText(getScoreStr()); onDone?.(); },
+      });
+    };
+
+    const countUpMulti = (targetMulti, duration, onDone) => {
+      const tweenObj = getCountUpTweenObj();
+      this.scene.tweens.add({
+        targets: tweenObj, multi: targetMulti, duration, ease: 'Circular.In',
+        onUpdate: () => { currentMulti = tweenObj.multi; scoreTxt.setText(getScoreStr()); },
+        onComplete: () => { currentMulti = targetMulti; scoreTxt.setText(getScoreStr()); onDone?.(); },
+      });
+    };
+
+    const countUpScore = (targetScore, duration, onDone) => {
+      const tweenObj = getCountUpTweenObj();
+      this.scene.tweens.add({
+        targets: tweenObj, score: targetScore, duration, ease: 'Circular.In',
+        onUpdate: () => { currentScore = tweenObj.score; scoreTxt.setText(getScoreStr()); },
+        onComplete: () => { currentScore = targetScore; scoreTxt.setText(getScoreStr()); onDone?.(); },
       });
     };
 
@@ -184,12 +211,25 @@ export class BattleAnimationManager {
 
     const queue = [];
 
+    // 1. Hand Rank Multi
+    queue.push(next => {
+      this.scene.playerUI?.pulseHandRow(details.handRank);
+      if (details.baseHandMulti > 0) {
+        const rankRow = this.scene.playerUI?._handConfigRows?.[details.handRank];
+        throwOrb(rankRow?.multiTxt?.x ?? PW / 2, rankRow?.multiTxt?.y ?? 400, 0x44eeff);
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpMulti(details.baseHandMulti, ANIM_SPEED.countUp, next));
+      } else {
+        next();
+      }
+    });
+
+    // 2. ATK Base
     if (details.atk > 0) {
       queue.push(next => {
         this.scene.playerUI?.pulseAtk();
         const atkText = this.scene.playerUI?.playerAtkTxt;
         throwOrb(atkText ? atkText.x : PW * 0.75, atkText ? atkText.y : 168, 0xff8833);
-        this.scene.time.delayedCall(100, () => countUp(currentScore + details.atk, 200, next));
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + details.atk, ANIM_SPEED.countUp, next));
       });
     }
 
@@ -199,26 +239,31 @@ export class BattleAnimationManager {
       const bx = obj.scaleX, by = obj.scaleY;
       this.scene.tweens.add({
         targets: obj, scaleX: bx * 1.1, scaleY: by * 1.1,
-        duration: 160, yoyo: true, ease: 'Sine.easeInOut',
+        duration: ANIM_SPEED.pulseCard, yoyo: true, ease: 'Sine.easeInOut',
         onComplete: () => { try { obj.setScale(bx, by); } catch (_) { } },
       });
     };
 
+    // 3. Cards Base + Plus Multi
     cardFlyInfo.forEach((info) => {
       if (info.scoringDetail) {
         const cd = info.scoringDetail;
         queue.push(next => {
           pulseCard(info.obj);
           throwOrb(info.fromX, info.fromY, 0xffdd44);
-          this.scene.time.delayedCall(100, () => countUp(currentScore + cd.baseScore, 200, next));
+          this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + cd.deltaBase, ANIM_SPEED.countUp, next));
         });
 
-        cd.cardRelicDeltas.forEach(({ relicId, delta }) => {
+        cd.cardRelicDeltas.forEach(({ relicId, type, delta }) => {
           queue.push(next => {
             this.scene.itemUI?.pulseRelic(relicId);
             const rp = relicPos(relicId);
-            throwOrb(rp.x, rp.y, 0xcc88ff);
-            this.scene.time.delayedCall(100, () => countUp(currentScore + delta, 240, next));
+            const isBase = type === 'base';
+            throwOrb(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff);
+            this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
+              if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
+              else countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next);
+            });
           });
         });
       } else {
@@ -230,42 +275,68 @@ export class BattleAnimationManager {
       queue.push(next => { onCardsConsumed?.(); next(); });
     }
 
-    queue.push(next => {
-      this.scene.playerUI?.pulseHandRow(details.handRank);
-      if (details.multi !== 1) {
-        const rankRow = this.scene.playerUI?._handConfigRows?.[details.handRank];
-        throwOrb(rankRow?.multiTxt?.x ?? PW / 2, rankRow?.multiTxt?.y ?? 400, 0x44eeff);
-        this.scene.time.delayedCall(100, () => countUp(currentScore * details.multi, 420, next));
-      } else {
-        this.scene.time.delayedCall(120, next);
-      }
-    });
-
-    details.handRelicDeltas.forEach(({ relicId, delta }) => {
+    // 4. Hand Relic DB (base + plus_multi)
+    details.handRelicDeltas.forEach(({ relicId, type, delta }) => {
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
-        throwOrb(rp.x, rp.y, 0xcc88ff);
-        this.scene.time.delayedCall(100, () => countUp(currentScore + delta, 240, next));
+        const isBase = type === 'base';
+        throwOrb(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff);
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
+          if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
+          else countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next);
+        });
       });
     });
 
-    details.finalRelicDeltas.forEach(({ relicId, delta }) => {
+    // 5. Final Relic Base
+    details.finalRelicDeltas.forEach(({ relicId, type, delta }) => {
+      if (type !== 'base') return;
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
         throwOrb(rp.x, rp.y, 0xee66ff);
-        this.scene.time.delayedCall(100, () => countUp(currentScore + delta, 240, next));
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + delta, ANIM_SPEED.countUp, next));
       });
     });
 
+    // 6. MERGE Base X Multi
+    queue.push(next => {
+      isMerged = true;
+      currentScore = currentBase * currentMulti;
+      scoreTxt.setText(getScoreStr());
+      
+      this.scene._sfx("sfx_chop");
+      this.scene.tweens.add({
+        targets: scoreTxt, scaleX: { from: 1, to: 1.5 }, scaleY: { from: 1, to: 1.5 },
+        duration: ANIM_SPEED.mergeScale, yoyo: true, ease: 'Back.easeOut',
+      });
+      this.scene.time.delayedCall(ANIM_SPEED.mergeDelay, next);
+    });
+
+    // 7. Final Relic Times Multi
+    details.finalRelicDeltas.forEach(({ relicId, type, delta }) => {
+      if (type !== 'times_multi') return;
+      queue.push(next => {
+        this.scene.itemUI?.pulseRelic(relicId);
+        const rp = relicPos(relicId);
+        throwOrb(rp.x, rp.y, 0xff0044);
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
+          currentTimes += delta;
+          const targetScore = currentBase * currentMulti * currentTimes;
+          countUpScore(targetScore, ANIM_SPEED.countUp, next);
+        });
+      });
+    });
+
+    // 8. End
     queue.push(next => {
       this.scene._sfx("sfx_chop");
       this.scene.tweens.add({
         targets: scoreTxt, scaleX: { from: 1, to: 1.45 }, scaleY: { from: 1, to: 1.45 },
-        duration: 200, yoyo: true, ease: 'Back.easeOut',
+        duration: ANIM_SPEED.mergeScale * 0.7, yoyo: true, ease: 'Back.easeOut',
       });
-      this.scene.time.delayedCall(420, next);
+      this.scene.time.delayedCall(ANIM_SPEED.mergeDelay, next);
     });
 
     queue.push(next => {
@@ -304,6 +375,7 @@ export class BattleAnimationManager {
             onComplete: (img) => {
                 img.destroy();
                 handData.push(card);
+                this.scene.render();
                 completed++;
                 if (completed >= cards.length) {
                     onComplete?.();
@@ -312,6 +384,25 @@ export class BattleAnimationManager {
         });
       });
       delay += DEAL_DELAY;
+    });
+  }
+
+  animateField(fieldCards, onComplete) {
+    if (!fieldCards?.length) { onComplete?.(); return; }
+    const deckX = PLAYER_PANEL_W + 50, deckY = FIELD_Y;
+    let completed = 0;
+
+    fieldCards.forEach((card, i) => {
+      this.scene.time.delayedCall(i * DEAL_DELAY, () => {
+        this.scene._sfx('sfx_slide');
+        this.flyCard(card, deckX, deckY, card.slotX, FIELD_Y, {
+          onComplete: (img) => {
+            img.destroy();
+            completed++;
+            if (completed === fieldCards.length) onComplete?.();
+          }
+        });
+      });
     });
   }
 

@@ -1,12 +1,13 @@
 import { ITEM_PANEL_W, GW, GH, BATTLE_LOG_H } from "../constants.js";
 import { TS } from "../textStyles.js";
-import { relicMap as RELIC_MAP, maxRelicCount } from "../manager/relicManager.js";
-import { maxItemCount } from "../manager/itemManager.js";
+import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
 import { TooltipUI } from "./TooltipUI.js";
 import { getLang, getRelicName, getRelicDesc, getItemName, getItemDesc, getUiText } from "../service/langService.js";
 
 const RARITY_STRIP = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa, legend: 0xaa8822 };
 const RARITY_COLOR = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff', legend: '#ffdd44' };
+
+const REL_SZ = 52;
 
 /**
  * ItemUI — 우측 패널: Relic(위) + Item(아래)
@@ -36,6 +37,7 @@ export class ItemUI {
     this._sellTxt = null;
     this._tipPinned = false;
     this._pinnedId = null;
+    this._slotPositions = []; // [{cx, cy, idx}] — create() 시 재계산
   }
 
   _add(obj) { this._objs.push(obj); return obj; }
@@ -100,24 +102,83 @@ export class ItemUI {
     return x >= r.x - r.width / 2 && x <= r.x + r.width / 2 && y >= r.y - r.height / 2 && y <= r.y + r.height / 2;
   }
 
-  _startRelicDrag(startPointer, relic, relicId, hit, borderC, D) {
+  /** (x, y) 좌표가 어느 슬롯 위인지 반환. 없으면 -1 */
+  _getSlotAt(x, y) {
+    for (const slot of this._slotPositions) {
+      if (Math.abs(x - slot.cx) <= REL_SZ / 2 && Math.abs(y - slot.cy) <= REL_SZ / 2) {
+        return slot.idx;
+      }
+    }
+    return -1;
+  }
+
+  _startRelicDrag(startPointer, relic, relicId, slotIdx, hit, borderC, D) {
     const { scene, opts } = this;
-    const REL_SZ = 52;
-    this._isDragging = true; this._clearTip();
-    hit.setFillStyle(0xffffff, 0); this._showSellZone();
-    this._dragGhost = scene.add.rectangle(startPointer.x, startPointer.y, REL_SZ, REL_SZ, borderC, 0.7).setDepth(D + 10).setStrokeStyle(2, borderC);
-    this._dragGhostTxt = scene.add.text(startPointer.x, startPointer.y, relic.name, { fontFamily: 'Arial', fontSize: '10px', color: '#fff', wordWrap: { width: REL_SZ - 4 } }).setOrigin(0.5).setDepth(D + 11);
-    const onMove = (ptr) => { if (!this._isDragging) return; this._dragGhost?.setPosition(ptr.x, ptr.y); this._dragGhostTxt?.setPosition(ptr.x, ptr.y); const over = this._isOverSellZone(ptr.x, ptr.y); this._sellZone?.setFillStyle(over ? 0xaa1111 : 0x661111); };
+    this._isDragging = true;
+    this._clearTip();
+    hit.setFillStyle(0xffffff, 0);
+    if (opts.onRelicSell) this._showSellZone();
+
+    this._dragGhost = scene.add.rectangle(startPointer.x, startPointer.y, REL_SZ, REL_SZ, borderC, 0.7)
+      .setDepth(D + 10).setStrokeStyle(2, borderC);
+    this._dragGhostTxt = scene.add.text(startPointer.x, startPointer.y, relic.name,
+      { fontFamily: 'Arial', fontSize: '10px', color: '#fff', wordWrap: { width: REL_SZ - 4 } })
+      .setOrigin(0.5).setDepth(D + 11);
+
+    let highlightRect = null;
+    const clearHighlight = () => {
+      if (highlightRect) { try { highlightRect.destroy(); } catch (_) { } highlightRect = null; }
+    };
+
+    const onMove = (ptr) => {
+      if (!this._isDragging) return;
+      this._dragGhost?.setPosition(ptr.x, ptr.y);
+      this._dragGhostTxt?.setPosition(ptr.x, ptr.y);
+      const overSell = this._isOverSellZone(ptr.x, ptr.y);
+      this._sellZone?.setFillStyle(overSell ? 0xaa1111 : 0x661111);
+
+      // 드롭 대상 슬롯 하이라이트
+      const targetIdx = this._getSlotAt(ptr.x, ptr.y);
+      if (targetIdx >= 0 && targetIdx !== slotIdx) {
+        const slot = this._slotPositions[targetIdx];
+        if (!highlightRect) {
+          highlightRect = scene.add.rectangle(slot.cx, slot.cy, REL_SZ, REL_SZ, 0xffffff, 0.18)
+            .setDepth(D + 9).setStrokeStyle(2, 0xffffff, 0.9);
+        } else {
+          highlightRect.setPosition(slot.cx, slot.cy);
+        }
+      } else {
+        clearHighlight();
+      }
+    };
+
     const onUp = (ptr) => {
-      scene.input.off('pointermove', onMove); scene.input.off('pointerup', onUp);
-      const over = this._isOverSellZone(ptr.x, ptr.y);
+      scene.input.off('pointermove', onMove);
+      scene.input.off('pointerup', onUp);
+      const overSell = this._isOverSellZone(ptr.x, ptr.y);
+      const targetSlotIdx = this._getSlotAt(ptr.x, ptr.y);
       this._isDragging = false;
+      clearHighlight();
       if (this._dragGhost) { this._dragGhost.destroy(); this._dragGhost = null; }
       if (this._dragGhostTxt) { this._dragGhostTxt.destroy(); this._dragGhostTxt = null; }
-      this._hideSellZone(); this._sellZone?.setFillStyle(0x661111); hit.setFillStyle(0xffffff, 0);
-      if (over) scene.time.delayedCall(0, () => opts.onRelicSell(relicId));
+      this._hideSellZone();
+      this._sellZone?.setFillStyle(0x661111);
+      hit.setFillStyle(0xffffff, 0);
+
+      if (overSell && opts.onRelicSell) {
+        scene.time.delayedCall(0, () => opts.onRelicSell(relicId));
+      } else if (targetSlotIdx >= 0 && targetSlotIdx !== slotIdx) {
+        // player.relicSlots 슬롯 교환
+        const slots = this.player.relicSlots;
+        const temp = slots[slotIdx];
+        slots[slotIdx] = slots[targetSlotIdx];
+        slots[targetSlotIdx] = temp;
+        this.refresh();
+      }
     };
-    scene.input.on('pointermove', onMove); scene.input.on('pointerup', onUp);
+
+    scene.input.on('pointermove', onMove);
+    scene.input.on('pointerup', onUp);
   }
 
   _startItemDrag(startPointer, item, itemIdx, hit, stripColor, D) {
@@ -146,7 +207,6 @@ export class ItemUI {
     const ipcx = panelX + panelW / 2;
     const relics = player.relics ?? [];
     const items = player.items ?? [];
-    const canSellRelic = !!opts.onRelicSell;
     const canSellItem = !!opts.onItemSell;
 
     // ─── 패널 배경 ────────────────────────────────────────────────────────
@@ -155,71 +215,103 @@ export class ItemUI {
         .setOrigin(0, 0).setDisplaySize(panelW, GH).setDepth(D - 1)
     );
 
-    // 섹션 구분 위치 (히트박스/레이아웃용)
     const dividerY = GH * 0.42;
 
-    const REL_SZ = 52, REL_IMG = 44, REL_COLS = 3, REL_GAPX = 8, REL_GAPY = 6;
+    const REL_IMG = 44, REL_COLS = 3, REL_GAPX = 8, REL_GAPY = 6;
     const REL_PAD = Math.floor((panelW - REL_COLS * REL_SZ - (REL_COLS - 1) * REL_GAPX) / 2);
     const REL_ROW_H = REL_SZ + REL_GAPY;
-    const relicContentY = 64; // 이미지 내부의 RELICS 텍스트 아래 공간
+    const relicContentY = 64;
 
-    if (relics.length === 0) {
-      this._add(scene.add.text(ipcx, relicContentY + 6, "—", TS.infoLabel).setOrigin(0.5, 0).setDepth(D + 1));
-    } else {
-      relics.forEach((relicId, i) => {
-        const relic = RELIC_MAP[relicId]; if (!relic) return;
-        const col = i % REL_COLS, row = Math.floor(i / REL_COLS);
-        const cx = panelX + REL_PAD + col * (REL_SZ + REL_GAPX) + REL_SZ / 2;
-        const cy = relicContentY + row * REL_ROW_H + REL_SZ / 2;
-        const borderC = RARITY_STRIP[relic.rarity] ?? RARITY_STRIP.common, tipC = RARITY_COLOR[relic.rarity] ?? RARITY_COLOR.common;
-        const visObjs = [];
-        const relBg = scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0x01110a, 0.5).setDepth(D).setStrokeStyle(1.5, 0x4a4d4a, 0.3);
-        this._add(relBg); visObjs.push(relBg);
-        const imgKey = `relic_${relic.id}`;
-        if (scene.textures.exists(imgKey)) {
-          const img = scene.add.image(cx, cy, imgKey).setDisplaySize(REL_IMG, REL_IMG).setDepth(D + 1);
-          this._add(img); visObjs.push(img);
-        } else {
-          const ph = scene.add.rectangle(cx, cy, REL_IMG, REL_IMG, borderC, 0.18).setDepth(D + 1);
-          const phTxt = scene.add.text(cx, cy, '?', { fontFamily: 'Arial', fontSize: '18px', color: tipC }).setOrigin(0.5).setDepth(D + 2);
-          this._add(ph); this._add(phTxt); visObjs.push(ph, phTxt);
+    this._slotPositions = [];
+
+    // 9개 슬롯 렌더 (빈 슬롯도 표시) — player.relicSlots 직접 사용
+    const relicSlots = player.relicSlots;
+    for (let i = 0; i < 9; i++) {
+      const col = i % REL_COLS, row = Math.floor(i / REL_COLS);
+      const cx = panelX + REL_PAD + col * (REL_SZ + REL_GAPX) + REL_SZ / 2;
+      const cy = relicContentY + row * REL_ROW_H + REL_SZ / 2;
+      this._slotPositions.push({ cx, cy, idx: i });
+
+      // 빈 슬롯 배경
+      const slotBg = scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0x080f0a, 0.55)
+        .setDepth(D).setStrokeStyle(1, 0x2a3a2a, 0.6);
+      this._add(slotBg);
+
+      const relicId = relicSlots[i];
+      if (!relicId) continue;
+      const relic = RELIC_MAP[relicId];
+      if (!relic) continue;
+
+      const borderC = RARITY_STRIP[relic.rarity] ?? RARITY_STRIP.common;
+      const tipC = RARITY_COLOR[relic.rarity] ?? RARITY_COLOR.common;
+      const visObjs = [];
+
+      const relBg = scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0x01110a, 0.5)
+        .setDepth(D).setStrokeStyle(1.5, 0x4a4d4a, 0.3);
+      this._add(relBg); visObjs.push(relBg);
+
+      const imgKey = `relic_${relic.id}`;
+      if (scene.textures.exists(imgKey)) {
+        const img = scene.add.image(cx, cy, imgKey).setDisplaySize(REL_IMG, REL_IMG).setDepth(D + 1);
+        this._add(img); visObjs.push(img);
+      } else {
+        const ph = scene.add.rectangle(cx, cy, REL_IMG, REL_IMG, borderC, 0.18).setDepth(D + 1);
+        const phTxt = scene.add.text(cx, cy, '?', { fontFamily: 'Arial', fontSize: '18px', color: tipC }).setOrigin(0.5).setDepth(D + 2);
+        this._add(ph); this._add(phTxt); visObjs.push(ph, phTxt);
+      }
+      this._relicObjs[relic.id] = { objs: visObjs, baseCX: cx, baseCY: cy };
+
+      const slotI = i; // 클로저용 슬롯 인덱스
+      const hit = this._add(scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0xffffff, 0).setDepth(D + 2).setInteractive());
+      hit.on('pointerover', () => {
+        if (!this._isDragging && !this._tipPinned) {
+          this._showRelicTip(cy, relic, tipC);
+          if (opts.onRelicSell) hit.setFillStyle(0xff4444, 0.12);
         }
-        this._relicObjs[relic.id] = { objs: visObjs, baseCX: cx, baseCY: cy };
-        const hit = this._add(scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0xffffff, 0).setDepth(D + 2).setInteractive());
-        hit.on('pointerover', () => { if (!this._isDragging && !this._tipPinned) { this._showRelicTip(cy, relic, tipC); if (canSellRelic) hit.setFillStyle(0xff4444, 0.12); } });
-        hit.on('pointerout', () => { if (!this._isDragging) { hit.setFillStyle(0xffffff, 0); if (!this._tipPinned) this._clearTip(); } });
-        hit.on('pointerdown', (pointer) => {
-          if (this._isDragging) return;
-          const startX = pointer.x, startY = pointer.y; let moved = false;
-          const onMove = (ptr) => { if (!moved && (Math.abs(ptr.x - startX) > 8 || Math.abs(ptr.y - startY) > 8)) { moved = true; scene.input.off('pointermove', onMove); scene.input.off('pointerup', onUpCheck); if (canSellRelic) this._startRelicDrag(pointer, relic, relicId, hit, borderC, D); } };
-          const onUpCheck = () => { scene.input.off('pointermove', onMove); scene.input.off('pointerup', onUpCheck); if (!moved) { if (this._tipPinned && this._pinnedId === relicId) this._clearTip(); else { this._tipPinned = true; this._pinnedId = relicId; this._showRelicTip(cy, relic, tipC); } } };
-          scene.input.on('pointermove', onMove); scene.input.on('pointerup', onUpCheck);
-        });
+      });
+      hit.on('pointerout', () => {
+        if (!this._isDragging) { hit.setFillStyle(0xffffff, 0); if (!this._tipPinned) this._clearTip(); }
+      });
+      hit.on('pointerdown', (pointer) => {
+        if (this._isDragging) return;
+        const startX = pointer.x, startY = pointer.y; let moved = false;
+        const onMove = (ptr) => {
+          if (!moved && (Math.abs(ptr.x - startX) > 8 || Math.abs(ptr.y - startY) > 8)) {
+            moved = true;
+            scene.input.off('pointermove', onMove);
+            scene.input.off('pointerup', onUpCheck);
+            this._startRelicDrag(pointer, relic, relicId, slotI, hit, borderC, D);
+          }
+        };
+        const onUpCheck = () => {
+          scene.input.off('pointermove', onMove); scene.input.off('pointerup', onUpCheck);
+          if (!moved) {
+            if (this._tipPinned && this._pinnedId === relicId) this._clearTip();
+            else { this._tipPinned = true; this._pinnedId = relicId; this._showRelicTip(cy, relic, tipC); }
+          }
+        };
+        scene.input.on('pointermove', onMove); scene.input.on('pointerup', onUpCheck);
       });
     }
 
-    // Relic 카운트 (섹션 우측 하단)
+    // Relic 카운트
     {
-      const relicMaxRows = Math.ceil(maxRelicCount / REL_COLS);
-      const relicSectionBottom = relicContentY + relicMaxRows * REL_ROW_H;
-      //const countColor = relics.length >= maxRelicCount ? '#ffaa44' : '#667766';
       this._add(scene.add.text(
         panelX + panelW - 16, dividerY + 60,
-        `${relics.length}/${maxRelicCount}`,
+        `${relics.length}/${player.maxRelicCount}`,
         TS.countTxt
       ).setOrigin(1, 0).setDepth(D + 1));
     }
 
     // ─── SELL 존 ────────────────────────────────────────────────────────
     const sellZoneY = dividerY + 80;
-    if (canSellRelic || canSellItem) {
+    if (opts.onRelicSell || opts.onItemSell) {
       const rz = scene.add.rectangle(ipcx + 6, sellZoneY, panelW - 28, 24, 0x000000, 0).setDepth(D + 3).setVisible(false);
       const rt = scene.add.text(ipcx, sellZoneY, "[ SELL ]", { fontFamily: "'PressStart2P',Arial", fontSize: '9px', color: '#aa4444' }).setOrigin(0.5).setDepth(D + 4).setVisible(false);
       this._sellZone = rz; this._sellTxt = rt; this._add(rz); this._add(rt);
     }
 
     // ─── ITEM 섹션 ───────────────────────────────────────────────────────
-    // 이미지 내부의 ITEMS 텍스트 아래 공간으로 위치 조정
     const itemStartY = dividerY + 140;
     const ITM_SZ = 56, ITM_IMG = 44, ITM_COLS = 3, ITM_GAPX = 8, ITM_GAPY = 8;
     const ITM_PAD = Math.floor((panelW - ITM_COLS * ITM_SZ - (ITM_COLS - 1) * ITM_GAPX) / 2);
@@ -258,14 +350,13 @@ export class ItemUI {
       });
     }
 
-    // Item 카운트 (섹션 우측 하단)
+    // Item 카운트
     {
-      const itemMaxRows = Math.ceil(maxItemCount / ITM_COLS);
+      const itemMaxRows = Math.ceil(player.maxItemCount / ITM_COLS);
       const itemSectionBottom = itemStartY + itemMaxRows * (ITM_SZ + ITM_GAPY);
-      //const countColor = items.length >= maxItemCount ? '#ffaa44' : '#667766';
       this._add(scene.add.text(
         panelX + panelW - 16, itemSectionBottom + 2,
-        `${items.length}/${maxItemCount}`,
+        `${items.length}/${player.maxItemCount}`,
         TS.countTxtDark
       ).setOrigin(1, 0).setDepth(D + 1));
     }
@@ -288,5 +379,17 @@ export class ItemUI {
   }
 
   refresh() { this.destroy(); this.create(); return this; }
-  destroy() { this._clearTip(); this._isDragging = false; if (this._dragGhost) { try { this._dragGhost.destroy(); } catch (_) { } this._dragGhost = null; } if (this._dragGhostTxt) { try { this._dragGhostTxt.destroy(); } catch (_) { } this._dragGhostTxt = null; } this._objs.forEach(o => { try { o?.destroy(); } catch (_) { } }); this._objs = []; this._relicObjs = {}; this._sellZone = null; this._sellTxt = null; }
+
+  destroy() {
+    this._clearTip();
+    this._isDragging = false;
+    if (this._dragGhost) { try { this._dragGhost.destroy(); } catch (_) { } this._dragGhost = null; }
+    if (this._dragGhostTxt) { try { this._dragGhostTxt.destroy(); } catch (_) { } this._dragGhostTxt = null; }
+    this._objs.forEach(o => { try { o?.destroy(); } catch (_) { } });
+    this._objs = [];
+    this._relicObjs = {};
+    this._slotPositions = [];
+    this._sellZone = null;
+    this._sellTxt = null;
+  }
 }

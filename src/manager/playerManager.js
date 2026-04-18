@@ -4,7 +4,7 @@
  * 씬 전환 시 player.toData() 로 직렬화하여 넘깁니다.
  */
 import { HAND_DATA, DEBUG_MODE } from "../constants.js";
-import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice, maxRelicCount } from './relicManager.js';
+import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice } from './relicManager.js';
 import { getItemPrice } from './itemManager.js';
 import deckData from '../data/deck.json';
 
@@ -63,8 +63,24 @@ export class Player {
         this.attrs = data.attrs ?? { S: 1, H: 1, D: 1, C: 1 };
         /** 구매한 아이템 목록 (최대 6개) */
         this.items = data.items ?? [];
-        /** 보유 유물 ID 목록 (최대 9개) */
+        /** 보유 유물 ID 목록 */
         this.relics = data.relics ?? [];
+        //this.relics = data.relics ?? ["side_mirror", "one_eye"];  //test
+        /** 유물 최대 보유 수 (deck.json 기준) */
+        this.maxRelicCount = data.maxRelicCount ?? DEFAULT_DECK.maxRelicCount;
+        /** 아이템 최대 보유 수 (deck.json 기준) */
+        this.maxItemCount = data.maxItemCount ?? DEFAULT_DECK.maxItemCount;
+        /**
+         * 유물 3×3 슬롯 배치 (index 0~8, row=floor(i/3), col=i%3).
+         * null = 빈 슬롯, string = relicId.
+         * 기존 세이브(relicSlots 없음)는 relics 순서대로 0~8에 자동 배치.
+         */
+        if (data.relicSlots && Array.isArray(data.relicSlots) && data.relicSlots.length === 9) {
+            this.relicSlots = [...data.relicSlots];
+        } else {
+            this.relicSlots = Array(9).fill(null);
+            this.relics.forEach((id, i) => { if (i < 9) this.relicSlots[i] = id; });
+        }
 
         // ── 직업 & 슈트 적응도 ───────────────────────────────────────────────────
         /** 직업 */
@@ -230,12 +246,93 @@ export class Player {
     }
 
     tryAddRelic(relicId) {
-        if (this.relics.length < maxRelicCount) {
+        if (this.relics.length < this.maxRelicCount) {
             this.relics.push(relicId);
+            const emptyIdx = this.relicSlots.findIndex(s => s === null);
+            if (emptyIdx >= 0) this.relicSlots[emptyIdx] = relicId;
             return true;
         }
         return false;
     }
+
+    /** 유물 제거 (relics + relicSlots 동시 갱신) */
+    removeRelic(relicId) {
+        const ri = this.relics.indexOf(relicId);
+        if (ri >= 0) this.relics.splice(ri, 1);
+        const si = this.relicSlots.indexOf(relicId);
+        if (si >= 0) this.relicSlots[si] = null;
+    }
+
+    // ── 유물 위치 / 빙고 헬퍼 ─────────────────────────────────────────────
+
+    /** 슬롯 인덱스(0~8) → {row, col} */
+    static slotToPos(idx) { return { row: Math.floor(idx / 3), col: idx % 3 }; }
+
+    /** {row, col} → 슬롯 인덱스 */
+    static posToSlot(row, col) { return row * 3 + col; }
+
+    /**
+     * 특정 유물의 슬롯 위치 반환.
+     * @returns {{ idx:number, row:number, col:number } | null}
+     */
+    getRelicPosition(relicId) {
+        const idx = this.relicSlots.indexOf(relicId);
+        if (idx < 0) return null;
+        return { idx, row: Math.floor(idx / 3), col: idx % 3 };
+    }
+
+    /** 특정 (row, col) 슬롯의 유물 ID 반환. 없으면 null */
+    getRelicAt(row, col) {
+        return this.relicSlots[row * 3 + col] ?? null;
+    }
+
+    /**
+     * 특정 유물의 인접 유물 정보 반환 (상하좌우 + 대각선).
+     * 각 키는 relicId(string) 또는 null.
+     * @returns {{ up, down, left, right, upLeft, upRight, downLeft, downRight } | null}
+     */
+    getRelicNeighbors(relicId) {
+        const pos = this.getRelicPosition(relicId);
+        if (!pos) return null;
+        const { row: r, col: c } = pos;
+        const at = (dr, dc) => (r + dr >= 0 && r + dr < 3 && c + dc >= 0 && c + dc < 3)
+            ? this.getRelicAt(r + dr, c + dc) : null;
+        return {
+            up: at(-1, 0),
+            down: at(1, 0),
+            left: at(0, -1),
+            right: at(0, 1),
+            upLeft: at(-1, -1),
+            upRight: at(-1, 1),
+            downLeft: at(1, -1),
+            downRight: at(1, 1),
+        };
+    }
+
+    /**
+     * 완성된 빙고 라인 목록 반환.
+     * @returns {Array<{ type:'row'|'col'|'diag', index:number, slots:number[] }>}
+     *   slots: 해당 라인의 슬롯 인덱스 배열
+     */
+    getBingoLines() {
+        const lines = [];
+        for (let r = 0; r < 3; r++) {
+            const slots = [r * 3, r * 3 + 1, r * 3 + 2];
+            if (slots.every(i => this.relicSlots[i])) lines.push({ type: 'row', index: r, slots });
+        }
+        for (let c = 0; c < 3; c++) {
+            const slots = [c, c + 3, c + 6];
+            if (slots.every(i => this.relicSlots[i])) lines.push({ type: 'col', index: c, slots });
+        }
+        const d0 = [0, 4, 8];
+        if (d0.every(i => this.relicSlots[i])) lines.push({ type: 'diag', index: 0, slots: d0 });
+        const d1 = [2, 4, 6];
+        if (d1.every(i => this.relicSlots[i])) lines.push({ type: 'diag', index: 1, slots: d1 });
+        return lines;
+    }
+
+    /** 빙고 라인이 하나라도 완성됐으면 true */
+    hasBingo() { return this.getBingoLines().length > 0; }
 
     /** 씬 전환용 직렬화 */
     toData() {
@@ -261,6 +358,9 @@ export class Player {
             fieldPickLimit: this.fieldPickLimit,
             items: [...this.items],
             relics: [...this.relics],
+            relicSlots: [...this.relicSlots],
+            maxRelicCount: this.maxRelicCount,
+            maxItemCount: this.maxItemCount,
             handConfig: JSON.parse(JSON.stringify(this.handConfig)),
             handUseCounts: { ...this.handUseCounts },
             lastHandRank: this.lastHandRank,

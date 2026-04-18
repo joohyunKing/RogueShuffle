@@ -19,7 +19,7 @@ import { TS, suitColors } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
 import effectManager from '../manager/effectManager.js';
 import DeckManager from '../manager/deckManager.js';
-import { applyItemEffect, revertItemEffect, itemMap, getAllItems, maxItemCount } from '../manager/itemManager.js';
+import { applyItemEffect, revertItemEffect, itemMap, getAllItems } from '../manager/itemManager.js';
 import { DebuffManager, debuffData, debuffMap as _debuffMap } from '../manager/debuffManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { BattleLogUI } from '../ui/BattleLogUI.js';
@@ -1277,6 +1277,7 @@ export class BattleScene extends Phaser.Scene {
     context.dummyCount = this.dummyData?.length ?? 0;
     context.handConfig = this.player.getEffectiveHandConfig();
     context.relics = this.player.relics ?? [];
+    context.relicSlots = this.player.relicSlots ?? null;
     context.enabledHands = this.player.getEnabledHands();
     context.suitAliases = this.player.getEffectiveSuitAliases();
     context.atk = this.player.atk;
@@ -1299,7 +1300,7 @@ export class BattleScene extends Phaser.Scene {
         if (enh.type === 'gold') {
           goldGained += sealMap['gold']?.goldBonus ?? 5;
         } else if (enh.type === 'green') {
-          if (this.player.items.length < maxItemCount) {
+          if (this.player.items.length < this.player.maxItemCount) {
             const all = getAllItems();
             const item = all[Math.floor(Math.random() * all.length)];
             this.player.items.push({
@@ -1466,7 +1467,9 @@ export class BattleScene extends Phaser.Scene {
       }
 
       this.fieldData.forEach(card => this._flyToDummy(card.slotX, FIELD_Y, card.key));
+      this.fieldData = [];
       this.deck.endTurn();  // dummyData/deckData/handData는 getter → 자동 반영
+      this.render();        // 빈 필드로 즉시 재렌더 (ghost 애니메이션은 진행 중)
 
       this.time.delayedCall(500, () => this.startTurn());
     };
@@ -1507,7 +1510,8 @@ export class BattleScene extends Phaser.Scene {
         const draw = Math.min(this.player.fieldSize, this.deckData.length);
         const newCards = Array.from({ length: draw }, () => this.deckData.pop());
         this.deck.field = newCards;
-        this.fieldData = newCards.map((c, k) => ({ ...c, slotX: slotPos[k].x }));
+        const newFieldData = newCards.map((c, k) => ({ ...c, slotX: slotPos[k].x }));
+        this.fieldData = []; // 애니메이션 전 빈 상태로 렌더
 
         // ── 핸드 최솟값 보충 (드로우 애니메이션용: handData에 즉시 추가 안 함) ──
         const handMin = this.player.handSizeMinimum ?? 0;
@@ -1524,7 +1528,13 @@ export class BattleScene extends Phaser.Scene {
         this.attackCount = 0;
         this.selected.clear();
         this._applySortToHand();
-        this.render();  // 현재 핸드(드로우 전) + 필드 렌더
+        this.render();  // 핸드 렌더 (필드는 빈 상태)
+
+        // 필드 카드 드로우 애니메이션 → 완료 시 실제 카드 렌더
+        this.animManager.animateField(newFieldData, () => {
+          this.fieldData = newFieldData;
+          try { this.render(); } catch (e) { console.error('[animateField render]', e); }
+        });
 
         if (drawnCards.length > 0) {
           // isDealing은 애니메이션이 끝날 때 해제
@@ -1674,13 +1684,13 @@ export class BattleScene extends Phaser.Scene {
     modal.addObj(this.add.text(cx, pt + 148, "FINAL SCORE", TS.gameOverScoreLabel).setOrigin(0.5).setDepth(D + 2));
     modal.addObj(this.add.text(cx, pt + 182, `${this.player.score}`, TS.gameOverScore).setOrigin(0.5).setDepth(D + 2));
 
-    const btnBg = this.add.rectangle(cx, pt + ph - 50, 220, 54, 0x1e4e99).setDepth(D + 3).setInteractive();
+    const btnBg = this.add.image(cx, pt + ph - 90, "ui_btn").setDisplaySize(180, 44).setDepth(D + 3).setInteractive();
     modal.addObj(btnBg);
-    modal.addObj(this.add.text(cx, pt + ph - 50, "MAIN MENU", TS.overlayBtn).setOrigin(0.5).setDepth(D + 4));
+    modal.addObj(this.add.text(cx, pt + ph - 90, "MAIN MENU", TS.sortBtn).setOrigin(0.5).setDepth(D + 4));
 
     btnBg.on("pointerdown", () => this.scene.start("MainMenuScene"));
-    btnBg.on("pointerover", () => btnBg.setFillStyle(0x2d66cc));
-    btnBg.on("pointerout", () => btnBg.setFillStyle(0x1e4e99));
+    btnBg.on("pointerover", () => btnBg.setTint(0xcccccc));
+    btnBg.on("pointerout", () => btnBg.clearTint());
   }
 
   showMsg(text, dur = 2000) {

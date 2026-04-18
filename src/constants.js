@@ -55,7 +55,8 @@ export const HAND_DATA = {
 // ─── context ──────────────────────────────────────────────────────────────
 export const context = {
     cards: [],           // 선택된 카드
-    relics: [],          // 유물
+    relics: [],          // 유물 ID 배열
+    relicSlots: null,    // 유물 3×3 슬롯 배열 (sideAmplify 등 위치 기반 효과용)
     deckCount: 0,        // deck 남은 카드
     dummyCount: 0,       // dummy 카드
     handRank: 0,         // 족보 랭크
@@ -90,3 +91,14 @@ export const HAND_TOP = HAND_Y - CH / 2 - 18; // 535 — 드롭 판정 기준
 export const DEAL_DELAY = 110;
 
 export const DEBUG_MODE = true;
+
+// ─── 전투 시스템 애니메이션 속도 ──────────────────────────────────────────────
+export const ANIM_SPEED = {
+    orbFlight: DEBUG_MODE ? 440 : 220,     // 구슬 날아가는 시간
+    orbFade: DEBUG_MODE ? 220 : 130,       // 구슬 팽창하며 사라지는 시간
+    countUp: DEBUG_MODE ? 400 : 200,       // 점수 텍스트 오르는 시간
+    queueDelay: DEBUG_MODE ? 300 : 100,    // 다음 애니메이션 전 대기 시간
+    pulseCard: DEBUG_MODE ? 250 : 160,     // 카드 반짝임 지속 시간
+    mergeScale: DEBUG_MODE ? 500 : 300,    // 베이스×멀티 점수 합쳐질 때 커지는 연출
+    mergeDelay: DEBUG_MODE ? 600 : 400     // 연출 후 다음 단계까지 대기 시간
+};

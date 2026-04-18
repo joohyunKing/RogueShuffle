@@ -3,7 +3,8 @@ import { relicMap } from '../manager/relicManager.js';
 import { sealMap } from '../manager/sealManager.js';
 
 const ADD_TYPES      = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage"]);
-const MULTIPLY_TYPES = new Set(["multiply", "multiplyPerHandRemaining"]);
+const PLUS_MULTI_TYPES = new Set(["plus_multi", "plusMultiPerHandRemaining"]);
+const TIMES_MULTI_TYPES = new Set(["times_multi"]);
 
 // calculateScore — getScoreDetails의 경량 wrapper (프리뷰용)
 export function calculateScore(cards, context) {
@@ -41,6 +42,52 @@ function getRelicsFromContext(context) {
         .filter(Boolean);
 }
 
+/**
+ * sideAmplify 유물 위치를 기반으로 각 유물의 증폭 배율 맵 생성.
+ * relicSlots[i] 의 좌우(col±1, 같은 row) 유물에 value 배율 적용.
+ * @returns {Object} { relicId: multiplier } — 기본 1 (없으면 맵에 없음)
+ */
+function buildAmplifierMap(relics, relicSlots) {
+    const map = {};
+    if (!relicSlots) return map;
+    for (const relic of relics) {
+        for (const eff of (relic.effects ?? [])) {
+            if (eff.scope !== 'special' || eff.type !== 'sideAmplify') continue;
+            const idx = relicSlots.indexOf(relic.id);
+            if (idx < 0) continue;
+            const col = idx % 3;
+            if (col > 0) {
+                const leftId = relicSlots[idx - 1];
+                if (leftId) map[leftId] = (map[leftId] ?? 1) * eff.value;
+            }
+            if (col < 2) {
+                const rightId = relicSlots[idx + 1];
+                if (rightId) map[rightId] = (map[rightId] ?? 1) * eff.value;
+            }
+        }
+    }
+    return map;
+}
+
+/**
+ * applyEffect에 증폭 배율(amplifier)을 적용한 wrapper.
+ * 조건 불충족으로 점수가 변하지 않으면 그대로 반환.
+ */
+function applyAmplifiedEffect(score, effect, card, ctx, amplifier) {
+    const before = score;
+    const after = applyEffect(score, effect, card, ctx);
+    if (amplifier === 1 || after === before) return after;
+    // times_multi 계열은 배율 자체를 증폭 (score × mult × amp)
+    if (TIMES_MULTI_TYPES.has(effect.type)) {
+        // 기존 배수가 after / before 입니다. 이 곱하기 연산에서 -1 한 값의 amp배만큼 추가.
+        // 또는 단순히 기존 곱연산 로직을 유지해서 before + (after - before) * amplifier 처리해도 실질 배수가 됩니다.
+        // ex: 1 * 1.5 = 1.5. delta = 0.5. 0.5 * amp = 1.0. 최종 1 + 1.0 = 2.0 (즉 2배)
+        return before + (after - before) * amplifier;
+    }
+    // add, plus_multi 계열은 증가분을 증폭 (score + delta × amp)
+    return before + (after - before) * amplifier;
+}
+
 function checkCondition(cond, card, ctx) {
     if (!cond) return true;
 
@@ -76,16 +123,17 @@ function applyEffect(score, effect, card, ctx) {
 
     switch (effect.type) {
         case "add":
+        case "plus_multi":
             return score + effect.value;
 
-        case "multiply":
+        case "times_multi":
             return score * effect.value;
 
         // 핸드에 남은 카드 수 × value 만큼 배수 추가 (빈손 유물)
-        case "multiplyPerHandRemaining": {
+        case "plusMultiPerHandRemaining": {
             const remaining = ctx.handRemainingCount ?? 0;
             if (remaining <= 0) return score;
-            return score * (1 + effect.value * remaining);
+            return score + (effect.value * remaining);
         }
 
         // 현재 족보 사용 횟수 × value 점수 가산 (성장형 유물, hand scope 권장)
@@ -106,22 +154,9 @@ function applyEffect(score, effect, card, ctx) {
 }
 
 
-/**
- * 점수 계산 단계별 내역 반환 (공격 애니메이션용)
- * @returns {{
- *   atk: number,
- *   cardDetails: Array<{card, baseScore, cardRelicDeltas: {relicId,delta}[], total}>,
- *   multi: number,
- *   handRank: number,
- *   handName: string,
- *   handRelicDeltas: {relicId,delta}[],
- *   finalRelicDeltas: {relicId,delta}[],
- *   totalScore: number,
- *   aoe: boolean,
- * }}
- */
 export function getScoreDetails(cards, context) {
     const relics = getRelicsFromContext(context);
+    const amplifierMap = buildAmplifierMap(relics, context.relicSlots ?? null);
 
     const enabledHands = context.enabledHands
         ?? new Set(Object.entries(HAND_DATA).filter(([,d]) => d.enabled !== false).map(([k]) => Number(k)));
@@ -135,93 +170,124 @@ export function getScoreDetails(cards, context) {
     };
 
     const atk   = ctx.atk ?? 0;
-    const multi = ctx.handConfig?.[ctx.handRank]?.multi ?? 1;
+    const baseHandMulti = ctx.handConfig?.[ctx.handRank]?.multi ?? 1;
+
+    let baseScorePool = atk;
+    let plusMultiPool = baseHandMulti;
+    let timesMultiPool = 1;
 
     // ── per-card breakdown ────────────────────────────────────────────────
     const cardDetails = ctx.cards.map(card => {
         let baseScore = card.baseScore;
         for (const enh of (card.enhancements ?? [])) {
             if (enh.type === 'red') baseScore += sealMap['red']?.scoreBonus ?? 20;
-            // if (enh.type === 'add') baseScore += enh.value; // 하위 호환 (미사용)
         }
+
+        let deltaBase = baseScore;
+        let deltaMulti = 0;
         const cardRelicDeltas = [];
-        let runCard = baseScore;
+
+        // 카드 대상 Base Score Add
+        let runBase = deltaBase;
         for (const relic of relics) {
-            let delta = 0;
+            let rd = 0;
+            const amp = amplifierMap[relic.id] ?? 1;
             for (const effect of (relic.effects ?? [])) {
-                if (effect.scope !== "card") continue;
-                const before = runCard;
-                runCard = applyEffect(runCard, effect, card, ctx);
-                delta += runCard - before;
+                if (effect.scope !== "card" || !ADD_TYPES.has(effect.type)) continue;
+                const before = runBase;
+                runBase = applyAmplifiedEffect(runBase, effect, card, ctx, amp);
+                rd += runBase - before;
             }
-            if (delta !== 0) cardRelicDeltas.push({ relicId: relic.id, delta });
+            if (rd !== 0) cardRelicDeltas.push({ relicId: relic.id, type: 'base', delta: rd });
         }
-        return { card, baseScore, cardRelicDeltas, total: runCard };
+        deltaBase = runBase;
+
+        // 카드 대상 Plus Multi
+        let runMulti = 0;
+        for (const relic of relics) {
+            let rd = 0;
+            const amp = amplifierMap[relic.id] ?? 1;
+            for (const effect of (relic.effects ?? [])) {
+                if (effect.scope !== "card" || !PLUS_MULTI_TYPES.has(effect.type)) continue;
+                const before = runMulti;
+                runMulti = applyAmplifiedEffect(runMulti, effect, card, ctx, amp);
+                rd += runMulti - before;
+            }
+            if (rd !== 0) cardRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', delta: rd });
+        }
+        deltaMulti = runMulti;
+
+        baseScorePool += deltaBase;
+        plusMultiPool += deltaMulti;
+
+        return { card, baseScore, cardRelicDeltas, deltaBase, deltaMulti };
     });
 
-    // ── running total ─────────────────────────────────────────────────────
-    let running = cardDetails.reduce((s, d) => s + d.total, 0) + atk;
-
-    // ── hand ADD 유물: multi 이전 가산 (pair_legacy 등 multi에 곱해져야 하는 보너스)
+    // ── hand ADD, hand MULTI 유물 ──────────────────────────────────────────
     const handRelicDeltas = [];
     for (const relic of relics) {
         let delta = 0;
+        const amp = amplifierMap[relic.id] ?? 1;
         for (const effect of (relic.effects ?? [])) {
             if (effect.scope !== "hand" || !ADD_TYPES.has(effect.type)) continue;
-            const before = running;
-            running = applyEffect(running, effect, null, ctx);
-            delta += running - before;
+            const before = baseScorePool;
+            baseScorePool = applyAmplifiedEffect(baseScorePool, effect, null, ctx, amp);
+            delta += baseScorePool - before;
         }
-        if (delta !== 0) handRelicDeltas.push({ relicId: relic.id, delta });
+        if (delta !== 0) handRelicDeltas.push({ relicId: relic.id, type: 'base', delta });
     }
-
-    running *= multi;
-
-    // ── hand MULTIPLY 유물: multi 이후 추가 배율
     for (const relic of relics) {
         let delta = 0;
+        const amp = amplifierMap[relic.id] ?? 1;
         for (const effect of (relic.effects ?? [])) {
-            if (effect.scope !== "hand" || !MULTIPLY_TYPES.has(effect.type)) continue;
-            const before = running;
-            running = applyEffect(running, effect, null, ctx);
-            delta += running - before;
+            if (effect.scope !== "hand" || !PLUS_MULTI_TYPES.has(effect.type)) continue;
+            const before = plusMultiPool;
+            plusMultiPool = applyAmplifiedEffect(plusMultiPool, effect, null, ctx, amp);
+            delta += plusMultiPool - before;
         }
-        if (delta !== 0) handRelicDeltas.push({ relicId: relic.id, delta });
+        if (delta !== 0) handRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', delta });
     }
 
-    // ── final-scope relics (add first, multiply second) ───────────────────
+    // ── final add, times_multi 유물 ─────────────────────────────────────────
     const finalRelicDeltas = [];
     for (const relic of relics) {
         let delta = 0;
+        const amp = amplifierMap[relic.id] ?? 1;
         for (const effect of (relic.effects ?? [])) {
             if (effect.scope !== "final" || !ADD_TYPES.has(effect.type)) continue;
-            const before = running;
-            running = applyEffect(running, effect, null, ctx);
-            delta += running - before;
+            const before = baseScorePool;
+            baseScorePool = applyAmplifiedEffect(baseScorePool, effect, null, ctx, amp);
+            delta += baseScorePool - before;
         }
-        if (delta !== 0) finalRelicDeltas.push({ relicId: relic.id, delta });
+        if (delta !== 0) finalRelicDeltas.push({ relicId: relic.id, type: 'base', delta });
     }
     for (const relic of relics) {
         let delta = 0;
+        const amp = amplifierMap[relic.id] ?? 1;
         for (const effect of (relic.effects ?? [])) {
-            if (effect.scope !== "final" || !MULTIPLY_TYPES.has(effect.type)) continue;
-            const before = running;
-            running = applyEffect(running, effect, null, ctx);
-            delta += running - before;
+            if (effect.scope !== "final" || !TIMES_MULTI_TYPES.has(effect.type)) continue;
+            const before = timesMultiPool;
+            timesMultiPool = applyAmplifiedEffect(timesMultiPool, effect, null, ctx, amp);
+            delta = timesMultiPool - before;
         }
-        if (delta !== 0) finalRelicDeltas.push({ relicId: relic.id, delta });
+        if (delta !== 0) finalRelicDeltas.push({ relicId: relic.id, type: 'times_multi', delta });
     }
+
+    const totalScore = (baseScorePool * plusMultiPool) * timesMultiPool;
 
     return {
         atk,
         cards: ctx.cards,
         cardDetails,
-        multi,
+        baseHandMulti,
         handRank: ctx.handRank,
         handName: ctx.handName,
         handRelicDeltas,
         finalRelicDeltas,
-        totalScore: Math.floor(running),
+        baseScoreTotal: Math.floor(baseScorePool),
+        plusMultiTotal: plusMultiPool,
+        timesMultiTotal: timesMultiPool,
+        totalScore: Math.floor(totalScore),
         aoe: ctx.handConfig?.[handResult.rank]?.aoe ?? handResult.aoe ?? false,
     };
 }

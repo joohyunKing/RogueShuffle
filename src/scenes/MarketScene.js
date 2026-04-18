@@ -4,8 +4,8 @@ import { CardRenderer } from "../CardRenderer.js";
 import { TS } from "../textStyles.js";
 import { Player } from "../manager/playerManager.js";
 import DeckManager from "../manager/deckManager.js";
-import { getAllItems, maxItemCount } from '../manager/itemManager.js';
-import { getRelicsExcluding, maxRelicCount } from '../manager/relicManager.js';
+import { getAllItems } from '../manager/itemManager.js';
+import { getRelicsExcluding } from '../manager/relicManager.js';
 import { PlayerUI } from '../ui/PlayerUI.js';
 import { ItemUI } from '../ui/ItemUI.js';
 import { OptionUI } from '../ui/OptionUI.js';
@@ -264,7 +264,7 @@ export class MarketScene extends Phaser.Scene {
     const rar = RARITY_COLORS[relic.rarity] ?? RARITY_COLORS.common;
     const price = RELIC_PRICE[relic.rarity] ?? RELIC_PRICE.common;
     const canBuy = !relic.bought && this.player.gold >= price
-      && this.player.relics.length < maxRelicCount;
+      && this.player.relics.length < this.player.maxRelicCount;
     const alpha = relic.bought ? 0.4 : 1;
     const top = cy - H / 2;
 
@@ -339,7 +339,7 @@ export class MarketScene extends Phaser.Scene {
   _buyRelic(idx) {
     const relic = this._shopRelics[idx];
     const price = RELIC_PRICE[relic.rarity] ?? RELIC_PRICE.common;
-    if (relic.bought || this.player.gold < price || this.player.relics.length >= maxRelicCount) return;
+    if (relic.bought || this.player.gold < price || this.player.relics.length >= this.player.maxRelicCount) return;
     this.player.gold -= price;
     relic.bought = true;
     this.player.tryAddRelic(relic.id);
@@ -374,7 +374,7 @@ export class MarketScene extends Phaser.Scene {
     const rar = RARITY_COLORS[item.rarity] ?? RARITY_COLORS.common;
     const price = ITEM_PRICE[item.rarity] ?? ITEM_PRICE.common;
     const canBuy = !item.bought && this.player.gold >= price
-      && this.player.items.length < maxItemCount;
+      && this.player.items.length < this.player.maxItemCount;
     const alpha = item.bought ? 0.4 : 1;
     const top = cy - H / 2;
 

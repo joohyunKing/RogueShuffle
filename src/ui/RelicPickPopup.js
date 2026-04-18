@@ -10,7 +10,7 @@
 
 import { GW, GH } from "../constants.js";
 import { TS } from "../textStyles.js";
-import { relicMap as RELIC_MAP, maxRelicCount } from "../manager/relicManager.js";
+import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
 
 const RARITY_C = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa };
 const RARITY_TX = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff' };
@@ -20,8 +20,8 @@ export function showRelicPickPopup(scene, player, newRelicId, onDone) {
   if (!newRelic) { onDone?.(null); return; }
 
   // 6개 미만이면 그냥 추가
-  if (player.relics.length < maxRelicCount) {
-    player.relics.push(newRelicId);
+  if (player.relics.length < player.maxRelicCount) {
+    player.tryAddRelic(newRelicId);
     onDone?.(newRelicId);
     return;
   }
