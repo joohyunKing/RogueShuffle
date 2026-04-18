@@ -1,14 +1,13 @@
 import { PLAYER_PANEL_W, GH, HAND_DATA } from "../constants.js";
-import { TS } from "../textStyles.js";
+import { TS, suitColors } from "../textStyles.js";
 import { getRequiredExp } from "../manager/playerManager.js";
 import { getLang, getHandName, getHandDesc, getPlayerUI } from "../service/langService.js";
 import deckData from "../data/deck.json";
 
 function getDeckDisplayName(deckId) {
-    return deckData.decks.find(d => d.deckId === deckId)?.deckName ?? deckId;
+  return deckData.decks.find(d => d.deckId === deckId)?.deckName ?? deckId;
 }
 
-const SUIT_COLORS = { S: '#293c52ff', H: '#893131ff', D: '#d0712dff', C: '#1b4b24ff' };
 const SUIT_SYMS = { S: '\u2660', H: '\u2665', D: '\u2666', C: '\u2663' };
 const SUIT_KEYS = ['S', 'H', 'D', 'C'];
 
@@ -193,10 +192,10 @@ export class PlayerUI {
       pair.forEach((suit, colIdx) => {
         const sx = colX[colIdx];
         this._add(scene.add.text(sx, sy, SUIT_SYMS[suit],
-          { fontFamily: 'Arial', fontSize: '18px', color: SUIT_COLORS[suit] }).setDepth(D));
+          { fontFamily: 'Arial', fontSize: '18px', color: suitColors[suit] }).setDepth(D));
         this._attrTxts[suit] = this._add(scene.add.text(sx + 24, sy + 2,
           `Lv${p.attrs[suit]}`,
-          { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: SUIT_COLORS[suit] })
+          { fontFamily: "'PressStart2P', Arial", fontSize: '11px', color: suitColors[suit] })
           .setDepth(D));
 
         const hitW = PW / 2 - 8;
@@ -314,7 +313,7 @@ export class PlayerUI {
     const [title, effect] = u[`suit_${suit}`];
     const cardLine = (u.suit_cards ?? '{n} × {sym}장')
       .replace('{n}', perCard).replace('{sym}', sym);
-    this._showTooltipAt([title, effect, cardLine], SUIT_COLORS[suit], rowY);
+    this._showTooltipAt([title, effect, cardLine], suitColors[suit], rowY);
   }
 
   _showTooltipAt(lines, color, rowY, tooltipW = 210) {

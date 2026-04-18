@@ -63,12 +63,9 @@ export class MonsterManager {
     return total;
   }
 
-  // ── 디버프로 disabled 된 카드 판별 ───────────────────────────────────────
+  // ── 디버프로 disabled 된 카드 판별 (DebuffManager에 위임) ──────────────────
   _isCardDisabled(card) {
-    const dm = this.scene.debuffManager;
-    return dm.disabledCardUids.has(card.uid)
-      || dm.disabledRanks.has(card.rank)
-      || dm.disabledSuits.has(card.suit);
+    return this.scene.debuffManager.isCardDisabled(card);
   }
 
   // ── 몬스터 애니메이션 재생 ────────────────────────────────────────────────

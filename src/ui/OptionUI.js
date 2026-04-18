@@ -12,77 +12,59 @@ import { saveOptionsByRegistry } from "../manager/optionManager.js";
  *   onClose    {function}  오버레이 닫힐 때 콜백 (예: isDealing = false)
  *   depth      {number}    기본 depth (기본 600)
  */
-export class OptionUI {
+import { ModalUI } from "./ModalUI.js";
+
+/**
+ * OptionUI — 인게임 옵션 오버레이 (BGM/SFX 볼륨, MAIN MENU, CLOSE)
+ */
+export class OptionUI extends ModalUI {
   constructor(scene, opts = {}) {
-    this.scene = scene;
-    this.opts = {
-      onMainMenu: null,
-      onOpen: null,
-      onClose: null,
+    super(scene, {
       depth: 600,
-      ...opts,
-    };
-    this._objs = null;
+      ...opts
+    });
   }
 
-  get isOpen() { return !!this._objs; }
-
   show() {
-    if (this._objs) return;
-    this.opts.onOpen?.();
+    if (this.isOpen) return;
+
+    const pw = 420, ph = 480;
+    const { cx, cy, D } = this.createBase(pw, ph, { bgKey: "ui_battle_popup_v" });
+    const pt = ph - cy + 100;
 
     const { scene } = this;
-    const D = this.opts.depth;
-    const objs = this._objs = [];
-    const cx = GW / 2, cy = GH / 2;
-    const pw = 400, ph = 360;
 
-    // 딤
-    const dim = scene.add.rectangle(cx, cy, GW, GH, 0x000000, 0.65)
-      .setDepth(D).setInteractive();
-    objs.push(dim);
-
-    // 패널
-    if (scene.textures.exists("ui_frame")) {
-      objs.push(
-        scene.add.nineslice(cx, cy, "ui_frame", 0, pw, ph, 8, 8, 8, 8)
-          .setOrigin(0.5).setDepth(D + 1).setAlpha(0.97)
-      );
-    } else {
-      const panelG = scene.add.graphics().setDepth(D + 1);
-      panelG.fillStyle(0x0d2b18);
-      panelG.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
-      panelG.lineStyle(2, 0x2d7a3a);
-      panelG.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 16);
-      objs.push(panelG);
-    }
-
-    objs.push(
-      scene.add.text(cx, cy - ph / 2 + 44, "OPTIONS", TS.optTitle)
+    this.addObj(
+      scene.add.text(cx, pt, "OPTIONS", TS.popupTitle)
         .setOrigin(0.5).setDepth(D + 2)
     );
 
     // ── BGM ──────────────────────────────────────────────────────────────
     let bgm = scene.registry.get("bgmVolume") ?? 7;
-    const bgmY = cy - 70;
-    objs.push(
-      scene.add.text(cx, bgmY - 28, "BGM", TS.optLabel).setOrigin(0.5).setDepth(D + 2)
+    const bgmY = pt + 70;
+    this.addObj(
+      scene.add.text(cx, bgmY - 28, "BGM", TS.popupContent).setOrigin(0.5).setDepth(D + 2)
     );
+
     const bgmMinus = scene.add.image(cx - 80, bgmY, "ui_btn")
       .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
-    objs.push(bgmMinus,
-      scene.add.text(cx - 80, bgmY, "-", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
-    const bgmTxt = scene.add.text(cx, bgmY, String(bgm), TS.optValue)
+    this.addObj(bgmMinus);
+    this.addObj(scene.add.text(cx - 80, bgmY, "-", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
+
+    const bgmTxt = scene.add.text(cx, bgmY, String(bgm), TS.popupContent)
       .setOrigin(0.5).setDepth(D + 2);
-    objs.push(bgmTxt);
+    this.addObj(bgmTxt);
+
     const bgmPlus = scene.add.image(cx + 80, bgmY, "ui_btn")
       .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
-    objs.push(bgmPlus,
-      scene.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
+    this.addObj(bgmPlus);
+    this.addObj(scene.add.text(cx + 80, bgmY, "+", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
+
     const bgmBarBg = scene.add.rectangle(cx, bgmY + 28, 204, 7, 0x224433).setDepth(D + 2);
     const bgmBar = scene.add.rectangle(cx - 102, bgmY + 28, bgm * 20.4, 7, 0x44dd88)
       .setOrigin(0, 0.5).setDepth(D + 3);
-    objs.push(bgmBarBg, bgmBar);
+    this.addObj(bgmBarBg);
+    this.addObj(bgmBar);
 
     const updateBgm = (v) => {
       bgm = Phaser.Math.Clamp(v, 0, 10);
@@ -101,24 +83,29 @@ export class OptionUI {
     // ── SFX ──────────────────────────────────────────────────────────────
     let sfx = scene.registry.get("sfxVolume") ?? 7;
     const sfxY = cy + 50;
-    objs.push(
-      scene.add.text(cx, sfxY - 28, "SFX", TS.optLabel).setOrigin(0.5).setDepth(D + 2)
+    this.addObj(
+      scene.add.text(cx, sfxY - 28, "SFX", TS.popupContent).setOrigin(0.5).setDepth(D + 2)
     );
+
     const sfxMinus = scene.add.image(cx - 80, sfxY, "ui_btn")
       .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
-    objs.push(sfxMinus,
-      scene.add.text(cx - 80, sfxY, "-", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
-    const sfxTxt = scene.add.text(cx, sfxY, String(sfx), TS.optValue)
+    this.addObj(sfxMinus);
+    this.addObj(scene.add.text(cx - 80, sfxY, "-", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
+
+    const sfxTxt = scene.add.text(cx, sfxY, String(sfx), TS.popupContent)
       .setOrigin(0.5).setDepth(D + 2);
-    objs.push(sfxTxt);
+    this.addObj(sfxTxt);
+
     const sfxPlus = scene.add.image(cx + 80, sfxY, "ui_btn")
       .setDisplaySize(44, 44).setDepth(D + 2).setInteractive();
-    objs.push(sfxPlus,
-      scene.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
+    this.addObj(sfxPlus);
+    this.addObj(scene.add.text(cx + 80, sfxY, "+", TS.optBtn).setOrigin(0.5).setDepth(D + 3));
+
     const sfxBarBg = scene.add.rectangle(cx, sfxY + 28, 204, 7, 0x224433).setDepth(D + 2);
     const sfxBar = scene.add.rectangle(cx - 102, sfxY + 28, sfx * 20.4, 7, 0x44dd88)
       .setOrigin(0, 0.5).setDepth(D + 3);
-    objs.push(sfxBarBg, sfxBar);
+    this.addObj(sfxBarBg);
+    this.addObj(sfxBar);
 
     const updateSfx = (v) => {
       sfx = Phaser.Math.Clamp(v, 0, 10);
@@ -135,12 +122,13 @@ export class OptionUI {
     sfxPlus.on("pointerout", () => sfxPlus.clearTint());
 
     // ── 버튼 ─────────────────────────────────────────────────────────────
-    const btnY = cy + ph / 2 - 48;
+    const btnY = cy + 140;
 
     const exitBtn = scene.add.image(cx - 80, btnY, "ui_btn")
       .setDisplaySize(150, 52).setDepth(D + 2).setInteractive();
-    objs.push(exitBtn,
-      scene.add.text(cx - 80, btnY, "MAIN MENU", TS.menuBtn).setOrigin(0.5).setDepth(D + 3));
+    this.addObj(exitBtn);
+    this.addObj(scene.add.text(cx - 80, btnY, "MAIN MENU", TS.sortBtn).setOrigin(0.5).setDepth(D + 3));
+
     exitBtn.on("pointerdown", () => {
       this.opts.onMainMenu?.();
     });
@@ -149,17 +137,12 @@ export class OptionUI {
 
     const closeBtn = scene.add.image(cx + 80, btnY, "ui_btn")
       .setDisplaySize(150, 52).setDepth(D + 2).setInteractive();
-    objs.push(closeBtn,
-      scene.add.text(cx + 80, btnY, "CLOSE", TS.menuBtn).setOrigin(0.5).setDepth(D + 3));
+    this.addObj(closeBtn);
+    this.addObj(scene.add.text(cx + 80, btnY, "CLOSE", TS.sortBtn).setOrigin(0.5).setDepth(D + 3));
+
     closeBtn.on("pointerdown", () => this.close());
     closeBtn.on("pointerover", () => closeBtn.setTint(0xcccccc));
     closeBtn.on("pointerout", () => closeBtn.clearTint());
   }
-
-  close() {
-    if (!this._objs) return;
-    this._objs.forEach(o => { try { o?.destroy(); } catch (_) { } });
-    this._objs = null;
-    this.opts.onClose?.();
-  }
 }
+

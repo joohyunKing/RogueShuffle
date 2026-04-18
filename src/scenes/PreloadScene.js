@@ -132,12 +132,12 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image("ui_shield", "assets/images/ui/shield.png");
     this.load.image("ui_popup", "assets/images/ui/popup.png");
     this.load.image("ui_battle_popup", "assets/images/ui/battle_popup.png");
+    this.load.image("ui_battle_popup_v", "assets/images/ui/battle_popup_v.png");
     this.load.spritesheet("ui_fireball", "assets/images/ui/fireball_frame.png", { frameWidth: 325, frameHeight: 358 });
 
 
     // 임시 몬스터 샘플 이미지 (tween 애니메이션용)
     this.load.image('mon_sample', 'assets/images/monster/mon_sample.png');
-    this.load.image('seal_purple', 'assets/images/symbol/purple_seal.png');
 
     //this.load.images();
   }

@@ -16,31 +16,28 @@ import { CardRenderer } from "../CardRenderer.js";
  *   pilePopup.close();
  *   pilePopup.isOpen  // boolean
  */
-export class PilePopupUI {
-  /**
-   * @param {Phaser.Scene} scene
-   * @param {function} [onClose] - 팝업 닫힐 때 콜백 (예: _hideCardPreview)
-   */
+import { ModalUI } from "./ModalUI.js";
+
+/**
+ * PilePopupUI — 덱/더미 카드 목록 팝업
+ */
+export class PilePopupUI extends ModalUI {
   constructor(scene, onClose) {
-    this.scene = scene;
-    this._onClose = onClose ?? null;
-    this._objs = null;
+    super(scene, {
+        depth: 600,
+        onClose
+    });
   }
 
-  get isOpen() { return this._objs !== null; }
-
   show(pileData, title) {
-    if (this._objs) return;
-    const { scene } = this;
-    const objs = this._objs = [];
+    if (this.isOpen) return;
 
+    const { scene } = this;
     const RANK_LIST = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
     const CW_ = FIELD_CW, CH_ = FIELD_CH;
     const GAP_X = CW_ + 4, ROW_H = CH_ + 16, LABEL_W = 26, PAD = 20;
-    const panelW = GW - PLAYER_PANEL_W - PAD * 2;
-    const panelCX = GW / 2;
-    const panelX = panelCX - panelW / 2;
 
+    const panelW = GW - PLAYER_PANEL_W - PAD * 2;
     // 슈트별 카드 분류 및 정렬
     const bySuit = { S: [], H: [], C: [], D: [] };
     for (const card of pileData) {
@@ -65,25 +62,22 @@ export class PilePopupUI {
     const titleH = 38, closeH = 40;
     const panelH = titleH + totalRows * ROW_H + closeH;
     const panelTop = Math.max(BATTLE_LOG_H + 6, (GH - panelH) / 2);
+    const panelY = panelTop + panelH / 2;
 
-    // 딤
-    const dim = scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0x000000, 0.78)
-      .setDepth(600).setInteractive();
-    objs.push(dim);
+    const { cx, D } = this.createBase(panelW, panelH, {
+        panelY,
+        dimAlpha: 0.78,
+        bgKey: "ui_popup",
+    });
 
-    // 패널 배경
-    objs.push(
-      scene.add.image(panelCX, panelTop + panelH / 2, 'ui_popup')
-        .setDisplaySize(panelW, panelH)
-        .setDepth(601)
-    );
+    const panelX = cx - panelW / 2;
 
     // 제목
-    objs.push(
-      scene.add.text(panelCX, panelTop + titleH / 2,
+    this.addObj(
+      scene.add.text(cx, panelTop + titleH / 2,
         `${title}  (${pileData.length})`,
         { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#ccffcc' }
-      ).setOrigin(0.5).setDepth(602)
+      ).setOrigin(0.5).setDepth(D + 2)
     );
 
     // 슈트별 카드 렌더
@@ -97,43 +91,39 @@ export class PilePopupUI {
         const cy = panelTop + titleH + (rowOffset + row) * ROW_H + CH_ / 2 + 8;
 
         rowCards.forEach((card, ci) => {
-          const cx = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
-          const { cardImg: img, sealImg } = CardRenderer.drawCard(scene, cx, cy, card, { width: CW_, height: CH_, depth: 602, objs });
+          const x = panelX + LABEL_W + 6 + ci * GAP_X + CW_ / 2;
+          const { cardImg: img, sealImg } = CardRenderer.drawCard(scene, x, cy, card, { width: CW_, height: CH_, depth: D + 2, objs: this._objs });
+          
           img.setInteractive();
           img.on('pointerover', () => {
             scene.tweens.add({ targets: img, displayWidth: CW_ * 1.5, displayHeight: CH_ * 1.5, duration: 100 });
-            img.setDepth(650);
-            sealImg?.setDepth(651);
-            CardRenderer.showSealTooltip(scene, card, cx, cy, CH_, 700);
+            img.setDepth(D + 50);
+            sealImg?.setDepth(D + 51);
+            CardRenderer.showSealTooltip(scene, card, x, cy, CH_, D + 100);
           });
           img.on('pointerout', () => {
             scene.tweens.add({ targets: img, displayWidth: CW_, displayHeight: CH_, duration: 100 });
-            img.setDepth(602);
-            sealImg?.setDepth(603);
+            img.setDepth(D + 2);
+            sealImg?.setDepth(D + 3);
             CardRenderer.hideSealTooltip();
           });
         });
       }
-
       rowOffset += numRows;
     });
 
     // 닫기 버튼
     const closeY = panelTop + panelH - closeH / 2;
-    const closeBg = scene.add.rectangle(panelCX, closeY, 130, 28, 0x1a3a22)
-      .setDepth(602).setStrokeStyle(1, 0x4a9a5a);
-    const closeTxt = scene.add.text(panelCX, closeY, 'CLOSE',
-      { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: '#aaffaa' }
-    ).setOrigin(0.5).setDepth(603).setInteractive();
-    closeTxt.on('pointerdown', () => this.close());
-    dim.on('pointerdown', () => this.close());
-    objs.push(closeBg, closeTxt);
-  }
+    const closeBg = scene.add.rectangle(cx, closeY, 130, 28, 0x1a3a22)
+      .setDepth(D + 2).setStrokeStyle(1, 0x4a9a5a);
+    this.addObj(closeBg);
 
-  close() {
-    if (!this._objs) return;
-    this._onClose?.();
-    this._objs.forEach(o => o.destroy());
-    this._objs = null;
+    const closeTxt = scene.add.text(cx, closeY, 'CLOSE',
+      { fontFamily: "'PressStart2P',Arial", fontSize: '10px', color: '#aaffaa' }
+    ).setOrigin(0.5).setDepth(D + 3).setInteractive();
+    this.addObj(closeTxt);
+
+    closeTxt.on('pointerdown', () => this.close());
   }
 }
+

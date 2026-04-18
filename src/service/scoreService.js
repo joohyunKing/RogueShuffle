@@ -26,7 +26,7 @@ function calcCardScore(card, ctx, relics) {
     }
 
     for (const relic of relics) {
-        for (const effect of relic.effects) {
+        for (const effect of (relic.effects ?? [])) {
             if (effect.scope !== "card") continue;
             score = applyEffect(score, effect, card, ctx);
         }
@@ -148,7 +148,7 @@ export function getScoreDetails(cards, context) {
         let runCard = baseScore;
         for (const relic of relics) {
             let delta = 0;
-            for (const effect of relic.effects) {
+            for (const effect of (relic.effects ?? [])) {
                 if (effect.scope !== "card") continue;
                 const before = runCard;
                 runCard = applyEffect(runCard, effect, card, ctx);
@@ -166,7 +166,7 @@ export function getScoreDetails(cards, context) {
     const handRelicDeltas = [];
     for (const relic of relics) {
         let delta = 0;
-        for (const effect of relic.effects) {
+        for (const effect of (relic.effects ?? [])) {
             if (effect.scope !== "hand" || !ADD_TYPES.has(effect.type)) continue;
             const before = running;
             running = applyEffect(running, effect, null, ctx);
@@ -180,7 +180,7 @@ export function getScoreDetails(cards, context) {
     // ── hand MULTIPLY 유물: multi 이후 추가 배율
     for (const relic of relics) {
         let delta = 0;
-        for (const effect of relic.effects) {
+        for (const effect of (relic.effects ?? [])) {
             if (effect.scope !== "hand" || !MULTIPLY_TYPES.has(effect.type)) continue;
             const before = running;
             running = applyEffect(running, effect, null, ctx);
@@ -193,7 +193,7 @@ export function getScoreDetails(cards, context) {
     const finalRelicDeltas = [];
     for (const relic of relics) {
         let delta = 0;
-        for (const effect of relic.effects) {
+        for (const effect of (relic.effects ?? [])) {
             if (effect.scope !== "final" || !ADD_TYPES.has(effect.type)) continue;
             const before = running;
             running = applyEffect(running, effect, null, ctx);
@@ -203,7 +203,7 @@ export function getScoreDetails(cards, context) {
     }
     for (const relic of relics) {
         let delta = 0;
-        for (const effect of relic.effects) {
+        for (const effect of (relic.effects ?? [])) {
             if (effect.scope !== "final" || !MULTIPLY_TYPES.has(effect.type)) continue;
             const before = running;
             running = applyEffect(running, effect, null, ctx);

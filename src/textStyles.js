@@ -18,6 +18,8 @@ const C = {
   ORANGE: '#ffaa44', // 어두운 배경에 주황색 표시
 };
 
+export const suitColors = { S: '#293c52ff', H: '#893131ff', D: '#d0712dff', C: '#1b4b24ff' };
+
 export const TS = {
   // ── 게임 헤더 / 제목 ────────────────────────────────────────────────────────
   gameTitle: { fontFamily: F, fontSize: '17px', color: C.BRIGHT },
@@ -26,6 +28,10 @@ export const TS = {
   // ── 배틀 로그 ──────────────────────────────────────────────────────────────
   log: { fontFamily: F, fontSize: '14px', color: '#ffbb33', stroke: '#000000', strokeThickness: 2 },
   msg: { fontFamily: F, fontSize: '17px', color: '#ffbb33', stroke: '#000000', strokeThickness: 2 },
+
+  // ── 팝업 ──────────────────────────────────────────────
+  popupTitle: { fontFamily: F, fontSize: '15px', color: C.LABEL },
+  popupContent: { fontFamily: F, fontSize: '14px', color: C.VALUE },
 
   // ── UI 패널 정보 (PlayerUI 등) ──────────────────────────────────────────────
   infoLabel: { fontFamily: F, fontSize: '12px', color: C.LABEL },

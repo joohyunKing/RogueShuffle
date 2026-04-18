@@ -87,6 +87,13 @@ export class DebuffManager {
     this.disabledHandRanks.clear();
   }
 
+  // ── 카드 봉인 여부 판별 (BattleScene / MonsterManager 공용) ─────────────────
+  isCardDisabled(card) {
+    return this.disabledCardUids.has(card.uid)
+      || this.disabledRanks.has(card.rank)
+      || this.disabledSuits.has(card.suit);
+  }
+
   // ── 디버프 효과 해제 ─────────────────────────────────────────────────────────
   _removeEffect(debuffId, silent = false) {
     const { scene } = this;
