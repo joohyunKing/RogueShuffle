@@ -12,7 +12,7 @@
       "fieldSize": 5,
       "attacksPerTurn": 2,
       "maxItemCount": 6,
-      "maxRelicCount": 9,
+      "maxRelicCount": 8,
       "suits": [
         "S",
         "H",
