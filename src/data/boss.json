@@ -435,7 +435,7 @@
     },
     {
       "id": "mirror_knight",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "반사경",
       "sprite": {
         "idle": "trickster_idle.png",

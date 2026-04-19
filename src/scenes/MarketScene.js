@@ -18,9 +18,9 @@ import { getLang, getItemName, getItemDesc, getRelicName, getRelicDesc, getMarke
 function getRarityWeights(round) {
   const t = Math.min(Math.max((round - 1) / 9, 0), 1); // 0(1라운드) ~ 1(10라운드)
   return {
-    common: Math.round(60 - 40 * t),  // 60 → 20
-    rare: Math.round(30 + 15 * t),  // 30 → 45
-    epic: Math.round(10 + 17 * t),  // 10 → 27
+    common: Math.round(70 - 40 * t),  // 70 → 30
+    rare: Math.round(25 + 15 * t),  // 25 → 40
+    epic: Math.round(5 + 17 * t),  // 5 → 22
     legend: Math.round(0 + 8 * t),  //  0 →  8
   };
 }

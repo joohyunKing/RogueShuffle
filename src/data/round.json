@@ -87,7 +87,7 @@
         "zombie"
       ],
       "baseStat": {
-        "hp": 400,
+        "hp": 350,
         "atk": 8,
         "def": 15
       },
@@ -115,8 +115,8 @@
         },
         {
           "type": "boss",
-          "statMulti": 5,
-          "totalCost": 5
+          "statMulti": 4,
+          "totalCost": 4
         }
       ],
       "bossDebuff": {}
@@ -128,7 +128,7 @@
         "goblin"
       ],
       "baseStat": {
-        "hp": 1500,
+        "hp": 1300,
         "atk": 10,
         "def": 30
       },
@@ -156,8 +156,8 @@
         },
         {
           "type": "boss",
-          "statMulti": 5,
-          "totalCost": 5
+          "statMulti": 4,
+          "totalCost": 4
         }
       ],
       "bossDebuff": {}
@@ -170,9 +170,9 @@
         "orc"
       ],
       "baseStat": {
-        "hp": 6000,
+        "hp": 5000,
         "atk": 13,
-        "def": 80
+        "def": 40
       },
       "battles": [
         {
@@ -198,8 +198,8 @@
         },
         {
           "type": "boss",
-          "statMulti": 5,
-          "totalCost": 5
+          "statMulti": 4,
+          "totalCost": 4
         }
       ],
       "bossDebuff": {}
@@ -214,6 +214,47 @@
       "baseStat": {
         "hp": 30000,
         "atk": 17,
+        "def": 90
+      },
+      "battles": [
+        {
+          "type": "market"
+        },
+        {
+          "type": "normal",
+          "statMulti": 1,
+          "totalCost": 3
+        },
+        {
+          "type": "normal",
+          "statMulti": 1.1,
+          "totalCost": 4
+        },
+        {
+          "type": "elite",
+          "statMulti": 2.2,
+          "totalCost": 3
+        },
+        {
+          "type": "market"
+        },
+        {
+          "type": "boss",
+          "statMulti": 5,
+          "totalCost": 5
+        }
+      ],
+      "bossDebuff": {}
+    },
+    {
+      "round": 7,
+      "bg": "07_cave_to_hell.jpg",
+      "races": [
+        "human"
+      ],
+      "baseStat": {
+        "hp": 150000,
+        "atk": 22,
         "def": 200
       },
       "battles": [
@@ -240,49 +281,8 @@
         },
         {
           "type": "boss",
-          "statMulti": 6,
-          "totalCost": 6
-        }
-      ],
-      "bossDebuff": {}
-    },
-    {
-      "round": 7,
-      "bg": "07_cave_to_hell.jpg",
-      "races": [
-        "human"
-      ],
-      "baseStat": {
-        "hp": 150000,
-        "atk": 22,
-        "def": 600
-      },
-      "battles": [
-        {
-          "type": "market"
-        },
-        {
-          "type": "normal",
-          "statMulti": 1,
-          "totalCost": 3
-        },
-        {
-          "type": "normal",
-          "statMulti": 1.1,
-          "totalCost": 4
-        },
-        {
-          "type": "elite",
-          "statMulti": 2.2,
-          "totalCost": 3
-        },
-        {
-          "type": "market"
-        },
-        {
-          "type": "boss",
-          "statMulti": 7,
-          "totalCost": 7
+          "statMulti": 5,
+          "totalCost": 5
         }
       ],
       "bossDebuff": {}
@@ -296,7 +296,7 @@
       "baseStat": {
         "hp": 800000,
         "atk": 30,
-        "def": 2000
+        "def": 450
       },
       "battles": [
         {
@@ -322,8 +322,8 @@
         },
         {
           "type": "boss",
-          "statMulti": 8,
-          "totalCost": 8
+          "statMulti": 6,
+          "totalCost": 6
         }
       ],
       "bossDebuff": {}
@@ -337,7 +337,7 @@
       "baseStat": {
         "hp": 4000000,
         "atk": 40,
-        "def": 8000
+        "def": 1000
       },
       "battles": [
         {
@@ -363,8 +363,8 @@
         },
         {
           "type": "boss",
-          "statMulti": 8,
-          "totalCost": 8
+          "statMulti": 6,
+          "totalCost": 6
         }
       ],
       "bossDebuff": {}
@@ -378,7 +378,7 @@
       "baseStat": {
         "hp": 25000000,
         "atk": 55,
-        "def": 30000
+        "def": 2500
       },
       "battles": [
         {
@@ -404,8 +404,8 @@
         },
         {
           "type": "boss",
-          "statMulti": 9,
-          "totalCost": 9
+          "statMulti": 7,
+          "totalCost": 7
         }
       ],
       "bossDebuff": {}

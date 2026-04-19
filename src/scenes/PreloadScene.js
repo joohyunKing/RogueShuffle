@@ -123,6 +123,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio("sfx_orb", "assets/audio/sfx/monster_orb.wav");
     this.load.audio("sfx_lightning", "assets/audio/sfx/sfx_lightning.wav");
     this.load.audio("sfx_explosion", "assets/audio/sfx/sfx_explosion.wav");
+    this.load.audio("sfx_tick", "assets/audio/sfx/sfx_tick.wav");
 
     // this.load.image("ui_deck", "assets/images/ui/deck.png");
     // this.load.image("ui_dummy", "assets/images/ui/dummy.png");
