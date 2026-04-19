@@ -342,12 +342,13 @@
       "id": "alchemist_legend",
       "name": "강화 연금술",
       "img": "scroll_legend.png",
-      "desc": "핸드에서 4장 선택, 랜덤 1장의 suit/rank를 나머지 3장에 덮어씌움",
+      "desc": "핸드에서 3장 선택, 가장 왼쪽 카드의 suit/rank/seal을 나머지 2장에 덮어씌움",
       "rarity": "legend",
       "useYn": "Y",
       "effect": {
         "type": "alchemist_crucible",
-        "cards": 4
+        "cards": 3,
+        "sourceMode": "leftmost"
       }
     }
   ]

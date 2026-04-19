@@ -54,12 +54,34 @@ export class ItemUI {
 
   _getLang() { return getLang(this.scene); }
 
-  _showRelicTip(cy, relic, color) {
+  _showRelicTip(cy, relic, color, slotIdx = -1) {
     const lang = this._getLang();
     const stackMsg = this._getRelicStackMsg(relic, lang);
+    const bingoMsg = this._getRelicBingoMsg(slotIdx, lang);
     const desc = getRelicDesc(lang, relic.id, relic.description ?? '');
-    const fullDesc = stackMsg ? `${desc}\n${stackMsg}` : desc;
+    let fullDesc = stackMsg ? `${desc}\n${stackMsg}` : desc;
+    if (bingoMsg) fullDesc += `\n\n${bingoMsg}`;
     this._showTip(cy, getRelicName(lang, relic.id, relic.name), fullDesc, color);
+  }
+
+  _getRelicBingoMsg(slotIdx, lang) {
+    if (slotIdx < 0 || !this.player || !this.player.relicSlots) return null;
+    const slots = this.player.relicSlots;
+    const BINGO_H = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
+    const BINGO_V = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
+    const BINGO_D = [[0, 4, 8], [2, 4, 6]];
+
+    const msgs = [];
+    if (BINGO_H.some(line => line.includes(slotIdx) && line.every(i => slots[i]))) {
+      msgs.push(getUiText(lang, 'bingo_h', {}));
+    }
+    if (BINGO_V.some(line => line.includes(slotIdx) && line.every(i => slots[i]))) {
+      msgs.push(getUiText(lang, 'bingo_v', {}));
+    }
+    if (BINGO_D.some(line => line.includes(slotIdx) && line.every(i => slots[i]))) {
+      msgs.push(getUiText(lang, 'bingo_d', {}));
+    }
+    return msgs.length > 0 ? msgs.join('\n') : null;
   }
 
   _getRelicStackMsg(relic, lang) {
@@ -226,6 +248,18 @@ export class ItemUI {
 
     // 9개 슬롯 렌더 (빈 슬롯도 표시) — player.relicSlots 직접 사용
     const relicSlots = player.relicSlots;
+    const bingoSlots = new Set();
+    const BINGO_LINES = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+    for (const line of BINGO_LINES) {
+      if (line.every(i => relicSlots[i])) {
+        line.forEach(i => bingoSlots.add(i));
+      }
+    }
+
     for (let i = 0; i < 9; i++) {
       const col = i % REL_COLS, row = Math.floor(i / REL_COLS);
       const cx = panelX + REL_PAD + col * (REL_SZ + REL_GAPX) + REL_SZ / 2;
@@ -248,6 +282,20 @@ export class ItemUI {
 
       const relBg = scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0x01110a, 0.5)
         .setDepth(D).setStrokeStyle(1.5, 0x4a4d4a, 0.3);
+
+      if (bingoSlots.has(i)) {
+        relBg.setFillStyle(0x3a3011, 0.8);
+        relBg.setStrokeStyle(1.5, 0xffbb33, 0.5);
+        scene.tweens.add({
+          targets: relBg,
+          alpha: { from: 0.6, to: 1.0 },
+          duration: 1200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+
       this._add(relBg); visObjs.push(relBg);
 
       const imgKey = `relic_${relic.id}`;
@@ -265,7 +313,7 @@ export class ItemUI {
       const hit = this._add(scene.add.rectangle(cx, cy, REL_SZ, REL_SZ, 0xffffff, 0).setDepth(D + 2).setInteractive());
       hit.on('pointerover', () => {
         if (!this._isDragging && !this._tipPinned) {
-          this._showRelicTip(cy, relic, tipC);
+          this._showRelicTip(cy, relic, tipC, slotI);
           if (opts.onRelicSell) hit.setFillStyle(0xff4444, 0.12);
         }
       });
@@ -287,7 +335,7 @@ export class ItemUI {
           scene.input.off('pointermove', onMove); scene.input.off('pointerup', onUpCheck);
           if (!moved) {
             if (this._tipPinned && this._pinnedId === relicId) this._clearTip();
-            else { this._tipPinned = true; this._pinnedId = relicId; this._showRelicTip(cy, relic, tipC); }
+            else { this._tipPinned = true; this._pinnedId = relicId; this._showRelicTip(cy, relic, tipC, slotI); }
           }
         };
         scene.input.on('pointermove', onMove); scene.input.on('pointerup', onUpCheck);

@@ -800,16 +800,18 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    // alchemist_crucible: 선택한 3장 중 랜덤 1장의 suit/rank를 나머지 2장에 덮어씌움
+    // alchemist_crucible: 선택한 카드 중 1장의 suit/rank(/seal)를 나머지에 덮어씌움
     if (eff?.type === 'alchemist_crucible') {
-      const cardCount = eff.cards ?? 4;
+      const cardCount = eff.cards ?? 3;
       const selectedIdxs = [...this.selected];
       if (selectedIdxs.length !== cardCount) {
         obj?.destroy();
         this.render();
         return;
       }
-      const srcIdx = selectedIdxs[Math.floor(Math.random() * cardCount)];
+      const srcIdx = eff.sourceMode === 'leftmost'
+        ? selectedIdxs.reduce((a, b) => a < b ? a : b)
+        : selectedIdxs[Math.floor(Math.random() * cardCount)];
       const src = this.handData[srcIdx];
       for (const i of selectedIdxs) {
         if (i === srcIdx) continue;
@@ -819,6 +821,9 @@ export class BattleScene extends Phaser.Scene {
         card.val = src.val;
         card.baseScore = src.baseScore;
         card.key = src.key;
+        if (eff.sourceMode === 'leftmost') {
+          card.enhancements = src.enhancements ? [...src.enhancements.map(e => ({ ...e }))] : [];
+        }
       }
       this.selected.clear();
       this.addBattleLog(`[${item.name}] ${src.key} 기준으로 ${cardCount - 1}장 변환!`);

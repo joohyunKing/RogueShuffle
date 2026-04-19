@@ -105,6 +105,9 @@ export class SpawnManager {
         const baseXp = 4 + roundData.round;
         const baseGold = 2 + (roundData.round * 0.5);
 
+        // 엘리트/보스 스탯 보정 (HP는 온전히, ATK/DEF는 완만하게)
+        const atkDefMulti = 1 + (statMulti - 1) * 0.35; // statMulti 증가량의 35%만 적용 (예: 9배면 약 3.8배)
+
         const hp = Math.floor(base.hp * statMulti * raceMult.hp * jobMult.hp * rnd());
 
         return {
@@ -116,8 +119,8 @@ export class SpawnManager {
             // 최종 공식: (라운드기본 * 배틀계수 * 종족계수 * 직업계수 * 랜덤)
             hp: hp,
             maxHp: hp,
-            atk: Math.floor(base.atk * statMulti * raceMult.atk * jobMult.atk * rnd()),
-            def: Math.floor(base.def * statMulti * raceMult.def * jobMult.def * rnd()),
+            atk: Math.floor(base.atk * atkDefMulti * raceMult.atk * jobMult.atk * rnd()),
+            def: Math.floor(base.def * atkDefMulti * raceMult.def * jobMult.def * rnd()),
 
             skill: monsterData.skill || null,
             sprite: monsterData.sprite,

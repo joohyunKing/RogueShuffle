@@ -3,8 +3,8 @@ import { relicMap } from '../manager/relicManager.js';
 import { sealMap } from '../manager/sealManager.js';
 
 const ADD_TYPES      = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage", "addPerExcessDeck"]);
-const PLUS_MULTI_TYPES = new Set(["plus_multi", "plusMultiPerHandRemaining"]);
-const TIMES_MULTI_TYPES = new Set(["times_multi"]);
+const PLUS_MULTI_TYPES = new Set(["plus_multi"]);
+const TIMES_MULTI_TYPES = new Set(["times_multi", "timesMultiPerDiagonalBingo", "plusMultiPerHandRemaining"]);
 
 // calculateScore — getScoreDetails의 경량 wrapper (프리뷰용)
 export function calculateScore(cards, context) {
@@ -129,11 +129,23 @@ function applyEffect(score, effect, card, ctx) {
         case "times_multi":
             return score * effect.value;
 
+        // 대각선 빙고 수 × value 배율 (9슬롯 3×3 기준, 주대각선[0,4,8] + 반대각선[2,4,6])
+        case "timesMultiPerDiagonalBingo": {
+            const slots = ctx.relicSlots ?? [];
+            const diagonals = [[0, 4, 8], [2, 4, 6]];
+            let bingoCount = 0;
+            for (const diag of diagonals) {
+                if (diag.every(i => slots[i])) bingoCount++;
+            }
+            if (bingoCount === 0) return score;
+            return score * (effect.value * bingoCount);
+        }
+
         // 핸드에 남은 카드 수 × value 만큼 배수 추가 (빈손 유물)
         case "plusMultiPerHandRemaining": {
             const remaining = ctx.handRemainingCount ?? 0;
             if (remaining <= 0) return score;
-            return score + (effect.value * remaining);
+            return score * (1 + effect.value * remaining);
         }
 
         // 현재 족보 사용 횟수 × value 점수 가산 (성장형 유물, hand scope 권장)
@@ -200,6 +212,7 @@ function applyRelicEffects(startValue, relics, amplifierMap, scope, typeSet, del
         let baseScore = card.baseScore;
         for (const enh of (card.enhancements ?? [])) {
             if (enh.type === 'red') baseScore += sealMap['red']?.scoreBonus ?? 20;
+            if (enh.type === 'rainbow') timesMultiPool *= sealMap['rainbow']?.timesMultiBonus ?? 1.1;
         }
         // 슈트 적응 보너스: (레벨-1) × 적응도 (레벨 1이면 0)
         if (ctx.attrs && ctx.adaptability) {
@@ -232,6 +245,34 @@ function applyRelicEffects(startValue, relics, amplifierMap, scope, typeSet, del
     const finalRelicDeltas = [];
     baseScorePool = applyRelicEffects(baseScorePool, relics, amplifierMap, "final", ADD_TYPES, 'base', finalRelicDeltas, ctx);
     timesMultiPool = applyRelicEffects(timesMultiPool, relics, amplifierMap, "final", TIMES_MULTI_TYPES, 'times_multi', finalRelicDeltas, ctx);
+
+    // ── system bingo ───────────────────────────────────────────────────────
+    if (ctx.relicSlots) {
+        const slots = ctx.relicSlots;
+        const BINGO_H = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
+        const BINGO_V = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
+        const BINGO_D = [[0, 4, 8], [2, 4, 6]];
+
+        let hCount = BINGO_H.filter(line => line.every(i => slots[i])).length;
+        let vCount = BINGO_V.filter(line => line.every(i => slots[i])).length;
+        let dCount = BINGO_D.filter(line => line.every(i => slots[i])).length;
+
+        if (hCount > 0) {
+            const delta = hCount * 50;
+            baseScorePool += delta;
+            finalRelicDeltas.push({ relicId: 'sys_bingo_h', type: 'base', delta });
+        }
+        if (vCount > 0) {
+            const delta = vCount * 2;
+            plusMultiPool += delta;
+            finalRelicDeltas.push({ relicId: 'sys_bingo_v', type: 'plus_multi', delta });
+        }
+        if (dCount > 0) {
+            const oldTimes = timesMultiPool;
+            timesMultiPool *= Math.pow(1.2, dCount);
+            finalRelicDeltas.push({ relicId: 'sys_bingo_d', type: 'times_multi', delta: timesMultiPool - oldTimes });
+        }
+    }
 
     const totalScore = (baseScorePool * plusMultiPool) * timesMultiPool;
 

@@ -355,8 +355,9 @@ export class MonsterManager {
     const prevHp = mon.hp;
     mon.hp = Math.max(0, mon.hp - damage);
     if (scene.isBoss) mon._damageTaken = (mon._damageTaken ?? 0) + damage;
-    const overkill = Math.max(0, damage - prevHp);
-    const bullseye = mon.hp === 0 && overkill === 0 && damage > 0;
+    const rawOverkill = Math.max(0, damage - prevHp);
+    const bullseye = mon.hp === 0 && damage > 0 && rawOverkill <= Math.floor(prevHp * 0.1);
+    const overkill = bullseye ? 0 : rawOverkill;
     scene.player.score += score;
     this._refreshHP(monIdx, mon);
 

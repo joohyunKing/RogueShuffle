@@ -190,8 +190,9 @@
   <button class="filter-btn" data-filter="epic">Epic</button>
   <button class="filter-btn" data-filter="Y">사용 Y</button>
   <button class="filter-btn" data-filter="N">사용 N</button>
+  <div style="width: 1px; height: 20px; background: #444; margin: 0 5px;"></div>
+  <button class="filter-btn" id="btn-deploy" style="background:#4a2a2a; border-color:#e06060; color:#ff9999;">[언어배포] Copy lang.json</button>
 </div>
-
 <div class="grid" id="grid"></div>
 <p class="count" id="count"></p>
 
@@ -275,6 +276,37 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     currentFilter = btn.dataset.filter;
     render();
   });
+});
+
+document.getElementById('btn-deploy').addEventListener('click', async () => {
+  try {
+    const langRes = await fetch('/dev-data/lang.json');
+    if (!langRes.ok) throw new Error("lang.json fetch fallback");
+    const langData = await langRes.json();
+    
+    // Update KO
+    const koRelic = {};
+    const enRelic = langData.en?.relic ?? {};
+    
+    allRelics.forEach(r => {
+      koRelic[r.id] = { name: r.name, desc: r.description };
+      if (!enRelic[r.id]) {
+        enRelic[r.id] = { name: `[TODO] ${r.name}`, desc: `[TODO] ${r.description}` };
+      }
+    });
+    
+    langData.ko = langData.ko || {};
+    langData.ko.relic = koRelic;
+    
+    langData.en = langData.en || {};
+    langData.en.relic = enRelic;
+    
+    const newJson = JSON.stringify(langData, null, 2);
+    await navigator.clipboard.writeText(newJson);
+    alert('lang.json 코드가 클립보드에 복사되었습니다!\nsrc/data/lang.json 파일에 붙여넣기 하세요.');
+  } catch (err) {
+    alert('lang.json을 불러올 수 없습니다. dev 서버가 켜져 있는지 확인해주세요.\n' + err.message);
+  }
 });
 
 fetch('/dev-data/relic.json')

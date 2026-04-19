@@ -67,9 +67,9 @@ export class Player {
         this.relics = data.relics ?? [];
         //this.relics = data.relics ?? ["side_mirror", "one_eye"];  //test
         /** 유물 최대 보유 수 (deck.json 기준) */
-        this.maxRelicCount = data.maxRelicCount ?? DEFAULT_DECK.maxRelicCount;
+        this.maxRelicCount = DEFAULT_DECK.maxRelicCount;
         /** 아이템 최대 보유 수 (deck.json 기준) */
-        this.maxItemCount = data.maxItemCount ?? DEFAULT_DECK.maxItemCount;
+        this.maxItemCount = DEFAULT_DECK.maxItemCount;
         /**
          * 유물 3×3 슬롯 배치 (index 0~8, row=floor(i/3), col=i%3).
          * null = 빈 슬롯, string = relicId.
@@ -146,8 +146,8 @@ export class Player {
         while (this.xp >= getRequiredExp(this.level)) {
             this.xp -= getRequiredExp(this.level);
             this.level++;
-            this.maxHp += 2;
-            this.hp = Math.min(this.hp + 2, this.maxHp);
+            this.maxHp += 5;
+            this.hp = Math.min(this.hp + 5, this.maxHp);
             this.atk += 1;
             gained.push(this.level);
         }

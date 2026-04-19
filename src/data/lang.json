@@ -14,7 +14,7 @@
         "desc": "2 different pairs"
       },
       "TRIPLE": {
-        "name": "Three",
+        "name": "Trips",
         "desc": "3 cards of the same rank"
       },
       "STRAIGHT_DRAW": {
@@ -161,142 +161,161 @@
       },
       "alchemist_legend": {
         "name": "Fortify Alchemy",
-        "desc": "Select 4 hand cards. Randomly copy 1 card's suit & rank to the other 3."
+        "desc": "Select 3 hand cards. Copy the leftmost card's suit, rank & seal to the other 2."
       }
     },
     "relic": {
       "diamond_power": {
         "name": "Diamond Power",
-        "desc": "+10 score per Diamond card"
+        "desc": "+20 score per Diamond card"
       },
       "heart_power": {
-        "name": "Heart Blessing",
-        "desc": "+10 score per Heart card"
+        "name": "Heart's Blessing",
+        "desc": "+20 score per Heart card"
       },
       "spade_power": {
         "name": "Spade Power",
-        "desc": "+10 score per Spade card"
+        "desc": "+20 score per Spade card"
       },
       "club_power": {
         "name": "Club Power",
-        "desc": "+10 score per Club card"
+        "desc": "+20 score per Club card"
       },
       "pair_a": {
         "name": "Twin Ring",
-        "desc": "Pair score ×2"
+        "desc": "+6 Multi for One Pair"
       },
       "one_eye": {
         "name": "One-Eye Ring",
-        "desc": "High Card ×3"
+        "desc": "+8 Multi for High Card"
       },
       "triple": {
-        "name": "Triple Ring",
-        "desc": "Triple score ×2"
+        "name": "Triple",
+        "desc": "+7 Multi for Three of a Kind"
       },
       "two_pair": {
-        "name": "Two Pair Ring",
-        "desc": "Two Pair score ×2"
+        "name": "Two Pair",
+        "desc": "+8 Multi for Two Pair"
       },
       "avarice": {
-        "name": "Greed Pouch",
-        "desc": "+30 score if deck has 30+ cards"
+        "name": "Pouch of Avarice",
+        "desc": "+5 score per deck card over 30"
       },
       "straight_master": {
         "name": "Straight Master",
         "desc": "+60 score for Straight"
       },
       "relic_g": {
-        "name": "Flow of Water",
-        "desc": "Enables Flush Draw hand (4 of same suit)"
+        "name": "Water Flow",
+        "desc": "Enables FLUSH DRAW hand (4 of same suit)"
       },
       "relic_f": {
         "name": "All In",
         "desc": "Final score ×1.5"
       },
       "pair_tornado": {
-        "name": "Twin Storm",
+        "name": "Storm of Pairs",
         "desc": "One Pair attacks all enemies"
       },
       "triple_bomb": {
         "name": "Triple Bomb",
-        "desc": "Triple attacks all enemies"
+        "desc": "Three of a Kind attacks all enemies"
       },
       "relic_i": {
         "name": "Focused Flame",
-        "desc": "Flush targets single enemy, multiplier ×2"
+        "desc": "FLUSH becomes single target, Multiplier x2"
       },
       "relic_j": {
-        "name": "Red Heart",
-        "desc": "Hearts and Diamonds treated as same suit"
+        "name": "Crimson Heart",
+        "desc": "Treats Hearts and Diamonds as the same suit"
       },
       "relic_j2": {
         "name": "Black Heart",
-        "desc": "Spades and Clubs treated as same suit"
+        "desc": "Treats Spades and Clubs as the same suit"
       },
       "relic_k": {
         "name": "Golden Paradox",
-        "desc": "Gold ×2 when removed"
+        "desc": "Removing this artifact grants x2 Gold"
       },
       "pair_legacy": {
-        "name": "Pair Legacy",
-        "desc": "Pair usage count ×5 bonus points"
+        "name": "Legacy of Pair",
+        "desc": "+5 score per One Pair usage"
       },
       "triple_legacy": {
-        "name": "Triple Heritage",
-        "desc": "Triple usage count ×8 bonus points"
+        "name": "Legacy of Triple",
+        "desc": "+8 score per Three of a Kind usage"
       },
       "straight_legacy": {
-        "name": "Straight Path",
-        "desc": "Straight usage count ×12 bonus points"
+        "name": "Path of Straight",
+        "desc": "+12 score per Straight usage"
       },
       "mad_deck": {
-        "name": "Mad Deck",
-        "desc": "Score ×2.5 when 15 or fewer cards remain in deck"
+        "name": "Deck of Madness",
+        "desc": "If 15 or fewer cards remain in deck, Final Score x2.5"
       },
       "battle_chronicle": {
         "name": "Battle Chronicle",
-        "desc": "Total hand usage count ×3 bonus points"
+        "desc": "Sum of all hand usages x3 score"
       },
       "empty_hand": {
-        "name": "Empty Hand",
-        "desc": "Score ×1.3 per unused hand card"
+        "name": "Path of Empty Hand",
+        "desc": "Final Score x1.1 per unplayed card (x1.5 for 5)"
       },
       "low_card_master": {
-        "name": "Low Power",
-        "desc": "Score ×2 if total card value is below 25"
+        "name": "Power of Minorities",
+        "desc": "If sum of played cards < 25, Final Score x1.5"
       },
       "full_hp_focus": {
-        "name": "Full HP Focus",
-        "desc": "Score ×2 when at full HP"
+        "name": "Focus of Full HP",
+        "desc": "If HP is full, Final Score x1.5"
       },
       "straight_ring": {
-        "name": "Straight Ring",
-        "desc": "Straight score ×2"
+        "name": "Ring of Straight",
+        "desc": "Straight score x2"
       },
       "flush_ring": {
-        "name": "Flow Ring",
-        "desc": "Flush score ×2"
+        "name": "Ring of Flow",
+        "desc": "Flush score x2"
       },
       "full_house_ring": {
         "name": "Ring of Plenty",
-        "desc": "Full House score ×2"
+        "desc": "Full House score x2"
       },
       "four_ring": {
         "name": "Four Corners Ring",
-        "desc": "Four Card score ×2"
+        "desc": "Four Card score x2"
       },
       "str_flush_ring": {
         "name": "Ring of Completion",
-        "desc": "Straight Flush score ×2"
+        "desc": "Straight Flush score x2"
       },
       "five_ring": {
         "name": "Legendary Ring",
-        "desc": "Five Card score ×2"
+        "desc": "Five Card score x2"
+      },
+      "all_in": {
+        "name": "All In",
+        "desc": "Final Score x1.5"
+      },
+      "side_mirror": {
+        "name": "Lateral Resonator",
+        "desc": "Doubles the effect of horizontally adjacent artifacts"
+      },
+      "vertical_mirror": {
+        "name": "Vertical Resonator",
+        "desc": "Doubles the effect of vertically adjacent artifacts"
+      },
+      "x_cross": {
+        "name": "Mark of X",
+        "desc": "Final Score x1.5 (up to x3) per Diagonal Bingo"
       }
     },
     "ui": {
       "relicStack_perHand": "Now {pts}pts ({usage} uses)",
-      "relicStack_total": "Now {pts}pts (total {total})"
+      "relicStack_total": "Now {pts}pts (total {total})",
+      "bingo_h": "[Horizontal Bingo] Score Add +50",
+      "bingo_v": "[Vertical Bingo] Plus Multi +2",
+      "bingo_d": "[Diagonal Bingo] Times Multi x1.2"
     },
     "playerUI": {
       "def_lines": [
@@ -494,45 +513,45 @@
       },
       "alchemist_legend": {
         "name": "강화 연금술",
-        "desc": "핸드에서 4장 선택, 랜덤 1장의 suit/rank를 나머지 3장에 덮어씌움"
+        "desc": "핸드에서 3장 선택, 가장 왼쪽 카드의 suit/rank/seal을 나머지 2장에 덮어씌움"
       }
     },
     "relic": {
       "diamond_power": {
         "name": "다이아의 힘",
-        "desc": "다이아 카드마다 +10 점수"
+        "desc": "다이아 카드마다 +20 점수"
       },
       "heart_power": {
         "name": "하트의 축복",
-        "desc": "하트 카드마다 +10 점수"
+        "desc": "하트 카드마다 +20 점수"
       },
       "spade_power": {
         "name": "스페이드의 힘",
-        "desc": "스페이드 카드마다 +10 점수"
+        "desc": "스페이드 카드마다 +20 점수"
       },
       "club_power": {
         "name": "클럽의 힘",
-        "desc": "클럽 카드마다 +10 점수"
+        "desc": "클럽 카드마다 +20 점수"
       },
       "pair_a": {
         "name": "쌍둥이 반지",
-        "desc": "페어 점수 2배"
+        "desc": "페어 점수에 +6 배수를 더합니다."
       },
       "one_eye": {
         "name": "외눈반지",
-        "desc": "하이카드 3배"
+        "desc": "하이카드에 +8 배수를 더합니다."
       },
       "triple": {
         "name": "트리플",
-        "desc": "트리플 점수 2배"
+        "desc": "트리플 점수에 +7 배수를 더합니다."
       },
       "two_pair": {
         "name": "투페어",
-        "desc": "투페어 점수 2배"
+        "desc": "투페어 점수에 +8 배수를 더합니다"
       },
       "avarice": {
         "name": "탐욕의 주머니",
-        "desc": "덱이 30장 이상이면 +30 점수"
+        "desc": "덱이 30장 초과 시 초과 장당 +5 점수"
       },
       "straight_master": {
         "name": "스트레이트 장인",
@@ -542,7 +561,7 @@
         "name": "물의 흐름",
         "desc": "FLUSH DRAW 패 활성화 (같은 슈트 4장)"
       },
-      "relic_f": {
+      "all_in": {
         "name": "올인",
         "desc": "최종 점수 1.5배"
       },
@@ -592,15 +611,15 @@
       },
       "empty_hand": {
         "name": "빈손의 도",
-        "desc": "공격에 쓰지 않은 핸드 카드 1장당 점수 ×1.3"
+        "desc": "공격에 쓰지 않은 핸드 카드 1장당 최종 점수 ×1.1 (5장이면 ×1.5)"
       },
       "low_card_master": {
         "name": "소수의 힘",
-        "desc": "사용한 카드의 숫자 합이 25 미만이면 점수 ×2"
+        "desc": "사용한 카드의 숫자 합이 25 미만이면 점수 ×1.5"
       },
       "full_hp_focus": {
         "name": "만피의 집중",
-        "desc": "현재 HP가 최대 HP와 같을 때 점수 ×2"
+        "desc": "현재 HP가 최대 HP와 같을 때 점수 ×1.5"
       },
       "straight_ring": {
         "name": "직선의 반지",
@@ -625,11 +644,26 @@
       "five_ring": {
         "name": "전설의 반지",
         "desc": "파이브카드 점수 2배"
+      },
+      "side_mirror": {
+        "name": "측면 공명석",
+        "desc": "좌우에 배치된 유물의 효과를 2배로 적용합니다."
+      },
+      "vertical_mirror": {
+        "name": "상하 공명석",
+        "desc": "위아래에 배치된 유물의 효과를 2배로 적용합니다."
+      },
+      "x_cross": {
+        "name": "X의 표식",
+        "desc": "유물 슬롯의 대각선이 빙고될 때마다 최종 점수 ×1.5 (최대 ×3)"
       }
     },
     "ui": {
       "relicStack_perHand": "현재 {pts}점 ({usage}회 사용)",
-      "relicStack_total": "현재 {pts}점 (총 {total}회)"
+      "relicStack_total": "현재 {pts}점 (총 {total}회)",
+      "bingo_h": "[가로 빙고 효과] Base Score +50",
+      "bingo_v": "[세로 빙고 효과] Plus Multi +2",
+      "bingo_d": "[대각선 빙고 효과] times Multi x1.2"
     },
     "playerUI": {
       "def_lines": [

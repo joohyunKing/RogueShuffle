@@ -51,10 +51,12 @@
     {
       "id": "rainbow",
       "name": "Rainbow Seal",
-      "desc": "미구현",
+      "desc": "최종 점수 × 1.1",
       "border": "#ffffff",
+      "timesMultiBonus": 1.1,
+      "shopLabel": "×1.1배",
       "img": "rainbow_seal.png",
-      "usable": false
+      "usable": true
     }
   ]
 }

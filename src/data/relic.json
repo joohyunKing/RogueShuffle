@@ -147,7 +147,7 @@
     {
       "id": "avarice",
       "name": "탐욕의 주머니",
-      "description": "덱이 30장 초과 시 초과 장당 +5 점수 (곱셈 전)",
+      "description": "덱이 30장 초과 시 초과 장당 +5 점수",
       "rarity": "common",
       "img": "avarice.png",
       "useYn": "Y",
@@ -399,7 +399,7 @@
     {
       "id": "empty_hand",
       "name": "빈손의 도",
-      "description": "공격에 쓰지 않은 핸드 카드 1장당 점수 ×1.3",
+      "description": "공격에 쓰지 않은 핸드 카드 1장당 최종 점수 ×1.1 (5장이면 ×1.5)",
       "rarity": "rare",
       "img": "gems_11.png",
       "useYn": "Y",
@@ -407,7 +407,7 @@
         {
           "scope": "final",
           "type": "plusMultiPerHandRemaining",
-          "value": 0.3
+          "value": 0.1
         }
       ]
     },
@@ -582,6 +582,21 @@
           "scope": "special",
           "type": "verticalAmplify",
           "value": 2
+        }
+      ]
+    },
+    {
+      "id": "x_cross",
+      "name": "X의 표식",
+      "description": "유물 슬롯의 대각선이 빙고될 때마다 최종 점수 ×1.5 (최대 ×3)",
+      "rarity": "epic",
+      "img": "x_cross.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "final",
+          "type": "timesMultiPerDiagonalBingo",
+          "value": 1.5
         }
       ]
     }

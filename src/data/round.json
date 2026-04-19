@@ -87,9 +87,9 @@
         "zombie"
       ],
       "baseStat": {
-        "hp": 180,
+        "hp": 400,
         "atk": 8,
-        "def": 8
+        "def": 15
       },
       "battles": [
         {
@@ -128,9 +128,9 @@
         "goblin"
       ],
       "baseStat": {
-        "hp": 400,
+        "hp": 1500,
         "atk": 10,
-        "def": 13
+        "def": 30
       },
       "battles": [
         {
@@ -170,9 +170,9 @@
         "orc"
       ],
       "baseStat": {
-        "hp": 850,
+        "hp": 6000,
         "atk": 13,
-        "def": 18
+        "def": 80
       },
       "battles": [
         {
@@ -212,9 +212,9 @@
         "orc"
       ],
       "baseStat": {
-        "hp": 1800,
+        "hp": 30000,
         "atk": 17,
-        "def": 22
+        "def": 200
       },
       "battles": [
         {
@@ -253,9 +253,9 @@
         "human"
       ],
       "baseStat": {
-        "hp": 3600,
+        "hp": 150000,
         "atk": 22,
-        "def": 28
+        "def": 600
       },
       "battles": [
         {
@@ -294,9 +294,9 @@
         "human"
       ],
       "baseStat": {
-        "hp": 7500,
+        "hp": 800000,
         "atk": 30,
-        "def": 35
+        "def": 2000
       },
       "battles": [
         {
@@ -335,9 +335,9 @@
         "human"
       ],
       "baseStat": {
-        "hp": 16000,
+        "hp": 4000000,
         "atk": 40,
-        "def": 45
+        "def": 8000
       },
       "battles": [
         {
@@ -376,9 +376,9 @@
         "human"
       ],
       "baseStat": {
-        "hp": 35000,
+        "hp": 25000000,
         "atk": 55,
-        "def": 60
+        "def": 30000
       },
       "battles": [
         {
