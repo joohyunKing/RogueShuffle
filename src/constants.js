@@ -91,14 +91,15 @@ export const HAND_TOP = HAND_Y - CH / 2 - 18; // 535 — 드롭 판정 기준
 export const DEAL_DELAY = 110;
 
 export const DEBUG_MODE = true;
+export const SLOW_ANIM = false;
 
 // ─── 전투 시스템 애니메이션 속도 ──────────────────────────────────────────────
 export const ANIM_SPEED = {
-    orbFlight: DEBUG_MODE ? 440 : 220,     // 구슬 날아가는 시간
-    orbFade: DEBUG_MODE ? 220 : 130,       // 구슬 팽창하며 사라지는 시간
-    countUp: DEBUG_MODE ? 400 : 200,       // 점수 텍스트 오르는 시간
-    queueDelay: DEBUG_MODE ? 300 : 100,    // 다음 애니메이션 전 대기 시간
-    pulseCard: DEBUG_MODE ? 250 : 160,     // 카드 반짝임 지속 시간
-    mergeScale: DEBUG_MODE ? 500 : 300,    // 베이스×멀티 점수 합쳐질 때 커지는 연출
-    mergeDelay: DEBUG_MODE ? 600 : 400     // 연출 후 다음 단계까지 대기 시간
+    orbFlight: SLOW_ANIM ? 440 : 220,     // 구슬 날아가는 시간
+    orbFade: SLOW_ANIM ? 220 : 130,       // 구슬 팽창하며 사라지는 시간
+    countUp: SLOW_ANIM ? 400 : 200,       // 점수 텍스트 오르는 시간
+    queueDelay: SLOW_ANIM ? 300 : 100,    // 다음 애니메이션 전 대기 시간
+    pulseCard: SLOW_ANIM ? 250 : 160,     // 카드 반짝임 지속 시간
+    mergeScale: SLOW_ANIM ? 500 : 300,    // 베이스×멀티 점수 합쳐질 때 커지는 연출
+    mergeDelay: SLOW_ANIM ? 600 : 400     // 연출 후 다음 단계까지 대기 시간
 };

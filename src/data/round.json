@@ -166,8 +166,7 @@
       "round": 5,
       "bg": "05_old_stone_castle_2.jpg",
       "races": [
-        "goblin",
-        "orc"
+        "beast"
       ],
       "baseStat": {
         "hp": 5000,
@@ -291,7 +290,7 @@
       "round": 8,
       "bg": "08_hell.jpg",
       "races": [
-        "human"
+        "beast"
       ],
       "baseStat": {
         "hp": 800000,
@@ -332,7 +331,9 @@
       "round": 9,
       "bg": "09_hell_to_space.jpg",
       "races": [
-        "human"
+        "human",
+        "beast",
+        "orc"
       ],
       "baseStat": {
         "hp": 4000000,
