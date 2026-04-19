@@ -120,10 +120,12 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio("sfx_place", "assets/audio/sfx/card-place-1.ogg");
     this.load.audio("sfx_chop", "assets/audio/sfx/chop.ogg");
     this.load.audio("sfx_knifeSlice", "assets/audio/sfx/knifeSlice.ogg");
-    this.load.audio("sfx_orb", "assets/audio/sfx/monster_orb.wav");
+    //this.load.audio("sfx_orb", "assets/audio/sfx/monster_orb.wav");
+    this.load.audio("sfx_orb", "assets/audio/sfx/chips-stack-3.ogg");
     this.load.audio("sfx_lightning", "assets/audio/sfx/sfx_lightning.wav");
     this.load.audio("sfx_explosion", "assets/audio/sfx/sfx_explosion.wav");
-    this.load.audio("sfx_milestone", "assets/audio/sfx/sfx_milestone.wav");
+    //this.load.audio("sfx_milestone", "assets/audio/sfx/sfx_milestone.wav");
+    this.load.audio("sfx_milestone", "assets/audio/sfx/handleCoins.ogg");
     this.load.audio("sfx_tick", "assets/audio/sfx/sfx_tick.wav");
 
     // this.load.image("ui_deck", "assets/images/ui/deck.png");
