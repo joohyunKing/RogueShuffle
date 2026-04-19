@@ -217,6 +217,7 @@ export class BattleAnimationManager {
     const countUpScoreWithMilestone = (targetScore, duration, onDone) => {
       const startVal = currentScore;
       const milestones = [1000, 10000, 100000].filter(m => startVal < m && m <= targetScore);
+      const passed = [];
       const triggered = new Set();
       const tweenObj = { v: startVal };
 
@@ -237,7 +238,7 @@ export class BattleAnimationManager {
           for (const m of milestones) {
             if (!triggered.has(m) && currentScore >= m) {
               triggered.add(m);
-              punchMilestone();
+              passed.push(m);
             }
           }
         },
@@ -245,7 +246,24 @@ export class BattleAnimationManager {
           tickTimer.remove(); // 종료 시 타이머 제거
           currentScore = targetScore;
           scoreTxt.setText(getScoreStr());
-          onDone?.();
+
+          // 마일스톤이 하나라도 있었다면 순차적으로 터뜨림
+          if (passed.length > 0) {
+            let idx = 0;
+            const playNext = () => {
+              if (idx < passed.length) {
+                punchMilestone();
+                idx++;
+                this.scene.time.delayedCall(240, playNext);
+              } else {
+                // 모두 재생 완료 후 최종 콜백
+                onDone?.();
+              }
+            };
+            playNext();
+          } else {
+            onDone?.();
+          }
         },
       });
     };
