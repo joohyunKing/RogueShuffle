@@ -123,7 +123,6 @@ export class SpawnManager {
             def: Math.floor(base.def * atkDefMulti * raceMult.def * jobMult.def * rnd()),
 
             skill: monsterData.skill || null,
-            sprite: monsterData.sprite,
 
             xp: Math.floor(baseXp * statMulti * rnd()),
             gold: Math.floor(baseGold * statMulti * rnd())
@@ -156,6 +155,7 @@ export class SpawnManager {
             case "skell": result = { "hp": 0.8, "atk": 1.2, "def": 0.9 }; break;
             case "undead": result = { "hp": 0.8, "atk": 1.2, "def": 0.9 }; break;
             case "orc": result = { "hp": 1.2, "atk": 1.0, "def": 0.9 }; break;
+            case "beast": result = { "hp": 1.2, "atk": 1.0, "def": 0.9 }; break;
             default: result = { "hp": 1.0, "atk": 1.0, "def": 1.0 };
         }
 
@@ -174,6 +174,8 @@ export class SpawnManager {
             case "champion": result = { "hp": 1.4, "atk": 1.3, "def": 1.2 }; break;
             case "knight": result = { "hp": 1.2, "atk": 1.2, "def": 1.6 }; break;
             case "mage": result = { "hp": 0.8, "atk": 1.7, "def": 0.8 }; break;
+            case "wereWolf": result = { "hp": 1.2, "atk": 1.1, "def": 0.8 }; break;
+            case "wereBear": result = { "hp": 1.3, "atk": 1.0, "def": 0.8 }; break;
             default: result = { "hp": 1.0, "atk": 1.0, "def": 1.0 };
         }
 
@@ -236,7 +238,6 @@ export class SpawnManager {
             id: template.id,
             name: template.name,
             isBoss: true,
-            sprite: template.sprite,
 
             hp, maxHp: hp,
             atk: Math.floor(base.atk * multi * scale.atk),

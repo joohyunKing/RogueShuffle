@@ -109,12 +109,6 @@
         "probability": 15,
         "name": "strike",
         "damMult": 1.5
-      },
-      "sprite": {
-        "idle": "skell_warrior_idle.png",
-        "attack": "skell_warrior_attack.png",
-        "damaged": "skell_warrior_damaged.png",
-        "die": "skell_warrior_die.png"
       }
     },
     {
@@ -129,12 +123,6 @@
         "type": "debuff",
         "probability": 15,
         "debuffId": "weakness"
-      },
-      "sprite": {
-        "idle": "skell_archer_idle.png",
-        "attack": "skell_archer_attack.png",
-        "damaged": "skell_archer_damaged.png",
-        "die": "skell_archer_die.png"
       }
     },
     {
@@ -144,14 +132,7 @@
       "cost": 1,
       "race": "orc",
       "job": "archer",
-      "img": "orc_archer.png",
-      "sprite": {
-        "idle": "orc_archer_idle.png",
-        "attack": "orc_archer_attack.png",
-        "skill": "orc_archer_skill.png",
-        "damaged": "orc_archer_damaged.png",
-        "die": "orc_archer_die.png"
-      }
+      "img": "orc_archer.png"
     },
     {
       "id": "orc_warrior",
@@ -160,13 +141,7 @@
       "cost": 1,
       "race": "orc",
       "job": "warrior",
-      "img": "orc_warrior.png",
-      "sprite": {
-        "idle": "orc_warrior_idle.png",
-        "attack": "orc_warrior_attack.png",
-        "damaged": "orc_warrior_damaged.png",
-        "die": "orc_warrior_die.png"
-      }
+      "img": "orc_warrior.png"
     },
     {
       "id": "orc_mage",
@@ -175,14 +150,7 @@
       "cost": 2,
       "race": "orc",
       "job": "mage",
-      "img": "orc_mage.png",
-      "sprite": {
-        "idle": "orc_mage_idle.png",
-        "attack": "orc_mage_attack.png",
-        "skill": "orc_mage_skill.png",
-        "damaged": "orc_mage_damaged.png",
-        "die": "orc_mage_die.png"
-      }
+      "img": "orc_mage.png"
     },
     {
       "id": "human_warrior",
@@ -191,14 +159,7 @@
       "cost": 1,
       "race": "human",
       "job": "warrior",
-      "img": "human_warrior.png",
-      "sprite": {
-        "idle": "human_warrior_idle.png",
-        "attack": "human_warrior_attack.png",
-        "skill": "human_warrior_skill.png",
-        "damaged": "human_warrior_damaged.png",
-        "die": "human_warrior_die.png"
-      }
+      "img": "human_warrior.png"
     },
     {
       "id": "human_thief",
@@ -207,14 +168,7 @@
       "cost": 1,
       "race": "human",
       "job": "thief",
-      "img": "human_thief.png",
-      "sprite": {
-        "idle": "human_thief_idle.png",
-        "attack": "human_thief_attack.png",
-        "skill": "human_thief_skill.png",
-        "damaged": "human_thief_damaged.png",
-        "die": "human_warrior_die.png"
-      }
+      "img": "human_thief.png"
     },
     {
       "id": "human_archer",
@@ -222,14 +176,7 @@
       "useYn": "N",
       "cost": 2,
       "race": "human",
-      "job": "archer",
-      "sprite": {
-        "idle": "human_archer_idle.png",
-        "attack": "human_archer_attack.png",
-        "skill": "human_archer_skill.png",
-        "damaged": "human_archer_damaged.png",
-        "die": "human_archer_die.png"
-      }
+      "job": "archer"
     },
     {
       "id": "human_knight",
@@ -243,13 +190,35 @@
         "type": "debuff",
         "probability": 15,
         "debuffId": "weakness"
-      },
-      "sprite": {
-        "idle": "human_knight_idle.png",
-        "attack": "human_knight_attack.png",
-        "skill": "human_knight_skill.png",
-        "damaged": "human_knight_damaged.png",
-        "die": "human_knight_die.png"
+      }
+    },
+    {
+      "id": "beast_wereWolf",
+      "name": "웨어울프",
+      "useYn": "Y",
+      "cost": 2,
+      "race": "beast",
+      "job": "wereWolf",
+      "img": "wereWolf.png",
+      "skill": {
+        "type": "damage",
+        "probability": 15,
+        "name": "strike",
+        "damMult": 1.5
+      }
+    },
+    {
+      "id": "beast_wereBear",
+      "name": "웨어베어",
+      "useYn": "Y",
+      "cost": 2,
+      "race": "beast",
+      "job": "wereBear",
+      "img": "wereBear.png",
+      "skill": {
+        "type": "debuff",
+        "probability": 15,
+        "debuffId": "small_field"
       }
     },
     {
@@ -263,12 +232,6 @@
         "type": "debuff",
         "probability": 15,
         "debuffId": "small_field"
-      },
-      "sprite": {
-        "idle": "undead_lance_idle.png",
-        "attack": "undead_lance_attack.png",
-        "damaged": "undead_lance_damaged.png",
-        "die": "undead_lance_die.png"
       }
     },
     {
@@ -283,13 +246,6 @@
         "probability": 30,
         "name": "fireball",
         "damMult": 1.5
-      },
-      "sprite": {
-        "idle": "undead_mage_idle.png",
-        "attack": "undead_mage_attack.png",
-        "skill": "undead_mage_skill.png",
-        "damaged": "undead_mage_damaged.png",
-        "die": "undead_mage_die.png"
       }
     },
     {
@@ -303,12 +259,6 @@
         "type": "debuff",
         "probability": 30,
         "debuffId": "confusion"
-      },
-      "sprite": {
-        "idle": "undead_knight_idle.png",
-        "attack": "undead_knight_attack.png",
-        "damaged": "undead_knight_damaged.png",
-        "die": "undead_knight_die.png"
       }
     },
     {
@@ -322,14 +272,7 @@
         "type": "damage",
         "probability": 30,
         "name": "bash",
-        "damMult": 2.0
-      },
-      "sprite": {
-        "idle": "undead_warrior_idle.png",
-        "attack": "undead_warrior_attack.png",
-        "skill": "undead_warrior_skill.png",
-        "damaged": "undead_warrior_damaged.png",
-        "die": "undead_warrior_die.png"
+        "damMult": 2
       }
     }
   ]

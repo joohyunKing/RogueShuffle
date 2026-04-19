@@ -28,6 +28,7 @@ const DEBUFF_APPLIERS = {
   seal_most_and_last_hand:(dm, name)        => dm.applyMostAndLastHandSeal(name),
 };
 
+
 export class BossManager {
   constructor(scene) {
     this.scene = scene;
@@ -91,23 +92,29 @@ export class BossManager {
     this.activatePassive(boss, 'boss_turn');
   }
 
-  // ── 디버프 초기화 (첫 플레이어 턴에 한 번만 조용히 적용) ────────────────────
+  // ── 스킬 초기화 (첫 플레이어 턴에 한 번만 발동, boss.json의 initSkill:true인 보스만) ──
   _initDebuffIfNeeded(boss) {
     if (this._debuffInitialized) return;
+    this._debuffInitialized = true;
+
+    if (!boss.initSkill) return;
 
     const { scene } = this;
     const phase1 = [...boss.phases].sort((a, b) => b.hpThreshold - a.hpThreshold)[0];
 
-    const firstDebuffAction = (phase1?.actions ?? []).find(a => {
-      if (a.type !== 'skill') return false;
-      return DEBUFF_APPLIERS[boss.skills?.[a.skillId]?.type] != null;
-    });
-    if (!firstDebuffAction) return;
+    for (const action of (phase1?.actions ?? [])) {
+      if (action.type !== 'skill') continue;
+      const skill = boss.skills?.[action.skillId];
+      if (!skill) continue;
 
-    const skill = boss.skills?.[firstDebuffAction.skillId];
-    // 재진입 방지: apply 내부 render() 호출 시 무한루프 차단
-    this._debuffInitialized = true;
-    DEBUFF_APPLIERS[skill.type]?.(scene.debuffManager, boss.name, skill);
+      const applyDebuff = DEBUFF_APPLIERS[skill.type];
+      if (applyDebuff) {
+        applyDebuff(scene.debuffManager, boss.name, skill);
+      } else {
+        this._doSkill(boss, 0, action.skillId);
+      }
+      return;
+    }
   }
 
   // ── 보스 턴 실행 ─────────────────────────────────────────────────────────
