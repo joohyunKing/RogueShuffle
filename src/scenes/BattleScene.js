@@ -213,6 +213,9 @@ export class BattleScene extends Phaser.Scene {
       this.bossHPBar = new BossHPBarUI(this, this.monsters[0], this.bossManager);
       this.monsterViews[0].hideHPBar();
       this.monsterViews[0].hideStats();
+
+      // 전투 시작 시 초기 스킬 발동 (initSkill:true인 보스만)
+      this.bossManager.activatePassive(this.monsters[0], 'player_turn');
     }
 
     // BGM
