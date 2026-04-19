@@ -210,7 +210,7 @@ export class BattleAnimationManager {
         targets: flash, alpha: 0, duration: 300,
         onComplete: () => flash.destroy(),
       });
-      this.scene._sfx("sfx_explosion");
+      this.scene._sfx("sfx_milestone");
     };
 
     // 마일스톤 감지 포함 점수 카운트업 (merged 이후 전용)

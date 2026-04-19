@@ -86,7 +86,7 @@ export const TS = {
   itemCost: { fontFamily: defaultFont, fontSize: '13px', color: C.GOLD },
 
   // ── 툴팁 ────────────────────────────────────────────────────────────────
-  tooltipTxt: { fontFamily: defaultFont, fontSize: '13px', color: '#ffffff' },
+  tooltipTxt: { fontFamily: defaultFont, fontSize: '13px', color: '#ffffff', padding: { bottom: 4 } },
 
 
   // ── 숫자 ────────────────────────────────────────────────────────────────

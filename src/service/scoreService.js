@@ -2,8 +2,8 @@ import { HAND_RANK, HAND_DATA } from "../constants.js";
 import { relicMap } from '../manager/relicManager.js';
 import { sealMap } from '../manager/sealManager.js';
 
-const ADD_TYPES      = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage", "addPerExcessDeck"]);
-const PLUS_MULTI_TYPES = new Set(["plus_multi"]);
+const ADD_TYPES      = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage", "addPerExcessDeck", "addCurrentHp"]);
+const PLUS_MULTI_TYPES = new Set(["plus_multi", "plusMultiPerHandUsage"]);
 const TIMES_MULTI_TYPES = new Set(["times_multi", "timesMultiPerDiagonalBingo", "plusMultiPerHandRemaining"]);
 
 // calculateScore — getScoreDetails의 경량 wrapper (프리뷰용)
@@ -98,6 +98,7 @@ function checkCondition(cond, card, ctx) {
         if (cardSuit !== condSuit) return false;
     }
     if (cond.rank && card?.rank !== cond.rank) return false;
+    if (cond.rankIn && !cond.rankIn.includes(card?.rank)) return false;
 
     // 핸드 조건
     if (cond.handRank != null && ctx.handRank !== cond.handRank) return false;
@@ -154,6 +155,12 @@ function applyEffect(score, effect, card, ctx) {
             return score + usage * effect.value;
         }
 
+        // 현재 족보 사용 횟수 × value 배수 가산 (성장형 유물, hand scope)
+        case "plusMultiPerHandUsage": {
+            const usage = ctx.handUseCounts?.[ctx.handRank] ?? 0;
+            return score + usage * effect.value;
+        }
+
         // 전체 족보 사용 횟수 합산 × value 점수 가산 (성장형 유물, final scope 권장)
         case "addPerTotalHandUsage": {
             const total = Object.values(ctx.handUseCounts ?? {}).reduce((s, n) => s + n, 0);
@@ -165,6 +172,10 @@ function applyEffect(score, effect, card, ctx) {
             const excess = Math.max(0, (ctx.deckCount ?? 0) - (effect.threshold ?? 0));
             return score + excess * effect.value;
         }
+
+        // 현재 HP를 baseScore에 가산 (hand scope, 곱셈 전)
+        case "addCurrentHp":
+            return score + (ctx.hp ?? 0);
 
         default:
             return score;
@@ -232,6 +243,18 @@ function applyRelicEffects(startValue, relics, amplifierMap, scope, typeSet, del
 
         baseScorePool += deltaBase;
         plusMultiPool += deltaMulti;
+
+        // sealedCardEcho: 씰 강화된 카드의 점수 재발동 (deltaBase 한 번 더 추가)
+        if ((card.enhancements ?? []).length > 0) {
+            for (const relic of relics) {
+                for (const eff of (relic.effects ?? [])) {
+                    if (eff.scope === 'card' && eff.type === 'sealedCardEcho') {
+                        baseScorePool += deltaBase;
+                        cardRelicDeltas.push({ relicId: relic.id, type: 'base', delta: deltaBase });
+                    }
+                }
+            }
+        }
 
         return { card, baseScore, cardRelicDeltas, deltaBase, deltaMulti };
     });

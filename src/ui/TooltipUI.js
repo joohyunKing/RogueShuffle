@@ -39,7 +39,7 @@ export class TooltipUI {
     } = this.opts;
 
     const PAD = 12;
-    const TITLE_H = 28;
+    const TITLE_H = 32;
     const LINE_H = 20;
     const BTN_H = 34;
     const BTN_GAP = 10;
@@ -64,6 +64,7 @@ export class TooltipUI {
       titleMsg,
       contentMsg,
       titleMsgColor = '#ffffff',
+      titleFontSize = '16px',
       tooltipW = 210,
       left,
       top,
@@ -80,7 +81,7 @@ export class TooltipUI {
 
     const scene = this.scene;
     const PAD = 12;
-    const TITLE_H = 28;
+    const TITLE_H = 32;
     const LINE_H = 20;
     const BTN_H = 34;
     const BTN_GAP = 10;
@@ -112,8 +113,9 @@ export class TooltipUI {
     this._objs.push(
       scene.add.text(left + PAD, ty + PAD, titleMsg, {
         fontFamily: TS.defaultFont,
-        fontSize: '16px',
+        fontSize: titleFontSize,
         color: titleMsgColor,
+        padding: { bottom: 4 },
       }).setOrigin(0, 0).setDepth(depth + 1)
     );
 

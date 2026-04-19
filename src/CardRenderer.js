@@ -12,6 +12,7 @@ const SYM_URLS = {
   H: 'assets/images/symbol/hearts_symbol.png',
   C: 'assets/images/symbol/clubs_symbol.png',
   D: 'assets/images/symbol/diamonds_symbol.png',
+  B: 'assets/images/symbol/skull_symbol.png',
 };
 
 // 숫자 카드 pip 배치 좌표 (카드 폭/높이 비율)
@@ -80,7 +81,17 @@ export class CardRenderer {
    */
   static drawCard(scene, x, y, card, { width, height, depth = 0, disabled = false, objs = null } = {}) {
     const disKey = `${card.key}_disabled`;
-    const texKey = disabled && scene.textures.exists(disKey) ? disKey : card.key;
+    const baseKey = card.key;
+
+    // sym 이미지가 로드된 슈트면 텍스처 자동 생성 (B 슈트 등 커스텀 카드 지원)
+    if (!scene.textures.exists(baseKey) && scene.textures.exists(`sym_${card.suit}`)) {
+      CardRenderer._make(scene, card.suit, card.rank);
+    }
+    if (disabled && !scene.textures.exists(disKey) && scene.textures.exists(baseKey)) {
+      CardRenderer._makeDisabled(scene, card.suit, card.rank);
+    }
+
+    const texKey = disabled && scene.textures.exists(disKey) ? disKey : baseKey;
 
     let cardImg;
     if (scene.textures.exists(texKey)) {
@@ -89,8 +100,9 @@ export class CardRenderer {
     } else {
       // 폴백: 텍스처 없는 경우 색상 사각형 + 문자
       const isRed = card.suit === 'H' || card.suit === 'D';
+      const isBomb = card.suit === 'B';
       const bg = scene.add.graphics().setDepth(depth);
-      bg.fillStyle(isRed ? 0x2a0808 : 0x08102a);
+      bg.fillStyle(isBomb ? 0x2a0000 : isRed ? 0x2a0808 : 0x08102a);
       bg.fillRect(x - width / 2, y - height / 2, width, height);
       objs?.push(bg);
       cardImg = scene.add.text(x, y,
@@ -212,8 +224,9 @@ export class CardRenderer {
     const key = `${suit}${rank}`;
     const W = CW, H = CH;
     const isRed = suit === 'H' || suit === 'D';
-    const fgColor = isRed ? '#cc2222' : '#1a1a1a';
-    const bdColor = isRed ? '#cc2222' : '#333333';
+    const isBomb = suit === 'B';
+    const fgColor = isBomb ? '#8b0000' : isRed ? '#cc2222' : '#1a1a1a';
+    const bdColor = isBomb ? '#8b0000' : isRed ? '#cc2222' : '#333333';
     const symSrc = scene.textures.get(`sym_${suit}`).getSourceImage();
 
     const canvas = document.createElement('canvas');

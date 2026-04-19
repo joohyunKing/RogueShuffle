@@ -126,6 +126,7 @@ export class BattleScene extends Phaser.Scene {
     this._refreshContext();
 
     this.selected = new Set();
+    this.forcedSelectedUids = new Set();
     this.cardObjs = [];
     this._debuffObjs = [];
     this._debuffTipObjs = [];
@@ -1061,6 +1062,13 @@ export class BattleScene extends Phaser.Scene {
     const hoverW = Math.round(cardW * 1.35);
     const hoverH = Math.round(cardH * 1.35);
 
+    // 강제 선택 카드 자동 반영 (selected.clear() 이후에도 유지)
+    if (this.forcedSelectedUids?.size > 0) {
+      this.handData.forEach((card, i) => {
+        if (this.forcedSelectedUids.has(card.uid)) this.selected.add(i);
+      });
+    }
+
     this.handData.forEach((card, i) => {
       const sel = this.selected.has(i);
       const inCombo = sel && hasValidCombo && comboCardSet.has(card);
@@ -1069,7 +1077,15 @@ export class BattleScene extends Phaser.Scene {
       const y = sel ? HAND_Y - selOffset : HAND_Y;
 
       const isDisabled = this._isCardDisabled(card);
-      const { cardImg: img, sealImg } = CardRenderer.drawCard(this, x, y, card, { width: cardW, height: cardH, depth: sel ? 32 : 30, disabled: isDisabled, objs: this.cardObjs });
+      const isFlipped = card.flipped === true;
+      let img, sealImg;
+      if (isFlipped) {
+        img = this.add.image(x, y, 'card_back').setDisplaySize(cardW, cardH).setDepth(sel ? 32 : 30);
+        this.cardObjs.push(img);
+        sealImg = null;
+      } else {
+        ({ cardImg: img, sealImg } = CardRenderer.drawCard(this, x, y, card, { width: cardW, height: cardH, depth: sel ? 32 : 30, disabled: isDisabled, objs: this.cardObjs }));
+      }
 
       // 핸드 카드는 항상 드래그 가능 (순서 변경)
       img.setInteractive();
@@ -1394,6 +1410,7 @@ export class BattleScene extends Phaser.Scene {
 
   toggleHand(i) {
     if (this.selected.has(i)) {
+      if (this.forcedSelectedUids?.has(this.handData[i]?.uid)) return;
       this.selected.delete(i);
     } else {
       if (this.selected.size >= 5) return;
@@ -1458,6 +1475,11 @@ export class BattleScene extends Phaser.Scene {
   // ── 턴 종료 ──────────────────────────────────────────────────────────────
   onTurnEnd() {
     this.isDealing = true;
+
+    // 플립 해제 (샤먼 베일 효과는 플레이어 턴 동안만 지속)
+    this.handData.forEach(c => { delete c.flipped; });
+    // 강제 선택 해제 (바바리안 효과는 플레이어 턴 동안만 지속)
+    this.forcedSelectedUids?.clear();
 
     // first_turn_def 기믹 해제
     this.monsters?.forEach(m => {

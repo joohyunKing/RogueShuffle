@@ -243,6 +243,58 @@ export class BossManager {
       scene.addBattleLog(`${boss.name}의 ${skill.name}! +${amount} HP`);
       this._showEffect(monIdx, { ...EFFECT.heal, label: `+${amount} HP`, labelColor: '#44ff88' });
       scene.renderMonsters();
+
+    } else if (skill.type === 'force_select') {
+      const hand = scene.handData;
+      const available = hand.map((c, i) => i).filter(i => !scene.forcedSelectedUids?.has(hand[i].uid));
+      if (available.length > 0) {
+        const idx = available[Math.floor(Math.random() * available.length)];
+        const card = hand[idx];
+        scene.forcedSelectedUids = scene.forcedSelectedUids ?? new Set();
+        scene.forcedSelectedUids.add(card.uid);
+        scene.selected.add(idx);
+        scene.addBattleLog(`${boss.name}의 ${skill.name}! ${card.key} 강제 선택!`);
+      }
+      this._showEffect(monIdx, { color: 0xcc4400, alpha: 0.28, duration: 550, sfx: 'sfx_chop', label: 'FORCED!', labelColor: '#ffaa44' });
+      scene.render();
+
+    } else if (skill.type === 'hand_flip') {
+      const count = skill.count ?? 3;
+      const hand = scene.handData;
+      const indices = [...Array(hand.length).keys()];
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+      const picked = indices.slice(0, Math.min(count, indices.length));
+      picked.forEach(idx => { hand[idx].flipped = true; });
+      scene.addBattleLog(`${boss.name}의 ${skill.name}! 핸드 ${picked.length}장이 뒤집혔다!`);
+      this._showEffect(monIdx, { color: 0x9933cc, alpha: 0.30, duration: 600, sfx: 'sfx_shuffle', label: 'FLIP!', labelColor: '#dd88ff' });
+      scene.render();
+
+    } else if (skill.type === 'plant_bombs') {
+      const count = skill.count ?? 6;
+      const now = Date.now();
+      for (let i = 0; i < count; i++) {
+        const bomb = {
+          suit: 'B', rank: '0', val: 0, baseScore: -20,
+          key: 'B0', uid: `bomb_${now}_${i}`,
+          duration: 'temporary', _bomb: true,
+        };
+        const insertIdx = Math.floor(Math.random() * (scene.deck.deckPile.length + 1));
+        scene.deck.deckPile.splice(insertIdx, 0, bomb);
+      }
+      scene.addBattleLog(`${boss.name}의 ${skill.name}! 덱에 폭탄 ${count}장 매설!`);
+      this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 700, sfx: 'sfx_explosion', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
+      scene.refreshPlayerStats();
+
+    } else if (skill.type === 'deck_to_dummy') {
+      const count = skill.count ?? 5;
+      const moved = scene.deck.deckPile.splice(0, count);
+      scene.deck.dummyPile.push(...moved);
+      scene.addBattleLog(`${boss.name}의 ${skill.name}! 덱에서 ${moved.length}장을 더미로!`);
+      this._showEffect(monIdx, { ...EFFECT.debuff, label: `DISCARD ${moved.length}!`, labelColor: '#ff8844' });
+      scene.refreshPlayerStats();
     }
   }
 

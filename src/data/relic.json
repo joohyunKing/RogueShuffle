@@ -161,29 +161,11 @@
       ]
     },
     {
-      "id": "straight_master",
-      "name": "스트레이트 장인",
-      "description": "스트레이트일 경우 +60 점수",
+      "id": "flush_draw",
+      "name": "플러시 드로우",
+      "description": "플러시 드로우 활성화 (같은 슈트 4장)",
       "rarity": "rare",
-      "img": "STRAIGHT.png",
-      "useYn": "Y",
-      "effects": [
-        {
-          "scope": "hand",
-          "type": "add",
-          "value": 60,
-          "condition": {
-            "handRank": 6
-          }
-        }
-      ]
-    },
-    {
-      "id": "relic_g",
-      "name": "물의 흐름",
-      "description": "FLUSH DRAW 패 활성화 (같은 슈트 4장)",
-      "rarity": "rare",
-      "img": "gems_11.png",
+      "img": "f_rune.png",
       "useYn": "Y",
       "effects": [
         {
@@ -194,11 +176,26 @@
       ]
     },
     {
-      "id": "all_in",
-      "name": "올인",
+      "id": "str_draw",
+      "name": "스트레이트 드로우",
+      "description": "스트레이트 드로우 활성화 (이어진 숫자 4장)",
+      "rarity": "rare",
+      "img": "s_rune.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "enableHand",
+          "handRank": 4
+        }
+      ]
+    },
+    {
+      "id": "dragon_medal",
+      "name": "드래곤 메달",
       "description": "최종 점수 1.5배",
       "rarity": "epic",
-      "img": "gems_12.png",
+      "img": "dragon.png",
       "useYn": "Y",
       "effects": [
         {
@@ -241,11 +238,11 @@
       ]
     },
     {
-      "id": "relic_i",
+      "id": "focusing_fire",
       "name": "집중의 불꽃",
-      "description": "FLUSH 단일 공격, 배수 2배",
+      "description": "FLUSH 단일 공격, 최종 점수 ×3",
       "rarity": "epic",
-      "img": "gems_12.png",
+      "img": "fire_ball.png",
       "useYn": "Y",
       "effects": [
         {
@@ -255,19 +252,21 @@
           "value": false
         },
         {
-          "scope": "special",
-          "type": "multiplyHandMulti",
-          "handRank": 7,
-          "value": 2
+          "scope": "final",
+          "type": "times_multi",
+          "value": 3,
+          "condition": {
+            "handRank": 7
+          }
         }
       ]
     },
     {
-      "id": "relic_j",
-      "name": "붉은 심장",
-      "description": "하트와 다이아를 같은 수트로 인식",
-      "rarity": "rare",
-      "img": "lamp.png",
+      "id": "suit_merge",
+      "name": "수트 융합",
+      "description": "빨간 수트(♥♦)끼리, 검은 수트(♠♣)끼리 같은 수트로 인식",
+      "rarity": "epic",
+      "img": "suit_merge.png",
       "useYn": "Y",
       "effects": [
         {
@@ -275,17 +274,7 @@
           "type": "suitAlias",
           "suit": "H",
           "aliasTo": "D"
-        }
-      ]
-    },
-    {
-      "id": "relic_j2",
-      "name": "검은 심장",
-      "description": "스페이드와 클로버를 같은 수트로 인식",
-      "rarity": "rare",
-      "img": "lamp.png",
-      "useYn": "Y",
-      "effects": [
+        },
         {
           "scope": "special",
           "type": "suitAlias",
@@ -295,11 +284,11 @@
       ]
     },
     {
-      "id": "relic_k",
-      "name": "황금의 역설",
+      "id": "coin",
+      "name": "동전",
       "description": "제거 시 보유 골드 2배",
-      "rarity": "epic",
-      "img": "gems_12.png",
+      "rarity": "rare",
+      "img": "coin.png",
       "useYn": "Y",
       "effects": [
         {
@@ -346,17 +335,17 @@
       ]
     },
     {
-      "id": "straight_legacy",
-      "name": "스트레이트의 길",
-      "description": "스트레이트 사용 횟수 × 12점 추가",
+      "id": "straight_ring",
+      "name": "스트레이트의 반지",
+      "description": "스트레이트 사용 횟수 × 1 배수 추가",
       "rarity": "rare",
-      "img": "STRAIGHT.png",
+      "img": "jaguar.png",
       "useYn": "Y",
       "effects": [
         {
           "scope": "hand",
-          "type": "addPerHandUsage",
-          "value": 12,
+          "type": "plusMultiPerHandUsage",
+          "value": 1,
           "condition": {
             "handRank": 4
           }
@@ -368,7 +357,7 @@
       "name": "광기의 덱",
       "description": "덱에 남은 카드가 15장 이하면 점수 ×2.5",
       "rarity": "epic",
-      "img": "gems_12.png",
+      "img": "goat.png",
       "useYn": "Y",
       "effects": [
         {
@@ -401,7 +390,7 @@
       "name": "빈손의 도",
       "description": "공격에 쓰지 않은 핸드 카드 1장당 최종 점수 ×1.1 (5장이면 ×1.5)",
       "rarity": "rare",
-      "img": "gems_11.png",
+      "img": "brown.png",
       "useYn": "Y",
       "effects": [
         {
@@ -448,52 +437,16 @@
       ]
     },
     {
-      "id": "straight_ring",
-      "name": "직선의 반지",
-      "description": "스트레이트 점수 2배",
-      "rarity": "rare",
-      "img": "STRAIGHT.png",
-      "useYn": "Y",
-      "effects": [
-        {
-          "scope": "hand",
-          "type": "plus_multi",
-          "value": 2,
-          "condition": {
-            "handRank": 6
-          }
-        }
-      ]
-    },
-    {
-      "id": "flush_ring",
-      "name": "흐름의 반지",
-      "description": "플러쉬 점수 2배",
-      "rarity": "rare",
-      "img": "gems_11.png",
-      "useYn": "Y",
-      "effects": [
-        {
-          "scope": "hand",
-          "type": "plus_multi",
-          "value": 2,
-          "condition": {
-            "handRank": 7
-          }
-        }
-      ]
-    },
-    {
-      "id": "full_house_ring",
-      "name": "풍요의 반지",
+      "id": "full_house_lamp",
+      "name": "풍요의 등불",
       "description": "풀하우스 점수 2배",
       "rarity": "epic",
-      "img": "gems_12.png",
+      "img": "lamp.png",
       "useYn": "Y",
       "effects": [
         {
-          "scope": "hand",
-          "type": "plus_multi",
+          "scope": "final",
+          "type": "times_multi",
           "value": 2,
           "condition": {
             "handRank": 8
@@ -506,12 +459,12 @@
       "name": "사방의 반지",
       "description": "포카드 점수 2배",
       "rarity": "epic",
-      "img": "gems_12.png",
+      "img": "four_ring.png",
       "useYn": "Y",
       "effects": [
         {
-          "scope": "hand",
-          "type": "plus_multi",
+          "scope": "final",
+          "type": "times_multi",
           "value": 2,
           "condition": {
             "handRank": 9
@@ -522,15 +475,15 @@
     {
       "id": "str_flush_ring",
       "name": "완성의 반지",
-      "description": "스트레이트 플러쉬 점수 2배",
+      "description": "스트레이트 플러쉬 점수 3배",
       "rarity": "epic",
-      "img": "gems_12.png",
+      "img": "masc_b.png",
       "useYn": "Y",
       "effects": [
         {
-          "scope": "hand",
-          "type": "plus_multi",
-          "value": 2,
+          "scope": "final",
+          "type": "times_multi",
+          "value": 3,
           "condition": {
             "handRank": 10
           }
@@ -540,15 +493,15 @@
     {
       "id": "five_ring",
       "name": "전설의 반지",
-      "description": "파이브카드 점수 2배",
+      "description": "파이브카드 점수 3배",
       "rarity": "epic",
-      "img": "gems_12.png",
+      "img": "five_ring.png",
       "useYn": "Y",
       "effects": [
         {
-          "scope": "hand",
-          "type": "plus_multi",
-          "value": 2,
+          "scope": "final",
+          "type": "times_multi",
+          "value": 3,
           "condition": {
             "handRank": 11
           }
@@ -586,6 +539,91 @@
       ]
     },
     {
+      "id": "odd_gem",
+      "name": "홀수의 보석",
+      "description": "A·3·5·7·9 카드 1장당 배수 +3",
+      "rarity": "rare",
+      "img": "blue_gem.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "card",
+          "type": "plus_multi",
+          "value": 3,
+          "condition": {
+            "rankIn": [
+              "A",
+              "3",
+              "5",
+              "7",
+              "9"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "even_gem",
+      "name": "짝수의 보석",
+      "description": "2·4·6·8·10 카드 1장당 배수 +3",
+      "rarity": "rare",
+      "img": "green_gem.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "card",
+          "type": "plus_multi",
+          "value": 3,
+          "condition": {
+            "rankIn": [
+              "2",
+              "4",
+              "6",
+              "8",
+              "10"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "face_gem",
+      "name": "귀족의 보석",
+      "description": "A·K·Q·J 카드 1장당 배수 +3",
+      "rarity": "rare",
+      "img": "red_gem.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "card",
+          "type": "plus_multi",
+          "value": 3,
+          "condition": {
+            "rankIn": [
+              "A",
+              "K",
+              "Q",
+              "J"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tree_of_life",
+      "name": "생명의 나무",
+      "description": "현재 HP만큼 점수 추가 (곱셈 전)",
+      "rarity": "epic",
+      "img": "tree.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "addCurrentHp"
+        }
+      ]
+    },
+    {
       "id": "x_cross",
       "name": "X의 표식",
       "description": "유물 슬롯의 대각선이 빙고될 때마다 최종 점수 ×1.5 (최대 ×3)",
@@ -597,6 +635,20 @@
           "scope": "final",
           "type": "timesMultiPerDiagonalBingo",
           "value": 1.5
+        }
+      ]
+    },
+    {
+      "id": "seal_echo",
+      "name": "강화 카드 재발동",
+      "description": "씰 강화된 카드로 공격 시, 해당 카드의 점수와 유물 효과를 한 번 더 계산합니다.",
+      "rarity": "epic",
+      "img": "r_rune.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "card",
+          "type": "sealedCardEcho"
         }
       ]
     }

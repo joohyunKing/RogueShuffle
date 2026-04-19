@@ -5,12 +5,6 @@
       "useYn": "Y",
       "name": "광전사",
       "img": "orc_lord.png",
-      "sprite": {
-        "idle": "berserker_idle.png",
-        "attack": "berserker_attack.png",
-        "damaged": "berserker_damaged.png",
-        "die": "berserker_die.png"
-      },
       "statScale": {
         "hp": 2,
         "atk": 1,
@@ -65,13 +59,6 @@
       "useYn": "Y",
       "name": "소환사",
       "img": "summoner.png",
-      "sprite": {
-        "idle": "summoner_idle.png",
-        "attack": "summoner_attack.png",
-        "damaged": "summoner_damaged.png",
-        "die": "summoner_die.png",
-        "skill": "summoner_attack.png"
-      },
       "statScale": {
         "hp": 1.5,
         "atk": 1.8,
@@ -121,13 +108,6 @@
       "useYn": "Y",
       "name": "트릭스터",
       "img": "trickster.png",
-      "sprite": {
-        "idle": "trickster_idle.png",
-        "attack": "trickster_attack.png",
-        "damaged": "trickster_damaged.png",
-        "die": "trickster_die.png",
-        "skill": "trickster_skill.png"
-      },
       "statScale": {
         "hp": 1.2,
         "atk": 1,
@@ -178,13 +158,6 @@
       "useYn": "Y",
       "name": "트릭스터B",
       "img": "tricksterB.png",
-      "sprite": {
-        "idle": "trickster_idle.png",
-        "attack": "trickster_attack.png",
-        "damaged": "trickster_damaged.png",
-        "die": "trickster_die.png",
-        "skill": "trickster_skill.png"
-      },
       "statScale": {
         "hp": 1.4,
         "atk": 1.1,
@@ -235,13 +208,6 @@
       "useYn": "Y",
       "name": "트롤",
       "img": "troll.png",
-      "sprite": {
-        "idle": "troll_idle.png",
-        "attack": "troll_attack.png",
-        "damaged": "troll_damaged.png",
-        "die": "troll_die.png",
-        "skill": "troll_skill.png"
-      },
       "statScale": {
         "hp": 1.5,
         "atk": 1.2,
@@ -295,16 +261,203 @@
       }
     },
     {
+      "id": "bomber",
+      "useYn": "Y",
+      "name": "폭격자",
+      "img": "skull_axe.png",
+      "statScale": {
+        "hp": 1.3,
+        "atk": 1.0,
+        "def": 0.6
+      },
+      "passive": null,
+      "phases": [
+        {
+          "hpThreshold": 0.5,
+          "label": "매설",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "bomb_plant"
+            },
+            {
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "hpThreshold": 0,
+          "label": "대폭발",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "bomb_plant"
+            },
+            {
+              "type": "skill",
+              "skillId": "bomb_plant"
+            }
+          ]
+        }
+      ],
+      "skills": {
+        "bomb_plant": {
+          "type": "plant_bombs",
+          "name": "폭탄 매설",
+          "count": 6
+        }
+      }
+    },
+    {
+      "id": "butcher",
+      "useYn": "Y",
+      "name": "도살자",
+      "img": "butcher.png",
+      "statScale": {
+        "hp": 1.5,
+        "atk": 1.2,
+        "def": 0.8
+      },
+      "passive": null,
+      "phases": [
+        {
+          "hpThreshold": 0.4,
+          "label": "도살",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "harvest"
+            },
+            {
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "hpThreshold": 0,
+          "label": "광란",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "harvest"
+            },
+            {
+              "type": "skill",
+              "skillId": "harvest"
+            }
+          ]
+        }
+      ],
+      "skills": {
+        "harvest": {
+          "type": "deck_to_dummy",
+          "name": "도살의 낫",
+          "count": 5
+        }
+      }
+    },
+    {
+      "id": "babarian",
+      "useYn": "Y",
+      "name": "바바리안",
+      "img": "baba.png",
+      "statScale": {
+        "hp": 1.4,
+        "atk": 1.4,
+        "def": 0.6
+      },
+      "passive": null,
+      "phases": [
+        {
+          "hpThreshold": 0.4,
+          "label": "강제",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "force_pick"
+            },
+            {
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "hpThreshold": 0,
+          "label": "광폭",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "force_pick"
+            },
+            {
+              "type": "skill",
+              "skillId": "force_pick"
+            },
+            {
+              "type": "attack"
+            }
+          ]
+        }
+      ],
+      "skills": {
+        "force_pick": {
+          "type": "force_select",
+          "name": "강제 선택"
+        }
+      }
+    },
+    {
+      "id": "shaman",
+      "useYn": "Y",
+      "name": "주술사",
+      "img": "shaman.png",
+      "statScale": {
+        "hp": 1.3,
+        "atk": 1.1,
+        "def": 0.7
+      },
+      "passive": null,
+      "phases": [
+        {
+          "hpThreshold": 0.5,
+          "label": "주술",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "card_veil"
+            },
+            {
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "hpThreshold": 0,
+          "label": "대주술",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "card_veil"
+            },
+            {
+              "type": "skill",
+              "skillId": "card_veil"
+            }
+          ]
+        }
+      ],
+      "skills": {
+        "card_veil": {
+          "type": "hand_flip",
+          "name": "베일",
+          "count": 3
+        }
+      }
+    },
+    {
       "id": "hexweaver",
       "useYn": "N",
       "name": "저주술사",
-      "sprite": {
-        "idle": "undead_mage_idle.png",
-        "attack": "undead_mage_attack.png",
-        "damaged": "undead_mage_damaged.png",
-        "die": "undead_mage_die.png",
-        "skill": "undead_mage_skill.png"
-      },
       "statScale": {
         "hp": 1.2,
         "atk": 1,
@@ -373,13 +526,6 @@
       "useYn": "Y",
       "name": "방어의 화신",
       "img": "iron_fortress.png",
-      "sprite": {
-        "idle": "human_knight_idle.png",
-        "attack": "human_knight_attack.png",
-        "damaged": "human_knight_damaged.png",
-        "die": "human_knight_die.png",
-        "skill": "human_knight_skill.png"
-      },
       "statScale": {
         "hp": 1.3,
         "atk": 1,
@@ -437,13 +583,6 @@
       "id": "mirror_knight",
       "useYn": "N",
       "name": "반사경",
-      "sprite": {
-        "idle": "trickster_idle.png",
-        "attack": "trickster_attack.png",
-        "damaged": "trickster_damaged.png",
-        "die": "trickster_die.png",
-        "skill": "trickster_skill.png"
-      },
       "statScale": {
         "hp": 1.1,
         "atk": 1.2,

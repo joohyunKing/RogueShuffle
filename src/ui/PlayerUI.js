@@ -3,6 +3,7 @@ import { TS, suitColors } from "../textStyles.js";
 import { getRequiredExp } from "../manager/playerManager.js";
 import { getLang, getHandName, getHandDesc, getPlayerUI } from "../service/langService.js";
 import deckData from "../data/deck.json";
+import { TooltipUI } from "./TooltipUI.js";
 
 function getDeckDisplayName(deckId) {
   return deckData.decks.find(d => d.deckId === deckId)?.deckName ?? deckId;
@@ -45,7 +46,7 @@ export class PlayerUI {
       ...opts,
     };
     this._objs = [];
-    this._tooltipObjs = [];
+    this._tooltip = new TooltipUI(scene, { tooltipW: 210, titleFontSize: '14px' });
     // mutable refs
     this.roundTxt = null;
     this.goldTxt = null;
@@ -313,40 +314,23 @@ export class PlayerUI {
     const [title, effect] = u[`suit_${suit}`];
     const cardLine = (u.suit_cards ?? '{n} × {sym}장')
       .replace('{n}', perCard).replace('{sym}', sym);
-    this._showTooltipAt([title, effect, cardLine], suitColors[suit], rowY);
+    this._showTooltipAt([title, effect + " " + cardLine], suitColors[suit], rowY);
   }
 
   _showTooltipAt(lines, color, rowY, tooltipW = 210) {
-    this._hideTooltip();
-    const { scene } = this;
-    const PW = PLAYER_PANEL_W;
-    const tx = PW + 12;
-    const ty = Math.min(rowY, GH - 100);
-    const tw = tooltipW, lineH = 20, pad = 12;
-    const th = pad * 2 + lines.length * lineH;
-    const colorN = parseInt(color.replace('#', ''), 16);
-
-    const g = scene.add.graphics().setDepth(300);
-    g.fillStyle(0x0a1e12, 0.95);
-    g.fillRoundedRect(tx, ty, tw, th, 6);
-    g.lineStyle(1, colorN);
-    g.strokeRoundedRect(tx, ty, tw, th, 6);
-    this._tooltipObjs.push(g);
-
-    lines.forEach((line, i) => {
-      const style = i === 0
-        ? { fontFamily: TS.defaultFont, fontSize: '13px', color }
-        : { fontFamily: 'Arial', fontSize: '16px', color: '#aaccbb' };
-      this._tooltipObjs.push(
-        scene.add.text(tx + pad, ty + pad + i * lineH, line, style)
-          .setOrigin(0, 0).setDepth(301)
-      );
+    this._tooltip.update({
+      titleMsg: lines[0],
+      contentMsg: lines.slice(1).join('\n'),
+      titleMsgColor: color,
+      tooltipW,
+      left: PLAYER_PANEL_W + 12,
+      centerY: rowY,
+      depth: 300
     });
   }
 
   _hideTooltip() {
-    this._tooltipObjs.forEach(o => o.destroy());
-    this._tooltipObjs = [];
+    this._tooltip.hide();
   }
 
   // ── 갱신 ─────────────────────────────────────────────────────────────────
