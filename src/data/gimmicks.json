@@ -6,7 +6,8 @@
       "img": "aoe.png",
       "description": "광역 공격 시 데미지 50% 감소",
       "type": "aoe_resist",
-      "damageMultiplier": 0.5
+      "damageMultiplier": 0.5,
+      "useYn": "Y"
     },
     {
       "id": "suit_resist",
@@ -14,7 +15,8 @@
       "img": "suit.png",
       "description": "{suit} 카드 공격 시 데미지 50% 감소",
       "type": "suit_resist",
-      "damageMultiplier": 0.5
+      "damageMultiplier": 0.5,
+      "useYn": "Y"
     },
     {
       "id": "small_hand_resist",
@@ -23,7 +25,8 @@
       "description": "4장 미만 공격 시 데미지 50% 감소",
       "type": "small_hand_resist",
       "threshold": 4,
-      "damageMultiplier": 0.5
+      "damageMultiplier": 0.5,
+      "useYn": "Y"
     },
     {
       "id": "first_turn_def",
@@ -31,7 +34,8 @@
       "img": "def.png",
       "description": "첫 턴에는 DEF 3배",
       "type": "first_turn_def",
-      "defMultiplier": 3
+      "defMultiplier": 3,
+      "useYn": "N"
     }
   ]
 }

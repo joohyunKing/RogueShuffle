@@ -222,6 +222,51 @@
       }
     },
     {
+      "id": "dragonian_archer",
+      "name": "드래고니안 궁수",
+      "useYn": "Y",
+      "cost": 1,
+      "race": "dragonian",
+      "job": "archer",
+      "img": "dragonian_archer.png",
+      "skill": {
+        "type": "damage",
+        "probability": 20,
+        "name": "snipe",
+        "damMult": 1.5
+      }
+    },
+    {
+      "id": "dragonian_warrior",
+      "name": "드래고니안 전사",
+      "useYn": "Y",
+      "cost": 1,
+      "race": "dragonian",
+      "job": "warrior",
+      "img": "dragonian_warrior.png",
+      "skill": {
+        "type": "damage",
+        "probability": 20,
+        "name": "bash",
+        "damMult": 1.5
+      }
+    },
+    {
+      "id": "dragonian_mage",
+      "name": "드래고니안 마법사",
+      "useYn": "Y",
+      "cost": 2,
+      "race": "dragonian",
+      "job": "mage",
+      "img": "dragonian_mage.png",
+      "skill": {
+        "type": "damage",
+        "probability": 20,
+        "name": "bolt",
+        "damMult": 1.6
+      }
+    },
+    {
       "id": "undead_lancer",
       "name": "언데드 랜서",
       "useYn": "N",

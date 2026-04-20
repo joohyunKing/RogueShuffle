@@ -103,12 +103,12 @@ export class SpawnManager {
         const jobMult = this.getJobStatMult(monsterData.job) || { hp: 1, atk: 1, def: 1 };
 
         const baseXp = 4 + roundData.round;
-        const baseGold = 2 + (roundData.round * 0.5);
+        const baseGold = 2 + (roundData.round * 0.7);
 
         // 엘리트/보스 스탯 보정 (HP는 온전히, ATK/DEF는 완만하게)
-        const atkDefMulti = 1 + (statMulti - 1) * 0.35; // statMulti 증가량의 35%만 적용 (예: 9배면 약 3.8배)
+        const atkDefMulti = 1 + (statMulti - 1) * 0.30; // statMulti 증가량의 35%만 적용 (예: 9배면 약 3.8배)
 
-        const hp = Math.floor(base.hp * statMulti * raceMult.hp * jobMult.hp * rnd());
+        const hp = this._roundHP(base.hp * statMulti * raceMult.hp * jobMult.hp * rnd());
 
         return {
             id: monsterData.id,
@@ -130,7 +130,7 @@ export class SpawnManager {
     }
 
     _assignGimmick(monster) {
-        const templates = gimmickData.gimmicks;
+        const templates = gimmickData.gimmicks.filter(g => g.useYn === 'Y');
         const template = randomPick(templates);
         const gimmick = { ...template };
 
@@ -145,6 +145,13 @@ export class SpawnManager {
         monster.gimmick = gimmick;
     }
 
+    _roundHP(val) {
+        if (!val || val <= 0) return 0;
+        if (val < 10) return Math.round(val);
+        const p = Math.pow(10, Math.floor(Math.log10(val)) - 1);
+        return Math.round(val / p) * p;
+    }
+
     getRaceStatMult(race) {
         let result = {};
 
@@ -156,6 +163,7 @@ export class SpawnManager {
             case "undead": result = { "hp": 0.8, "atk": 1.2, "def": 0.9 }; break;
             case "orc": result = { "hp": 1.2, "atk": 1.0, "def": 0.9 }; break;
             case "beast": result = { "hp": 1.2, "atk": 1.0, "def": 0.9 }; break;
+            case "dragonian": result = { "hp": 1.1, "atk": 1.0, "def": 1.1 }; break;
             default: result = { "hp": 1.0, "atk": 1.0, "def": 1.0 };
         }
 
@@ -222,7 +230,7 @@ export class SpawnManager {
         const template = bossData.bosses.find(b => b.id === bossId);
         if (!template) {
             console.warn(`Boss "${bossId}" not found in boss.json`);
-            const hp = Math.floor(base.hp * multi);
+            const hp = this._roundHP(base.hp * multi);
             return {
                 id: bossId, name: bossId, isBoss: true, hp, maxHp: hp,
                 atk: Math.floor(base.atk * multi), def: Math.floor(base.def * multi),
@@ -231,7 +239,7 @@ export class SpawnManager {
         }
 
         const scale = template.statScale ?? { hp: 1, atk: 1, def: 1 };
-        const hp = Math.floor(base.hp * multi * scale.hp);
+        const hp = this._roundHP(base.hp * multi * scale.hp);
         const def = Math.floor(base.def * multi * scale.def);
 
         return {

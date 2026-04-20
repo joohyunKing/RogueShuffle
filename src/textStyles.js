@@ -61,7 +61,7 @@ export const TS = {
   // ── 몬스터 ─────────────────────────────────────────────────────────────────
   monName: { fontFamily: defaultFont, fontSize: '13px', color: C.BRIGHT, stroke: C.DARK, strokeThickness: 2 },
   monStat: { fontFamily: defaultFont, fontSize: '12px', color: C.VALUE },
-  monHpText: { fontFamily: defaultFont, fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
+  monHpText: { fontFamily: defaultFont, fontSize: '13px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
   monStatNum: { fontFamily: defaultFont, fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 },
   monTarget: { fontFamily: defaultFont, fontSize: '13px', color: C.GOLD, stroke: '#000000', strokeThickness: 2 },
   monDead: { fontFamily: defaultFont, fontSize: '32px', color: C.HP },

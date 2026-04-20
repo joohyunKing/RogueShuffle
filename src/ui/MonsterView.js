@@ -42,9 +42,9 @@ export default class MonsterView {
     this._playIdle();
 
     // ── HP 바 (Ornate Frame)
-    const frameW = 110;
+    const frameW = 140;
     const frameH = 28;
-    this.barW = 84;
+    this.barW = 110;
 
     this.hpBarBg = scene.add.image(x, this.barY, "ui_hp_bar")
       .setDisplaySize(frameW, frameH)
@@ -77,12 +77,11 @@ export default class MonsterView {
       .setOrigin(0, 0.5)
       .setDepth(17);
 
-    // ── 기믹 아이콘 (HP 바 왼쪽)
+    // ── 기믹 아이콘 (몬스터 이미지 위쪽 센터)
     const ICON_SIZE = 2;
-    const HP_FRAME_HALF = 55; // frameW(110) / 2
-    const iconX = x - HP_FRAME_HALF - ICON_SIZE / 2 - 5;
-    const iconY = this.barY + 10;
-    this._gimmickIconOffsetX = -(HP_FRAME_HALF + 12);
+    const iconX = x;
+    const iconY = this.spriteY - imgH / 2 - 12;
+    this._gimmickIconOffsetX = 0;
     this._gimmickIconY = iconY;
     this._tooltip = null;
 
@@ -113,6 +112,18 @@ export default class MonsterView {
     this.hitArea.on("pointerdown", () => {
       if (this.onClick) this.onClick(this.idx);
     });
+  }
+
+  _formatHP(val) {
+    if (val >= 1000000) {
+      const v = (val / 1000000).toFixed(1);
+      return v.endsWith('.0') ? v.slice(0, -2) + 'M' : v + 'M';
+    }
+    if (val >= 10000) {
+      const v = (val / 1000).toFixed(1);
+      return v.endsWith('.0') ? v.slice(0, -2) + 'K' : v + 'K';
+    }
+    return val.toString();
   }
 
   // ── Idle tween (위아래 부유) ────────────────────────────────────────────────
@@ -251,7 +262,7 @@ export default class MonsterView {
     this.hpBar.width = Math.max(1, this.barW * hpRatio);
     this.hpBar.fillColor = hpColor;
 
-    this.hpText.setText(`${mon.hp}/${mon.maxHp}`);
+    this.hpText.setText(`${this._formatHP(mon.hp)}/${this._formatHP(mon.maxHp)}`);
 
     // ── ATK / DEF
     this.atkText.setText(mon.atk);
@@ -287,7 +298,7 @@ export default class MonsterView {
           0xdd3333;
     this.hpBar.width = Math.max(1, this.barW * hpRatio);
     this.hpBar.fillColor = hpColor;
-    this.hpText.setText(`${mon.hp}/${mon.maxHp}`);
+    this.hpText.setText(`${this._formatHP(mon.hp)}/${this._formatHP(mon.maxHp)}`);
     this.atkText.setText(mon.atk);
     this.defText.setText(mon.def);
   }
