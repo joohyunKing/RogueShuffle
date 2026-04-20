@@ -1,8 +1,82 @@
 {
   "bosses": [
     {
+      "id": "troll",
+      "useYn": "N",
+      "name": "트롤",
+      "img": "troll.png",
+      "statScale": {
+        "hp": 1.5,
+        "atk": 1.2,
+        "def": 1
+      },
+      "passive": {
+        "name": "철벽의 요새",
+        "description": "체력이 30% 이상일 때 방어력이 2배가 됩니다.",
+        "triggerOn": "boss_turn",
+        "type": "def_multiply_when_healthy",
+        "threshold": 0.3,
+        "value": 2
+      },
+      "phases": [
+        {
+          "hpThreshold": 0.3,
+          "label": "재생",
+          "passive": {
+            "name": "재생",
+            "description": "매 보스 턴 종료 시 최대 체력의 5%를 회복합니다.",
+            "type": "heal_per_turn",
+            "ratio": 0.05,
+            "triggerOn": "boss_turn"
+          },
+          "actions": [
+            {
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "hpThreshold": 0,
+          "label": "초재생/광포",
+          "passive": {
+            "name": "초재생",
+            "description": "매 보스 턴 종료 시 최대 체력의 10%를 회복합니다.",
+            "type": "heal_per_turn",
+            "ratio": 0.1,
+            "triggerOn": "boss_turn"
+          },
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "power_strike"
+            }
+          ]
+        }
+      ],
+      "skills": {
+        "power_strike": {
+          "type": "damage",
+          "name": "강력한 내려찍기",
+          "description": "플레이어에게 1.5배의 강력한 피해를 입힙니다.",
+          "damMult": 1.5
+        },
+        "regenerate": {
+          "type": "heal_lost_hp",
+          "name": "재생력",
+          "description": "잃은 체력의 10%를 회복합니다.",
+          "ratio": 0.1
+        },
+        "fierce_regenerate": {
+          "type": "heal_lost_hp",
+          "name": "광포한 재생력",
+          "description": "잃은 체력의 20%를 회복합니다.",
+          "ratio": 0.2
+        }
+      }
+    },
+    {
       "id": "berserker",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "광전사",
       "img": "orc_lord.png",
       "statScale": {
@@ -11,6 +85,8 @@
         "def": 1
       },
       "passive": {
+        "name": "광폭화",
+        "description": "매 턴마다 보스의 공격력이 증가합니다.",
         "type": "atk_per_turn",
         "value": 1,
         "triggerOn": "boss_turn"
@@ -20,10 +96,6 @@
           "hpThreshold": 0.3,
           "label": "일반",
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "def_up"
-            },
             {
               "type": "attack"
             }
@@ -44,19 +116,21 @@
         "def_up": {
           "type": "buff",
           "name": "방어 자세",
+          "description": "방어력을 2 증가시킵니다.",
           "stat": "def",
           "value": 2
         },
         "berserker_rage": {
           "type": "damage",
           "name": "광전사 일격",
+          "description": "플레이어에게 2배의 피해를 입힙니다.",
           "damMult": 2
         }
       }
     },
     {
       "id": "summoner",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "소환사",
       "img": "summoner.png",
       "statScale": {
@@ -65,6 +139,8 @@
         "def": 0.5
       },
       "passive": {
+        "name": "수호의 계약",
+        "description": "소환수가 전장에 있으면 방어력이 3배 증가합니다.",
         "type": "def_multiply_when_summoned",
         "value": 3,
         "triggerOn": "player_turn"
@@ -77,26 +153,11 @@
       ],
       "phases": [
         {
-          "hpThreshold": 0.4,
+          "hpThreshold": 0,
           "label": "소환",
           "actions": [
             {
               "type": "summon_or_attack"
-            },
-            {
-              "type": "summon_or_attack"
-            }
-          ]
-        },
-        {
-          "hpThreshold": 0,
-          "label": "맹공",
-          "actions": [
-            {
-              "type": "summon_or_attack"
-            },
-            {
-              "type": "attack"
             }
           ]
         }
@@ -108,7 +169,7 @@
       "useYn": "Y",
       "name": "트릭스터",
       "img": "trickster.png",
-      "initSkill": true,
+      "initSkillId": "disable_rank",
       "statScale": {
         "hp": 1.2,
         "atk": 1,
@@ -119,11 +180,13 @@
         {
           "hpThreshold": 0.5,
           "label": "속임수",
+          "passive": {
+            "name": "랭크 봉인",
+            "description": "특정 랭크의 카드를 사용 불가 상태로 만듭니다.",
+            "type": "rank_disable",
+            "triggerOn": "player_turn"
+          },
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "disable_rank"
-            },
             {
               "type": "attack"
             }
@@ -132,34 +195,27 @@
         {
           "hpThreshold": 0,
           "label": "대혼란",
+          "passive": {
+            "name": "슈트 봉인",
+            "description": "특정 슈트의 카드를 사용 불가 상태로 만듭니다.",
+            "type": "suit_disable",
+            "triggerOn": "player_turn"
+          },
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "disable_suit"
-            },
             {
               "type": "attack"
             }
           ]
         }
       ],
-      "skills": {
-        "disable_rank": {
-          "type": "rank_disable",
-          "name": "랭크 봉인"
-        },
-        "disable_suit": {
-          "type": "suit_disable",
-          "name": "슈트 봉인"
-        }
-      }
+      "skills": {}
     },
     {
       "id": "tricksterB",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "트릭스터B",
       "img": "tricksterB.png",
-      "initSkill": true,
+      "initSkillId": "seal_most_used",
       "statScale": {
         "hp": 1.4,
         "atk": 1.1,
@@ -172,10 +228,6 @@
           "label": "최다 봉인",
           "actions": [
             {
-              "type": "skill",
-              "skillId": "seal_most_used"
-            },
-            {
               "type": "attack"
             }
           ]
@@ -185,10 +237,6 @@
           "label": "이중 봉인",
           "actions": [
             {
-              "type": "skill",
-              "skillId": "seal_most_and_last"
-            },
-            {
               "type": "attack"
             }
           ]
@@ -197,74 +245,19 @@
       "skills": {
         "seal_most_used": {
           "type": "seal_most_used_hand",
-          "name": "족보 봉인"
+          "name": "족보 봉인",
+          "description": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다."
         },
         "seal_most_and_last": {
           "type": "seal_most_and_last_hand",
-          "name": "이중 족보 봉인"
-        }
-      }
-    },
-    {
-      "id": "troll",
-      "useYn": "Y",
-      "name": "트롤",
-      "img": "troll.png",
-      "statScale": {
-        "hp": 1.5,
-        "atk": 1.2,
-        "def": 1
-      },
-      "passive": {
-        "type": "def_multiply_when_healthy",
-        "threshold": 0.3,
-        "value": 1.5,
-        "triggerOn": "player_turn"
-      },
-      "phases": [
-        {
-          "hpThreshold": 0.3,
-          "label": "재생",
-          "actions": [
-            {
-              "type": "skill",
-              "skillId": "regenerate"
-            },
-            {
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "hpThreshold": 0,
-          "label": "광포",
-          "actions": [
-            {
-              "type": "skill",
-              "skillId": "fierce_regenerate"
-            },
-            {
-              "type": "attack"
-            }
-          ]
-        }
-      ],
-      "skills": {
-        "regenerate": {
-          "type": "heal_lost_hp",
-          "name": "재생력",
-          "ratio": 0.1
-        },
-        "fierce_regenerate": {
-          "type": "heal_lost_hp",
-          "name": "광포한 재생력",
-          "ratio": 0.2
+          "name": "이중 족보 봉인",
+          "description": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다."
         }
       }
     },
     {
       "id": "bomber",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "폭격자",
       "img": "skull_axe.png",
       "statScale": {
@@ -272,16 +265,18 @@
         "atk": 1.0,
         "def": 0.6
       },
-      "passive": null,
+      "passive": {
+        "name": "폭탄 매설",
+        "description": "매 턴마다 플레이어의 덱에 폭탄 카드 4장을 매설합니다.",
+        "type": "plant_bombs",
+        "value": 4,
+        "triggerOn": "boss_turn"
+      },
       "phases": [
         {
           "hpThreshold": 0.5,
           "label": "매설",
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "bomb_plant"
-            },
             {
               "type": "attack"
             }
@@ -292,12 +287,7 @@
           "label": "대폭발",
           "actions": [
             {
-              "type": "skill",
-              "skillId": "bomb_plant"
-            },
-            {
-              "type": "skill",
-              "skillId": "bomb_plant"
+              "type": "attack"
             }
           ]
         }
@@ -312,25 +302,27 @@
     },
     {
       "id": "butcher",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "도살자",
       "img": "butcher.png",
-      "initSkill": true,
+      "initSkillId": "harvest",
       "statScale": {
         "hp": 1.5,
         "atk": 1.2,
         "def": 0.8
       },
-      "passive": null,
+      "passive": {
+        "name": "도살의 낫",
+        "description": "매 턴마다 플레이어의 덱 상단 카드 4장을 폐기합니다.",
+        "type": "discard_deck",
+        "value": 4,
+        "triggerOn": "boss_turn"
+      },
       "phases": [
         {
           "hpThreshold": 0.4,
           "label": "도살",
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "harvest"
-            },
             {
               "type": "attack"
             }
@@ -340,10 +332,6 @@
           "hpThreshold": 0,
           "label": "광란",
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "harvest"
-            },
             {
               "type": "skill",
               "skillId": "harvest"
@@ -361,25 +349,27 @@
     },
     {
       "id": "babarian",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "바바리안",
       "img": "baba.png",
-      "initSkill": true,
+      "initSkillId": "force_pick",
       "statScale": {
         "hp": 1.4,
         "atk": 1.4,
         "def": 0.6
       },
-      "passive": null,
+      "passive": {
+        "name": "강제 선택",
+        "description": "매 턴 시작 시 플레이어의 카드를 한 장 강제로 선택하게 만듭니다.",
+        "type": "force_select",
+        "value": 1,
+        "triggerOn": "boss_turn"
+      },
       "phases": [
         {
           "hpThreshold": 0.4,
           "label": "강제",
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "force_pick"
-            },
             {
               "type": "attack"
             }
@@ -392,13 +382,6 @@
             {
               "type": "skill",
               "skillId": "force_pick"
-            },
-            {
-              "type": "skill",
-              "skillId": "force_pick"
-            },
-            {
-              "type": "attack"
             }
           ]
         }
@@ -412,25 +395,27 @@
     },
     {
       "id": "shaman",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "주술사",
       "img": "shaman.png",
-      "initSkill": true,
+      "initSkillId": "card_veil",
       "statScale": {
         "hp": 1.3,
         "atk": 1.1,
         "def": 0.7
       },
-      "passive": null,
+      "passive": {
+        "name": "베일",
+        "description": "매 턴마다 핸드의 카드 3장을 뒤집어 정보를 가립니다.",
+        "type": "hand_flip",
+        "value": 3,
+        "triggerOn": "boss_turn"
+      },
       "phases": [
         {
-          "hpThreshold": 0.5,
+          "hpThreshold": 0.2,
           "label": "주술",
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "card_veil"
-            },
             {
               "type": "attack"
             }
@@ -440,10 +425,6 @@
           "hpThreshold": 0,
           "label": "대주술",
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "card_veil"
-            },
             {
               "type": "skill",
               "skillId": "card_veil"
@@ -468,7 +449,12 @@
         "atk": 1,
         "def": 0.7
       },
-      "passive": null,
+      "passive": {
+        "name": "저주의 숨결",
+        "description": "매 턴마다 무작위 저주를 플레이어에게 부여합니다.",
+        "type": "random_debuff",
+        "triggerOn": "boss_turn"
+      },
       "phases": [
         {
           "hpThreshold": 0.45,
@@ -509,26 +495,30 @@
         "curse_atk": {
           "type": "debuff",
           "name": "저주: 약화",
+          "description": "플레이어의 공격력을 감소시킵니다.",
           "debuffId": "atk_down"
         },
         "curse_rank": {
           "type": "rank_disable",
-          "name": "저주: 랭크 봉인"
+          "name": "저주: 랭크 봉인",
+          "description": "특정 랭크의 카드를 사용할 수 없게 합니다."
         },
         "curse_hand": {
           "type": "debuff",
           "name": "저주: 혼란",
+          "description": "핸드 크기를 줄이거나 드로우를 방해합니다.",
           "debuffId": "hand_down"
         },
         "curse_suit": {
           "type": "suit_disable",
-          "name": "저주: 슈트 봉인"
+          "name": "저주: 슈트 봉인",
+          "description": "특정 슈트의 카드를 사용할 수 없게 합니다."
         }
       }
     },
     {
       "id": "iron_fortress",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "방어의 화신",
       "img": "iron_fortress.png",
       "statScale": {
@@ -537,6 +527,8 @@
         "def": 1.8
       },
       "passive": {
+        "name": "철벽의 요새",
+        "description": "체력이 50% 이상일 때 방어력이 3배가 됩니다.",
         "triggerOn": "boss_turn",
         "type": "def_multiply_when_healthy",
         "threshold": 0.5,
@@ -547,10 +539,6 @@
           "hpThreshold": 0.5,
           "label": "철벽 방어",
           "actions": [
-            {
-              "type": "skill",
-              "skillId": "fortify"
-            },
             {
               "type": "attack"
             }
@@ -563,9 +551,6 @@
             {
               "type": "skill",
               "skillId": "final_strike"
-            },
-            {
-              "type": "attack"
             }
           ]
         }
@@ -574,62 +559,15 @@
         "fortify": {
           "type": "buff",
           "name": "철벽 강화",
+          "description": "자신의 방어력을 10 증가시킵니다.",
           "stat": "def",
           "value": 10
         },
         "final_strike": {
           "type": "damage",
           "name": "결사 일격",
+          "description": "플레이어에게 2.2배의 강력한 피해를 입힙니다.",
           "damMult": 2.2
-        }
-      }
-    },
-    {
-      "id": "mirror_knight",
-      "useYn": "N",
-      "name": "반사경",
-      "statScale": {
-        "hp": 1.1,
-        "atk": 1.2,
-        "def": 1
-      },
-      "passive": {
-        "triggerOn": "boss_turn",
-        "type": "reflect_heal",
-        "ratio": 0.3
-      },
-      "phases": [
-        {
-          "hpThreshold": 0.4,
-          "label": "반사",
-          "actions": [
-            {
-              "type": "attack"
-            },
-            {
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "hpThreshold": 0,
-          "label": "강화 반사",
-          "actions": [
-            {
-              "type": "skill",
-              "skillId": "mirror_strike"
-            },
-            {
-              "type": "attack"
-            }
-          ]
-        }
-      ],
-      "skills": {
-        "mirror_strike": {
-          "type": "damage",
-          "name": "반사 일격",
-          "damMult": 1.8
         }
       }
     }

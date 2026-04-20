@@ -205,6 +205,11 @@ export class BattleScene extends Phaser.Scene {
 
     this._monsterSprites = this.monsterViews.map(v => v.sprite);
 
+    // 전역 클릭 리스너: 다른 곳 클릭 시 몬스터/보스 툴팁 숨김
+    this.input.on('pointerdown', () => {
+      this.monsterViews.forEach(v => v.hideTooltip());
+    });
+
     // 보스 전용 초기화
     this.bossManager = null;
     this.bossHPBar = null;
@@ -213,9 +218,6 @@ export class BattleScene extends Phaser.Scene {
       this.bossHPBar = new BossHPBarUI(this, this.monsters[0], this.bossManager);
       this.monsterViews[0].hideHPBar();
       this.monsterViews[0].hideStats();
-
-      // 전투 시작 시 초기 스킬 발동 (initSkill:true인 보스만)
-      this.bossManager.activatePassive(this.monsters[0], 'player_turn');
     }
 
     // BGM
@@ -423,6 +425,9 @@ export class BattleScene extends Phaser.Scene {
     this.animManager.startDealAnimation(this.handData, this.fieldData, () => {
       this.isDealing = false;
       this._applySortToHand();
+      if (this.isBoss && this.bossManager && this.monsters.length > 0) {
+        this.bossManager.activatePassive(this.monsters[0], 'player_turn');
+      }
       this.render();
       this._saveTurnState();
     });
@@ -1151,11 +1156,6 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 몬스터 렌더 ──────────────────────────────────────────────────────────
   renderMonsters() {
-    // 보스 패시브 (player_turn 트리거) 갱신
-    if (this.isBoss && this.bossManager && this.monsters.length > 0) {
-      this.bossManager.activatePassive(this.monsters[0], 'player_turn');
-    }
-
     const mons = this.monsterManager.monsters;
     const positions = this.monsterManager.calcMonsterPositions(mons.length);
 
@@ -1560,6 +1560,10 @@ export class BattleScene extends Phaser.Scene {
         if (shortage > 0 && drawLimit > 0 && this.deckData.length > 0) {
           const toDraw = Math.min(shortage, drawLimit, this.deckData.length);
           for (let i = 0; i < toDraw; i++) drawnCards.push(this.deckData.pop());
+        }
+
+        if (this.isBoss && this.bossManager && this.monsters.length > 0) {
+          this.bossManager.activatePassive(this.monsters[0], 'player_turn');
         }
 
         this.debuffManager.tick();

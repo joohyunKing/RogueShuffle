@@ -46,9 +46,14 @@ export class TooltipUI {
     const innerW = tooltipW - PAD * 2;
     // 한국어 포함 혼합 텍스트 기준 글자폭 9px (ASCII 7px, 한글 13px 절충)
     const charsPerLine = Math.max(1, Math.floor(innerW / 9));
-    const contentLines = contentMsg
-      ? Math.max(1, Math.ceil(contentMsg.length / charsPerLine))
-      : 0;
+    let contentLines = 0;
+    if (contentMsg) {
+      const paragraphs = contentMsg.split("\n");
+      paragraphs.forEach(p => {
+        const lines = Math.max(1, Math.ceil(p.length / charsPerLine));
+        contentLines += lines;
+      });
+    }
     const contentH = contentLines * LINE_H;
     const hasBtn = !!(onUse || btnDisabled || sold);
     const btnBlock = hasBtn ? BTN_GAP + BTN_H : 0;

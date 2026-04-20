@@ -7,6 +7,7 @@ export default class MonsterView {
     this.mon = mon;
     this.idx = idx;
     this.onClick = onClick;
+    this._canBeTarget = false;
     this._idleTween = null;
     this._isDead = false;
 
@@ -110,8 +111,18 @@ export default class MonsterView {
       .setInteractive();
 
     this.hitArea.on("pointerdown", () => {
-      if (this.onClick) this.onClick(this.idx);
+      this.hideTooltip();
+      if (this._canBeTarget && this.onClick) this.onClick(this.idx);
     });
+
+    if (this.mon.isBoss) {
+      this.hitArea.on('pointerover', () => this._showBossTip());
+      this.hitArea.on('pointerout', () => this.hideTooltip());
+    } else {
+      // 일반 몬스터도 기믹 팁은 상시 확인 가능하도록 처리
+      this.hitArea.on('pointerover', () => this._showGimmickTip());
+      this.hitArea.on('pointerout', () => this.hideTooltip());
+    }
   }
 
   _formatHP(val) {
@@ -216,6 +227,7 @@ export default class MonsterView {
     this._isDead = true;
     this._idleTween?.stop();
     this._idleTween = null;
+    this.hideTooltip();
     const baseY = this.sprite.y;
     this.scene.tweens.add({
       targets: this.sprite,
@@ -280,12 +292,11 @@ export default class MonsterView {
     }
 
     // ── ATTACK 표시
+    this._canBeTarget = canBeTarget;
     if (canBeTarget) {
       this.attackText.setVisible(true);
-      this.hitArea.setInteractive();
     } else {
       this.attackText.setVisible(false);
-      this.hitArea.disableInteractive();
     }
   }
 
@@ -314,7 +325,7 @@ export default class MonsterView {
   _showGimmickTip() {
     const g = this.mon?.gimmick;
     if (!g) return;
-    this._hideGimmickTip();
+    this.hideTooltip();
     const iconX = this.gimmickIcon.x;
     const left = iconX > 640 ? iconX - 225 : iconX + 20;
     this._tooltip = new TooltipUI(this.scene, {
@@ -329,7 +340,58 @@ export default class MonsterView {
     this._tooltip.show();
   }
 
-  _hideGimmickTip() {
+  _showBossTip() {
+    if (!this.mon || !this.mon.isBoss) return;
+    this.hideTooltip();
+
+    const boss = this.mon;
+    let content = "";
+
+    // 1. 공통 패시브
+    const globalPassives = Array.isArray(boss.passive) ? boss.passive : (boss.passive ? [boss.passive] : []);
+
+    // 2. 현재 페이즈 패시브 찾기
+    const hpRatio = boss.hp / boss.maxHp;
+    const sortedPhases = [...(boss.phases || [])].sort((a, b) => b.hpThreshold - a.hpThreshold);
+    const currentPhase = sortedPhases.find(p => hpRatio >= p.hpThreshold) ?? sortedPhases[sortedPhases.length - 1];
+
+    const phasePassives = currentPhase && currentPhase.passive
+      ? (Array.isArray(currentPhase.passive) ? currentPhase.passive : [currentPhase.passive])
+      : [];
+
+    const allPassives = [...globalPassives, ...phasePassives];
+
+    allPassives.forEach(p => {
+      if (p.name && p.description) {
+        content += `[${p.name}]\n${p.description}\n\n`;
+      }
+    });
+
+    // 3. 고유 규칙 (initSkillId)
+    if (boss.initSkillId && boss.skills?.[boss.initSkillId]) {
+      const s = boss.skills[boss.initSkillId];
+      content += `[특수: ${s.name}]\n${s.description}\n\n`;
+    }
+
+    if (!content) content = "특별한 기믹 정보가 없습니다.";
+
+    const iconX = this.sprite.x;
+    const tooltipW = 280;
+    const left = iconX > 640 ? iconX - (tooltipW + 25) : iconX + 25;
+
+    this._tooltip = new TooltipUI(this.scene, {
+      titleMsg: `${boss.name} (BOSS)`,
+      contentMsg: content.trim(),
+      titleMsgColor: '#ff4444',
+      tooltipW: tooltipW,
+      left,
+      centerY: this.spriteY,
+      depth: 350,
+    });
+    this._tooltip.show();
+  }
+
+  hideTooltip() {
     this._tooltip?.hide();
     this._tooltip = null;
   }
@@ -337,7 +399,7 @@ export default class MonsterView {
   destroy() {
     this._idleTween?.stop();
     this._idleTween = null;
-    this._hideGimmickTip();
+    this.hideTooltip();
     [
       this.sprite,
       this.hpBarBg, this.hpBar, this.hpText,

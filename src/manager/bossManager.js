@@ -5,27 +5,27 @@ import { TS } from '../textStyles.js';
 const ACTION_GAP = 1600; // 액션 간 딜레이(ms)
 
 // ── Orb 목표 좌표 ─────────────────────────────────────────────────────────────
-const ATK_ORB   = { x: PLAYER_PANEL_W / 2,      y: 152 };
-const DEBUFF_ORB = { x: PLAYER_PANEL_W + 24,     y: MONSTER_AREA_TOP + 58 };
+const ATK_ORB = { x: PLAYER_PANEL_W / 2, y: 152 };
+const DEBUFF_ORB = { x: PLAYER_PANEL_W + 24, y: MONSTER_AREA_TOP + 58 };
 
 // ── 이펙트 프리셋 (flash + sfx + 떠오르는 텍스트) ──────────────────────────────
 const EFFECT = {
-  hit:    { color: 0xcc0000, alpha: 0.25, duration: 480, sfx: 'sfx_chop' },
-  skill:  { color: 0xff2222, alpha: 0.40, duration: 600, sfx: 'sfx_knifeSlice' },
-  debuff: { color: 0x224400, alpha: 0.30, duration: 600, sfx: 'sfx_chop',    label: 'SEAL!',   labelColor: '#aaff44' },
-  buff:   { color: 0x4488ff, alpha: 0.20, duration: 500, sfx: 'sfx_chop',    label: 'BUFF!',   labelColor: '#88aaff' },
+  hit: { color: 0xcc0000, alpha: 0.25, duration: 480, sfx: 'sfx_chop' },
+  skill: { color: 0xff2222, alpha: 0.40, duration: 600, sfx: 'sfx_knifeSlice' },
+  debuff: { color: 0x224400, alpha: 0.30, duration: 600, sfx: 'sfx_chop', label: 'SEAL!', labelColor: '#aaff44' },
+  buff: { color: 0x4488ff, alpha: 0.20, duration: 500, sfx: 'sfx_chop', label: 'BUFF!', labelColor: '#88aaff' },
   summon: { color: 0x9900ff, alpha: 0.18, duration: 600, sfx: 'sfx_shuffle', label: 'SUMMON!', labelColor: '#dd88ff' },
-  heal:   { color: 0x004400, alpha: 0.25, duration: 600, sfx: 'sfx_chop' },
+  heal: { color: 0x004400, alpha: 0.25, duration: 600, sfx: 'sfx_chop' },
 };
 
 // ── 디버프 스킬 타입 → debuffManager 메서드 매핑 ─────────────────────────────
 // 새 디버프 스킬 추가 시 여기만 수정하면 _doSkill, _initDebuffIfNeeded 자동 반영
 const DEBUFF_APPLIERS = {
-  debuff:                 (dm, name, skill) => dm.applyDebuff(skill.debuffId, name),
-  rank_disable:           (dm, name)        => dm.applyRankDisable(name),
-  suit_disable:           (dm, name)        => dm.applySuitDisable(name),
-  seal_most_used_hand:    (dm, name)        => dm.applyMostUsedHandSeal(name),
-  seal_most_and_last_hand:(dm, name)        => dm.applyMostAndLastHandSeal(name),
+  debuff: (dm, name, skill) => dm.applyDebuff(skill.debuffId, name),
+  rank_disable: (dm, name) => dm.applyRankDisable(name),
+  suit_disable: (dm, name) => dm.applySuitDisable(name),
+  seal_most_used_hand: (dm, name) => dm.applyMostUsedHandSeal(name),
+  seal_most_and_last_hand: (dm, name) => dm.applyMostAndLastHandSeal(name),
 };
 
 
@@ -37,7 +37,7 @@ export class BossManager {
 
   // ── 현재 페이즈 판단 ─────────────────────────────────────────────────────
   getCurrentPhase(boss) {
-    const ratio  = boss.hp / boss.maxHp;
+    const ratio = boss.hp / boss.maxHp;
     const sorted = [...boss.phases].sort((a, b) => b.hpThreshold - a.hpThreshold);
     return sorted.find(p => ratio >= p.hpThreshold) ?? sorted[sorted.length - 1];
   }
@@ -50,13 +50,34 @@ export class BossManager {
       this._initDebuffIfNeeded(boss);
     }
 
-    const p = boss.passive;
-    if (!p || p.triggerOn !== trigger) return;
+    // 1. 공통 패시브
+    const globalPassives = Array.isArray(boss.passive) ? boss.passive : (boss.passive ? [boss.passive] : []);
+
+    // 2. 페이즈별 특정 패시브
+    const phase = this.getCurrentPhase(boss);
+    const phasePassives = phase && phase.passive
+      ? (Array.isArray(phase.passive) ? phase.passive : [phase.passive])
+      : [];
+
+    const allPassives = [...globalPassives, ...phasePassives];
+    if (allPassives.length === 0) return;
+
+    for (const p of allPassives) {
+      if (p.triggerOn !== trigger) continue;
+      this._applyPassiveEffect(boss, p);
+    }
+  }
+
+  _applyPassiveEffect(boss, p) {
+    const { scene } = this;
+    const monIdx = scene.monsters.indexOf(boss);
+    if (monIdx === -1) return;
 
     if (p.type === 'atk_per_turn') {
-      const gain = Math.floor(p.value * boss.statMulti);
+      const gain = Math.floor(p.value * (boss.statMulti ?? 1));
       boss.atk += gain;
       scene.addBattleLog(`[패시브] ${boss.name} ATK +${gain} (총 ${boss.atk})`);
+      scene.renderMonsters();
     }
 
     if (p.type === 'def_multiply_when_summoned') {
@@ -67,24 +88,112 @@ export class BossManager {
     }
 
     if (p.type === 'def_multiply_when_healthy') {
+      if (boss.baseDef === undefined) boss.baseDef = boss.def || 0;
       const ratio = boss.hp / boss.maxHp;
-      boss.def = ratio >= p.threshold
+      boss.def = ratio >= (p.threshold ?? 0.5)
         ? Math.floor(boss.baseDef * p.value)
         : boss.baseDef;
     }
 
     // 플레이어 턴 동안 받은 데미지의 일부를 보스 턴 시작 시 회복
     if (p.type === 'reflect_heal') {
-      const taken  = boss._damageTaken ?? 0;
+      const taken = boss._damageTaken ?? 0;
       boss._damageTaken = 0;
       const amount = Math.floor(taken * p.ratio);
       if (amount > 0) {
         boss.hp = Math.min(boss.maxHp, boss.hp + amount);
         scene.addBattleLog(`[반사] ${boss.name} ${amount} HP 흡수!`);
-        this._showEffect(0, { ...EFFECT.heal, label: `+${amount} HP`, labelColor: '#44ffcc' });
+        this._showEffect(monIdx, { ...EFFECT.heal, label: `+${amount} HP`, labelColor: '#44ffcc' });
         scene.renderMonsters();
       }
     }
+
+    if (p.type === 'plant_bombs') {
+      const count = p.value || 3;
+      this._plantBombs(count);
+      scene.addBattleLog(`[패시브] ${boss.name}의 매설! 폭탄 ${count}장 추가!`);
+      this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 600, sfx: 'sfx_explosion', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
+    }
+
+    if (p.type === 'discard_deck') {
+      const count = p.value || 3;
+      const moved = scene.deck.deckPile.splice(0, count);
+      scene.deck.dummyPile.push(...moved);
+      scene.addBattleLog(`[패시브] ${boss.name}의 도살! ${moved.length}장 폐기!`);
+      this._showEffect(monIdx, { ...EFFECT.debuff, label: `DISCARD ${moved.length}!`, labelColor: '#ff8844' });
+      scene.refreshPlayerStats();
+    }
+
+    if (p.type === 'hand_flip') {
+      const count = p.value || 2;
+      const hand = scene.handData;
+      const indices = [...Array(hand.length).keys()].filter(i => !hand[i].flipped);
+      if (indices.length > 0) {
+        Phaser.Utils.Array.Shuffle(indices);
+        const picked = indices.slice(0, Math.min(count, indices.length));
+        picked.forEach(idx => { hand[idx].flipped = true; });
+        scene.addBattleLog(`[패시브] ${boss.name}의 간섭! ${picked.length}장 뒤집힘!`);
+        this._showEffect(monIdx, { color: 0x9933cc, alpha: 0.30, duration: 600, sfx: 'sfx_shuffle', label: 'FLIP!', labelColor: '#dd88ff' });
+        scene.render();
+      }
+    }
+
+    if (p.type === 'heal_per_turn') {
+      const ratio = p.ratio || 0.05;
+      const amount = Math.floor(boss.maxHp * ratio);
+      if (boss.hp < boss.maxHp) {
+        boss.hp = Math.min(boss.maxHp, boss.hp + amount);
+        scene.addBattleLog(`[패시브] ${boss.name}의 초재생! HP +${amount} 회복`);
+        this._showEffect(monIdx, { color: 0x44ff44, alpha: 0.25, duration: 500, sfx: 'sfx_heal', label: 'REGEN', labelColor: '#88ff88' });
+        scene.renderMonsters();
+      }
+    }
+
+    if (p.type === 'force_select') {
+      const count = p.value || 1;
+      const hand = scene.handData;
+      let applied = 0;
+      for (let i = 0; i < count; i++) {
+        const available = hand.map((c, idx) => idx).filter(idx => !scene.forcedSelectedUids?.has(hand[idx].uid));
+        if (available.length === 0) break;
+        const idx = available[Math.floor(Math.random() * available.length)];
+        const card = hand[idx];
+        scene.forcedSelectedUids = scene.forcedSelectedUids ?? new Set();
+        scene.forcedSelectedUids.add(card.uid);
+        scene.selected.add(idx);
+        applied++;
+      }
+      if (applied > 0) {
+        scene.addBattleLog(`[패시브] ${boss.name}의 강제 선택!`);
+        this._showEffect(monIdx, { color: 0xcc4400, alpha: 0.28, duration: 550, sfx: 'sfx_chop', label: 'FORCED!', labelColor: '#ffaa44' });
+        scene.render();
+      }
+    }
+
+    if (p.type === 'rank_disable') {
+      scene.debuffManager.applyRankDisable(boss.name);
+      this._showEffect(monIdx, EFFECT.debuff);
+    }
+
+    if (p.type === 'suit_disable') {
+      scene.debuffManager.applySuitDisable(boss.name);
+      this._showEffect(monIdx, EFFECT.debuff);
+    }
+  }
+
+  _plantBombs(count) {
+    const { scene } = this;
+    const now = Date.now();
+    for (let i = 0; i < count; i++) {
+      const bomb = {
+        suit: 'B', rank: '0', val: 0, baseScore: -20,
+        key: 'B0', uid: `bomb_${now}_${i}`,
+        duration: 'temporary', _bomb: true,
+      };
+      const insertIdx = Math.floor(Math.random() * (scene.deck.deckPile.length + 1));
+      scene.deck.deckPile.splice(insertIdx, 0, bomb);
+    }
+    scene.refreshPlayerStats();
   }
 
   // ── 보스 턴 패시브 적용 (하위 호환용 래퍼) ───────────────────────────────
@@ -92,46 +201,33 @@ export class BossManager {
     this.activatePassive(boss, 'boss_turn');
   }
 
-  // ── 스킬 초기화 (첫 플레이어 턴에 한 번만 발동, boss.json의 initSkill:true인 보스만) ──
+  // ── 스킬 초기화 (첫 플레이어 턴에 한 번만 발동) ──────────────────────────
   _initDebuffIfNeeded(boss) {
     if (this._debuffInitialized) return;
     this._debuffInitialized = true;
 
-    if (!boss.initSkill) return;
-
-    const { scene } = this;
-    const phase1 = [...boss.phases].sort((a, b) => b.hpThreshold - a.hpThreshold)[0];
-
-    for (const action of (phase1?.actions ?? [])) {
-      if (action.type !== 'skill') continue;
-      const skill = boss.skills?.[action.skillId];
-      if (!skill) continue;
-
-      const applyDebuff = DEBUFF_APPLIERS[skill.type];
-      if (applyDebuff) {
-        applyDebuff(scene.debuffManager, boss.name, skill);
-      } else {
-        this._doSkill(boss, 0, action.skillId);
-      }
-      return;
+    if (boss.initSkillId) {
+      this._doSkill(boss, 0, boss.initSkillId);
     }
   }
 
   // ── 보스 턴 실행 ─────────────────────────────────────────────────────────
   doTurn(boss, onDone) {
     const { scene } = this;
+    const monIdx = scene.monsters.indexOf(boss);
 
-    this.applyPassive(boss);
+    // 턴 시작 시점의 페이즈를 미리 결정 (패시브 회복 등으로 인한 중간 변화 방지)
+    const phase = this.getCurrentPhase(boss);
+    const actions = phase.actions;
+
+    this.activatePassive(boss, 'boss_turn', phase);
     scene.refreshPlayerStats();
     scene.refreshBattleLog();
-
-    const phase   = this.getCurrentPhase(boss);
-    const actions = phase.actions;
 
     // 보스 행동
     actions.forEach((action, i) => {
       scene.time.delayedCall(i * ACTION_GAP + 200, () => {
-        this._executeAction(boss, 0, action);
+        this._executeAction(boss, monIdx, action);
         scene.refreshPlayerStats();
         scene.refreshBattleLog();
       });
@@ -141,7 +237,7 @@ export class BossManager {
     const summonedAlive = scene.monsters.filter(m => m.isSummoned && !m.isDead);
     summonedAlive.forEach((mon, si) => {
       const monIdx = scene.monsters.indexOf(mon);
-      const delay  = actions.length * ACTION_GAP + 200 + si * ACTION_GAP;
+      const delay = actions.length * ACTION_GAP + 200 + si * ACTION_GAP;
       scene.time.delayedCall(delay, () => {
         if (!mon.isDead) {
           this._doAttack(mon, monIdx);
@@ -179,8 +275,8 @@ export class BossManager {
     const { scene } = this;
 
     target.isDead = false;
-    target.hp     = Math.floor(target.maxHp * 0.5);
-    target.state  = 'idle';
+    target.hp = Math.floor(target.maxHp * 0.5);
+    target.state = 'idle';
 
     const targetIdx = scene.monsters.indexOf(target);
     // [기존 sprite 애니메이션 주석 처리 — MonsterView.revive()로 대체]
@@ -200,13 +296,11 @@ export class BossManager {
   // ── 일반 공격 ────────────────────────────────────────────────────────────
   _doAttack(boss, monIdx) {
     const { scene } = this;
-    const dmg = Math.max(0, boss.atk - scene.player.def);
+    const m = boss;
+    const dmg = Math.max(0, m.atk - scene.player.def);
     scene.player.hp = Math.max(0, scene.player.hp - dmg);
-    scene.addBattleLog(`${boss.name}의 공격! ${dmg} 데미지!`);
-    this._playAnim(boss, monIdx, 'attack');
-    const { mX, mY } = this._getMonSpritePos(monIdx);
-    scene.effects.throwOrb(mX, mY, ATK_ORB.x, ATK_ORB.y, 0xff4444);
-    this._showHitEffect(monIdx, dmg, false);
+    scene.addBattleLog(`${m.name}의 공격! ${dmg} 데미지!`);
+    scene.monsterManager._showMonsterAttack(monIdx, dmg);
   }
 
   // ── 스킬 ────────────────────────────────────────────────────────────────
@@ -233,10 +327,8 @@ export class BossManager {
       const dmg = Math.max(0, raw - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
       scene.addBattleLog(`${boss.name}의 ${skill.name}! ${dmg} 강력한 데미지!`);
-      const { mX, mY } = this._getMonSpritePos(monIdx);
-      scene.effects.throwOrb(mX, mY, ATK_ORB.x, ATK_ORB.y, 0xff2222);
-      this._showHitEffect(monIdx, dmg, true);
-
+      // 공격 연출 통합 (recoil + orb + hit effect)
+      scene.monsterManager._showMonsterAttack(monIdx, dmg);
     } else if (skill.type === 'buff') {
       const val = Math.floor(skill.value * boss.statMulti);
       boss[skill.stat] = (boss[skill.stat] ?? 0) + val;
@@ -244,7 +336,7 @@ export class BossManager {
       this._showEffect(monIdx, EFFECT.buff);
 
     } else if (skill.type === 'heal_lost_hp') {
-      const lost   = boss.maxHp - boss.hp;
+      const lost = boss.maxHp - boss.hp;
       const amount = Math.max(1, Math.floor(lost * skill.ratio));
       boss.hp = Math.min(boss.maxHp, boss.hp + amount);
       scene.addBattleLog(`${boss.name}의 ${skill.name}! +${amount} HP`);
@@ -281,19 +373,9 @@ export class BossManager {
 
     } else if (skill.type === 'plant_bombs') {
       const count = skill.count ?? 6;
-      const now = Date.now();
-      for (let i = 0; i < count; i++) {
-        const bomb = {
-          suit: 'B', rank: '0', val: 0, baseScore: -20,
-          key: 'B0', uid: `bomb_${now}_${i}`,
-          duration: 'temporary', _bomb: true,
-        };
-        const insertIdx = Math.floor(Math.random() * (scene.deck.deckPile.length + 1));
-        scene.deck.deckPile.splice(insertIdx, 0, bomb);
-      }
+      this._plantBombs(count);
       scene.addBattleLog(`${boss.name}의 ${skill.name}! 덱에 폭탄 ${count}장 매설!`);
       this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 700, sfx: 'sfx_explosion', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
-      scene.refreshPlayerStats();
 
     } else if (skill.type === 'deck_to_dummy') {
       const count = skill.count ?? 5;
@@ -353,8 +435,8 @@ export class BossManager {
     if (preset.label) {
       const txt = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H / 2, preset.label, {
         fontFamily: "'PressStart2P',Arial",
-        fontSize:   preset.labelSize ?? '14px',
-        color:      preset.labelColor ?? '#ffffff',
+        fontSize: preset.labelSize ?? '14px',
+        color: preset.labelColor ?? '#ffffff',
         stroke: '#000000', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(501);
       scene.tweens.add({ targets: txt, y: txt.y - 55, alpha: 0, duration: 650, delay: 80, ease: 'Power2.Out', onComplete: () => txt.destroy() });
@@ -364,16 +446,16 @@ export class BossManager {
   // ── 피격 이펙트 (데미지 라벨 위치가 일반 이펙트와 달라 별도 처리) ───────────────
   _showHitEffect(monIdx, damage, isSkill) {
     const { scene } = this;
-    const preset    = isSkill ? EFFECT.skill : EFFECT.hit;
+    const preset = isSkill ? EFFECT.skill : EFFECT.hit;
     const positions = scene.monsterManager.calcMonsterPositions(scene.monsters.length);
-    const mX        = positions[monIdx]?.x ?? GW / 2;
+    const mX = positions[monIdx]?.x ?? GW / 2;
 
     const flash = scene.add.rectangle(GW / 2, GH / 2, GW, GH, preset.color, preset.alpha).setDepth(500);
     scene.tweens.add({ targets: flash, alpha: 0, duration: preset.duration, onComplete: () => flash.destroy() });
     scene._sfx(preset.sfx);
 
     const label = damage > 0 ? `-${damage} HP` : 'BLOCKED!';
-    const txt   = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, TS.damageHit)
+    const txt = scene.add.text(mX, MONSTER_AREA_TOP + MONSTER_AREA_H + 8, label, TS.damageHit)
       .setOrigin(0.5, 0).setDepth(501);
     if (isSkill) txt.setTint(preset.color);
     scene.tweens.add({ targets: txt, y: 128, alpha: 0, duration: 480, delay: 80, ease: 'Power1.In', onComplete: () => txt.destroy() });

@@ -127,6 +127,7 @@ export class PreloadScene extends Phaser.Scene {
     //this.load.audio("sfx_milestone", "assets/audio/sfx/sfx_milestone.wav");
     this.load.audio("sfx_milestone", "assets/audio/sfx/handleCoins.ogg");
     this.load.audio("sfx_tick", "assets/audio/sfx/sfx_tick.wav");
+    this.load.audio("sfx_heal", "assets/audio/sfx/sfx_milestone.wav");
 
     // this.load.image("ui_deck", "assets/images/ui/deck.png");
     // this.load.image("ui_dummy", "assets/images/ui/dummy.png");

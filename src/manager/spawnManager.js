@@ -255,7 +255,7 @@ export class SpawnManager {
             phases: template.phases,
             passive: template.passive,
             skills: template.skills,
-            initSkill: template.initSkill,
+            initSkillId: template.initSkillId,
             statMulti: multi,
 
             xp: Math.floor((4 + roundData.round) * multi * 3),
