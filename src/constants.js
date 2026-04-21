@@ -22,6 +22,8 @@ export const RANKS = ["A", "2", "3", "4", "5"];
 
 // ─── hand rank  ──────────────────────────────────────────────────────────────
 export const HAND_RANK = {
+    FLUSH_FIVE: 13,       // 플러시 파이브 (같은 숫자 5장 + 같은 무늬)
+    FLUSH_FULL_HOUSE: 12, // 플러시 풀하우스 (트리플 + 페어 + 5장 모두 같은 무늬)
     FIVE_CARD: 11,        // 파이브카드 (같은 숫자 5장)
     STRAIGHT_FLUSH: 10,
     FOUR_OF_A_KIND: 9,
@@ -37,6 +39,8 @@ export const HAND_RANK = {
 };
 
 export const HAND_DATA = {
+    13: { key: "FLUSH_FIVE", multi: 12, aoe: true, enabled: true },
+    12: { key: "FLUSH_FULL_HOUSE", multi: 10, aoe: true, enabled: true },
     11: { key: "FIVE_CARD", multi: 8, aoe: true, enabled: true },
     10: { key: "STRAIGHT_FLUSH", multi: 7, aoe: true, enabled: true },
     9: { key: "FOUR_OF_A_KIND", multi: 6, aoe: true, enabled: true },

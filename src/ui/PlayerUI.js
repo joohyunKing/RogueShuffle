@@ -16,7 +16,9 @@ const SUIT_KEYS = ['S', 'H', 'D', 'C'];
 const getPUI = getPlayerUI;
 
 // 높은 rank → 낮은 rank 순으로 표시
-const HAND_RANKS_DESC = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+const HAND_RANKS_DESC = [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+// 발견/해금 전에는 숨겨둘 특수 족보들
+const RARE_RANKS = [11, 12, 13];
 
 /** 족보 rank → 표시 이름 */
 function getHandNameByRank(rank, lang) {
@@ -242,24 +244,25 @@ export class PlayerUI {
       ry += 8;
       this._add(scene.add.text(px, ry, "HANDS", TS.infoLabel).setDepth(D));
       ry += lineH + 2;
+      this._handsStartY = ry;
 
       const lang = getLang(scene);
       const enabledHands = p.getEnabledHands?.() ?? new Set(HAND_RANKS_DESC);
       const effHandCfg = p.getEffectiveHandConfig?.() ?? p.handConfig;
+
       HAND_RANKS_DESC.filter(rank => enabledHands.has(rank)).forEach(rank => {
-        const rowY = ry;  // 클로저용 고정값
+        const rowY = ry;
         const cfg = effHandCfg?.[rank] ?? { multi: 1, aoe: false };
         const isAoe = cfg.aoe;
         const handKey = HAND_DATA[rank]?.key;
         const desc = getHandDesc(lang, handKey);
 
-        // 반짝 효과용 glow 배경 (fillAlpha=1, 오브젝트 alpha=0으로 초기 숨김)
         const glowBg = this._add(
           scene.add.rectangle(pcx, rowY + lineH / 2, PW - 16, lineH, 0xffdd44)
             .setAlpha(0).setDepth(D - 1)
         );
 
-        this._add(scene.add.text(px, rowY, getHandNameByRank(rank, lang),
+        const labelTxt = this._add(scene.add.text(px, rowY, getHandNameByRank(rank, lang),
           TS.handRank).setDepth(D));
 
         const multiTxt = this._add(
@@ -273,19 +276,19 @@ export class PlayerUI {
             .setOrigin(1, 0).setDepth(D)
         );
 
-        // 행 전체 툴팁 hit area
         const rowHit = this._add(
           scene.add.rectangle(pcx, rowY + lineH / 2, PW - 16, lineH, 0xffffff, 0)
             .setDepth(D + 2).setInteractive()
         );
 
-        rowHit.on('pointerover', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.color.BRIGHT, rowY, 285));
+        rowHit.on('pointerover', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.color.BRIGHT, rowHit.y - lineH / 2, 285));
         rowHit.on('pointerout', () => this._hideTooltip());
-        rowHit.on('pointerdown', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.color.BRIGHT, rowY, 285));
+        rowHit.on('pointerdown', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.color.BRIGHT, rowHit.y - lineH / 2, 285));
 
-        this._handConfigRows[rank] = { multiTxt, aoeDot, glowBg };
+        this._handConfigRows[rank] = { labelTxt, multiTxt, aoeDot, glowBg, rowHit, lineH };
         ry += lineH;
       });
+      this._repositionHandRows(null);
     }
 
     // ── OPTIONS 버튼 ────────────────────────────────────────────────────────
@@ -383,6 +386,8 @@ export class PlayerUI {
 
   /** 족보 일치 행 반짝 효과. rank=null 이면 전체 해제 */
   highlightHand(rank) {
+    this._repositionHandRows(rank);
+
     HAND_RANKS_DESC.forEach(r => {
       const row = this._handConfigRows[r];
       if (!row?.glowBg) return;
@@ -396,6 +401,39 @@ export class PlayerUI {
       targets: row.glowBg,
       alpha: { from: 0.12, to: 0.52 },
       duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+  }
+
+  /** 족보 목록 재배치 (희귀 족보 노출/숨김) */
+  _repositionHandRows(currentRank) {
+    if (!this.opts.showHandConfig) return;
+    const p = this.player;
+    let currentY = this._handsStartY;
+
+    HAND_RANKS_DESC.forEach(rank => {
+      const row = this._handConfigRows[rank];
+      if (!row) return;
+
+      const usage = p.handUseCounts?.[rank] ?? 0;
+      const isRare = RARE_RANKS.includes(rank);
+      // 노출 조건: 희귀 족보가 아니거나, 한 번이라도 썼거나, 현재 선택된 족보이거나
+      const visible = !isRare || usage > 0 || rank === currentRank;
+
+      if (visible) {
+        const y = currentY;
+        row.labelTxt.setY(y).setVisible(true);
+        row.multiTxt.setY(y).setVisible(true);
+        row.aoeDot.setY(y).setVisible(true);
+        row.glowBg.setY(y + row.lineH / 2).setVisible(true);
+        row.rowHit.setY(y + row.lineH / 2).setVisible(true);
+        currentY += row.lineH;
+      } else {
+        row.labelTxt.setVisible(false);
+        row.multiTxt.setVisible(false);
+        row.aoeDot.setVisible(false);
+        row.glowBg.setVisible(false);
+        row.rowHit.setVisible(false);
+      }
     });
   }
 

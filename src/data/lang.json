@@ -48,6 +48,14 @@
       "FIVE_CARD": {
         "name": "Five Card",
         "desc": "5 cards of the same rank"
+      },
+      "FLUSH_FULL_HOUSE": {
+        "name": "Flush Full House",
+        "desc": "Flush + Full House"
+      },
+      "FLUSH_FIVE": {
+        "name": "Flush Five",
+        "desc": "Flush + Five Card"
       }
     },
     "item": {
@@ -400,6 +408,14 @@
       "FIVE_CARD": {
         "name": "파이브 카드",
         "desc": "같은 숫자 카드 5장"
+      },
+      "FLUSH_FULL_HOUSE": {
+        "name": "플러시 풀하우스",
+        "desc": "플러시 + 풀하우스"
+      },
+      "FLUSH_FIVE": {
+        "name": "플러시 파이브",
+        "desc": "플러시 + 파이브 카드"
       }
     },
     "item": {

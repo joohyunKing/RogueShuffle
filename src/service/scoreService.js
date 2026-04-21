@@ -350,39 +350,54 @@ function evaluateHand(cards, enabledHands, suitAliases) {
         return { rank, score: 0, aoe: false, cards: [] };
     }
 
-    // Five Card
-    if (groups[0] && groups[0].length === 5) {
-        rank = HAND_RANK.FIVE_CARD;
-        bestCards = groups[0];
-    }
-    // Straight Flush
-    else if (flushSuit && straightCards) {
-        const flushSet = new Set(suitMap[flushSuit].map(c => c.val));
-        const sf = straightCards.filter(c => flushSet.has(c.val));
-        if (sf.length >= 5) {
-            rank = HAND_RANK.STRAIGHT_FLUSH;
-            bestCards = sf.slice(0, 5);
+    // Flush Five
+    if (groups[0] && groups[0].length === 5 && flushSuit) {
+        const isFlushFive = groups[0].every(c => (suitAliases ? (suitAliases[c.suit] ?? c.suit) : c.suit) === flushSuit);
+        if (isFlushFive) {
+            rank = HAND_RANK.FLUSH_FIVE;
+            bestCards = groups[0];
         }
     }
-    // Four of a kind
-    else if (groups[0] && groups[0].length === 4) {
-        rank = HAND_RANK.FOUR_OF_A_KIND;
-        bestCards = [...groups[0]];
+    // Flush Full House
+    if (rank === HAND_RANK.HIGH_CARD && groups[0] && groups[0].length === 3 && groups[1] && groups[1].length === 2 && flushSuit) {
+        const combined = [...groups[0], ...groups[1]];
+        const isFlushFullHouse = combined.every(c => (suitAliases ? (suitAliases[c.suit] ?? c.suit) : c.suit) === flushSuit);
+        if (isFlushFullHouse) {
+            rank = HAND_RANK.FLUSH_FULL_HOUSE;
+            bestCards = combined;
+        }
     }
-    // Full house
-    else if (groups[0] && groups[0].length === 3 && groups[1] && groups[1].length >= 2) {
-        rank = HAND_RANK.FULL_HOUSE;
-        bestCards = [...groups[0], ...groups[1].slice(0, 2)];
-    }
-    // Flush
-    else if (flushSuit) {
-        rank = HAND_RANK.FLUSH;
-        bestCards = flushCards;
-    }
-    // Straight
-    else if (straightCards) {
-        rank = HAND_RANK.STRAIGHT;
-        bestCards = straightCards.slice(0, 5);
+
+    // Five Card ~ Straight
+    if (rank === HAND_RANK.HIGH_CARD) {
+        if (groups[0] && groups[0].length === 5) {
+            rank = HAND_RANK.FIVE_CARD;
+            bestCards = groups[0];
+        }
+        else if (flushSuit && straightCards) {
+            const flushSet = new Set(suitMap[flushSuit].map(c => c.val));
+            const sf = straightCards.filter(c => flushSet.has(c.val));
+            if (sf.length >= 5) {
+                rank = HAND_RANK.STRAIGHT_FLUSH;
+                bestCards = sf.slice(0, 5);
+            }
+        }
+        else if (groups[0] && groups[0].length === 4) {
+            rank = HAND_RANK.FOUR_OF_A_KIND;
+            bestCards = [...groups[0]];
+        }
+        else if (groups[0] && groups[0].length === 3 && groups[1] && groups[1].length >= 2) {
+            rank = HAND_RANK.FULL_HOUSE;
+            bestCards = [...groups[0], ...groups[1].slice(0, 2)];
+        }
+        else if (flushSuit) {
+            rank = HAND_RANK.FLUSH;
+            bestCards = flushCards;
+        }
+        else if (straightCards) {
+            rank = HAND_RANK.STRAIGHT;
+            bestCards = straightCards.slice(0, 5);
+        }
     }
 
     // Flush Draw (4장 동일 슈트, enabled 일 때만) — 별도 if (chain 분리)
