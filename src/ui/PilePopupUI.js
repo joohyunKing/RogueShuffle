@@ -3,7 +3,7 @@ import {
   FIELD_CW, FIELD_CH,
   PLAYER_PANEL_W,
   BATTLE_LOG_H,
-  SUITS,
+  SUITS, SUIT_ORDER
 } from "../constants.js";
 import { CardRenderer } from "../CardRenderer.js";
 
@@ -38,26 +38,35 @@ export class PilePopupUI extends ModalUI {
     const GAP_X = CW_ + 4, ROW_H = CH_ + 16, LABEL_W = 26, PAD = 20;
 
     const panelW = GW - PLAYER_PANEL_W - PAD * 2;
-    // 슈트별 카드 분류 및 정렬
-    const bySuit = { S: [], H: [], C: [], D: [] };
-    for (const card of pileData) {
-      const s = card.key[0];
-      if (bySuit[s]) bySuit[s].push(card);
-    }
-    SUITS.forEach(s =>
-      bySuit[s].sort((a, b) =>
-        RANK_LIST.indexOf(a.key.slice(1)) - RANK_LIST.indexOf(b.key.slice(1))
-      )
-    );
+    
+    // ── 슛(Suit) 동적 감지 (폭탄 'B' 등 특종 슈트 대응) ───
+    const activeSuits = [...new Set(pileData.map(c => c.suit))];
+    activeSuits.sort((a, b) => (SUIT_ORDER[a] ?? 99) - (SUIT_ORDER[b] ?? 99));
 
+    // 슈트별 카드 분류 및 정렬
+    const bySuit = {};
+    activeSuits.forEach(s => bySuit[s] = []);
+    
+    for (const card of pileData) {
+      if (bySuit[card.suit]) bySuit[card.suit].push(card);
+    }
+
+    activeSuits.forEach(s =>
+      bySuit[s].sort((a, b) => {
+        const rA = a.rank ?? a.key?.slice(1);
+        const rB = b.rank ?? b.key?.slice(1);
+        return RANK_LIST.indexOf(rA) - RANK_LIST.indexOf(rB);
+      })
+    );
+    
     // 슈트별 필요 행 수 계산
     const cardAreaW = panelW - LABEL_W - 6;
     const maxPerRow = Math.max(1, Math.floor(cardAreaW / GAP_X));
     const suitRows = {};
-    SUITS.forEach(s => {
+    activeSuits.forEach(s => {
       suitRows[s] = Math.max(1, Math.ceil(bySuit[s].length / maxPerRow));
     });
-    const totalRows = SUITS.reduce((sum, s) => sum + suitRows[s], 0);
+    const totalRows = activeSuits.reduce((sum, s) => sum + suitRows[s], 0);
 
     const titleH = 38, closeH = 40;
     const panelH = titleH + totalRows * ROW_H + closeH;
@@ -82,7 +91,7 @@ export class PilePopupUI extends ModalUI {
 
     // 슈트별 카드 렌더
     let rowOffset = 0;
-    SUITS.forEach((suit) => {
+    activeSuits.forEach((suit) => {
       const cards = bySuit[suit];
       const numRows = suitRows[suit];
 

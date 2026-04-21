@@ -204,11 +204,12 @@ function applyRelicEffects(startValue, relics, amplifierMap, scope, typeSet, del
         ?? new Set(Object.entries(HAND_DATA).filter(([,d]) => d.enabled !== false).map(([k]) => Number(k)));
     const handResult = evaluateHand(cards, enabledHands, context.suitAliases ?? null);
 
+    const handRank = handResult.rank ?? HAND_RANK.HIGH_CARD;
     const ctx = {
         ...context,
-        handRank: handResult.rank,
-        handName: HAND_DATA[handResult.rank].key,
-        cards: handResult.cards,
+        handRank,
+        handName: (HAND_DATA[handRank]?.key) || "HIGH_CARD",
+        cards: handResult.cards || [],
     };
 
     const atk   = ctx.atk ?? 0;
@@ -226,9 +227,12 @@ function applyRelicEffects(startValue, relics, amplifierMap, scope, typeSet, del
             if (enh.type === 'rainbow') timesMultiPool *= sealMap['rainbow']?.timesMultiBonus ?? 1.1;
         }
         // 슈트 적응 보너스: (레벨-1) × 적응도 (레벨 1이면 0)
+        // 폭탄 슈트 'B' 등 정의되지 않은 슈트는 0점 처리
         if (ctx.attrs && ctx.adaptability) {
             const s = card.suit;
-            baseScore += Math.floor((ctx.attrs[s] - 1) * ctx.adaptability[s]);
+            const sLevel = ctx.attrs[s] ?? 1;
+            const sAdapt = ctx.adaptability[s] ?? 0;
+            baseScore += Math.floor((sLevel - 1) * sAdapt);
         }
 
         let deltaBase = baseScore;
@@ -341,8 +345,13 @@ function evaluateHand(cards, enabledHands, suitAliases) {
     let bestCards = [];
     let rank = HAND_RANK.HIGH_CARD;
 
+    // 만약 그룹이 아예 없다면 (카드 미선택) 바로 반환
+    if (!groups || groups.length === 0) {
+        return { rank, score: 0, aoe: false, cards: [] };
+    }
+
     // Five Card
-    if (groups[0].length === 5) {
+    if (groups[0] && groups[0].length === 5) {
         rank = HAND_RANK.FIVE_CARD;
         bestCards = groups[0];
     }
@@ -356,12 +365,12 @@ function evaluateHand(cards, enabledHands, suitAliases) {
         }
     }
     // Four of a kind
-    else if (groups[0].length === 4) {
+    else if (groups[0] && groups[0].length === 4) {
         rank = HAND_RANK.FOUR_OF_A_KIND;
         bestCards = [...groups[0]];
     }
     // Full house
-    else if (groups[0].length === 3 && groups[1]?.length >= 2) {
+    else if (groups[0] && groups[0].length === 3 && groups[1] && groups[1].length >= 2) {
         rank = HAND_RANK.FULL_HOUSE;
         bestCards = [...groups[0], ...groups[1].slice(0, 2)];
     }
@@ -395,14 +404,17 @@ function evaluateHand(cards, enabledHands, suitAliases) {
     }
 
     // Two pair / Triple / One pair / High card — rank가 아직 HIGH_CARD일 때만
-    if (rank === HAND_RANK.HIGH_CARD) {
-        if (groups[0].length === 2 && groups[1]?.length === 2) {
+    if (rank === HAND_RANK.HIGH_CARD && groups[0]) {
+        const g0Len = groups[0].length;
+        const g1Len = groups[1] ? groups[1].length : 0;
+
+        if (g0Len === 2 && g1Len === 2) {
             rank = HAND_RANK.TWO_PAIR;
             bestCards = [...groups[0], ...groups[1]];
-        } else if (groups[0].length === 3) {
+        } else if (g0Len === 3) {
             rank = HAND_RANK.TRIPLE;
             bestCards = [...groups[0]];
-        } else if (groups[0].length === 2) {
+        } else if (g0Len === 2) {
             rank = HAND_RANK.ONE_PAIR;
             bestCards = [...groups[0]];
         } else {
@@ -422,7 +434,8 @@ function groupBy(arr, keyFn) {
     const map = {};
     for (const item of arr) {
         const key = keyFn(item);
-        if (!map[key]) map[key] = [];
+        // key가 0일 경우 false로 취급되지 않도록 하기 위해 undefined/null 체크만 수행
+        if (map[key] === undefined) map[key] = [];
         map[key].push(item);
     }
     return map;

@@ -164,7 +164,7 @@ export class MonsterManager {
       .filter(c => !this._isCardDisabled(c));
     context.handRemainingCount = scene.handData.length - selectedCards.length;
     const details = getScoreDetails(selectedCards, context);
-    if (details.totalScore <= 0) return;
+    if (details.handRank == null || (details.cards?.length ?? 0) === 0) return;
 
     if (scene.attackCount >= scene.player.attacksPerTurn) {
       scene.addBattleLog(`이번 턴 공격 횟수 초과! (${scene.player.attacksPerTurn}회)`);

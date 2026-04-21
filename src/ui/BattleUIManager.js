@@ -47,7 +47,7 @@ export class BattleUIManager {
 
     const handRankSealed = rank != null && scene.debuffManager.disabledHandRanks.has(rank);
 
-    if (score > 0) {
+    if (rank != null) {
       scene._updateHandPreviewLabel(rank, handRankSealed);
     } else {
       scene._handText?.setVisible(false);

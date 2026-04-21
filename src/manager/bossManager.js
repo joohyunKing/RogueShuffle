@@ -24,8 +24,8 @@ const DEBUFF_APPLIERS = {
   debuff: (dm, name, skill) => dm.applyDebuff(skill.debuffId, name),
   rank_disable: (dm, name) => dm.applyRankDisable(name),
   suit_disable: (dm, name) => dm.applySuitDisable(name),
-  seal_most_used_hand: (dm, name) => dm.applyMostUsedHandSeal(name),
-  seal_most_and_last_hand: (dm, name) => dm.applyMostAndLastHandSeal(name),
+  seal_most_used: (dm, name) => dm.applyMostUsedHandSeal(name),
+  seal_most_and_last: (dm, name) => dm.applyMostAndLastHandSeal(name),
 };
 
 
@@ -179,6 +179,16 @@ export class BossManager {
       scene.debuffManager.applySuitDisable(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
     }
+
+    if (p.type === 'seal_most_used') {
+      scene.debuffManager.applyMostUsedHandSeal(boss.name);
+      this._showEffect(monIdx, EFFECT.debuff);
+    }
+
+    if (p.type === 'seal_most_and_last') {
+      scene.debuffManager.applyMostAndLastHandSeal(boss.name);
+      this._showEffect(monIdx, EFFECT.debuff);
+    }
   }
 
   _plantBombs(count) {
@@ -186,7 +196,7 @@ export class BossManager {
     const now = Date.now();
     for (let i = 0; i < count; i++) {
       const bomb = {
-        suit: 'B', rank: '0', val: 0, baseScore: -20,
+        suit: 'B', rank: '0', val: 0, baseScore: 0,
         key: 'B0', uid: `bomb_${now}_${i}`,
         duration: 'temporary', _bomb: true,
       };

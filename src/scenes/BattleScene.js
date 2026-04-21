@@ -1160,7 +1160,7 @@ export class BattleScene extends Phaser.Scene {
     const positions = this.monsterManager.calcMonsterPositions(mons.length);
 
     const _combo = this._getSelectedCombo();
-    const hasCombo = _combo.score > 0
+    const hasCombo = _combo.rank != null && (_combo.cards?.length ?? 0) > 0
       && this.attackCount < this.player.attacksPerTurn
       && !this.debuffManager.disabledHandRanks.has(_combo.rank);
     const imgW = 156, imgH = 156;

@@ -166,7 +166,7 @@
     },
     {
       "id": "trickster",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "트릭스터",
       "img": "trickster.png",
       "initSkillId": "disable_rank",
@@ -213,9 +213,9 @@
     {
       "id": "tricksterB",
       "useYn": "N",
-      "name": "트릭스터B",
+      "name": "트릭스터:레코드",
       "img": "tricksterB.png",
-      "initSkillId": "seal_most_used",
+      "initSkillId": "",
       "statScale": {
         "hp": 1.4,
         "atk": 1.1,
@@ -225,7 +225,13 @@
       "phases": [
         {
           "hpThreshold": 0.5,
-          "label": "최다 봉인",
+          "label": "족보 봉인",
+          "passive": {
+            "name": "족보 봉인",
+            "description": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다.",
+            "type": "seal_most_used",
+            "triggerOn": "player_turn"
+          },
           "actions": [
             {
               "type": "attack"
@@ -234,7 +240,13 @@
         },
         {
           "hpThreshold": 0,
-          "label": "이중 봉인",
+          "label": "이중 족보 봉인",
+          "passive": {
+            "name": "이중 족보 봉인",
+            "description": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다.",
+            "type": "seal_most_and_last",
+            "triggerOn": "player_turn"
+          },
           "actions": [
             {
               "type": "attack"
@@ -257,7 +269,7 @@
     },
     {
       "id": "bomber",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "폭격자",
       "img": "skull_axe.png",
       "statScale": {
