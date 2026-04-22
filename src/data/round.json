@@ -13,16 +13,6 @@
       },
       "battles": [
         {
-          "type": "boss",
-          "statMulti": 2,
-          "totalCost": 1
-        },
-        {
-          "type": "boss",
-          "statMulti": 2,
-          "totalCost": 1
-        },
-        {
           "type": "normal",
           "statMulti": 1,
           "totalCost": 3
@@ -42,8 +32,8 @@
         },
         {
           "type": "boss",
-          "statMulti": 5,
-          "totalCost": 5
+          "statMulti": 4,
+          "totalCost": 4
         }
       ],
       "bossDebuff": {}
@@ -84,8 +74,8 @@
         },
         {
           "type": "boss",
-          "statMulti": 5,
-          "totalCost": 5
+          "statMulti": 4,
+          "totalCost": 4
         }
       ],
       "bossDebuff": {}

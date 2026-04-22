@@ -142,6 +142,11 @@ export class MonsterManager {
     const { scene } = this;
     mon.isDead = true;
     if (monIdx !== null) this._playDie(monIdx, mon);
+
+    // 보스 패시브 해제 처리 (핸드 크기 축소 등)
+    if (mon._handSizeReduced > 0 && scene.bossManager) {
+      scene.bossManager.cleanupPassives(mon);
+    }
     const newLevels = scene.player.addXp(mon.xp);
     scene.player.gold += mon.gold;
     scene.addBattleLog(label ?? `${mon.name} 처치! +${mon.xp}XP +${mon.gold}G`);

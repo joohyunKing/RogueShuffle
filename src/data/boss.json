@@ -2,7 +2,7 @@
   "bosses": [
     {
       "id": "troll",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "트롤",
       "img": "troll.png",
       "statScale": {
@@ -76,7 +76,7 @@
     },
     {
       "id": "berserker",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "광전사",
       "img": "orc_lord.png",
       "statScale": {
@@ -130,7 +130,7 @@
     },
     {
       "id": "summoner",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "소환사",
       "img": "summoner.png",
       "statScale": {
@@ -212,7 +212,7 @@
     },
     {
       "id": "tricksterB",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "트릭스터:레코드",
       "img": "tricksterB.png",
       "initSkillId": "",
@@ -269,7 +269,7 @@
     },
     {
       "id": "bomber",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "폭격자",
       "img": "skull_axe.png",
       "statScale": {
@@ -321,7 +321,7 @@
     },
     {
       "id": "butcher",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "도살자",
       "img": "butcher.png",
       "initSkillId": "harvest",
@@ -369,7 +369,7 @@
     },
     {
       "id": "babarian",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "바바리안",
       "img": "baba.png",
       "initSkillId": "force_pick",
@@ -417,7 +417,7 @@
     },
     {
       "id": "shaman",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "주술사",
       "img": "shaman.png",
       "initSkillId": "card_veil",
@@ -454,7 +454,7 @@
     },
     {
       "id": "iron_fortress",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "방어의 화신",
       "img": "iron_fortress.png",
       "statScale": {
@@ -504,6 +504,83 @@
           "name": "결사 일격",
           "description": "플레이어에게 2배의 강력한 피해를 입힙니다.",
           "damMult": 2
+        }
+      }
+    },
+    {
+      "id": "demon",
+      "useYn": "Y",
+      "name": "데몬",
+      "img": "demon.png",
+      "statScale": {
+        "hp": 1.4,
+        "atk": 1.1,
+        "def": 0.8
+      },
+      "passive": {
+        "name": "악마의 계약",
+        "description": "보스가 살아있는 동안 플레이어의 핸드 크기와 한도가 1 감소합니다.",
+        "type": "hand_reduction",
+        "value": 1,
+        "triggerOn": "player_turn"
+      },
+      "phases": [
+        {
+          "hpThreshold": 0,
+          "label": "악마",
+          "actions": [
+            {
+              "type": "attack"
+            }
+          ]
+        }
+      ],
+      "skills": {}
+    },
+    {
+      "id": "vampire",
+      "useYn": "Y",
+      "name": "뱀파이어",
+      "img": "vampire.png",
+      "statScale": {
+        "hp": 1.6,
+        "atk": 1.2,
+        "def": 1.0
+      },
+      "phases": [
+        {
+          "hpThreshold": 0.3,
+          "label": "약탈",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "thief"
+            },
+            {
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "hpThreshold": 0,
+          "label": "흡혈",
+          "actions": [
+            {
+              "type": "skill",
+              "skillId": "drain"
+            }
+          ]
+        }
+      ],
+      "skills": {
+        "thief": {
+          "type": "steal_gold",
+          "name": "금화 약탈"
+        },
+        "drain": {
+          "type": "drain_attack",
+          "name": "흡혈 일격",
+          "damMult": 1.8
         }
       }
     }

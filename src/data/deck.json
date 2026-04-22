@@ -5,6 +5,7 @@
       "deckName": "Standard Deck",
       "desc": "기본 덱",
       "back_img": "card_back.png",
+      "startGold": 10,
       "handSize": 7,
       "handSizeMinimum": 5,
       "handSizeLimit": 8,

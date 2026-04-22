@@ -53,7 +53,7 @@ export class Player {
         this.def = data.def ?? 0;
         this.score = data.score ?? 0;
         this.xp = data.xp ?? 0;
-        this.gold = data.gold ?? 0;
+        this.gold = data.gold ?? DEFAULT_DECK.startGold;
         this.level = data.level ?? 1;
         /** 턴당 공격 가능 횟수 */
         this.attacksPerTurn = data.attacksPerTurn ?? DEFAULT_DECK.attacksPerTurn;

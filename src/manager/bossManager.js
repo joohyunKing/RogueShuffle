@@ -117,7 +117,7 @@ export class BossManager {
         const lost = boss.def > targetDef;
         boss.def = targetDef;
         if (lost) {
-          scene.addBattleLog(`[패시브] ${boss.name}의 방어막 약화! (HP ${Math.round(ratio*100)}%)`);
+          scene.addBattleLog(`[패시브] ${boss.name}의 방어막 약화! (HP ${Math.round(ratio * 100)}%)`);
           this._showEffect(monIdx, { ...EFFECT.debuff, label: 'SHIELD DOWN!', labelColor: '#ff4444' });
         } else {
           scene.addBattleLog(`[패시브] ${boss.name}의 방어막 강화!`);
@@ -221,6 +221,19 @@ export class BossManager {
       scene.debuffManager.applyMostAndLastHandSeal(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
     }
+
+    if (p.type === 'hand_reduction') {
+      if (boss._handSizeReduced === undefined) boss._handSizeReduced = 0;
+      if (boss._handSizeReduced === 0) {
+        const val = p.value || 1;
+        scene.player.handSize = Math.max(1, scene.player.handSize - val);
+        scene.player.handSizeLimit = Math.max(1, scene.player.handSizeLimit - val);
+        boss._handSizeReduced = val;
+        scene.addBattleLog(`[패시브] ${boss.name}의 계약: 핸드 크기가 축소되었습니다! (-${val})`);
+        this._showEffect(monIdx, { ...EFFECT.debuff, label: 'HAND DOWN!', labelColor: '#ff8888' });
+        scene.render();
+      }
+    }
   }
 
   _plantBombs(count) {
@@ -241,6 +254,18 @@ export class BossManager {
   // ── 보스 턴 패시브 적용 (하위 호환용 래퍼) ───────────────────────────────
   applyPassive(boss) {
     this.activatePassive(boss, 'boss_turn');
+  }
+
+  // ── 패시브 해제 (보스 처치 시 등) ──────────────────────────────────────────
+  cleanupPassives(boss) {
+    const { scene } = this;
+    if (boss._handSizeReduced > 0) {
+      scene.player.handSize += boss._handSizeReduced;
+      scene.player.handSizeLimit += boss._handSizeReduced;
+      scene.addBattleLog(`[패시브] ${boss.name} 처치! 핸드 크기가 복구되었습니다.`);
+      boss._handSizeReduced = 0;
+      scene.render();
+    }
   }
 
   // ── 스킬 초기화 (첫 플레이어 턴에 한 번만 발동) ──────────────────────────
@@ -426,6 +451,28 @@ export class BossManager {
       scene.addBattleLog(`${boss.name}의 ${skill.name}! 덱에서 ${moved.length}장을 더미로!`);
       this._showEffect(monIdx, { ...EFFECT.debuff, label: `DISCARD ${moved.length}!`, labelColor: '#ff8844' });
       scene.refreshPlayerStats();
+    } else if (skill.type === 'steal_gold') {
+      const g = scene.player.gold;
+      let removed = Math.min(Math.floor(g * 0.1), 10);
+      removed = removed === 0 ? 1 : removed;
+      scene.player.gold = Math.max(0, g - removed);
+      scene.addBattleLog(`${boss.name}의 ${skill.name}! 골드 ${removed}G 소실!`);
+      this._showEffect(monIdx, { ...EFFECT.debuff, label: `-${removed}G`, labelColor: '#ffdd00' });
+      scene.refreshPlayerStats();
+    } else if (skill.type === 'drain_attack') {
+      const raw = Math.floor(boss.atk * (skill.damMult ?? 1));
+      const dmg = Math.max(0, raw - scene.player.def);
+      scene.player.hp = Math.max(0, scene.player.hp - dmg);
+      const heal = Math.floor(dmg / 3);
+      if (heal > 0) {
+        boss.hp = Math.min(boss.maxHp, boss.hp + heal);
+        scene.addBattleLog(`${boss.name}의 ${skill.name}! ${dmg} 피해 & ${heal} 흡혈!`);
+        this._showEffect(monIdx, { ...EFFECT.heal, label: `+${heal} HP`, labelColor: '#ff2222' });
+        scene.renderMonsters();
+      } else {
+        scene.addBattleLog(`${boss.name}의 ${skill.name}! ${dmg} 피해!`);
+      }
+      scene.monsterManager._showMonsterAttack(monIdx, dmg);
     }
   }
 
