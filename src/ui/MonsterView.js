@@ -94,7 +94,7 @@ export default class MonsterView {
 
     this.gimmickIcon.on('pointerover', () => this._showGimmickTip());
     this.gimmickIcon.on('pointerdown', () => this._showGimmickTip());
-    this.gimmickIcon.on('pointerout', () => this._hideGimmickTip());
+    this.gimmickIcon.on('pointerout', () => this.hideTooltip());
 
     // ── ATTACK 표시
     this.attackText = scene.add.text(x, this.spriteY - imgH / 2 - 10, "ATTACK!", TS.monTarget)
@@ -195,23 +195,61 @@ export default class MonsterView {
     });
   }
 
-  // ── 스킬 tween (고스트 잔상 + 플래시) ──────────────────────────────────────
+  // ── 스킬 연출 (고스트 잔상 + 박동 + 글로우) ──────────────────────────────────
   playSkill() {
     if (this._isDead) return;
     const { scene, sprite } = this;
+
+    this._idleTween?.pause();
+
+    // 1. 몬스터 본체 박동 (Scale Up)
+    const baseScaleX = sprite.scaleX;
+    const baseScaleY = sprite.scaleY;
+    scene.tweens.add({
+      targets: sprite,
+      scaleX: baseScaleX * 1.25,
+      scaleY: baseScaleY * 1.25,
+      duration: 150,
+      yoyo: true,
+      ease: 'Back.easeOut',
+      onComplete: () => this._idleTween?.resume()
+    });
+
+    // 2. 고스트 잔상 (Additive Blend)
     for (let i = 0; i < 3; i++) {
-      scene.time.delayedCall(i * 60, () => {
-        const ghost = scene.add.image(sprite.x + (i - 1) * 20, sprite.y, sprite.texture.key)
+      scene.time.delayedCall(i * 50, () => {
+        const ghost = scene.add.image(sprite.x, sprite.y, sprite.texture.key)
           .setDisplaySize(this.imgW, this.imgH)
-          .setAlpha(0.4)
-          .setTint(0x8888ff)
-          .setDepth(14);
-        scene.tweens.add({ targets: ghost, alpha: 0, duration: 350, onComplete: () => ghost.destroy() });
+          .setAlpha(0.6)
+          .setTint(0xaa44ff) // 마법 느낌의 보라색
+          .setDepth(14)
+          .setBlendMode(Phaser.BlendModes.ADD);
+
+        scene.tweens.add({
+          targets: ghost,
+          x: sprite.x + (i - 1) * 30,
+          scaleX: ghost.scaleX * 1.2,
+          scaleY: ghost.scaleY * 1.2,
+          alpha: 0,
+          duration: 400,
+          onComplete: () => ghost.destroy()
+        });
       });
     }
-    const flash = scene.add.rectangle(sprite.x, sprite.y, this.imgW, this.imgH, 0xffffff, 0.7)
-      .setDepth(16);
-    scene.tweens.add({ targets: flash, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
+
+    // 3. 원형 글로우 플래시 (사각형 대체)
+    const glow = scene.add.circle(sprite.x, sprite.y, this.imgW * 0.6, 0xff88ff, 0.6)
+      .setDepth(16)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    scene.tweens.add({
+      targets: glow,
+      radius: this.imgW * 0.9,
+      alpha: 0,
+      duration: 350,
+      ease: 'Quad.easeOut',
+      onComplete: () => glow.destroy()
+    });
   }
 
   // ── 부활 (sprite 상태 완전 초기화 후 idle 재시작) ───────────────────────
