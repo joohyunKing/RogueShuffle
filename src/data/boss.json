@@ -166,7 +166,7 @@
     },
     {
       "id": "trickster",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "트릭스터",
       "img": "trickster.png",
       "initSkillId": "disable_rank",
@@ -217,7 +217,7 @@
       "img": "tricksterB.png",
       "initSkillId": "",
       "statScale": {
-        "hp": 1.4,
+        "hp": 1.2,
         "atk": 1.1,
         "def": 0.9
       },
@@ -417,7 +417,7 @@
     },
     {
       "id": "shaman",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "주술사",
       "img": "shaman.png",
       "initSkillId": "card_veil",
@@ -453,82 +453,6 @@
       }
     },
     {
-      "id": "hexweaver",
-      "useYn": "N",
-      "name": "저주술사",
-      "statScale": {
-        "hp": 1.2,
-        "atk": 1,
-        "def": 0.7
-      },
-      "passive": {
-        "name": "저주의 숨결",
-        "description": "매 턴마다 무작위 저주를 플레이어에게 부여합니다.",
-        "type": "random_debuff",
-        "triggerOn": "boss_turn"
-      },
-      "phases": [
-        {
-          "hpThreshold": 0.45,
-          "label": "저주 1단계",
-          "actions": [
-            {
-              "type": "skill",
-              "skillId": "curse_atk"
-            },
-            {
-              "type": "skill",
-              "skillId": "curse_rank"
-            },
-            {
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "hpThreshold": 0,
-          "label": "저주 2단계",
-          "actions": [
-            {
-              "type": "skill",
-              "skillId": "curse_hand"
-            },
-            {
-              "type": "skill",
-              "skillId": "curse_suit"
-            },
-            {
-              "type": "attack"
-            }
-          ]
-        }
-      ],
-      "skills": {
-        "curse_atk": {
-          "type": "debuff",
-          "name": "저주: 약화",
-          "description": "플레이어의 공격력을 감소시킵니다.",
-          "debuffId": "atk_down"
-        },
-        "curse_rank": {
-          "type": "rank_disable",
-          "name": "저주: 랭크 봉인",
-          "description": "특정 랭크의 카드를 사용할 수 없게 합니다."
-        },
-        "curse_hand": {
-          "type": "debuff",
-          "name": "저주: 혼란",
-          "description": "핸드 크기를 줄이거나 드로우를 방해합니다.",
-          "debuffId": "hand_down"
-        },
-        "curse_suit": {
-          "type": "suit_disable",
-          "name": "저주: 슈트 봉인",
-          "description": "특정 슈트의 카드를 사용할 수 없게 합니다."
-        }
-      }
-    },
-    {
       "id": "iron_fortress",
       "useYn": "N",
       "name": "방어의 화신",
@@ -541,7 +465,7 @@
       "passive": {
         "name": "철벽의 요새",
         "description": "체력이 50% 이상일 때 방어력이 3배가 됩니다.",
-        "triggerOn": "boss_turn",
+        "triggerOn": "player_turn",
         "type": "def_multiply_when_healthy",
         "threshold": 0.5,
         "value": 3
@@ -578,8 +502,8 @@
         "final_strike": {
           "type": "damage",
           "name": "결사 일격",
-          "description": "플레이어에게 2.2배의 강력한 피해를 입힙니다.",
-          "damMult": 2.2
+          "description": "플레이어에게 2배의 강력한 피해를 입힙니다.",
+          "damMult": 2
         }
       }
     }

@@ -37,6 +37,7 @@ export class BossManager {
 
   // ── 현재 페이즈 판단 ─────────────────────────────────────────────────────
   getCurrentPhase(boss) {
+    if (!boss || !boss.phases) return null;
     const ratio = boss.hp / boss.maxHp;
     const sorted = [...boss.phases].sort((a, b) => b.hpThreshold - a.hpThreshold);
     return sorted.find(p => ratio >= p.hpThreshold) ?? sorted[sorted.length - 1];
@@ -66,6 +67,23 @@ export class BossManager {
       if (p.triggerOn !== trigger) continue;
       this._applyPassiveEffect(boss, p);
     }
+
+    this.refreshStatePassives(boss);
+  }
+
+  // HP나 소환수 상태 변화 시 호출하여 실시간으로 패시브 상태 반영
+  refreshStatePassives(boss) {
+    const globalPassives = Array.isArray(boss.passive) ? boss.passive : (boss.passive ? [boss.passive] : []);
+    const phase = this.getCurrentPhase(boss);
+    const phasePassives = phase?.passive ? (Array.isArray(phase.passive) ? phase.passive : [phase.passive]) : [];
+    const allPassives = [...globalPassives, ...phasePassives];
+
+    for (const p of allPassives) {
+      // 실시간 대응이 필요한 패시브 타입들
+      if (p.type === 'def_multiply_when_healthy' || p.type === 'def_multiply_when_summoned') {
+        this._applyPassiveEffect(boss, p);
+      }
+    }
   }
 
   _applyPassiveEffect(boss, p) {
@@ -90,9 +108,23 @@ export class BossManager {
     if (p.type === 'def_multiply_when_healthy') {
       if (boss.baseDef === undefined) boss.baseDef = boss.def || 0;
       const ratio = boss.hp / boss.maxHp;
-      boss.def = ratio >= (p.threshold ?? 0.5)
+      const threshold = p.threshold ?? 0.5;
+      const targetDef = ratio >= threshold
         ? Math.floor(boss.baseDef * p.value)
         : boss.baseDef;
+
+      if (boss.def !== targetDef) {
+        const lost = boss.def > targetDef;
+        boss.def = targetDef;
+        if (lost) {
+          scene.addBattleLog(`[패시브] ${boss.name}의 방어막 약화! (HP ${Math.round(ratio*100)}%)`);
+          this._showEffect(monIdx, { ...EFFECT.debuff, label: 'SHIELD DOWN!', labelColor: '#ff4444' });
+        } else {
+          scene.addBattleLog(`[패시브] ${boss.name}의 방어막 강화!`);
+          this._showEffect(monIdx, { ...EFFECT.buff, label: 'SHIELD UP!', labelColor: '#44ff44' });
+        }
+        scene.renderMonsters();
+      }
     }
 
     // 플레이어 턴 동안 받은 데미지의 일부를 보스 턴 시작 시 회복

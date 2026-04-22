@@ -39,9 +39,9 @@ export const HAND_RANK = {
 };
 
 export const HAND_DATA = {
-    13: { key: "FLUSH_FIVE", multi: 12, aoe: true, enabled: true },
-    12: { key: "FLUSH_FULL_HOUSE", multi: 10, aoe: true, enabled: true },
-    11: { key: "FIVE_CARD", multi: 8, aoe: true, enabled: true },
+    13: { key: "FLUSH_FIVE", multi: 15, aoe: true, enabled: true },
+    12: { key: "FLUSH_FULL_HOUSE", multi: 14, aoe: true, enabled: true },
+    11: { key: "FIVE_CARD", multi: 12, aoe: true, enabled: true },
     10: { key: "STRAIGHT_FLUSH", multi: 7, aoe: true, enabled: true },
     9: { key: "FOUR_OF_A_KIND", multi: 6, aoe: true, enabled: true },
     8: { key: "FULL_HOUSE", multi: 4, aoe: true, enabled: true },

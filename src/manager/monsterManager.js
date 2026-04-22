@@ -149,6 +149,11 @@ export class MonsterManager {
       scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
       scene._suitLevelUpCount += newLevels.length;
     }
+
+    // 소환수 처치 시 보스 패시브(소환수 비례 방어력 등) 실시간 갱신
+    if (mon.isSummoned && scene.isBoss && scene.bossManager) {
+      scene.bossManager.refreshStatePassives(scene.monsters[0]);
+    }
   }
 
   // ── 몬스터 공격 ──────────────────────────────────────────────────────────
@@ -330,6 +335,11 @@ export class MonsterManager {
       if (m.hp <= 0) this._onKill(m, monIdx);
     });
 
+    // 광역 공격 후 보스 패시브 실시간 갱신
+    if (scene.isBoss && scene.bossManager) {
+      scene.bossManager.refreshStatePassives(scene.monsters[0]);
+    }
+
     scene.isDealing = false;
     scene.render();
     scene._checkLevelUpThenProceed();
@@ -356,7 +366,11 @@ export class MonsterManager {
     const damage = this._applyGimmickResist(mon, rawDamage, attackCtx);
     const prevHp = mon.hp;
     mon.hp = Math.max(0, mon.hp - damage);
-    if (scene.isBoss) mon._damageTaken = (mon._damageTaken ?? 0) + damage;
+    if (scene.isBoss) {
+      mon._damageTaken = (mon._damageTaken ?? 0) + damage;
+      // 데미지 입은 즉시 보스 패시브(HP 비례 방어력 등) 실시간 갱신
+      scene.bossManager?.refreshStatePassives(scene.monsters[0]);
+    }
     const rawOverkill = Math.max(0, damage - prevHp);
     const bullseye = mon.hp === 0 && damage > 0 && rawOverkill <= Math.floor(mon.maxHp * 0.1);
     const overkill = bullseye ? 0 : rawOverkill;
