@@ -269,7 +269,7 @@
     },
     {
       "id": "bomber",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "폭격자",
       "img": "skull_axe.png",
       "statScale": {
@@ -286,7 +286,7 @@
       },
       "phases": [
         {
-          "hpThreshold": 0.5,
+          "hpThreshold": 0.2,
           "label": "매설",
           "actions": [
             {
@@ -299,7 +299,8 @@
           "label": "대폭발",
           "actions": [
             {
-              "type": "attack"
+              "type": "skill",
+              "skillId": "explosion"
             }
           ]
         }
@@ -309,6 +310,12 @@
           "type": "plant_bombs",
           "name": "폭탄 매설",
           "count": 6
+        },
+        "explosion": {
+          "type": "damage",
+          "name": "대폭발",
+          "description": "플레이어에게 2배의 피해를 입힙니다.",
+          "damMult": 2
         }
       }
     },
@@ -332,7 +339,7 @@
       },
       "phases": [
         {
-          "hpThreshold": 0.4,
+          "hpThreshold": 0.2,
           "label": "도살",
           "actions": [
             {
@@ -353,9 +360,10 @@
       ],
       "skills": {
         "harvest": {
-          "type": "deck_to_dummy",
+          "type": "damage",
           "name": "도살의 낫",
-          "count": 5
+          "description": "플레이어에게 2배의 피해를 입힙니다.",
+          "damMult": 2
         }
       }
     },
@@ -379,7 +387,7 @@
       },
       "phases": [
         {
-          "hpThreshold": 0.4,
+          "hpThreshold": 0.2,
           "label": "강제",
           "actions": [
             {
@@ -389,25 +397,27 @@
         },
         {
           "hpThreshold": 0,
-          "label": "광폭",
+          "label": "광란",
           "actions": [
             {
               "type": "skill",
-              "skillId": "force_pick"
+              "skillId": "bash"
             }
           ]
         }
       ],
       "skills": {
-        "force_pick": {
-          "type": "force_select",
-          "name": "강제 선택"
+        "bash": {
+          "type": "damage",
+          "name": "강타",
+          "description": "플레이어에게 2배의 피해를 입힙니다.",
+          "damMult": 2
         }
       }
     },
     {
       "id": "shaman",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "주술사",
       "img": "shaman.png",
       "initSkillId": "card_veil",
@@ -425,21 +435,11 @@
       },
       "phases": [
         {
-          "hpThreshold": 0.2,
+          "hpThreshold": 0,
           "label": "주술",
           "actions": [
             {
               "type": "attack"
-            }
-          ]
-        },
-        {
-          "hpThreshold": 0,
-          "label": "대주술",
-          "actions": [
-            {
-              "type": "skill",
-              "skillId": "card_veil"
             }
           ]
         }

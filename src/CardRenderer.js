@@ -288,7 +288,8 @@ export class CardRenderer {
       ctx.fill();
       ctx.globalAlpha = 1;
 
-      ctx.font = `bold 38px 'PressStart2P', Arial`;
+      const fontSize = rank.length > 2 ? 28 : 38;
+      ctx.font = `bold ${fontSize}px 'PressStart2P', Arial`;
       ctx.fillStyle = fgColor;
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'center';

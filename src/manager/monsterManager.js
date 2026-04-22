@@ -201,6 +201,7 @@ export class MonsterManager {
         fromX: handPositions[i].x,
         fromY: HAND_Y - 22,
         key: card.key,
+        isFlipped: card.flipped === true,
         obj: scene.handCardObjs?.[i] ?? null,
         scoringDetail: details.cardDetails.find(cd => cd.card.uid === card.uid) ?? null,
       };
@@ -216,7 +217,8 @@ export class MonsterManager {
       scene.selected.clear();
       [...selectedIndices].sort((a, b) => b - a)
         .forEach(i => {
-          scene._flyToDummy(handPositions[i].x, HAND_Y, "card_back");
+          const card = scene.handData[i];
+          scene._flyToDummy(handPositions[i].x, HAND_Y, card.key);
           scene.dummyData.push(...scene.handData.splice(i, 1));
         });
       scene.render();

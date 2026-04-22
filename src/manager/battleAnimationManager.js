@@ -40,9 +40,17 @@ export class BattleAnimationManager {
     cardWidth = cardWidth * 0.85;
     cardHeight = cardHeight * 0.85;
 
-    const img = this.scene.add.image(fromX, fromY, "card_back")
+    const startTex = options.immediateFace ? cardData.key : "card_back";
+    const img = this.scene.add.image(fromX, fromY, startTex)
       .setDisplaySize(cardWidth, cardHeight).setDepth(200);
     this.animObjs.push(img);
+    if (options.immediateFace) {
+      this.scene.tweens.add({
+        targets: img, x: toX, y: toY, duration: 320, ease: "Power2.Out",
+        onComplete: () => options.onComplete?.(img)
+      });
+      return;
+    }
 
     this.scene.tweens.add({
       targets: img, x: toX, y: toY, duration: 320, ease: "Power2.Out",
@@ -313,6 +321,9 @@ export class BattleAnimationManager {
       if (info.scoringDetail) {
         const cd = info.scoringDetail;
         queue.push(next => {
+          if (info.isFlipped && info.obj?.active) {
+            info.obj.setTexture(info.key);
+          }
           pulseCard(info.obj);
           throwOrb(info.fromX, info.fromY, 0xffdd44);
           this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + cd.baseScore, ANIM_SPEED.countUp, next));
@@ -331,7 +342,13 @@ export class BattleAnimationManager {
           });
         });
       } else {
-        queue.push(next => { pulseCard(info.obj); next(); });
+        queue.push(next => {
+          if (info.isFlipped && info.obj?.active) {
+            info.obj.setTexture(info.key);
+          }
+          pulseCard(info.obj);
+          next();
+        });
       }
     });
 

@@ -196,8 +196,8 @@ export class BossManager {
     const now = Date.now();
     for (let i = 0; i < count; i++) {
       const bomb = {
-        suit: 'B', rank: '0', val: 0, baseScore: 0,
-        key: 'B0', uid: `bomb_${now}_${i}`,
+        suit: 'B', rank: '-10', val: 0, baseScore: -10,
+        key: 'B-10', uid: `bomb_${now}_${i}`,
         duration: 'temporary', _bomb: true,
       };
       const insertIdx = Math.floor(Math.random() * (scene.deck.deckPile.length + 1));
