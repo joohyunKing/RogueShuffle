@@ -132,6 +132,14 @@ export class BattleAnimationManager {
     let isMerged = false;
     let currentScore = 0;
 
+    // 모든 배수(Times Multi) 효과들을 모아 병합 후 처리를 위해 대기
+    const allTimesDeltas = [];
+    details.cardDetails.forEach(cd => {
+      cd.cardRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
+    });
+    details.handRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
+    details.finalRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
+
     const getScoreStr = () => {
       if (isMerged) return String(Math.floor(currentScore));
       return `${Math.floor(currentBase)} X ${parseFloat(currentMulti.toFixed(1))}`;
@@ -337,6 +345,11 @@ export class BattleAnimationManager {
             this.scene.itemUI?.pulseRelic(relicId);
             const rp = relicPos(relicId);
             const isBase = type === 'base';
+            if (type === 'times_multi') {
+              // times_multi는 병합 이후(allTimesDeltas)에 별도로 일괄 처리하므로 여기서는 연출 생략
+              next();
+              return;
+            }
             const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
             const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
             throwLabel(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
@@ -363,6 +376,7 @@ export class BattleAnimationManager {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
         const isBase = type === 'base';
+        if (type === 'times_multi') { next(); return; }
         const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
         const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
         throwLabel(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
@@ -373,25 +387,19 @@ export class BattleAnimationManager {
       });
     });
 
-    // 5. Final Relic Base
     details.finalRelicDeltas.forEach(({ relicId, type, delta }) => {
-      if (type !== 'base') return;
+      if (type !== 'plus_multi' && type !== 'base') return;
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
-        throwLabel(rp.x, rp.y, 0xee66ff, `+${Math.floor(delta)}`);
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + delta, ANIM_SPEED.countUp, next));
-      });
-    });
-
-    details.finalRelicDeltas.forEach(({ relicId, type, delta }) => {
-      if (type !== 'plus_multi') return;
-      queue.push(next => {
-        this.scene.itemUI?.pulseRelic(relicId);
-        const rp = relicPos(relicId);
-        const displayVal = Number(delta.toFixed(2));
-        throwLabel(rp.x, rp.y, 0x44eeff, `+${displayVal}X`);
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next));
+        const isBase = type === 'base';
+        const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
+        const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
+        throwLabel(rp.x, rp.y, isBase ? 0xee66ff : 0x44eeff, label);
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
+          if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
+          else countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next);
+        });
       });
     });
 
@@ -428,15 +436,26 @@ export class BattleAnimationManager {
       });
     });
 
-    // 7. Final Relic Times Multi
-    details.finalRelicDeltas.forEach(({ relicId, type, delta }) => {
-      if (type !== 'times_multi') return;
+    // 7. 모든 Times Multi 일괄 처리 (씰, 유물, 빙고 등)
+    allTimesDeltas.forEach(({ relicId, type, delta }) => {
       queue.push(next => {
-        this.scene.itemUI?.pulseRelic(relicId);
+        if (relicId.startsWith('seal_')) {
+          // 씰 효과는 원본 카드 위치에서 날아오도록 할 수 있지만, 간단히 위해 중앙 혹은 유물 위치 활용
+          // 여기서는 중앙에서 작게 팝업 시키거나 유물 UI가 있다면 활용
+          this.scene.itemUI?.pulseRelic(relicId); // Blue/Rainbow 씰은 유물이 아니므로 pulse 생략될 수 있음
+        } else {
+          this.scene.itemUI?.pulseRelic(relicId);
+        }
+        
         const rp = relicPos(relicId);
+        // Times Multi는 "현재 점수"에 ratio를 곱하는 방식이므로 delta를 통해 ratio 역추적
+        // state.timesMulti = before * ratio -> delta = before * (ratio - 1) -> ratio = 1 + delta/before
+        // 하지만 scoreService에서 이미 delta를 넘겨주므로, 여기서는 연출용 ratio만 표시
+        // (실제 최종 점수는 details.totalScore에 수렴해야 함)
         const ratio = (currentTimes + delta) / currentTimes;
         const displayRatio = Number(ratio.toFixed(2));
         throwLabel(rp.x, rp.y, 0xff0044, `x${displayRatio}`);
+
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
           currentTimes += delta;
           const targetScore = Math.floor(currentBase * currentMulti * currentTimes);

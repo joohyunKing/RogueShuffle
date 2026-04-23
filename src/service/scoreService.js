@@ -304,11 +304,24 @@ export function getScoreDetails(cards, context) {
         let cardBase = card.baseScore;
         const initialCardBase = cardBase;
 
+        const cardRelicDeltas = [];
+
         // 씰 장착 효과
         for (const enh of (card.enhancements ?? [])) {
-            if (enh.type === 'red') cardBase += sealMap['red']?.scoreBonus ?? 20;
-            if (enh.type === 'blue') state.addPlusMulti(sealMap['blue']?.plusMultiBonus ?? 2, `BLUE SEAL (${card.key})`);
-            if (enh.type === 'rainbow') state.multiplyTimes(sealMap['rainbow']?.timesMultiBonus ?? 1.1, `RAINBOW SEAL (${card.key})`);
+            if (enh.type === 'red') {
+                cardBase += sealMap['red']?.scoreBonus ?? 20;
+            }
+            if (enh.type === 'blue') {
+                const d = sealMap['blue']?.plusMultiBonus ?? 2;
+                state.addPlusMulti(d, `BLUE SEAL (${card.key})`);
+                cardRelicDeltas.push({ relicId: 'seal_blue', type: 'plus_multi', delta: d });
+            }
+            if (enh.type === 'rainbow') {
+                const ratio = sealMap['rainbow']?.timesMultiBonus ?? 1.1;
+                const before = state.timesMulti;
+                state.multiplyTimes(ratio, `RAINBOW SEAL (${card.key})`);
+                cardRelicDeltas.push({ relicId: 'seal_rainbow', type: 'times_multi', delta: state.timesMulti - before });
+            }
         }
         // 슈트 적응도 보너스
         if (ctx.attrs && ctx.adaptability) {
@@ -319,7 +332,6 @@ export function getScoreDetails(cards, context) {
         const cardLabel = `CARD:${card.key}`;
         state.addBase(cardBase, cardLabel);
 
-        const cardRelicDeltas = [];
         let deltaBase = 0, deltaMulti = 0;
 
         // 카드 대상 유물 효과
