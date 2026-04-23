@@ -384,6 +384,9 @@ export function getScoreDetails(cards, context) {
             if (ADD_TYPES.has(eff.type)) {
                 const d = state.addBase(applyAmplifiedValue(state.baseScore, eff, null, ctx, amp) - state.baseScore, label);
                 if (d !== 0) finalRelicDeltas.push({ relicId: relic.id, type: 'base', delta: d });
+            } else if (PLUS_MULTI_TYPES.has(eff.type)) {
+                const d = state.addPlusMulti(applyAmplifiedValue(state.plusMulti, eff, null, ctx, amp) - state.plusMulti, label);
+                if (Math.abs(d) > 0.0001) finalRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', delta: d });
             } else if (TIMES_MULTI_TYPES.has(eff.type)) {
                 // times_multi 계열은 delta 방식이 아닌 원본 값 기준 연산 후 차이 계산
                 const d = state.multiplyTimes(applyAmplifiedValue(state.timesMulti, eff, null, ctx, amp) / state.timesMulti, label);

@@ -337,7 +337,8 @@ export class BattleAnimationManager {
             this.scene.itemUI?.pulseRelic(relicId);
             const rp = relicPos(relicId);
             const isBase = type === 'base';
-            const label = isBase ? `+${delta}` : `+${delta}X`;
+            const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
+            const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
             throwLabel(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
             this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
               if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
@@ -362,7 +363,8 @@ export class BattleAnimationManager {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
         const isBase = type === 'base';
-        const label = isBase ? `+${delta}` : `+${delta}X`;
+        const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
+        const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
         throwLabel(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
           if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
@@ -377,8 +379,19 @@ export class BattleAnimationManager {
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
-        throwLabel(rp.x, rp.y, 0xee66ff, `+${delta}`);
+        throwLabel(rp.x, rp.y, 0xee66ff, `+${Math.floor(delta)}`);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + delta, ANIM_SPEED.countUp, next));
+      });
+    });
+
+    details.finalRelicDeltas.forEach(({ relicId, type, delta }) => {
+      if (type !== 'plus_multi') return;
+      queue.push(next => {
+        this.scene.itemUI?.pulseRelic(relicId);
+        const rp = relicPos(relicId);
+        const displayVal = Number(delta.toFixed(2));
+        throwLabel(rp.x, rp.y, 0x44eeff, `+${displayVal}X`);
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next));
       });
     });
 
@@ -421,7 +434,9 @@ export class BattleAnimationManager {
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
-        throwLabel(rp.x, rp.y, 0xff0044, `x${delta}`);
+        const ratio = (currentTimes + delta) / currentTimes;
+        const displayRatio = Number(ratio.toFixed(2));
+        throwLabel(rp.x, rp.y, 0xff0044, `x${displayRatio}`);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
           currentTimes += delta;
           const targetScore = Math.floor(currentBase * currentMulti * currentTimes);
