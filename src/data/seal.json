@@ -57,6 +57,16 @@
       "shopLabel": "×1.1배",
       "img": "rainbow_seal.png",
       "usable": true
+    },
+    {
+      "id": "blue",
+      "name": "Blue Seal",
+      "desc": "배수 +2.0 강화",
+      "border": "#4444ff",
+      "plusMultiBonus": 2,
+      "shopLabel": "+2.0X",
+      "img": "blue_seal.png",
+      "usable": true
     }
   ]
 }

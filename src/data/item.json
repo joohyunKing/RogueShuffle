@@ -36,26 +36,94 @@
       }
     },
     {
-      "id": "seal_scroll",
-      "name": "씰 두루마리",
-      "img": "scroll_blue.png",
-      "desc": "선택한 카드 1장에 씰 랜덤 강화",
+      "id": "stamp_red",
+      "name": "레드 스탬프",
+      "img": "stamp_red.png",
+      "desc": "선택한 카드 2장에 레드 씰 부여 (공격력 +20)",
       "rarity": "common",
       "useYn": "Y",
       "effect": {
-        "type": "seal_hand_card"
+        "type": "seal_stamp",
+        "sealId": "red",
+        "cards": 2
       }
     },
     {
-      "id": "seal_scroll_epic",
-      "name": "강화 씰 두루마리",
-      "img": "scroll_blue_glow.png",
-      "desc": "선택한 카드 3장에 씰 랜덤 강화 (덮어씌움)",
+      "id": "stamp_blue",
+      "name": "블루 스탬프",
+      "img": "stamp_blue.png",
+      "desc": "선택한 카드 2장에 블루 씰 부여 (배수 +2.0X)",
+      "rarity": "common",
+      "useYn": "Y",
+      "effect": {
+        "type": "seal_stamp",
+        "sealId": "blue",
+        "cards": 2
+      }
+    },
+    {
+      "id": "stamp_gold",
+      "name": "골드 스탬프",
+      "img": "stamp_gold.png",
+      "desc": "선택한 카드 2장에 골드 씰 부여 (+5골드)",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": {
+        "type": "seal_stamp",
+        "sealId": "gold",
+        "cards": 2
+      }
+    },
+    {
+      "id": "stamp_pink",
+      "name": "핑크 스탬프",
+      "img": "stamp_pink.png",
+      "desc": "선택한 카드 2장에 핑크 씰 부여 (+5HP)",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": {
+        "type": "seal_stamp",
+        "sealId": "pink",
+        "cards": 2
+      }
+    },
+    {
+      "id": "stamp_green",
+      "name": "그린 스탬프",
+      "img": "stamp_green.png",
+      "desc": "선택한 카드 2장에 그린 씰 부여 (+아이템)",
       "rarity": "epic",
       "useYn": "Y",
       "effect": {
-        "type": "seal_hand_cards_multi",
-        "cards": 3
+        "type": "seal_stamp",
+        "sealId": "green",
+        "cards": 2
+      }
+    },
+    {
+      "id": "stamp_purple",
+      "name": "퍼플 스탬프",
+      "img": "stamp_purple.png",
+      "desc": "선택한 카드 2장에 퍼플 씰 부여 (+1드로우)",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "seal_stamp",
+        "sealId": "purple",
+        "cards": 2
+      }
+    },
+    {
+      "id": "stamp_rainbow",
+      "name": "레인보우 스탬프",
+      "img": "stamp_rainbow.png",
+      "desc": "선택한 카드 2장에 레인보우 씰 부여 (x1.1배)",
+      "rarity": "legend",
+      "useYn": "Y",
+      "effect": {
+        "type": "seal_stamp",
+        "sealId": "rainbow",
+        "cards": 2
       }
     },
     {

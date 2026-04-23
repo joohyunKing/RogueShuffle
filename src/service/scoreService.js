@@ -307,6 +307,7 @@ export function getScoreDetails(cards, context) {
         // 씰 장착 효과
         for (const enh of (card.enhancements ?? [])) {
             if (enh.type === 'red') cardBase += sealMap['red']?.scoreBonus ?? 20;
+            if (enh.type === 'blue') state.addPlusMulti(sealMap['blue']?.plusMultiBonus ?? 2, `BLUE SEAL (${card.key})`);
             if (enh.type === 'rainbow') state.multiplyTimes(sealMap['rainbow']?.timesMultiBonus ?? 1.1, `RAINBOW SEAL (${card.key})`);
         }
         // 슈트 적응도 보너스

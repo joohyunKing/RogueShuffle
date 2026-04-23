@@ -728,6 +728,30 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
+    // seal_stamp: 선택된 N장(보통 2장)에 특정 씰 부여 (덮어씌움)
+    if (eff?.type === 'seal_stamp') {
+      const cardCount = eff.cards ?? 2;
+      const sealId = eff.sealId;
+      const selectedIdxs = [...this.selected];
+      if (selectedIdxs.length !== cardCount) {
+        obj?.destroy();
+        this.render();
+        return;
+      }
+      const keys = [];
+      selectedIdxs.forEach(i => {
+        const card = this.handData[i];
+        card.enhancements = [{ type: sealId }];
+        keys.push(card.key);
+      });
+      this.selected.clear();
+      this.addBattleLog(`[${item.name}] ${keys.join(', ')} → ${sealId} 씰 부여!`);
+      this.player.items.splice(idx, 1);
+      obj?.destroy();
+      this.render();
+      return;
+    }
+
     // remove_hand_cards: 선택된 카드를 최대 maxCards장 제거
     if (eff?.type === 'remove_hand_cards') {
       const maxCards = eff.maxCards ?? 2;

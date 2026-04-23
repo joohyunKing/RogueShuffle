@@ -64,8 +64,8 @@ export class Player {
         /** 구매한 아이템 목록 (최대 6개) */
         this.items = data.items ?? [];
         /** 보유 유물 ID 목록 */
-        this.relics = data.relics ?? ["flush_draw", "str_draw"];
-        //this.relics = data.relics ?? ["side_mirror", "one_eye"];  //test
+        this.relics = data.relics ?? [];
+        //this.relics = data.relics ?? ["flush_draw", "str_draw", "side_mirror", "one_eye"];  //test
         /** 유물 최대 보유 수 (deck.json 기준) */
         this.maxRelicCount = DEFAULT_DECK.maxRelicCount;
         /** 아이템 최대 보유 수 (deck.json 기준) */
