@@ -127,9 +127,8 @@ export function showRelicPickPopup(scene, player, newRelicId, onDone) {
         // 새 relic 버림 → 기존 유지
         onDone?.(null);
       } else {
-        // 기존 relic 제거 → 새 relic 추가
-        player.relics = player.relics.filter(id => id !== relicId);
-        player.relics.push(newRelicId);
+        // 기존 relic 제거 → 새 relic 추가 (슬롯 유지)
+        player.replaceRelic(relicId, newRelicId);
         onDone?.(relicId);
       }
     });

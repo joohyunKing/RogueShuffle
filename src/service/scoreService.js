@@ -2,7 +2,7 @@ import { HAND_RANK, HAND_DATA } from "../constants.js";
 import { relicMap } from '../manager/relicManager.js';
 import { sealMap } from '../manager/sealManager.js';
 
-const ADD_TYPES      = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage", "addPerExcessDeck", "addCurrentHp"]);
+const ADD_TYPES = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage", "addPerExcessDeck", "addCurrentHp"]);
 const PLUS_MULTI_TYPES = new Set(["plus_multi", "plusMultiPerHandUsage"]);
 const TIMES_MULTI_TYPES = new Set(["times_multi", "timesMultiPerDiagonalBingo", "plusMultiPerHandRemaining"]);
 
@@ -22,7 +22,7 @@ export function calculateScore(cards, context) {
 function calcCardScore(card, ctx, relics) {
     let score = card.baseScore;
     for (const enh of (card.enhancements ?? [])) {
-        if (enh.type === 'red')  score += sealMap['red']?.scoreBonus ?? 20;
+        if (enh.type === 'red') score += sealMap['red']?.scoreBonus ?? 20;
         // if (enh.type === 'add')  score += enh.value;   // 하위 호환 (미사용)
     }
 
@@ -61,8 +61,8 @@ function buildAmplifierMap(relics, relicSlots) {
                 if (col > 0) { const id = relicSlots[idx - 1]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
                 if (col < 2) { const id = relicSlots[idx + 1]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
             } else if (eff.type === 'verticalAmplify') {
-                if (idx >= 3)  { const id = relicSlots[idx - 3]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
-                if (idx < 6)   { const id = relicSlots[idx + 3]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
+                if (idx >= 3) { const id = relicSlots[idx - 3]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
+                if (idx < 6) { const id = relicSlots[idx + 3]; if (id) map[id] = (map[id] ?? 1) * eff.value; }
             }
         }
     }
@@ -196,12 +196,14 @@ function applyRelicEffects(startValue, relics, amplifierMap, scope, typeSet, del
         if (delta !== 0) deltaArray.push({ relicId: relic.id, type: deltaType, delta });
     }
     return runValue;
-}export function getScoreDetails(cards, context) {
+}
+
+export function getScoreDetails(cards, context) {
     const relics = getRelicsFromContext(context);
     const amplifierMap = buildAmplifierMap(relics, context.relicSlots ?? null);
 
     const enabledHands = context.enabledHands
-        ?? new Set(Object.entries(HAND_DATA).filter(([,d]) => d.enabled !== false).map(([k]) => Number(k)));
+        ?? new Set(Object.entries(HAND_DATA).filter(([, d]) => d.enabled !== false).map(([k]) => Number(k)));
     const handResult = evaluateHand(cards, enabledHands, context.suitAliases ?? null);
 
     const handRank = handResult.rank ?? HAND_RANK.HIGH_CARD;
@@ -212,7 +214,7 @@ function applyRelicEffects(startValue, relics, amplifierMap, scope, typeSet, del
         cards: handResult.cards || [],
     };
 
-    const atk   = ctx.atk ?? 0;
+    const atk = ctx.atk ?? 0;
     const baseHandMulti = ctx.handConfig?.[ctx.handRank]?.multi ?? 1;
 
     let baseScorePool = atk;
@@ -323,7 +325,7 @@ function applyRelicEffects(startValue, relics, amplifierMap, scope, typeSet, del
 //족보판별
 function evaluateHand(cards, enabledHands, suitAliases) {
     if (!enabledHands) {
-        enabledHands = new Set(Object.entries(HAND_DATA).filter(([,d]) => d.enabled !== false).map(([k]) => Number(k)));
+        enabledHands = new Set(Object.entries(HAND_DATA).filter(([, d]) => d.enabled !== false).map(([k]) => Number(k)));
     }
 
     // suit 정규화 (alias 적용). 원본 카드는 _orig 로 보존
@@ -334,10 +336,10 @@ function evaluateHand(cards, enabledHands, suitAliases) {
     const sorted = [...evalCards].sort((a, b) => b.val - a.val);
 
     const valueMap = groupBy(sorted, c => c.val);
-    const suitMap  = groupBy(sorted, c => c.suit);
+    const suitMap = groupBy(sorted, c => c.suit);
 
     const straightCards = getStraightCards(sorted);
-    const flushSuit  = Object.keys(suitMap).find(s => suitMap[s].length >= 5);
+    const flushSuit = Object.keys(suitMap).find(s => suitMap[s].length >= 5);
     const flushCards = flushSuit ? suitMap[flushSuit].slice(0, 5) : null;
 
     const groups = Object.values(valueMap).sort((a, b) => b.length - a.length);

@@ -146,10 +146,14 @@ export class BattleAnimationManager {
 
     const orbTarget = { x: cX, y: scoreY + 15 };
 
-    const throwOrb = (fromX, fromY, color) => {
-      const orb = this.scene.add.circle(fromX, fromY, 10, color, 1.0).setDepth(420);
-      const glow = this.scene.add.circle(fromX, fromY, 18, color, 0.35).setDepth(419);
-      tmpObjs.push(orb, glow);
+    const throwLabel = (fromX, fromY, color, label) => {
+      const txt = this.scene.add.text(fromX, fromY, label, {
+        fontFamily: TS.defaultFont,
+        fontSize: '20px', color: '#ffffff',
+        stroke: Phaser.Display.Color.IntegerToColor(color).rgba,
+        strokeThickness: 5
+      }).setOrigin(0.5).setDepth(420);
+      tmpObjs.push(txt);
 
       const cpX = (fromX + orbTarget.x) / 2;
       const cpY = Math.min(fromY, orbTarget.y) - 60;
@@ -161,13 +165,12 @@ export class BattleAnimationManager {
           const s = t.v, r = 1 - s;
           const x = r * r * fromX + 2 * r * s * cpX + s * s * orbTarget.x;
           const y = r * r * fromY + 2 * r * s * cpY + s * s * orbTarget.y;
-          orb.setPosition(x, y);
-          glow.setPosition(x, y);
+          txt.setPosition(x, y);
         },
         onComplete: () => {
           this.scene.tweens.add({
-            targets: [orb, glow],
-            scaleX: 3.5, scaleY: 3.5, alpha: 0,
+            targets: txt,
+            scaleX: 2.5, scaleY: 2.5, alpha: 0,
             duration: ANIM_SPEED.orbFade, ease: 'Sine.easeOut',
           });
         },
@@ -288,7 +291,7 @@ export class BattleAnimationManager {
       this.scene.playerUI?.pulseHandRow(details.handRank);
       if (details.baseHandMulti > 0) {
         const rankRow = this.scene.playerUI?._handConfigRows?.[details.handRank];
-        throwOrb(rankRow?.multiTxt?.x ?? PW / 2, rankRow?.multiTxt?.y ?? 400, 0x44eeff);
+        throwLabel(rankRow?.multiTxt?.x ?? PW / 2, rankRow?.multiTxt?.y ?? 400, 0x44eeff, `x${details.baseHandMulti}`);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpMulti(details.baseHandMulti, ANIM_SPEED.countUp, next));
       } else {
         next();
@@ -300,7 +303,7 @@ export class BattleAnimationManager {
       queue.push(next => {
         this.scene.playerUI?.pulseAtk();
         const atkText = this.scene.playerUI?.playerAtkTxt;
-        throwOrb(atkText ? atkText.x : PW * 0.75, atkText ? atkText.y : 168, 0xff8833);
+        throwLabel(atkText ? atkText.x : PW * 0.75, atkText ? atkText.y : 168, 0xff8833, `+${details.atk}`);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + details.atk, ANIM_SPEED.countUp, next));
       });
     }
@@ -325,7 +328,7 @@ export class BattleAnimationManager {
             info.obj.setTexture(info.key);
           }
           pulseCard(info.obj);
-          throwOrb(info.fromX, info.fromY, 0xffdd44);
+          throwLabel(info.fromX, info.fromY, 0xffdd44, `+${cd.baseScore}`);
           this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + cd.baseScore, ANIM_SPEED.countUp, next));
         });
 
@@ -334,7 +337,8 @@ export class BattleAnimationManager {
             this.scene.itemUI?.pulseRelic(relicId);
             const rp = relicPos(relicId);
             const isBase = type === 'base';
-            throwOrb(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff);
+            const label = isBase ? `+${delta}` : `+${delta}X`;
+            throwLabel(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
             this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
               if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
               else countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next);
@@ -358,7 +362,8 @@ export class BattleAnimationManager {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
         const isBase = type === 'base';
-        throwOrb(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff);
+        const label = isBase ? `+${delta}` : `+${delta}X`;
+        throwLabel(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
           if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
           else countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next);
@@ -372,7 +377,7 @@ export class BattleAnimationManager {
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
-        throwOrb(rp.x, rp.y, 0xee66ff);
+        throwLabel(rp.x, rp.y, 0xee66ff, `+${delta}`);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + delta, ANIM_SPEED.countUp, next));
       });
     });
@@ -416,7 +421,7 @@ export class BattleAnimationManager {
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = relicPos(relicId);
-        throwOrb(rp.x, rp.y, 0xff0044);
+        throwLabel(rp.x, rp.y, 0xff0044, `x${delta}`);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
           currentTimes += delta;
           const targetScore = Math.floor(currentBase * currentMulti * currentTimes);

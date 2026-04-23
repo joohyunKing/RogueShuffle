@@ -140,7 +140,7 @@
       },
       "passive": {
         "name": "수호의 계약",
-        "description": "소환수가 전장에 있으면 방어력이 3배 증가합니다.",
+        "description": "소환수가 전장에 있으면 방어력이 3배 증가합니다.\n소환수가 없으면 소환수 부활 스킬을 사용합니다.",
         "type": "def_multiply_when_summoned",
         "value": 3,
         "triggerOn": "player_turn"

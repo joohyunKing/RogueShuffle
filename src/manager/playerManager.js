@@ -257,10 +257,28 @@ export class Player {
 
     /** 유물 제거 (relics + relicSlots 동시 갱신) */
     removeRelic(relicId) {
-        const ri = this.relics.indexOf(relicId);
-        if (ri >= 0) this.relics.splice(ri, 1);
-        const si = this.relicSlots.indexOf(relicId);
-        if (si >= 0) this.relicSlots[si] = null;
+        // filter를 사용하여 모든 인스턴스 제거 (보통은 1개지만 안전을 위해)
+        this.relics = this.relics.filter(id => id !== relicId);
+        
+        // relicSlots에서도 해당 ID가 있는 모든 슬롯을 null로 비움
+        for (let i = 0; i < this.relicSlots.length; i++) {
+            if (this.relicSlots[i] === relicId) {
+                this.relicSlots[i] = null;
+            }
+        }
+    }
+
+    /** 유물 교체 (특정 위치의 유물을 새 유물로 교체) */
+    replaceRelic(oldId, newId) {
+        const si = this.relicSlots.indexOf(oldId);
+        if (si >= 0) {
+            this.relicSlots[si] = newId;
+            this.relics = this.relics.map(id => id === oldId ? newId : id);
+        } else {
+            // 위치를 못 찾으면 단순 제거 후 추가
+            this.removeRelic(oldId);
+            this.tryAddRelic(newId);
+        }
     }
 
     // ── 유물 위치 / 빙고 헬퍼 ─────────────────────────────────────────────

@@ -327,7 +327,7 @@ export class BattleScene extends Phaser.Scene {
       onItemClick: (idx) => this._useItem(idx, null),
       onRelicSell: (relicId) => {
         this.player.applyRelicOnRemove(relicId);
-        this.player.relics = this.player.relics.filter(id => id !== relicId);
+        this.player.removeRelic(relicId);
         this.itemUI.refresh();
         this.playerUI?.refresh();
         this.playerUI?.refreshHandConfig();

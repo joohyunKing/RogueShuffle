@@ -248,7 +248,7 @@ export class MarketScene extends Phaser.Scene {
       depth: 10,
       onRelicSell: (relicId) => {
         this.player.applyRelicOnRemove(relicId);
-        this.player.relics = this.player.relics.filter(id => id !== relicId);
+        this.player.removeRelic(relicId);
         this._drawScene();
       },
       onItemSell: (idx) => {
