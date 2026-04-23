@@ -25,6 +25,139 @@
       }
     },
     {
+      "id": "copy_scroll",
+      "name": "복사 두루마리",
+      "img": "scroll_green.png",
+      "desc": "선택한 카드 1장을 복사해서 핸드에 추가",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": {
+        "type": "copy_hand_card"
+      }
+    },
+    {
+      "id": "seal_scroll",
+      "name": "씰 두루마리",
+      "img": "scroll_blue.png",
+      "desc": "선택한 카드 1장에 씰 랜덤 강화",
+      "rarity": "common",
+      "useYn": "Y",
+      "effect": {
+        "type": "seal_hand_card"
+      }
+    },
+    {
+      "id": "seal_scroll_epic",
+      "name": "강화 씰 두루마리",
+      "img": "scroll_blue_glow.png",
+      "desc": "선택한 카드 3장에 씰 랜덤 강화 (덮어씌움)",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "seal_hand_cards_multi",
+        "cards": 3
+      }
+    },
+    {
+      "id": "hand_remover",
+      "name": "제거 두루마리",
+      "img": "scroll_red.png",
+      "desc": "선택한 카드를 제거 (최대 2장)",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": {
+        "type": "remove_hand_cards",
+        "maxCards": 2
+      }
+    },
+    {
+      "id": "scroll_low_hands",
+      "name": "Low Hand 강화서",
+      "img": "scroll.png",
+      "desc": "하이카드, 원페어, 트리플, 투페어의 배수를 1 올려줍니다",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": {
+        "type": "hand_multi",
+        "handRank": [0, 1, 2, 3],
+        "value": 1
+      }
+    },
+    {
+      "id": "scroll_high_hands",
+      "name": "High Hand 강화서",
+      "img": "scroll.png",
+      "desc": "스트레이트, 플러쉬, 풀하우스, 포카드의 배수를 1 올려줍니다",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "hand_multi",
+        "handRank": [6, 7, 8, 9],
+        "value": 1
+      }
+    },
+    {
+      "id": "scroll_epic_hands",
+      "name": "Epic Hand 강화서",
+      "img": "scroll_legend.png",
+      "desc": "스트레이트 플러쉬 및 상위 족보들의 배수를 2 올려줍니다",
+      "rarity": "legend",
+      "useYn": "Y",
+      "effect": {
+        "type": "hand_multi",
+        "handRank": [10, 11, 12, 13],
+        "value": 2
+      }
+    },
+    {
+      "id": "recycle_dummy",
+      "name": "회수의 물약",
+      "img": "purple_portion.png",
+      "desc": "더미 마지막 5장을 덱 상단으로 이동",
+      "rarity": "common",
+      "useYn": "Y",
+      "effect": {
+        "type": "recycle_dummy",
+        "cards": 5
+      }
+    },
+    {
+      "id": "field_refill",
+      "name": "공간의 물약",
+      "img": "blue_portion.png",
+      "desc": "필드를 최대치까지 카드로 채움",
+      "rarity": "rare",
+      "useYn": "Y",
+      "effect": {
+        "type": "fill_field"
+      }
+    },
+    {
+      "id": "alchemist_crucible",
+      "name": "연금술",
+      "img": "scroll_purple.png",
+      "desc": "핸드에서 3장 선택, 랜덤 1장의 suit/rank를 나머지 2장에 덮어씌움",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "alchemist_crucible",
+        "cards": 3
+      }
+    },
+    {
+      "id": "alchemist_legend",
+      "name": "강화 연금술",
+      "img": "scroll_legend.png",
+      "desc": "핸드에서 3장 선택, 가장 왼쪽 카드의 suit/rank/seal을 나머지 2장에 덮어씌움",
+      "rarity": "legend",
+      "useYn": "Y",
+      "effect": {
+        "type": "alchemist_crucible",
+        "cards": 3,
+        "sourceMode": "leftmost"
+      }
+    },
+    {
       "id": "shield",
       "name": "방패",
       "img": null,
@@ -42,7 +175,7 @@
       "img": null,
       "desc": "턴당 공격 횟수 +1 (이번 전투만)",
       "rarity": "rare",
-      "useYn": "Y",
+      "useYn": "N",
       "effect": {
         "type": "attacksPerTurn",
         "value": 1
@@ -55,7 +188,7 @@
       "img": null,
       "desc": "핸드 카드 수 +1 (이번 전투만)",
       "rarity": "rare",
-      "useYn": "Y",
+      "useYn": "N",
       "effect": {
         "type": "handSize",
         "value": 1
@@ -68,7 +201,7 @@
       "img": null,
       "desc": "필드 카드 수 +1 (이번 전투만)",
       "rarity": "rare",
-      "useYn": "Y",
+      "useYn": "N",
       "effect": {
         "type": "fieldSize",
         "value": 1
@@ -125,230 +258,6 @@
         "type": "attr",
         "suit": "C",
         "value": 1
-      }
-    },
-    {
-      "id": "copy_scroll",
-      "name": "복사 두루마리",
-      "img": "scroll_green.png",
-      "desc": "선택한 카드 1장을 복사해서 핸드에 추가",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "copy_hand_card"
-      }
-    },
-    {
-      "id": "seal_scroll",
-      "name": "씰 두루마리",
-      "img": "scroll_blue.png",
-      "desc": "선택한 카드 1장에 씰 랜덤 강화",
-      "rarity": "common",
-      "useYn": "Y",
-      "effect": {
-        "type": "seal_hand_card"
-      }
-    },
-    {
-      "id": "seal_scroll_epic",
-      "name": "강화 씰 두루마리",
-      "img": "scroll_blue_glow.png",
-      "desc": "선택한 카드 3장에 씰 랜덤 강화 (덮어씌움)",
-      "rarity": "epic",
-      "useYn": "Y",
-      "effect": {
-        "type": "seal_hand_cards_multi",
-        "cards": 3
-      }
-    },
-    {
-      "id": "hand_remover",
-      "name": "제거 두루마리",
-      "img": "scroll_red.png",
-      "desc": "선택한 카드를 제거 (최대 2장)",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "remove_hand_cards",
-        "maxCards": 2
-      }
-    },
-    {
-      "id": "scroll_high_card",
-      "name": "하이카드 강화서",
-      "img": "scroll.png",
-      "desc": "하이카드의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 0,
-        "value": 1
-      }
-    },
-    {
-      "id": "scroll_one_pair",
-      "name": "원페어 강화서",
-      "img": "scroll.png",
-      "desc": "원페어의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 1,
-        "value": 1
-      }
-    },
-    {
-      "id": "scroll_triple",
-      "name": "트리플 강화서",
-      "img": "scroll.png",
-      "desc": "트리플의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 2,
-        "value": 1
-      }
-    },
-    {
-      "id": "scroll_two_pair",
-      "name": "투페어 강화서",
-      "img": "scroll.png",
-      "desc": "투페어의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 3,
-        "value": 1
-      }
-    },
-    {
-      "id": "scroll_straight",
-      "name": "스트레이트 강화서",
-      "img": "scroll.png",
-      "desc": "스트레이트의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 6,
-        "value": 1
-      }
-    },
-    {
-      "id": "scroll_flush",
-      "name": "플러쉬 강화서",
-      "img": "scroll.png",
-      "desc": "플러쉬의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 7,
-        "value": 1
-      }
-    },
-    {
-      "id": "scroll_full_house",
-      "name": "풀하우스 강화서",
-      "img": "scroll.png",
-      "desc": "풀하우스의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 8,
-        "value": 1
-      }
-    },
-    {
-      "id": "scroll_four_of_a_kind",
-      "name": "포카드 강화서",
-      "img": "scroll.png",
-      "desc": "포카드의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 9,
-        "value": 1
-      }
-    },
-    {
-      "id": "scroll_straight_flush",
-      "name": "스트레이트 플러쉬 강화서",
-      "img": "scroll.png",
-      "desc": "스트레이트 플러쉬의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 10,
-        "value": 1
-      }
-    },
-    {
-      "id": "scroll_five_card",
-      "name": "파이브카드 강화서",
-      "img": "scroll.png",
-      "desc": "파이브카드의 배수를 1 올려줍니다",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "hand_multi",
-        "handRank": 11,
-        "value": 1
-      }
-    },
-    {
-      "id": "recycle_dummy",
-      "name": "회수의 물약",
-      "img": "purple_portion.png",
-      "desc": "더미 마지막 5장을 덱 상단으로 이동",
-      "rarity": "common",
-      "useYn": "Y",
-      "effect": {
-        "type": "recycle_dummy",
-        "cards": 5
-      }
-    },
-    {
-      "id": "field_refill",
-      "name": "공간의 물약",
-      "img": "blue_portion.png",
-      "desc": "필드를 최대치까지 카드로 채움",
-      "rarity": "rare",
-      "useYn": "Y",
-      "effect": {
-        "type": "fill_field"
-      }
-    },
-    {
-      "id": "alchemist_crucible",
-      "name": "연금술",
-      "img": "scroll_purple.png",
-      "desc": "핸드에서 3장 선택, 랜덤 1장의 suit/rank를 나머지 2장에 덮어씌움",
-      "rarity": "epic",
-      "useYn": "Y",
-      "effect": {
-        "type": "alchemist_crucible",
-        "cards": 3
-      }
-    },
-    {
-      "id": "alchemist_legend",
-      "name": "강화 연금술",
-      "img": "scroll_legend.png",
-      "desc": "핸드에서 3장 선택, 가장 왼쪽 카드의 suit/rank/seal을 나머지 2장에 덮어씌움",
-      "rarity": "legend",
-      "useYn": "Y",
-      "effect": {
-        "type": "alchemist_crucible",
-        "cards": 3,
-        "sourceMode": "leftmost"
       }
     }
   ]

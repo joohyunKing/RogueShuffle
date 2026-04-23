@@ -73,10 +73,13 @@ export function applyItemEffect(player, itemId, itemName) {
       player.attrs[eff.suit] += eff.value;
       return `[${itemName}] ${eff.suit} 적응 +${eff.value}`;
     case 'hand_multi': {
-      const rank = String(eff.handRank);
-      if (player.handConfig[rank] != null) {
-        player.handConfig[rank].multi += eff.value;
-      }
+      const ranks = Array.isArray(eff.handRank) ? eff.handRank : [eff.handRank];
+      ranks.forEach(r => {
+        const rank = String(r);
+        if (player.handConfig[rank] != null) {
+          player.handConfig[rank].multi += eff.value;
+        }
+      });
       return `[${itemName}] 배수 +${eff.value}`;
     }
     case 'copy_hand_card':

@@ -16,7 +16,7 @@ const SUIT_KEYS = ['S', 'H', 'D', 'C'];
 const getPUI = getPlayerUI;
 
 // 높은 rank → 낮은 rank 순으로 표시
-const HAND_RANKS_DESC = [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+const HAND_RANKS_DESC = [13, 12, 11, 10, 9, 8, 7, 6, 3, 2, 1, 0];
 // 발견/해금 전에는 숨겨둘 특수 족보들
 const RARE_RANKS = [11, 12, 13];
 

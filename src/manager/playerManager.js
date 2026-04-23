@@ -64,7 +64,7 @@ export class Player {
         /** 구매한 아이템 목록 (최대 6개) */
         this.items = data.items ?? [];
         /** 보유 유물 ID 목록 */
-        this.relics = data.relics ?? [];
+        this.relics = data.relics ?? ["flush_draw", "str_draw"];
         //this.relics = data.relics ?? ["side_mirror", "one_eye"];  //test
         /** 유물 최대 보유 수 (deck.json 기준) */
         this.maxRelicCount = DEFAULT_DECK.maxRelicCount;
@@ -259,7 +259,7 @@ export class Player {
     removeRelic(relicId) {
         // filter를 사용하여 모든 인스턴스 제거 (보통은 1개지만 안전을 위해)
         this.relics = this.relics.filter(id => id !== relicId);
-        
+
         // relicSlots에서도 해당 ID가 있는 모든 슬롯을 null로 비움
         for (let i = 0; i < this.relicSlots.length; i++) {
             if (this.relicSlots[i] === relicId) {

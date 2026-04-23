@@ -190,10 +190,13 @@ function buildAmplifierMap(relics, relicSlots) {
 /**
  * 보스 스킬 등에서 카드 무력화 판독 (Hand Evaluate 용)
  */
-function evaluateHand(cards, enabledHands, suitAliases) {
+function evaluateHand(cards, enabledHands, suitAliases, config = {}) {
     if (!enabledHands) {
         enabledHands = new Set(Object.entries(HAND_DATA).filter(([, d]) => d.enabled !== false).map(([k]) => Number(k)));
     }
+
+    const flushReq = config.flushReq || 5;
+    const strReq = config.strReq || 5;
 
     const evalCards = cards.map(c =>
         suitAliases ? { ...c, suit: suitAliases[c.suit] ?? c.suit, _orig: c } : { ...c, _orig: c }
@@ -202,9 +205,9 @@ function evaluateHand(cards, enabledHands, suitAliases) {
     const valueMap = groupBy(sorted, c => c.val);
     const suitMap = groupBy(sorted, c => c.suit);
 
-    const straightCards = getStraightCards(sorted);
-    const flushSuit = Object.keys(suitMap).find(s => suitMap[s].length >= 5);
-    const flushCards = flushSuit ? suitMap[flushSuit].slice(0, 5) : null;
+    const straightCards = getStraightCards(sorted, strReq);
+    const flushSuit = Object.keys(suitMap).find(s => suitMap[s].length >= flushReq);
+    const flushCards = flushSuit ? suitMap[flushSuit].slice(0, Math.max(5, flushReq)) : null;
 
     const groups = Object.values(valueMap).sort((a, b) => b.length - a.length);
 
@@ -216,11 +219,11 @@ function evaluateHand(cards, enabledHands, suitAliases) {
     }
 
     // High Tier Hands
-    if (groups[0] && groups[0].length === 5 && flushSuit) {
+    if (groups[0] && groups[0].length === 5 && flushSuit && suitMap[flushSuit].length >= 5) {
         const isFlushFive = groups[0].every(c => (suitAliases ? (suitAliases[c.suit] ?? c.suit) : c.suit) === flushSuit);
         if (isFlushFive) { rank = HAND_RANK.FLUSH_FIVE; bestCards = groups[0]; }
     }
-    if (rank === HAND_RANK.HIGH_CARD && groups[0] && groups[0].length === 3 && groups[1] && groups[1].length === 2 && flushSuit) {
+    if (rank === HAND_RANK.HIGH_CARD && groups[0] && groups[0].length === 3 && groups[1] && groups[1].length === 2 && flushSuit && suitMap[flushSuit].length >= 5) {
         const combined = [...groups[0], ...groups[1]];
         const isFlushFullHouse = combined.every(c => (suitAliases ? (suitAliases[c.suit] ?? c.suit) : c.suit) === flushSuit);
         if (isFlushFullHouse) { rank = HAND_RANK.FLUSH_FULL_HOUSE; bestCards = combined; }
@@ -232,24 +235,17 @@ function evaluateHand(cards, enabledHands, suitAliases) {
         else if (flushSuit && straightCards) {
             const flushSet = new Set(suitMap[flushSuit].map(c => c.val));
             const sf = straightCards.filter(c => flushSet.has(c.val));
-            if (sf.length >= 5) { rank = HAND_RANK.STRAIGHT_FLUSH; bestCards = sf.slice(0, 5); }
+            // Straight Flush check: if both requirements are met
+            // Balatro style: if you have 4 seq and those 4 are same suit (and both reqs are 4)
+            const sfReq = Math.max(flushReq, strReq);
+            if (sf.length >= sfReq) { rank = HAND_RANK.STRAIGHT_FLUSH; bestCards = sf.slice(0, Math.max(5, sfReq)); }
         }
         else if (groups[0] && groups[0].length === 4) { rank = HAND_RANK.FOUR_OF_A_KIND; bestCards = [...groups[0]]; }
         else if (groups[0] && groups[0].length === 3 && groups[1] && groups[1].length >= 2) {
             rank = HAND_RANK.FULL_HOUSE; bestCards = [...groups[0], ...groups[1].slice(0, 2)];
         }
-        else if (flushSuit) { rank = HAND_RANK.FLUSH; bestCards = flushCards; }
+        else if (flushSuit) { rank = HAND_RANK.FLUSH; bestCards = flushCards.slice(0, 5); }
         else if (straightCards) { rank = HAND_RANK.STRAIGHT; bestCards = straightCards.slice(0, 5); }
-    }
-
-    // Draws
-    if (rank === HAND_RANK.HIGH_CARD && enabledHands.has(HAND_RANK.FLUSH_DRAW)) {
-        const fdSuit = Object.keys(suitMap).find(s => suitMap[s].length >= 4);
-        if (fdSuit) { rank = HAND_RANK.FLUSH_DRAW; bestCards = suitMap[fdSuit].slice(0, 4); }
-    }
-    if (rank === HAND_RANK.HIGH_CARD && enabledHands.has(HAND_RANK.STRAIGHT_DRAW)) {
-        const sdCards = getStraightDrawCards(sorted);
-        if (sdCards) { rank = HAND_RANK.STRAIGHT_DRAW; bestCards = sdCards; }
     }
 
     // Low Tier Hands
@@ -275,7 +271,19 @@ export function getScoreDetails(cards, context) {
     // 1. 핸드 평가 및 컨텍스트 초기화
     const enabledHands = context.enabledHands
         ?? new Set(Object.entries(HAND_DATA).filter(([, d]) => d.enabled !== false).map(([k]) => Number(k)));
-    const handResult = evaluateHand(cards, enabledHands, context.suitAliases ?? null);
+
+    // 유물 효과에서 족보 요구치 추출
+    let flushReq = 5, strReq = 5;
+    relics.forEach(r => {
+        (r.effects ?? []).forEach(e => {
+            if (e.type === 'reduceHandReq') {
+                if (e.target === 'FLUSH') flushReq = Math.min(flushReq, e.value);
+                if (e.target === 'STRAIGHT') strReq = Math.min(strReq, e.value);
+            }
+        });
+    });
+
+    const handResult = evaluateHand(cards, enabledHands, context.suitAliases ?? null, { flushReq, strReq });
     const handRank = handResult.rank ?? HAND_RANK.HIGH_CARD;
 
     const ctx = {
@@ -450,7 +458,7 @@ function groupBy(arr, keyFn) {
     return map;
 }
 
-function getStraightDrawCards(cards) {
+function getStraightCards(cards, reqCount = 5) {
     let values = [...new Set(cards.map(c => c.val))];
     if (values.includes(14)) values.push(1);
     values.sort((a, b) => a - b);
@@ -458,24 +466,8 @@ function getStraightDrawCards(cards) {
     for (let i = 0; i < values.length; i++) {
         if (i === 0 || values[i] === values[i - 1] + 1) seq.push(values[i]);
         else seq = [values[i]];
-        if (seq.length >= 4) {
-            const needed = seq.slice(-4);
-            return needed.map(v => cards.find(c => c.val === v || (v === 1 && c.val === 14)));
-        }
-    }
-    return null;
-}
-
-function getStraightCards(cards) {
-    let values = [...new Set(cards.map(c => c.val))];
-    if (values.includes(14)) values.push(1);
-    values.sort((a, b) => a - b);
-    let seq = [];
-    for (let i = 0; i < values.length; i++) {
-        if (i === 0 || values[i] === values[i - 1] + 1) seq.push(values[i]);
-        else seq = [values[i]];
-        if (seq.length >= 5) {
-            const needed = seq.slice(-5);
+        if (seq.length >= reqCount) {
+            const needed = seq.slice(-reqCount);
             return needed.map(v => cards.find(c => c.val === v || (v === 1 && c.val === 14)));
         }
     }

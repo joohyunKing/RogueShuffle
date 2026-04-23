@@ -163,30 +163,32 @@
     {
       "id": "flush_draw",
       "name": "플러시 드로우",
-      "description": "플러시 드로우 활성화 (같은 슈트 4장)",
+      "description": "플러시 요구 카드 수 1 감소 (4장)",
       "rarity": "rare",
       "img": "f_rune.png",
       "useYn": "Y",
       "effects": [
         {
           "scope": "special",
-          "type": "enableHand",
-          "handRank": 5
+          "type": "reduceHandReq",
+          "target": "FLUSH",
+          "value": 4
         }
       ]
     },
     {
       "id": "str_draw",
       "name": "스트레이트 드로우",
-      "description": "스트레이트 드로우 활성화 (이어진 숫자 4장)",
+      "description": "스트레이트 요구 카드 수 1 감소 (4장)",
       "rarity": "rare",
       "img": "s_rune.png",
       "useYn": "Y",
       "effects": [
         {
           "scope": "special",
-          "type": "enableHand",
-          "handRank": 4
+          "type": "reduceHandReq",
+          "target": "STRAIGHT",
+          "value": 4
         }
       ]
     },
