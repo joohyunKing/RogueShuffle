@@ -2,7 +2,7 @@
   "bosses": [
     {
       "id": "troll",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "트롤",
       "img": "troll.png",
       "statScale": {
@@ -76,7 +76,7 @@
     },
     {
       "id": "berserker",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "광전사",
       "img": "orc_lord.png",
       "statScale": {
@@ -130,7 +130,7 @@
     },
     {
       "id": "summoner",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "소환사",
       "img": "summoner.png",
       "statScale": {
@@ -166,7 +166,7 @@
     },
     {
       "id": "trickster",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "트릭스터",
       "img": "trickster.png",
       "initSkillId": "disable_rank",
@@ -212,7 +212,7 @@
     },
     {
       "id": "tricksterB",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "트릭스터:레코드",
       "img": "tricksterB.png",
       "initSkillId": "",
@@ -269,7 +269,7 @@
     },
     {
       "id": "bomber",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "폭격자",
       "img": "skull_axe.png",
       "statScale": {
@@ -321,7 +321,7 @@
     },
     {
       "id": "butcher",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "도살자",
       "img": "butcher.png",
       "initSkillId": "",
@@ -407,7 +407,7 @@
     },
     {
       "id": "shaman",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "주술사",
       "img": "shaman.png",
       "initSkillId": "card_veil",
@@ -444,7 +444,7 @@
     },
     {
       "id": "iron_fortress",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "방어의 화신",
       "img": "iron_fortress.png",
       "statScale": {
@@ -499,7 +499,7 @@
     },
     {
       "id": "demon",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "데몬",
       "img": "demon.png",
       "statScale": {
@@ -529,7 +529,7 @@
     },
     {
       "id": "vampire",
-      "useYn": "N",
+      "useYn": "Y",
       "name": "뱀파이어",
       "img": "vampire.png",
       "statScale": {
