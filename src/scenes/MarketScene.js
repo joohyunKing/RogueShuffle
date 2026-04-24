@@ -24,7 +24,7 @@ function getRarityWeights(round) {
     legend: Math.round(0 + 8 * t),  //  0 →  8
   };
 }
-const ITEM_PRICE = { common: 5, rare: 10, epic: 15, legend: 20 };
+const ITEM_PRICE = { common: 10, rare: 15, epic: 20, legend: 25 };
 const RELIC_PRICE = { common: 20, rare: 30, epic: 40, legend: 50 };
 const RARITY_COLORS = {
   common: { bg: 0x1a3a22, label: '#aaffaa' },
