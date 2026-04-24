@@ -125,6 +125,10 @@ export class BattleScene extends Phaser.Scene {
     this.battleIndex = data.battleIndex ?? 0;
     this.normalCount = data.normalCount ?? 3;
     this._fullBattleLog = data.battleLog ?? [];
+
+    // UI 생성(_createUI) 시점에 isBoss가 필요하므로 여기서 초기화
+    this.roundData = data.roundData ?? roundManager.getRoundData(this.round, this.battleIndex);
+    this.isBoss = this.roundData.isBoss ?? false;
   }
 
   _initManagers(data) {
@@ -186,14 +190,13 @@ export class BattleScene extends Phaser.Scene {
   }
 
   _initMonsters(data) {
-    const roundData = roundManager.getRoundData(this.round, this.battleIndex);
-    this.isBoss = roundData.isBoss ?? false;
-    this.battleType = roundData.battleInfo?.type ?? 'normal';
+    const rd = this.roundData;
+    this.battleType = rd.battleInfo?.type ?? 'normal';
     this.monsterImgScale = this.battleType === 'elite' ? 1.4 : 1.0;
 
     this.monsterObjs = [];
     this._monsterSprites = [];
-    this.monsters = data.monsters ? data.monsters : spawnManager.generate(roundData);
+    this.monsters = data.monsters ? data.monsters : spawnManager.generate(rd);
     this.monsterManager.setMonsters(this.monsters);
 
     const positions = this.monsterManager.calcMonsterPositions(this.monsterManager.monsters.length);

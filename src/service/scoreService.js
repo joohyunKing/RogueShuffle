@@ -40,11 +40,11 @@ class ScoreState {
     }
 
     multiplyTimes(val, label) {
-        if (Math.abs(val - 1.0) < 0.0001) return 0;
+        if (Math.abs(val - 1.0) < 0.0001) return 1.0;
         const before = this.timesMulti;
         this.timesMulti *= val;
         this._addLog(label, `TimesMulti: ${before.toFixed(2)} -> ${this.timesMulti.toFixed(2)} (x${val.toFixed(2)})`);
-        return this.timesMulti - before; // delta for animation compatibility
+        return val; // Return ratio instead of delta
     }
 
     _addLog(label, msg) {
@@ -317,13 +317,12 @@ export function getScoreDetails(cards, context) {
             if (enh.type === 'blue') {
                 const d = sealMap['blue']?.plusMultiBonus ?? 2;
                 state.addPlusMulti(d, `BLUE SEAL (${card.key})`);
-                cardRelicDeltas.push({ relicId: 'seal_blue', type: 'plus_multi', delta: d });
+                cardRelicDeltas.push({ relicId: 'seal_blue', type: 'plus_multi', value: d });
             }
             if (enh.type === 'rainbow') {
                 const ratio = sealMap['rainbow']?.timesMultiBonus ?? 1.1;
-                const before = state.timesMulti;
                 state.multiplyTimes(ratio, `RAINBOW SEAL (${card.key})`);
-                cardRelicDeltas.push({ relicId: 'seal_rainbow', type: 'times_multi', delta: state.timesMulti - before });
+                cardRelicDeltas.push({ relicId: 'seal_rainbow', type: 'times_multi', value: ratio });
             }
         }
         // 슈트 적응도 보너스
@@ -350,7 +349,7 @@ export function getScoreDetails(cards, context) {
                     const d = state.baseScore - before;
                     if (d !== 0) {
                         deltaBase += d;
-                        cardRelicDeltas.push({ relicId: relic.id, type: 'base', delta: d });
+                        cardRelicDeltas.push({ relicId: relic.id, type: 'base', value: d });
                         state._addLog(relicLabel, `Base: ${Math.floor(before)} -> ${Math.floor(state.baseScore)} (+${Math.floor(d)})`);
                     }
                 } else if (PLUS_MULTI_TYPES.has(eff.type)) {
@@ -359,7 +358,7 @@ export function getScoreDetails(cards, context) {
                     const d = state.plusMulti - before;
                     if (d !== 0) {
                         deltaMulti += d;
-                        cardRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', delta: d });
+                        cardRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', value: d });
                         state._addLog(relicLabel, `PlusMulti: ${before.toFixed(1)} -> ${state.plusMulti.toFixed(1)} (+${d.toFixed(1)})`);
                     }
                 }
@@ -372,7 +371,7 @@ export function getScoreDetails(cards, context) {
                 for (const eff of (relic.effects ?? [])) {
                     if (eff.scope === 'card' && eff.type === 'sealedCardEcho') {
                         state.addBase(deltaBase + initialCardBase, `ECHO:${relic.id}(${card.key})`);
-                        cardRelicDeltas.push({ relicId: relic.id, type: 'base', delta: deltaBase + initialCardBase });
+                        cardRelicDeltas.push({ relicId: relic.id, type: 'base', value: deltaBase + initialCardBase });
                     }
                 }
             }
@@ -390,10 +389,10 @@ export function getScoreDetails(cards, context) {
             const label = `HAND RELIC:${relic.id}`;
             if (ADD_TYPES.has(eff.type)) {
                 const d = state.addBase(applyAmplifiedValue(state.baseScore, eff, null, ctx, amp) - state.baseScore, label);
-                if (d !== 0) handRelicDeltas.push({ relicId: relic.id, type: 'base', delta: d });
+                if (d !== 0) handRelicDeltas.push({ relicId: relic.id, type: 'base', value: d });
             } else if (PLUS_MULTI_TYPES.has(eff.type)) {
                 const d = state.addPlusMulti(applyAmplifiedValue(state.plusMulti, eff, null, ctx, amp) - state.plusMulti, label);
-                if (d !== 0) handRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', delta: d });
+                if (d !== 0) handRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', value: d });
             }
         }
     }
@@ -407,14 +406,14 @@ export function getScoreDetails(cards, context) {
             const label = `FINAL RELIC:${relic.id}`;
             if (ADD_TYPES.has(eff.type)) {
                 const d = state.addBase(applyAmplifiedValue(state.baseScore, eff, null, ctx, amp) - state.baseScore, label);
-                if (d !== 0) finalRelicDeltas.push({ relicId: relic.id, type: 'base', delta: d });
+                if (d !== 0) finalRelicDeltas.push({ relicId: relic.id, type: 'base', value: d });
             } else if (PLUS_MULTI_TYPES.has(eff.type)) {
                 const d = state.addPlusMulti(applyAmplifiedValue(state.plusMulti, eff, null, ctx, amp) - state.plusMulti, label);
-                if (Math.abs(d) > 0.0001) finalRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', delta: d });
+                if (Math.abs(d) > 0.0001) finalRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', value: d });
             } else if (TIMES_MULTI_TYPES.has(eff.type)) {
-                // times_multi 계열은 delta 방식이 아닌 원본 값 기준 연산 후 차이 계산
-                const d = state.multiplyTimes(applyAmplifiedValue(state.timesMulti, eff, null, ctx, amp) / state.timesMulti, label);
-                if (Math.abs(d) > 0.0001) finalRelicDeltas.push({ relicId: relic.id, type: 'times_multi', delta: d });
+                // times_multi 계열은 ratio를 그대로 전달
+                const ratio = state.multiplyTimes(applyAmplifiedValue(state.timesMulti, eff, null, ctx, amp) / state.timesMulti, label);
+                if (Math.abs(ratio - 1.0) > 0.0001) finalRelicDeltas.push({ relicId: relic.id, type: 'times_multi', value: ratio });
             }
         }
     }

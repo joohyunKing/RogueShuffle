@@ -80,23 +80,21 @@ export function applyBingoBonuses(state, slots, levels = { h: 1, v: 1, d: 1 }) {
         const bonusValue = getBingoBonusValue('H', levels.h);
         const val = stats.h * bonusValue;
         const d = state.addBase(val, `BINGO:H (Lv.${levels.h})`);
-        if (d !== 0) deltas.push({ relicId: 'sys_bingo_h', type: 'base', delta: d });
+        if (d !== 0) deltas.push({ relicId: 'sys_bingo_h', type: 'base', value: d });
     }
 
     if (stats.v > 0) {
         const bonusValue = getBingoBonusValue('V', levels.v);
         const val = stats.v * bonusValue;
         const d = state.addPlusMulti(val, `BINGO:V (Lv.${levels.v})`);
-        if (d !== 0) deltas.push({ relicId: 'sys_bingo_v', type: 'plus_multi', delta: d });
+        if (d !== 0) deltas.push({ relicId: 'sys_bingo_v', type: 'plus_multi', value: d });
     }
 
     if (stats.d > 0) {
         const bonusValue = getBingoBonusValue('D', levels.d);
         const ratio = Math.pow(bonusValue, stats.d);
-        const before = state.timesMulti;
         state.multiplyTimes(ratio, `BINGO:D (Lv.${levels.d})`);
-        const d = state.timesMulti - before;
-        if (Math.abs(d) > 0.0001) deltas.push({ relicId: 'sys_bingo_d', type: 'times_multi', delta: d });
+        if (Math.abs(ratio - 1.0) > 0.0001) deltas.push({ relicId: 'sys_bingo_d', type: 'times_multi', value: ratio });
     }
 
     return deltas;

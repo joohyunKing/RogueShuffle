@@ -407,18 +407,18 @@ export class BattleAnimationManager {
 
   /** 카드 개별에 붙은 유물/씰 효과 연출 (Base, PlusMulti) */
   _addCardSpecificRelicSteps(queue, ctx, deltas) {
-    deltas.forEach(({ relicId, type, delta }) => {
+    deltas.forEach(({ relicId, type, value }) => {
       if (type === 'times_multi') return; // Times 멀티는 최후에 일괄 처리
       queue.unshift(next => { // 현재 카드 처리 직후에 끼워넣기 위해 unshift
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = this._relicPos(relicId);
         const isBase = type === 'base';
-        const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
+        const displayVal = isBase ? Math.floor(value) : Number(value.toFixed(2));
         const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
         this._throwOrbLabel(ctx, rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          if (isBase) this._countUpValue(ctx, 'base', ctx.base + delta, ANIM_SPEED.countUp, next);
-          else this._countUpValue(ctx, 'multi', ctx.multi + delta, ANIM_SPEED.countUp, next);
+          if (isBase) this._countUpValue(ctx, 'base', ctx.base + value, ANIM_SPEED.countUp, next);
+          else this._countUpValue(ctx, 'multi', ctx.multi + value, ANIM_SPEED.countUp, next);
         });
       });
     });
@@ -426,35 +426,35 @@ export class BattleAnimationManager {
 
   _buildRelicSteps(queue, ctx, details) {
     // Hand Relic (Base + PlusMulti)
-    details.handRelicDeltas.forEach(({ relicId, type, delta }) => {
+    details.handRelicDeltas.forEach(({ relicId, type, value }) => {
       if (type === 'times_multi') return;
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = this._relicPos(relicId);
         const isBase = type === 'base';
-        const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
+        const displayVal = isBase ? Math.floor(value) : Number(value.toFixed(2));
         const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
         this._throwOrbLabel(ctx, rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          if (isBase) this._countUpValue(ctx, 'base', ctx.base + delta, ANIM_SPEED.countUp, next);
-          else this._countUpValue(ctx, 'multi', ctx.multi + delta, ANIM_SPEED.countUp, next);
+          if (isBase) this._countUpValue(ctx, 'base', ctx.base + value, ANIM_SPEED.countUp, next);
+          else this._countUpValue(ctx, 'multi', ctx.multi + value, ANIM_SPEED.countUp, next);
         });
       });
     });
 
     // Final Relic (Base + PlusMulti)
-    details.finalRelicDeltas.forEach(({ relicId, type, delta }) => {
+    details.finalRelicDeltas.forEach(({ relicId, type, value }) => {
       if (type !== 'plus_multi' && type !== 'base') return;
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = this._relicPos(relicId);
         const isBase = type === 'base';
-        const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
+        const displayVal = isBase ? Math.floor(value) : Number(value.toFixed(2));
         const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
         this._throwOrbLabel(ctx, rp.x, rp.y, isBase ? 0xee66ff : 0x44eeff, label);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          if (isBase) this._countUpValue(ctx, 'base', ctx.base + delta, ANIM_SPEED.countUp, next);
-          else this._countUpValue(ctx, 'multi', ctx.multi + delta, ANIM_SPEED.countUp, next);
+          if (isBase) this._countUpValue(ctx, 'base', ctx.base + value, ANIM_SPEED.countUp, next);
+          else this._countUpValue(ctx, 'multi', ctx.multi + value, ANIM_SPEED.countUp, next);
         });
       });
     });
@@ -489,14 +489,14 @@ export class BattleAnimationManager {
     details.handRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
     details.finalRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
 
-    allTimesDeltas.forEach(({ relicId, delta }) => {
+    allTimesDeltas.forEach(({ relicId, value }) => {
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
         const rp = this._relicPos(relicId);
 
-        // ratio 방식 대신 절대값 곱셈으로 연출 (User 요청: multi 표시값에 곱해서 countUp)
-        const targetMulti = ctx.multi * (1 + delta);
-        const displayRatio = delta >= 1 ? Number((delta + 1).toFixed(2)) : Number((1 + delta).toFixed(2));
+        // ratio(value)를 직접 곱해서 target 계산
+        const targetMulti = ctx.multi * value;
+        const displayRatio = Number(value.toFixed(2));
 
         this._throwOrbLabel(ctx, rp.x, rp.y, 0xff0044, `x${displayRatio}`);
 
