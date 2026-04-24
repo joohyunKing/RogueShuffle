@@ -2,7 +2,7 @@
   "bosses": [
     {
       "id": "troll",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "트롤",
       "img": "troll.png",
       "statScale": {
@@ -76,7 +76,7 @@
     },
     {
       "id": "berserker",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "광전사",
       "img": "orc_lord.png",
       "statScale": {
@@ -130,7 +130,7 @@
     },
     {
       "id": "summoner",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "소환사",
       "img": "summoner.png",
       "statScale": {
@@ -166,7 +166,7 @@
     },
     {
       "id": "trickster",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "트릭스터",
       "img": "trickster.png",
       "initSkillId": "disable_rank",
@@ -212,7 +212,7 @@
     },
     {
       "id": "tricksterB",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "트릭스터:레코드",
       "img": "tricksterB.png",
       "initSkillId": "",
@@ -269,7 +269,7 @@
     },
     {
       "id": "bomber",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "폭격자",
       "img": "skull_axe.png",
       "statScale": {
@@ -321,7 +321,7 @@
     },
     {
       "id": "butcher",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "도살자",
       "img": "butcher.png",
       "initSkillId": "",
@@ -387,37 +387,27 @@
       },
       "phases": [
         {
-          "hpThreshold": 0.2,
+          "hpThreshold": 0,
           "label": "강제",
           "actions": [
             {
               "type": "attack"
             }
           ]
-        },
-        {
-          "hpThreshold": 0,
-          "label": "광란",
-          "actions": [
-            {
-              "type": "skill",
-              "skillId": "bash"
-            }
-          ]
         }
       ],
       "skills": {
-        "bash": {
-          "type": "damage",
-          "name": "강타",
-          "description": "플레이어에게 2배의 피해를 입힙니다.",
-          "damMult": 2
+        "force_pick": {
+          "type": "force_select",
+          "value": 1,
+          "name": "강제 선택",
+          "description": "플레이어의 카드를 한 장 강제로 선택하게 만듭니다."
         }
       }
     },
     {
       "id": "shaman",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "주술사",
       "img": "shaman.png",
       "initSkillId": "card_veil",
@@ -454,7 +444,7 @@
     },
     {
       "id": "iron_fortress",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "방어의 화신",
       "img": "iron_fortress.png",
       "statScale": {
@@ -509,7 +499,7 @@
     },
     {
       "id": "demon",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "데몬",
       "img": "demon.png",
       "statScale": {
@@ -539,7 +529,7 @@
     },
     {
       "id": "vampire",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "뱀파이어",
       "img": "vampire.png",
       "statScale": {
