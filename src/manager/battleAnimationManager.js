@@ -175,7 +175,7 @@ export class BattleAnimationManager {
       score: 0,
       isMerged: false,
       cX: PW + FAW / 2,
-      scoreY: 80 + 14, // MONSTER_AREA_TOP = 80
+      scoreY: 80 + 30, // MONSTER_AREA_TOP = 80
       tmpObjs: [],
       orbTarget: { x: 0, y: 0 },
       scoreTxt: null,
@@ -187,7 +187,7 @@ export class BattleAnimationManager {
   _createScoreText(ctx) {
     const txt = this.scene.add.text(ctx.cX, ctx.scoreY, "", {
       fontFamily: TS.defaultFont,
-      fontSize: '30px', color: '#ffdd44',
+      fontSize: '32px', color: '#ffdd44',
       stroke: '#000000', strokeThickness: 5,
     }).setOrigin(0.5, 0).setDepth(400);
 
@@ -198,7 +198,7 @@ export class BattleAnimationManager {
     const lang = getLang(this.scene);
     const handLabel = getHandName(lang, ctx.details.handName);
     ctx.handNameTxt = this.scene.add.text(ctx.cX, ctx.scoreY - 24, handLabel, {
-      fontFamily: TS.defaultFont, fontSize: '15px', color: '#aaddff',
+      fontFamily: TS.defaultFont, fontSize: '20px', color: '#aaddff',
       stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5, 1).setDepth(400).setAlpha(0);
     ctx.tmpObjs.push(ctx.handNameTxt);
