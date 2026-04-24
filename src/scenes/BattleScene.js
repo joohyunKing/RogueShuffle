@@ -37,6 +37,7 @@ import { spawnManager } from '../manager/spawnManager.js';
 import MonsterView from '../ui/MonsterView.js';
 import { BattleAnimationManager } from '../manager/battleAnimationManager.js';
 import { BattleUIManager } from '../ui/BattleUIManager.js';
+import { BattleItemManager } from '../manager/battleItemManager.js';
 import { ModalUI } from '../ui/ModalUI.js';
 
 
@@ -61,6 +62,7 @@ export class BattleScene extends Phaser.Scene {
     this.effects = new effectManager(this);
     this.animManager = new BattleAnimationManager(this);
     this.uiManager = new BattleUIManager(this);
+    this.battleItemManager = new BattleItemManager(this);
   }
 
   _sfx(key) {
@@ -104,14 +106,35 @@ export class BattleScene extends Phaser.Scene {
   create() {
     const data = this.scene.settings.data || {};
 
+    this._initBattleData(data);
+    this._initManagers(data);
+    this._initGameState();
+
+    this.drawBg();
+    this.createUI();
+    this.createSortButton();
+    this.setupDrag();
+    this.startDealAnimation();
+
+    this._initMonsters(data);
+    this._initBgm();
+  }
+
+  _initBattleData(data) {
     this.round = data.round ?? 1;
     this.battleIndex = data.battleIndex ?? 0;
     this.normalCount = data.normalCount ?? 3;
+    this._fullBattleLog = data.battleLog ?? [];
+  }
 
+  _initManagers(data) {
     this.player = new Player(data.player ?? {});
     this.deck = new DeckManager(data.deck ?? {}, this.player);
+    this.debuffManager = new DebuffManager(this);
+    this.monsterManager = new MonsterManager(this);
+  }
 
-    // 덱 상태는 있지만 hand/field가 비어있으면 초기 배치 (배틀 간 리셋 후)
+  _initGameState() {
     if (this.deckData.length > 0 && this.handData.length === 0) {
       this.deck.draw(this.player.handSize);
     }
@@ -119,8 +142,7 @@ export class BattleScene extends Phaser.Scene {
       this.deck.startTurn(this.player.fieldSize);
     }
 
-    // handData / deckData / dummyData 는 getter → deck 배열 직접 참조, 별도 할당 불필요
-    const slotPos0 = this.calcFieldPositions(this.player.fieldSize);
+    const slotPos0 = this.uiManager.calcFieldPositions(this.player.fieldSize);
     this.fieldData = this.deck.field.map((c, i) => ({ ...c, slotX: slotPos0[i].x }));
 
     this._refreshContext();
@@ -130,9 +152,22 @@ export class BattleScene extends Phaser.Scene {
     this.cardObjs = [];
     this._debuffObjs = [];
     this._debuffTipObjs = [];
-    this.debuffManager = new DebuffManager(this);
-    this.monsterManager = new MonsterManager(this);
-    this.animObjs = [];
+    this.isDragging = false;
+    this.isDealing = true;
+    this.fieldPickCount = 0;
+    this.attackCount = 0;
+    this.sortMode = null;
+    this.sortAsc = true;
+    this._suitLevelUpCount = 0;
+    this._battleItemEffects = [];
+    this._pilePopup = new PilePopupUI(this, () => this._hideCardPreview());
+    this._cardPreviewObjs = null;
+    this._handDropIndicator = null;
+    this._pendingToggleIdx = null;
+    this._dragSealImg = null;
+    this._pendingDrawCards = [];
+    this._isAnimatingDraw = false;
+
     this._optionUI = new OptionUI(this, {
       onOpen: () => { this.isDealing = true; },
       onClose: () => { this.isDealing = false; },
@@ -141,98 +176,55 @@ export class BattleScene extends Phaser.Scene {
           isBoss: this.isBoss,
           battleIndex: this.battleIndex,
           normalCount: this.normalCount,
-          monsterTier: this.monsterTier,
-          totalCost: this.totalCost,
           monsters: this.monsterManager.monsters,
         });
         this.scene.start("MainMenuScene");
       },
     });
-    this.isDragging = false;
-    this.isDealing = true;
-    this.fieldPickCount = 0;
-    this.attackCount = 0;
-    this.sortMode = null;
-    this.sortAsc = true;
-    this._fullBattleLog = data.battleLog ?? [];
-    this._suitLevelUpCount = 0;
-    this._battleItemEffects = []; // 배틀 한정 아이템 효과 기록 (종료 시 되돌리기)
-    this._pilePopup = new PilePopupUI(this, () => this._hideCardPreview());
-    this._cardPreviewObjs = null;
-    this._handDropIndicator = null;
-    this._pendingToggleIdx = null;   // pointerdown 후 drag 없이 pointerup 시 선택 처리
-    this._dragSealImg = null;        // drag 중인 카드의 seal 이미지 추적
-    this._pendingDrawCards = [];     // 드로우 애니메이션 대기 카드 (handData 미추가 상태)
-    this._isAnimatingDraw = false;   // _animateDraw 중복 진입 방지
 
     CardRenderer.createAll(this);
+  }
 
-    // isBoss는 createUI() 내부에서 사용되므로 반드시 먼저 설정
+  _initMonsters(data) {
     const roundData = roundManager.getRoundData(this.round, this.battleIndex);
     this.isBoss = roundData.isBoss ?? false;
     this.battleType = roundData.battleInfo?.type ?? 'normal';
-    // elite 배율 (보스·소환 몬스터는 MonsterView 생성 시 개별 지정)
     this.monsterImgScale = this.battleType === 'elite' ? 1.4 : 1.0;
-
-    this.drawBg();
-    this.createUI();
-    this.createSortButton();
-    this.setupDrag();
-    this.startDealAnimation();
-
-    //monster
 
     this.monsterObjs = [];
     this._monsterSprites = [];
-    this.monsters = data.monsters
-      ? data.monsters
-      : spawnManager.generate(roundData);
-
-    // 👉 manager에 주입
+    this.monsters = data.monsters ? data.monsters : spawnManager.generate(roundData);
     this.monsterManager.setMonsters(this.monsters);
 
     const positions = this.monsterManager.calcMonsterPositions(this.monsterManager.monsters.length);
-
     this.monsterViews = this.monsterManager.monsters.map((mon, idx) => {
       const { x, y } = positions[idx];
       const scale = mon.isBoss ? 1.8 : mon.isSummoned ? 1.0 : this.monsterImgScale;
       const offsetY = mon.isBoss ? 40 : 0;
-
       return new MonsterView(this, mon, idx, x, y, (i) => {
         if (!this.isDealing) this.monsterManager.attackMonster(i);
       }, scale, offsetY);
     });
 
     this._monsterSprites = this.monsterViews.map(v => v.sprite);
+    this.input.on('pointerdown', () => this.monsterViews.forEach(v => v.hideTooltip()));
 
-    // 전역 클릭 리스너: 다른 곳 클릭 시 몬스터/보스 툴팁 숨김
-    this.input.on('pointerdown', () => {
-      this.monsterViews.forEach(v => v.hideTooltip());
-    });
-
-    // 보스 전용 초기화
-    this.bossManager = null;
-    this.bossHPBar = null;
     if (this.isBoss && this.monsters.length > 0) {
       this.bossManager = new BossManager(this);
       this.bossHPBar = new BossHPBarUI(this, this.monsters[0], this.bossManager);
       this.monsterViews[0].hideHPBar();
       this.monsterViews[0].hideStats();
     }
+  }
 
-    // BGM
+  _initBgm() {
     this._playBgm();
     this.registry.events.on('changedata-bgmVolume', (_parent, value) => {
       if (this._bgmSound) {
         const vol = value / 10;
-        if (vol <= 0) {
-          this._stopBgm();
-        } else {
-          this._bgmSound.setVolume(vol);
-        }
-      } else if (value > 0) {
-        this._playBgm();
-      }
+        if (vol <= 0) this._stopBgm();
+        else this._bgmSound.setVolume(vol);
+      } else if (value > 0) this._playBgm();
     }, this);
     this.events.once('shutdown', () => {
       this.registry.events.off('changedata-bgmVolume', undefined, this);
@@ -433,30 +425,9 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // ── 위치 계산 ────────────────────────────────────────────────────────────
-  calcFieldPositions(count) {
-    const PW = PLAYER_PANEL_W;
-    const FAW = GW - PW - ITEM_PANEL_W;   // 880
-    const gap = 14;
-    const areaW = FAW - 140;               // deck/dummy 파일 공간 제외: 740
-    const totalW = count * FIELD_CW + (count - 1) * gap;
-    const x0 = PW + 40 + FIELD_CW / 2 + (areaW - totalW) / 2;
-    return Array.from({ length: count }, (_, i) => ({ x: x0 + i * (FIELD_CW + gap), y: FIELD_Y }));
-  }
-
-  calcHandPositions(count) {
-    if (count === 0) return [];
-    const PW = PLAYER_PANEL_W;
-    const FAW = GW - PW - ITEM_PANEL_W;   // 880
-    const gap = 10;
-    const areaW = FAW - 85;               // 795
-    const baseW = Math.round(CW * 0.85);
-    const scale = count >= 9 ? Math.max(0.65, 8 / count) : 1;
-    const cardW = Math.round(baseW * scale);
-    const spacing = count === 1 ? 0 : Math.min(cardW + gap, (areaW - cardW) / (count - 1));
-    const x0 = PW + 40 + cardW / 2 + (areaW - (cardW + spacing * (count - 1))) / 2;
-    return Array.from({ length: count }, (_, i) => ({ x: x0 + i * spacing, y: HAND_Y }));
-  }
+  // ── 위치 계산 (Delegated to uiManager) ────────────────────────────────────────────────────────────
+  calcFieldPositions(count) { return this.uiManager.calcFieldPositions(count); }
+  calcHandPositions(count) { return this.uiManager.calcHandPositions(count); }
 
   // ── 드래그 ───────────────────────────────────────────────────────────────
   setupDrag() {
@@ -648,235 +619,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   _useItem(idx, obj) {
-    const item = this.player.items[idx];
-    if (!item) { obj?.destroy(); return; }
-
-    const def = itemMap[item.id];
-    const eff = def?.effect;
-
-    // copy_hand_card: 선택된 카드 1장을 복사해 핸드에 추가
-    if (eff?.type === 'copy_hand_card') {
-      const selectedIdxs = [...this.selected];
-      if (selectedIdxs.length !== 1) {
-        obj?.destroy();
-        this.render();
-        return;
-      }
-      const src = this.handData[selectedIdxs[0]];
-      const copy = {
-        ...src,
-        uid: crypto.randomUUID(),
-        enhancements: src.enhancements ? src.enhancements.map(e => ({ ...e })) : [],
-      };
-      this.handData.push(copy);
-      this.selected.clear();
-      this.addBattleLog(`[${item.name}] ${src.key} 복사!`);
-      this.player.items.splice(idx, 1);
-      obj?.destroy();
-      this.render();
-      return;
-    }
-
-    // seal_hand_card: 선택된 카드 1장에 씰 랜덤 강화
-    if (eff?.type === 'seal_hand_card') {
-      const selectedIdxs = [...this.selected];
-      if (selectedIdxs.length !== 1) {
-        obj?.destroy();
-        this.render();
-        return;
-      }
-      const card = this.handData[selectedIdxs[0]];
-      if ((card.enhancements?.length ?? 0) > 0) {
-        // 이미 씰이 있는 카드 — 사용 취소
-        obj?.destroy();
-        this.render();
-        return;
-      }
-      const types = getSealTypes();
-      const type = types[Math.floor(Math.random() * types.length)];
-      card.enhancements = [{ type }];
-      this.selected.clear();
-      this.addBattleLog(`[${item.name}] ${card.key} → ${type} 씰 강화!`);
-      this.player.items.splice(idx, 1);
-      obj?.destroy();
-      this.render();
-      return;
-    }
-
-    // seal_hand_cards_multi: 선택된 N장 모두에 씰 랜덤 강화 (덮어씌움)
-    if (eff?.type === 'seal_hand_cards_multi') {
-      const cardCount = eff.cards ?? 3;
-      const selectedIdxs = [...this.selected];
-      if (selectedIdxs.length !== cardCount) {
-        obj?.destroy();
-        this.render();
-        return;
-      }
-      const types = getSealTypes();
-      const keys = [];
-      selectedIdxs.forEach(i => {
-        const card = this.handData[i];
-        const type = types[Math.floor(Math.random() * types.length)];
-        card.enhancements = [{ type }];
-        keys.push(`${card.key}→${type}`);
-      });
-      this.selected.clear();
-      this.addBattleLog(`[${item.name}] ${keys.join(', ')} 씰 강화!`);
-      this.player.items.splice(idx, 1);
-      obj?.destroy();
-      this.render();
-      return;
-    }
-
-    // seal_stamp: 선택된 N장(보통 2장)에 특정 씰 부여 (덮어씌움)
-    if (eff?.type === 'seal_stamp') {
-      const cardCount = eff.cards ?? 2;
-      const sealId = eff.sealId;
-      const selectedIdxs = [...this.selected];
-      if (selectedIdxs.length !== cardCount) {
-        obj?.destroy();
-        this.render();
-        return;
-      }
-      const keys = [];
-      selectedIdxs.forEach(i => {
-        const card = this.handData[i];
-        card.enhancements = [{ type: sealId }];
-        keys.push(card.key);
-      });
-      this.selected.clear();
-      this.addBattleLog(`[${item.name}] ${keys.join(', ')} → ${sealId} 씰 부여!`);
-      this.player.items.splice(idx, 1);
-      obj?.destroy();
-      this.render();
-      return;
-    }
-
-    // remove_hand_cards: 선택된 카드를 최대 maxCards장 제거
-    if (eff?.type === 'remove_hand_cards') {
-      const maxCards = eff.maxCards ?? 2;
-      const selectedIdxs = [...this.selected];
-      if (selectedIdxs.length === 0 || selectedIdxs.length > maxCards) {
-        obj?.destroy();
-        this.render();
-        return;
-      }
-      // 내림차순 정렬 후 제거 (앞 인덱스가 밀리지 않도록)
-      selectedIdxs.sort((a, b) => b - a).forEach(i => {
-        const removed = this.handData.splice(i, 1)[0];
-        if (removed) this.dummyData.push(removed);
-      });
-      this.selected.clear();
-      this.addBattleLog(`[${item.name}] 카드 ${selectedIdxs.length}장 제거`);
-      this.player.items.splice(idx, 1);
-      obj?.destroy();
-      this.render();
-      return;
-    }
-
-    // recycle_dummy: 더미 마지막 N장을 덱 상단으로 이동
-    if (eff?.type === 'recycle_dummy') {
-      const count = eff.cards ?? 5;
-      if (this.dummyData.length === 0) {
-        obj?.destroy();
-        this.render();
-        return;
-      }
-      const actual = Math.min(count, this.dummyData.length);
-      const recycled = this.dummyData.splice(-actual);
-      this.deckData.push(...recycled);
-      this.addBattleLog(`[${item.name}] 더미 ${actual}장 → 덱 상단!`);
-      this.player.items.splice(idx, 1);
-      obj?.destroy();
-      this.render();
-      return;
-    }
-
-    // fill_field: 필드를 최대치까지 덱에서 채움
-    if (eff?.type === 'fill_field') {
-      const maxField = this.player.fieldSize;
-      const currentCount = this.fieldData.length;
-      const needed = maxField - currentCount;
-      if (needed <= 0 || this.deckData.length === 0) {
-        obj?.destroy();
-        this.render();
-        return;
-      }
-
-      this.deck.startTurn(needed);
-      const slotPositions = this.calcFieldPositions(maxField);
-
-      // 새로 추가된 데이터만 필터링해서 좌표 할당
-      const newItems = this.deck.field.slice(currentCount).map((c, i) => ({
-        ...c,
-        slotX: slotPositions[currentCount + i]?.x ?? 0
-      }));
-
-      // fieldData 업데이트
-      this.fieldData.push(...newItems);
-      this.fieldPickCount = Math.max(0, this.fieldPickCount - newItems.length);
-      this.addBattleLog(`[${item.name}] 필드 ${newItems.length}장 보충!`);
-      this.player.items.splice(idx, 1);
-
-      // 애니메이션 실행
-      this.isDealing = true;
-      this.animManager.createDeckStack();
-      const finalDelay = this.animManager.dealToField(300, newItems);
-
-      this.time.delayedCall(finalDelay + 550, () => {
-        this.animManager.clearAnimObjs();
-        this.isDealing = false;
-        this.render();
-      });
-
-      obj?.destroy();
-      return;
-    }
-
-    // alchemist_crucible: 선택한 카드 중 1장의 suit/rank(/seal)를 나머지에 덮어씌움
-    if (eff?.type === 'alchemist_crucible') {
-      const cardCount = eff.cards ?? 3;
-      const selectedIdxs = [...this.selected];
-      if (selectedIdxs.length !== cardCount) {
-        obj?.destroy();
-        this.render();
-        return;
-      }
-      const srcIdx = eff.sourceMode === 'leftmost'
-        ? selectedIdxs.reduce((a, b) => a < b ? a : b)
-        : selectedIdxs[Math.floor(Math.random() * cardCount)];
-      const src = this.handData[srcIdx];
-      for (const i of selectedIdxs) {
-        if (i === srcIdx) continue;
-        const card = this.handData[i];
-        card.suit = src.suit;
-        card.rank = src.rank;
-        card.val = src.val;
-        card.baseScore = src.baseScore;
-        card.key = src.key;
-        if (eff.sourceMode === 'leftmost') {
-          card.enhancements = src.enhancements ? [...src.enhancements.map(e => ({ ...e }))] : [];
-        }
-      }
-      this.selected.clear();
-      this.addBattleLog(`[${item.name}] ${src.key} 기준으로 ${cardCount - 1}장 변환!`);
-      this.player.items.splice(idx, 1);
-      obj?.destroy();
-      this.render();
-      return;
-    }
-
-    const msg = applyItemEffect(this.player, item.id, item.name);
-    if (msg) this.addBattleLog(msg);
-
-    // 배틀 한정 효과는 종료 시 되돌리기 위해 기록
-    if (def?.scope === 'battle') {
-      this._battleItemEffects.push(item.id);
-    }
-
-    this.player.items.splice(idx, 1);
-    obj?.destroy();
-    this.render();
+    this.battleItemManager.use(idx, obj);
   }
 
   _saveTurnState() {
@@ -911,12 +654,7 @@ export class BattleScene extends Phaser.Scene {
 
   // ── 전체 렌더 ────────────────────────────────────────────────────────────
   render() {
-    this.cardObjs.forEach(o => o.destroy());
-    this.cardObjs = [];
-    this.handCardObjs = [];
-
-    this.monsterObjs.forEach(o => o.destroy());
-    this.monsterObjs = [];
+    this._clearTemporaryObjects();
 
     this.renderDeckPile();
     this.renderDummyPile();
@@ -924,14 +662,26 @@ export class BattleScene extends Phaser.Scene {
     this.renderHand();
     this.renderMonsters();
     this.renderDebuffIcons();
+    
+    this.uiManager.refreshPlayerStats();
+    this.uiManager.refreshAttackCount();
+    this.uiManager.refreshBattleLog();
     this.itemUI.refresh();
     this.updatePreview();
     this.refreshSortBtns();
-    this.refreshPlayerStats();
-    this.refreshAttackCount();
-    this.refreshBattleLog();
 
-    // 대기 중인 드로우 카드 애니메이션 실행 (공격 후 purple 씰 등)
+    this._processPendingDraws();
+  }
+
+  _clearTemporaryObjects() {
+    this.cardObjs.forEach(o => o.destroy());
+    this.cardObjs = [];
+    this.handCardObjs = [];
+    this.monsterObjs.forEach(o => o.destroy());
+    this.monsterObjs = [];
+  }
+
+  _processPendingDraws() {
     if (this._pendingDrawCards?.length > 0 && !this._isAnimatingDraw) {
       this._isAnimatingDraw = true;
       const pending = [...this._pendingDrawCards];
@@ -1439,25 +1189,11 @@ export class BattleScene extends Phaser.Scene {
     this.uiManager.updatePreview(result, this.handData, this.selected);
   }
 
-  refreshAttackCount() {
-    this.uiManager.refreshAttackCount();
-  }
-
-  refreshPlayerStats() {
-    this.uiManager.refreshPlayerStats();
-  }
-
-  refreshPlayerLevel() {
-    this.playerUI.refreshLevel();
-  }
-
-  addBattleLog(text) {
-    this.uiManager.addBattleLog(text);
-  }
-
-  refreshBattleLog() {
-    this.uiManager.refreshBattleLog();
-  }
+  refreshAttackCount() { this.uiManager.refreshAttackCount(); }
+  refreshPlayerStats() { this.uiManager.refreshPlayerStats(); }
+  refreshPlayerLevel() { this.playerUI.refreshLevel(); }
+  addBattleLog(text) { this.uiManager.addBattleLog(text); }
+  refreshBattleLog() { this.uiManager.refreshBattleLog(); }
 
 
   toggleHand(i) {
@@ -1530,6 +1266,9 @@ export class BattleScene extends Phaser.Scene {
 
     // 플립 해제 (샤먼 베일 효과는 플레이어 턴 동안만 지속)
     this.handData.forEach(c => { delete c.flipped; });
+    this.fieldData.forEach(c => { delete c.flipped; });
+    this.deckData.forEach(c => { delete c.flipped; });
+    this.dummyData.forEach(c => { delete c.flipped; });
     // 강제 선택 해제 (바바리안 효과는 플레이어 턴 동안만 지속)
     this.forcedSelectedUids?.clear();
 

@@ -1,4 +1,7 @@
-import { HAND_DATA } from "../constants.js";
+import { 
+  GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W, 
+  FIELD_Y, HAND_Y, FIELD_CW, FIELD_CH, CH, CW 
+} from "../constants.js";
 import { getLang, getHandName } from "../service/langService.js";
 
 /**
@@ -7,6 +10,32 @@ import { getLang, getHandName } from "../service/langService.js";
 export class BattleUIManager {
   constructor(scene) {
     this.scene = scene;
+  }
+
+  // ── 위치 계산 (Layout) ──────────────────────────────────────────────────────────
+
+  calcFieldPositions(count) {
+    const PW = PLAYER_PANEL_W;
+    const FAW = GW - PW - ITEM_PANEL_W;   // 880
+    const gap = 14;
+    const areaW = FAW - 140;               // deck/dummy 파일 공간 제외: 740
+    const totalW = count * FIELD_CW + (count - 1) * gap;
+    const x0 = PW + 40 + FIELD_CW / 2 + (areaW - totalW) / 2;
+    return Array.from({ length: count }, (_, i) => ({ x: x0 + i * (FIELD_CW + gap), y: FIELD_Y }));
+  }
+
+  calcHandPositions(count) {
+    if (count === 0) return [];
+    const PW = PLAYER_PANEL_W;
+    const FAW = GW - PW - ITEM_PANEL_W;   // 880
+    const gap = 10;
+    const areaW = FAW - 85;               // 795
+    const baseW = Math.round(CW * 0.85);
+    const scale = count >= 9 ? Math.max(0.65, 8 / count) : 1;
+    const cardW = Math.round(baseW * scale);
+    const spacing = count === 1 ? 0 : Math.min(cardW + gap, (areaW - cardW) / (count - 1));
+    const x0 = PW + 40 + cardW / 2 + (areaW - (cardW + spacing * (count - 1))) / 2;
+    return Array.from({ length: count }, (_, i) => ({ x: x0 + i * spacing, y: HAND_Y }));
   }
 
   /**

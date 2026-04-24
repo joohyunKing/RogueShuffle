@@ -44,6 +44,16 @@ export class BattleAnimationManager {
     const img = this.scene.add.image(fromX, fromY, startTex)
       .setDisplaySize(cardWidth, cardHeight).setDepth(200);
     this.animObjs.push(img);
+
+    // 이미 뒷면 상태인 경우(보스 효과 등), 뒤집기 애니메이션 생략
+    if (cardData.flipped && !options.immediateFace) {
+      this.scene.tweens.add({
+        targets: img, x: toX, y: toY, duration: 320, ease: "Power2.Out",
+        onComplete: () => options.onComplete?.(img)
+      });
+      return;
+    }
+
     if (options.immediateFace) {
       this.scene.tweens.add({
         targets: img, x: toX, y: toY, duration: 320, ease: "Power2.Out",

@@ -108,17 +108,18 @@ export default class DeckManager {
 
     // 🔹 버린 카드 섞어서 다시 덱으로
     reshuffle() {
+        this.dummyPile.forEach(c => { delete c.flipped; });
         this.deckPile = this.dummyPile;
         this.dummyPile = [];
         this.shuffle(this.deckPile);
     }
 
-    // 🔹 카드 사용
     useCard(card) {
         this.hand = this.hand.filter(c => c.uid !== card.uid);
 
         // 지속 카드만 dummy로
         if (card.duration === 'permanent') {
+            delete card.flipped; // 카드 사용 시 뒤집힘 상태 해제
             this.dummyPile.push(card);
         }
     }
@@ -180,6 +181,7 @@ export default class DeckManager {
     endBattle() {
         const filterPermanent = c => c.duration === 'permanent';
 
+        this.cards.forEach(c => { delete c.flipped; }); // 모든 카드 뒤집힘 해제
         this.cards = this.cards.filter(filterPermanent);
         this.hand = this.hand.filter(filterPermanent);
         this.deckPile = this.deckPile.filter(filterPermanent);
@@ -203,6 +205,7 @@ export default class DeckManager {
 
         this.cards    = all;
         this.deckPile = [...all];
+        this.deckPile.forEach(c => { delete c.flipped; });
         this.hand      = [];
         this.field     = [];
         this.dummyPile = [];
