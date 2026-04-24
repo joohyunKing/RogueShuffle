@@ -1,6 +1,7 @@
 import { HAND_RANK, HAND_DATA, DEBUG_MODE } from "../constants.js";
 import { relicMap } from '../manager/relicManager.js';
 import { sealMap } from '../manager/sealManager.js';
+import { applyBingoBonuses, getBingoStats } from '../manager/bingoManager.js';
 
 const ADD_TYPES = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage", "addPerExcessDeck", "addCurrentHp"]);
 const PLUS_MULTI_TYPES = new Set(["plus_multi", "plusMultiPerHandUsage"]);
@@ -84,14 +85,9 @@ function applyEffect(score, effect, card, ctx) {
             return score * effect.value;
 
         case "timesMultiPerDiagonalBingo": {
-            const slots = ctx.relicSlots ?? [];
-            const diagonals = [[0, 4, 8], [2, 4, 6]];
-            let bingoCount = 0;
-            for (const diag of diagonals) {
-                if (diag.every(i => slots[i])) bingoCount++;
-            }
-            if (bingoCount === 0) return score;
-            return score * (effect.value * bingoCount);
+            const stats = getBingoStats(ctx.relicSlots);
+            if (stats.d === 0) return score;
+            return score * (effect.value * stats.d);
         }
 
         case "plusMultiPerHandRemaining": {
@@ -418,25 +414,8 @@ export function getScoreDetails(cards, context) {
 
     // 6. 시스템 빙고 보너스
     if (ctx.relicSlots) {
-        const slots = ctx.relicSlots;
-        const BINGO_H = [[0, 1, 2], [3, 4, 5], [6, 7, 8]], BINGO_V = [[0, 3, 6], [1, 4, 7], [2, 5, 8]], BINGO_D = [[0, 4, 8], [2, 4, 6]];
-        let hCnt = BINGO_H.filter(line => line.every(i => slots[i])).length;
-        let vCnt = BINGO_V.filter(line => line.every(i => slots[i])).length;
-        let dCnt = BINGO_D.filter(line => line.every(i => slots[i])).length;
-
-        if (hCnt > 0) {
-            const d = state.addBase(hCnt * 50, "BINGO:H");
-            finalRelicDeltas.push({ relicId: 'sys_bingo_h', type: 'base', delta: d });
-        }
-        if (vCnt > 0) {
-            const d = state.addPlusMulti(vCnt * 2, "BINGO:V");
-            finalRelicDeltas.push({ relicId: 'sys_bingo_v', type: 'plus_multi', delta: d });
-        }
-        if (dCnt > 0) {
-            const before = state.timesMulti;
-            state.multiplyTimes(Math.pow(1.2, dCnt), "BINGO:D");
-            finalRelicDeltas.push({ relicId: 'sys_bingo_d', type: 'times_multi', delta: state.timesMulti - before });
-        }
+        const bingoDeltas = applyBingoBonuses(state, ctx.relicSlots, ctx.bingoLevels);
+        finalRelicDeltas.push(...bingoDeltas);
     }
 
     const totalScore = state.getTotal();

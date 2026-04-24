@@ -6,6 +6,7 @@
 import { HAND_DATA, DEBUG_MODE } from "../constants.js";
 import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice } from './relicManager.js';
 import { getItemPrice } from './itemManager.js';
+import { getBingoStats } from './bingoManager.js';
 import deckData from '../data/deck.json';
 
 /** 기본 덱 설정 (usable:true 중 첫 번째, 없으면 첫 번째) */
@@ -128,6 +129,9 @@ export class Player {
 
         /** 마지막으로 사용한 족보 handRank 번호 (null = 아직 없음) */
         this.lastHandRank = data.lastHandRank ?? null;
+
+        /** 빙고별 레벨 { h, v, d } */
+        this.bingoLevels = data.bingoLevels ?? { h: 1, v: 1, d: 1 };
     }
 
     /** 현재 레벨에서 레벨업에 필요한 총 경험치 */
@@ -330,27 +334,15 @@ export class Player {
     /**
      * 완성된 빙고 라인 목록 반환.
      * @returns {Array<{ type:'row'|'col'|'diag', index:number, slots:number[] }>}
-     *   slots: 해당 라인의 슬롯 인덱스 배열
      */
     getBingoLines() {
-        const lines = [];
-        for (let r = 0; r < 3; r++) {
-            const slots = [r * 3, r * 3 + 1, r * 3 + 2];
-            if (slots.every(i => this.relicSlots[i])) lines.push({ type: 'row', index: r, slots });
-        }
-        for (let c = 0; c < 3; c++) {
-            const slots = [c, c + 3, c + 6];
-            if (slots.every(i => this.relicSlots[i])) lines.push({ type: 'col', index: c, slots });
-        }
-        const d0 = [0, 4, 8];
-        if (d0.every(i => this.relicSlots[i])) lines.push({ type: 'diag', index: 0, slots: d0 });
-        const d1 = [2, 4, 6];
-        if (d1.every(i => this.relicSlots[i])) lines.push({ type: 'diag', index: 1, slots: d1 });
-        return lines;
+        return getBingoStats(this.relicSlots).lines;
     }
 
     /** 빙고 라인이 하나라도 완성됐으면 true */
-    hasBingo() { return this.getBingoLines().length > 0; }
+    hasBingo() {
+        return getBingoStats(this.relicSlots).lines.length > 0;
+    }
 
     /** 씬 전환용 직렬화 */
     toData() {
@@ -382,6 +374,7 @@ export class Player {
             handConfig: JSON.parse(JSON.stringify(this.handConfig)),
             handUseCounts: { ...this.handUseCounts },
             lastHandRank: this.lastHandRank,
+            bingoLevels: { ...this.bingoLevels },
         };
     }
 }

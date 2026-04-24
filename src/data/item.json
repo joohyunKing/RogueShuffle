@@ -327,6 +327,42 @@
         "suit": "C",
         "value": 1
       }
+    },
+    {
+      "id": "bingo_mana_h",
+      "name": "가로의 마력석",
+      "img": "bingo_h.png",
+      "desc": "가로 빙고 레벨 +1",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "upgrade_bingo",
+        "target": "h"
+      }
+    },
+    {
+      "id": "bingo_mana_v",
+      "name": "세로의 마력석",
+      "img": "bingo_v.png",
+      "desc": "세로 빙고 레벨 +1",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "upgrade_bingo",
+        "target": "v"
+      }
+    },
+    {
+      "id": "bingo_mana_d",
+      "name": "대각선의 마력석",
+      "img": "bingo_d.png",
+      "desc": "대각선 빙고 레벨 +1",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "upgrade_bingo",
+        "target": "d"
+      }
     }
   ]
 }

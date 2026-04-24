@@ -82,6 +82,11 @@ export function applyItemEffect(player, itemId, itemName) {
       });
       return `[${itemName}] 배수 +${eff.value}`;
     }
+    case 'upgrade_bingo': {
+      player.bingoLevels[eff.target] += 1;
+      const typeName = eff.target === 'h' ? '가로' : eff.target === 'v' ? '세로' : '대각선';
+      return `[${itemName}] ${typeName} 빙고 레벨 +1 (Lv.${player.bingoLevels[eff.target]})`;
+    }
     case 'copy_hand_card':
       return null; // BattleScene._useItem에서 직접 처리
     case 'seal_hand_card':

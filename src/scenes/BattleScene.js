@@ -1334,6 +1334,7 @@ export class BattleScene extends Phaser.Scene {
     context.handUseCounts = this.player.handUseCounts ?? {};
     context.attrs = this.player.attrs;
     context.adaptability = this.player.adaptability;
+    context.bingoLevels = this.player.bingoLevels;
   }
 
   // ── 디버프 카드 여부 (DebuffManager에 위임) ────────────────────────────────
