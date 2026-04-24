@@ -281,9 +281,11 @@ export class PlayerUI {
             .setDepth(D + 2).setInteractive()
         );
 
-        rowHit.on('pointerover', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.color.BRIGHT, rowHit.y - lineH / 2, 285));
+        const tooltipHead = getHandNameByRank(rank, lang) + (isAoe ? " (광역)" : "");
+
+        rowHit.on('pointerover', () => this._showTooltipAt([tooltipHead, desc], TS.color.BRIGHT, rowHit.y - lineH / 2, 285));
         rowHit.on('pointerout', () => this._hideTooltip());
-        rowHit.on('pointerdown', () => this._showTooltipAt([getHandNameByRank(rank, lang), desc], TS.color.BRIGHT, rowHit.y - lineH / 2, 285));
+        rowHit.on('pointerdown', () => this._showTooltipAt([tooltipHead, desc], TS.color.BRIGHT, rowHit.y - lineH / 2, 285));
 
         this._handConfigRows[rank] = { labelTxt, multiTxt, aoeDot, glowBg, rowHit, lineH };
         ry += lineH;
