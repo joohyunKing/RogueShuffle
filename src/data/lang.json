@@ -321,9 +321,9 @@
     "ui": {
       "relicStack_perHand": "Now {pts}pts ({usage} uses)",
       "relicStack_total": "Now {pts}pts (total {total})",
-      "bingo_h": "[Horizontal Bingo] Score Add +50",
-      "bingo_v": "[Vertical Bingo] Plus Multi +2",
-      "bingo_d": "[Diagonal Bingo] Times Multi x1.2"
+      "bingo_h": "[Horizontal Bingo] Score Add +{val}",
+      "bingo_v": "[Vertical Bingo] Plus Multi +{val}",
+      "bingo_d": "[Diagonal Bingo] Times Multi x{val}"
     },
     "playerUI": {
       "def_lines": [
@@ -677,9 +677,9 @@
     "ui": {
       "relicStack_perHand": "현재 {pts}점 ({usage}회 사용)",
       "relicStack_total": "현재 {pts}점 (총 {total}회)",
-      "bingo_h": "[가로 빙고 효과] Base Score +50",
-      "bingo_v": "[세로 빙고 효과] Plus Multi +2",
-      "bingo_d": "[대각선 빙고 효과] times Multi x1.2"
+      "bingo_h": "[가로 빙고 효과] Base Score +{val}",
+      "bingo_v": "[세로 빙고 효과] Plus Multi +{val}",
+      "bingo_d": "[대각선 빙고 효과] times Multi x{val}"
     },
     "playerUI": {
       "def_lines": [

@@ -118,364 +118,391 @@ export class BattleAnimationManager {
 
   /**
    * 공격 애니메이션 (점수 카운팅 + orb)
+   * 가독성을 위해 단계를 분리하고 헬퍼 메서드를 활용하도록 리팩토링함.
    */
   playAttackAnimation(details, cardFlyInfo, onCardsConsumed, onComplete) {
+    // 1. 초기 상태 및 컨텍스트 설정
+    const ctx = this._initAttackContext(details);
+    const queue = [];
+
+    // 2. 점수 텍스트 UI 생성
+    ctx.scoreTxt = this._createScoreText(ctx);
+    ctx.orbTarget = { x: ctx.cX, y: ctx.scoreY + 15 };
+
+    // 3. 애니메이션 단계 구성 (Queue 채우기)
+    this._buildInitialSteps(queue, ctx, details);
+    this._buildCardSteps(queue, ctx, cardFlyInfo);
+    this._buildRelicSteps(queue, ctx, details);
+    this._buildTimesMultiSteps(queue, ctx, details); // Merge 이전으로 이동
+    this._buildMergeStep(queue, ctx, details);
+
+    // 카드 소비(더미로 이동) 시점 추가
+    if (cardFlyInfo.length > 0) {
+      queue.push(next => { onCardsConsumed?.(); next(); });
+    }
+
+    // 최종 마무리 및 정리 단계 추가
+    this._buildFinalSteps(queue, ctx, onComplete);
+
+    // 4. 애니메이션 시작
+    const runNext = () => {
+      if (queue.length === 0) return;
+      const step = queue.shift();
+      step(runNext);
+    };
+    runNext();
+  }
+
+  // ── 내부 헬퍼 메서드 (playAttackAnimation 전용) ──────────────────────────
+
+  _initAttackContext(details) {
     const PW = PLAYER_PANEL_W;
     const FAW = GW - PW - ITEM_PANEL_W;
-    const cX = PW + FAW / 2;
-    const scoreY = 80 + 14; // MONSTER_AREA_TOP = 80
-
-    const tmpObjs = [];
-    let currentBase = 0;
-    let currentMulti = 0;
-    let currentTimes = 1;
-    let isMerged = false;
-    let currentScore = 0;
-
-    // 모든 배수(Times Multi) 효과들을 모아 병합 후 처리를 위해 대기
-    const allTimesDeltas = [];
-    details.cardDetails.forEach(cd => {
-      cd.cardRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
-    });
-    details.handRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
-    details.finalRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
-
-    const getScoreStr = () => {
-      if (isMerged) return String(Math.floor(currentScore));
-      return `${Math.floor(currentBase)} X ${parseFloat(currentMulti.toFixed(1))}`;
+    return {
+      base: 0,
+      multi: 0,
+      times: 1,
+      score: 0,
+      isMerged: false,
+      cX: PW + FAW / 2,
+      scoreY: 80 + 14, // MONSTER_AREA_TOP = 80
+      tmpObjs: [],
+      orbTarget: { x: 0, y: 0 },
+      scoreTxt: null,
+      handNameTxt: null,
+      details
     };
+  }
 
-    const scoreTxt = this.scene.add.text(cX, scoreY, getScoreStr(), {
+  _createScoreText(ctx) {
+    const txt = this.scene.add.text(ctx.cX, ctx.scoreY, "", {
       fontFamily: TS.defaultFont,
       fontSize: '30px', color: '#ffdd44',
       stroke: '#000000', strokeThickness: 5,
     }).setOrigin(0.5, 0).setDepth(400);
-    tmpObjs.push(scoreTxt);
 
-    const orbTarget = { x: cX, y: scoreY + 15 };
+    ctx.scoreTxt = txt;
+    ctx.tmpObjs.push(txt);
 
-    const throwLabel = (fromX, fromY, color, label) => {
-      const txt = this.scene.add.text(fromX, fromY, label, {
-        fontFamily: TS.defaultFont,
-        fontSize: '20px', color: '#ffffff',
-        stroke: Phaser.Display.Color.IntegerToColor(color).rgba,
-        strokeThickness: 5
-      }).setOrigin(0.5).setDepth(420);
-      tmpObjs.push(txt);
+    // 족보 이름 미리 생성하여 표시 (초기 알파 0)
+    const lang = getLang(this.scene);
+    const handLabel = getHandName(lang, ctx.details.handName);
+    ctx.handNameTxt = this.scene.add.text(ctx.cX, ctx.scoreY - 24, handLabel, {
+      fontFamily: TS.defaultFont, fontSize: '15px', color: '#aaddff',
+      stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5, 1).setDepth(400).setAlpha(0);
+    ctx.tmpObjs.push(ctx.handNameTxt);
 
-      const cpX = (fromX + orbTarget.x) / 2;
-      const cpY = Math.min(fromY, orbTarget.y) - 60;
-      const t = { v: 0 };
+    this._updateScoreDisplay(ctx);
+    return txt;
+  }
 
-      this.scene.tweens.add({
-        targets: t, v: 1, duration: ANIM_SPEED.orbFlight, ease: 'Sine.easeIn',
-        onUpdate: () => {
-          const s = t.v, r = 1 - s;
-          const x = r * r * fromX + 2 * r * s * cpX + s * s * orbTarget.x;
-          const y = r * r * fromY + 2 * r * s * cpY + s * s * orbTarget.y;
-          txt.setPosition(x, y);
-        },
-        onComplete: () => {
-          this.scene.tweens.add({
-            targets: txt,
-            scaleX: 2.5, scaleY: 2.5, alpha: 0,
-            duration: ANIM_SPEED.orbFade, ease: 'Sine.easeOut',
-          });
-        },
-      });
-    };
+  _updateScoreDisplay(ctx) {
+    if (ctx.isMerged) {
+      ctx.scoreTxt.setText(String(Math.floor(ctx.score)));
+    } else {
+      ctx.scoreTxt.setText(`${Math.floor(ctx.base)} X ${parseFloat(ctx.multi.toFixed(1))}`);
+    }
+  }
 
-    const getCountUpTweenObj = () => {
-      this.scene._sfx("sfx_orb");
-      this.scene.tweens.killTweensOf(scoreTxt);
-      scoreTxt.y = scoreY;
-      this.scene.tweens.add({
-        targets: scoreTxt, y: scoreY - 12,
-        duration: 56, // 140 * 0.4
-        yoyo: true, ease: 'Sine.easeOut',
-      });
-      return { base: currentBase, multi: currentMulti, score: currentScore };
-    };
+  _throwOrbLabel(ctx, fromX, fromY, color, label) {
+    const txt = this.scene.add.text(fromX, fromY, label, {
+      fontFamily: TS.defaultFont,
+      fontSize: '20px', color: '#ffffff',
+      stroke: Phaser.Display.Color.IntegerToColor(color).rgba,
+      strokeThickness: 5
+    }).setOrigin(0.5).setDepth(420);
+    ctx.tmpObjs.push(txt);
 
-    const countUpBase = (targetBase, duration, onDone) => {
-      const tweenObj = getCountUpTweenObj();
-      this.scene.tweens.add({
-        targets: tweenObj, base: targetBase, duration, ease: 'Circular.In',
-        onUpdate: () => { currentBase = tweenObj.base; scoreTxt.setText(getScoreStr()); },
-        onComplete: () => { currentBase = targetBase; scoreTxt.setText(getScoreStr()); onDone?.(); },
-      });
-    };
+    const cpX = (fromX + ctx.orbTarget.x) / 2;
+    const cpY = Math.min(fromY, ctx.orbTarget.y) - 60;
+    const t = { v: 0 };
 
-    const countUpMulti = (targetMulti, duration, onDone) => {
-      const tweenObj = getCountUpTweenObj();
-      this.scene.tweens.add({
-        targets: tweenObj, multi: targetMulti, duration, ease: 'Circular.In',
-        onUpdate: () => { currentMulti = tweenObj.multi; scoreTxt.setText(getScoreStr()); },
-        onComplete: () => { currentMulti = targetMulti; scoreTxt.setText(getScoreStr()); onDone?.(); },
-      });
-    };
+    this.scene.tweens.add({
+      targets: t, v: 1, duration: ANIM_SPEED.orbFlight, ease: 'Sine.easeIn',
+      onUpdate: () => {
+        const s = t.v, r = 1 - s;
+        const x = r * r * fromX + 2 * r * s * cpX + s * s * ctx.orbTarget.x;
+        const y = r * r * fromY + 2 * r * s * cpY + s * s * ctx.orbTarget.y;
+        txt.setPosition(x, y);
+      },
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: txt,
+          scaleX: 2.5, scaleY: 2.5, alpha: 0,
+          duration: ANIM_SPEED.orbFade, ease: 'Sine.easeOut',
+        });
+      },
+    });
+  }
 
-    // 천/만/십만 단위 돌파 시 펀치 이펙트
-    const punchMilestone = () => {
-      const cs = scoreTxt.scaleX;
-      scoreTxt.setScale(cs * 1.5, cs * 1.5);
-      this.scene.tweens.add({
-        targets: scoreTxt, scaleX: cs, scaleY: cs,
-        duration: 240, ease: 'Back.Out',
-      });
-      this.scene.cameras.main.shake(170, 0.009);
-      const flash = this.scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0xffffff, 0.22).setDepth(500);
-      this.scene.tweens.add({
-        targets: flash, alpha: 0, duration: 300,
-        onComplete: () => flash.destroy(),
-      });
-      this.scene._sfx("sfx_milestone");
-    };
+  _relicPos(relicId) {
+    const r = this.scene.itemUI?._relicObjs?.[relicId];
+    return r ? { x: r.baseCX, y: r.baseCY } : { x: GW - ITEM_PANEL_W / 2, y: 200 };
+  }
 
-    // 마일스톤 감지 포함 점수 카운트업 (merged 이후 전용)
-    const countUpScoreWithMilestone = (targetScore, duration, onDone) => {
-      const startVal = currentScore;
-      const milestones = [1000, 10000, 100000].filter(m => startVal < m && m <= targetScore);
-      const passed = [];
-      const triggered = new Set();
-      const tweenObj = { v: startVal };
+  _prepareCountUp(ctx) {
+    this.scene._sfx("sfx_orb");
+    this.scene.tweens.killTweensOf(ctx.scoreTxt);
+    ctx.scoreTxt.y = ctx.scoreY;
+    this.scene.tweens.add({
+      targets: ctx.scoreTxt, y: ctx.scoreY - 12,
+      duration: 56, // 140 * 0.4
+      yoyo: true, ease: 'Sine.easeOut',
+    });
+  }
 
-      // 점수가 올라갈 때 슬롯머신처럼 따르륵거리는 효과음 타격 타이머
-      const tickTimer = this.scene.time.addEvent({
-        delay: 60,
-        loop: true,
-        callback: () => {
-          this.scene.sound.play("sfx_tick", { volume: 0.15 });
+  _countUpValue(ctx, key, targetValue, duration, onDone) {
+    this._prepareCountUp(ctx);
+    const tweenObj = { [key]: ctx[key] };
+    this.scene.tweens.add({
+      targets: tweenObj,
+      [key]: targetValue,
+      duration, ease: 'Circular.In',
+      onUpdate: () => {
+        ctx[key] = tweenObj[key];
+        this._updateScoreDisplay(ctx);
+      },
+      onComplete: () => {
+        ctx[key] = targetValue;
+        this._updateScoreDisplay(ctx);
+        onDone?.();
+      },
+    });
+  }
+
+  _punchMilestone(scoreTxt) {
+    const cs = scoreTxt.scaleX;
+    scoreTxt.setScale(cs * 1.5, cs * 1.5);
+    this.scene.tweens.add({
+      targets: scoreTxt, scaleX: cs, scaleY: cs, duration: 240, ease: 'Back.Out',
+    });
+    this.scene.cameras.main.shake(170, 0.009);
+    const flash = this.scene.add.rectangle(GW / 2, GH / 2, GW, GH, 0xffffff, 0.22).setDepth(500);
+    this.scene.tweens.add({
+      targets: flash, alpha: 0, duration: 300, onComplete: () => flash.destroy(),
+    });
+    this.scene._sfx("sfx_milestone");
+  }
+
+  _countUpScoreWithMilestones(ctx, targetScore, duration, onDone) {
+    const startVal = ctx.score;
+    const milestones = [1000, 10000, 100000].filter(m => startVal < m && m <= targetScore);
+    const passed = [];
+    const triggered = new Set();
+    const tweenObj = { v: startVal };
+
+    const tickTimer = this.scene.time.addEvent({
+      delay: 60, loop: true,
+      callback: () => this.scene.sound.play("sfx_tick", { volume: 0.15 })
+    });
+
+    this.scene.tweens.add({
+      targets: tweenObj, v: targetScore, duration, ease: 'Power2.Out',
+      onUpdate: () => {
+        ctx.score = tweenObj.v;
+        this._updateScoreDisplay(ctx);
+        for (const m of milestones) {
+          if (!triggered.has(m) && ctx.score >= m) {
+            triggered.add(m);
+            passed.push(m);
+          }
         }
-      });
+      },
+      onComplete: () => {
+        tickTimer.remove();
+        ctx.score = targetScore;
+        this._updateScoreDisplay(ctx);
 
+        if (passed.length > 0) {
+          let idx = 0;
+          const playNext = () => {
+            if (idx < passed.length) {
+              this._punchMilestone(ctx.scoreTxt);
+              idx++;
+              this.scene.time.delayedCall(240, playNext);
+            } else onDone?.();
+          };
+          playNext();
+        } else onDone?.();
+      },
+    });
+  }
+
+  // ── Queue 빌더 메서드 ──────────────────────────────────────────────────
+
+  _buildInitialSteps(queue, ctx, details) {
+    // 0. Hand Name Fade In
+    queue.push(next => {
       this.scene.tweens.add({
-        targets: tweenObj, v: targetScore, duration, ease: 'Power2.Out',
-        onUpdate: () => {
-          currentScore = tweenObj.v;
-          scoreTxt.setText(getScoreStr());
-          for (const m of milestones) {
-            if (!triggered.has(m) && currentScore >= m) {
-              triggered.add(m);
-              passed.push(m);
-            }
-          }
-        },
-        onComplete: () => {
-          tickTimer.remove(); // 종료 시 타이머 제거
-          currentScore = targetScore;
-          scoreTxt.setText(getScoreStr());
-
-          // 마일스톤이 하나라도 있었다면 순차적으로 터뜨림
-          if (passed.length > 0) {
-            let idx = 0;
-            const playNext = () => {
-              if (idx < passed.length) {
-                punchMilestone();
-                idx++;
-                this.scene.time.delayedCall(240, playNext);
-              } else {
-                // 모두 재생 완료 후 최종 콜백
-                onDone?.();
-              }
-            };
-            playNext();
-          } else {
-            onDone?.();
-          }
-        },
+        targets: ctx.handNameTxt, alpha: 1, duration: 200,
+        onComplete: next
       });
-    };
-
-    const relicPos = (relicId) => {
-      const r = this.scene.itemUI?._relicObjs?.[relicId];
-      return r ? { x: r.baseCX, y: r.baseCY } : { x: GW - ITEM_PANEL_W / 2, y: 200 };
-    };
-
-    const queue = [];
+    });
 
     // 1. Hand Rank Multi
     queue.push(next => {
       this.scene.playerUI?.pulseHandRow(details.handRank);
       if (details.baseHandMulti > 0) {
+        const PW = PLAYER_PANEL_W;
         const rankRow = this.scene.playerUI?._handConfigRows?.[details.handRank];
-        throwLabel(rankRow?.multiTxt?.x ?? PW / 2, rankRow?.multiTxt?.y ?? 400, 0x44eeff, `x${details.baseHandMulti}`);
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpMulti(details.baseHandMulti, ANIM_SPEED.countUp, next));
-      } else {
-        next();
-      }
+        this._throwOrbLabel(ctx, rankRow?.multiTxt?.x ?? PW / 2, rankRow?.multiTxt?.y ?? 400, 0x44eeff, `x${details.baseHandMulti}`);
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => this._countUpValue(ctx, 'multi', details.baseHandMulti, ANIM_SPEED.countUp, next));
+      } else next();
     });
 
     // 2. ATK Base
     if (details.atk > 0) {
       queue.push(next => {
         this.scene.playerUI?.pulseAtk();
+        const PW = PLAYER_PANEL_W;
         const atkText = this.scene.playerUI?.playerAtkTxt;
-        throwLabel(atkText ? atkText.x : PW * 0.75, atkText ? atkText.y : 168, 0xff8833, `+${details.atk}`);
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + details.atk, ANIM_SPEED.countUp, next));
+        this._throwOrbLabel(ctx, atkText ? atkText.x : PW * 0.75, atkText ? atkText.y : 168, 0xff8833, `+${details.atk}`);
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => this._countUpValue(ctx, 'base', ctx.base + details.atk, ANIM_SPEED.countUp, next));
       });
     }
+  }
 
-    const pulseCard = (obj) => {
-      if (!obj?.active) return;
-      this.scene.tweens.killTweensOf(obj);
-      const bx = obj.scaleX, by = obj.scaleY;
-      this.scene.tweens.add({
-        targets: obj, scaleX: bx * 1.1, scaleY: by * 1.1,
-        duration: ANIM_SPEED.pulseCard, yoyo: true, ease: 'Sine.easeInOut',
-        onComplete: () => { try { obj.setScale(bx, by); } catch (_) { } },
-      });
-    };
-
-    // 3. Cards Base + Plus Multi
+  _buildCardSteps(queue, ctx, cardFlyInfo) {
     cardFlyInfo.forEach((info) => {
-      if (info.scoringDetail) {
-        const cd = info.scoringDetail;
-        queue.push(next => {
-          if (info.isFlipped && info.obj?.active) {
-            info.obj.setTexture(info.key);
-          }
-          pulseCard(info.obj);
-          throwLabel(info.fromX, info.fromY, 0xffdd44, `+${cd.baseScore}`);
-          this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => countUpBase(currentBase + cd.baseScore, ANIM_SPEED.countUp, next));
-        });
+      queue.push(next => {
+        if (info.isFlipped && info.obj?.active) info.obj.setTexture(info.key);
+        this._pulseCardObj(info.obj);
 
-        cd.cardRelicDeltas.forEach(({ relicId, type, delta }) => {
-          queue.push(next => {
-            this.scene.itemUI?.pulseRelic(relicId);
-            const rp = relicPos(relicId);
-            const isBase = type === 'base';
-            if (type === 'times_multi') {
-              // times_multi는 병합 이후(allTimesDeltas)에 별도로 일괄 처리하므로 여기서는 연출 생략
+        if (info.scoringDetail) {
+          const cd = info.scoringDetail;
+          this._throwOrbLabel(ctx, info.fromX, info.fromY, 0xffdd44, `+${cd.baseScore}`);
+          this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
+            this._countUpValue(ctx, 'base', ctx.base + cd.baseScore, ANIM_SPEED.countUp, () => {
+              // 해당 카드의 씰/유물 효과 처리 (Times Multi 제외)
+              this._addCardSpecificRelicSteps(queue, ctx, cd.cardRelicDeltas);
               next();
-              return;
-            }
-            const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
-            const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
-            throwLabel(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
-            this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-              if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
-              else countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next);
             });
           });
-        });
-      } else {
-        queue.push(next => {
-          if (info.isFlipped && info.obj?.active) {
-            info.obj.setTexture(info.key);
-          }
-          pulseCard(info.obj);
-          next();
-        });
-      }
+        } else next();
+      });
     });
+  }
 
-    // 4. Hand Relic DB (base + plus_multi)
-    details.handRelicDeltas.forEach(({ relicId, type, delta }) => {
-      queue.push(next => {
+  _pulseCardObj(obj) {
+    if (!obj?.active) return;
+    this.scene.tweens.killTweensOf(obj);
+    const bx = obj.scaleX, by = obj.scaleY;
+    this.scene.tweens.add({
+      targets: obj, scaleX: bx * 1.1, scaleY: by * 1.1,
+      duration: ANIM_SPEED.pulseCard, yoyo: true, ease: 'Sine.easeInOut',
+      onComplete: () => { try { obj.setScale(bx, by); } catch (_) { } },
+    });
+  }
+
+  /** 카드 개별에 붙은 유물/씰 효과 연출 (Base, PlusMulti) */
+  _addCardSpecificRelicSteps(queue, ctx, deltas) {
+    deltas.forEach(({ relicId, type, delta }) => {
+      if (type === 'times_multi') return; // Times 멀티는 최후에 일괄 처리
+      queue.unshift(next => { // 현재 카드 처리 직후에 끼워넣기 위해 unshift
         this.scene.itemUI?.pulseRelic(relicId);
-        const rp = relicPos(relicId);
+        const rp = this._relicPos(relicId);
         const isBase = type === 'base';
-        if (type === 'times_multi') { next(); return; }
         const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
         const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
-        throwLabel(rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
+        this._throwOrbLabel(ctx, rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
-          else countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next);
+          if (isBase) this._countUpValue(ctx, 'base', ctx.base + delta, ANIM_SPEED.countUp, next);
+          else this._countUpValue(ctx, 'multi', ctx.multi + delta, ANIM_SPEED.countUp, next);
+        });
+      });
+    });
+  }
+
+  _buildRelicSteps(queue, ctx, details) {
+    // Hand Relic (Base + PlusMulti)
+    details.handRelicDeltas.forEach(({ relicId, type, delta }) => {
+      if (type === 'times_multi') return;
+      queue.push(next => {
+        this.scene.itemUI?.pulseRelic(relicId);
+        const rp = this._relicPos(relicId);
+        const isBase = type === 'base';
+        const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
+        const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
+        this._throwOrbLabel(ctx, rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
+        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
+          if (isBase) this._countUpValue(ctx, 'base', ctx.base + delta, ANIM_SPEED.countUp, next);
+          else this._countUpValue(ctx, 'multi', ctx.multi + delta, ANIM_SPEED.countUp, next);
         });
       });
     });
 
+    // Final Relic (Base + PlusMulti)
     details.finalRelicDeltas.forEach(({ relicId, type, delta }) => {
       if (type !== 'plus_multi' && type !== 'base') return;
       queue.push(next => {
         this.scene.itemUI?.pulseRelic(relicId);
-        const rp = relicPos(relicId);
+        const rp = this._relicPos(relicId);
         const isBase = type === 'base';
         const displayVal = isBase ? Math.floor(delta) : Number(delta.toFixed(2));
         const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
-        throwLabel(rp.x, rp.y, isBase ? 0xee66ff : 0x44eeff, label);
+        this._throwOrbLabel(ctx, rp.x, rp.y, isBase ? 0xee66ff : 0x44eeff, label);
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          if (isBase) countUpBase(currentBase + delta, ANIM_SPEED.countUp, next);
-          else countUpMulti(currentMulti + delta, ANIM_SPEED.countUp, next);
+          if (isBase) this._countUpValue(ctx, 'base', ctx.base + delta, ANIM_SPEED.countUp, next);
+          else this._countUpValue(ctx, 'multi', ctx.multi + delta, ANIM_SPEED.countUp, next);
         });
       });
     });
+  }
 
-    // 6. MERGE: multi 사라지고 숫자만 화면 중앙으로 이동 → base → merged 카운트업
+  _buildMergeStep(queue, ctx, details) {
     queue.push(next => {
-      const mergedScore = Math.floor(currentBase * currentMulti);
-      isMerged = true;
-      currentScore = currentBase;
-      scoreTxt.setText(getScoreStr());
+      const mergedScore = Math.floor(ctx.base * ctx.multi);
+      ctx.isMerged = true;
+      ctx.score = ctx.base;
+      this._updateScoreDisplay(ctx);
 
-      const destX = GW / 2;
-      const destY = GH * 0.36;
+      const destX = GW / 2, destY = GH * 0.36;
 
-      // 족보 이름 텍스트 (scoreTxt 위에 표시)
-      const lang = getLang(this.scene);
-      const handLabel = getHandName(lang, details.handName);
-      const handNameTxt = this.scene.add.text(cX, scoreY - 28, handLabel, {
-        fontFamily: TS.defaultFont,
-        fontSize: '14px', color: '#aaddff',
-        stroke: '#000000', strokeThickness: 4,
-      }).setOrigin(0.5, 1).setDepth(400);
-      tmpObjs.push(handNameTxt);
-
-      this.scene.tweens.killTweensOf(scoreTxt);
+      this.scene.tweens.killTweensOf(ctx.scoreTxt);
       this.scene.tweens.add({
-        targets: [scoreTxt, handNameTxt],
+        targets: [ctx.scoreTxt, ctx.handNameTxt],
         x: destX, y: destY, scaleX: 1.8, scaleY: 1.8,
         duration: 300, ease: 'Back.easeOut',
         onComplete: () => {
-          orbTarget.x = destX;
-          orbTarget.y = destY + scoreTxt.height * scoreTxt.scaleY * 0.5;
-          countUpScoreWithMilestone(mergedScore, 420, next);
+          ctx.orbTarget.x = destX;
+          ctx.orbTarget.y = destY + ctx.scoreTxt.height * ctx.scoreTxt.scaleY * 0.5;
+          this._countUpScoreWithMilestones(ctx, mergedScore, 420, next);
         },
       });
     });
+  }
 
-    // 7. 모든 Times Multi 일괄 처리 (씰, 유물, 빙고 등)
-    allTimesDeltas.forEach(({ relicId, type, delta }) => {
+  _buildTimesMultiSteps(queue, ctx, details) {
+    const allTimesDeltas = [];
+    details.cardDetails.forEach(cd => cd.cardRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); }));
+    details.handRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
+    details.finalRelicDeltas.forEach(d => { if (d.type === 'times_multi') allTimesDeltas.push(d); });
+
+    allTimesDeltas.forEach(({ relicId, delta }) => {
       queue.push(next => {
-        if (relicId.startsWith('seal_')) {
-          // 씰 효과는 원본 카드 위치에서 날아오도록 할 수 있지만, 간단히 위해 중앙 혹은 유물 위치 활용
-          // 여기서는 중앙에서 작게 팝업 시키거나 유물 UI가 있다면 활용
-          this.scene.itemUI?.pulseRelic(relicId); // Blue/Rainbow 씰은 유물이 아니므로 pulse 생략될 수 있음
-        } else {
-          this.scene.itemUI?.pulseRelic(relicId);
-        }
-        
-        const rp = relicPos(relicId);
-        // Times Multi는 "현재 점수"에 ratio를 곱하는 방식이므로 delta를 통해 ratio 역추적
-        // state.timesMulti = before * ratio -> delta = before * (ratio - 1) -> ratio = 1 + delta/before
-        // 하지만 scoreService에서 이미 delta를 넘겨주므로, 여기서는 연출용 ratio만 표시
-        // (실제 최종 점수는 details.totalScore에 수렴해야 함)
-        const ratio = (currentTimes + delta) / currentTimes;
-        const displayRatio = Number(ratio.toFixed(2));
-        throwLabel(rp.x, rp.y, 0xff0044, `x${displayRatio}`);
+        this.scene.itemUI?.pulseRelic(relicId);
+        const rp = this._relicPos(relicId);
+
+        // ratio 방식 대신 절대값 곱셈으로 연출 (User 요청: multi 표시값에 곱해서 countUp)
+        const targetMulti = ctx.multi * (1 + delta);
+        const displayRatio = delta >= 1 ? Number((delta + 1).toFixed(2)) : Number((1 + delta).toFixed(2));
+
+        this._throwOrbLabel(ctx, rp.x, rp.y, 0xff0044, `x${displayRatio}`);
 
         this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          currentTimes += delta;
-          const targetScore = Math.floor(currentBase * currentMulti * currentTimes);
-          countUpScoreWithMilestone(targetScore, Math.round(ANIM_SPEED.countUp * 1.8), next);
+          this._countUpValue(ctx, 'multi', targetMulti, Math.round(ANIM_SPEED.countUp * 1.5), next);
         });
       });
     });
+  }
 
-    // 8. 카드 더미로 날리기 (전체 애니메이션 완료 후)
-    if (cardFlyInfo.length > 0) {
-      queue.push(next => { onCardsConsumed?.(); next(); });
-    }
-
-    // 9. End: 최종 펀치 후 페이드
+  _buildFinalSteps(queue, ctx, onComplete) {
     queue.push(next => {
-      //this.scene._sfx("sfx_chop");
-      const cs = scoreTxt.scaleX;
-      scoreTxt.setScale(cs * 1.25, cs * 1.25);
+      const cs = ctx.scoreTxt.scaleX;
+      ctx.scoreTxt.setScale(cs * 1.25, cs * 1.25);
       this.scene.tweens.add({
-        targets: scoreTxt, scaleX: cs, scaleY: cs,
+        targets: ctx.scoreTxt, scaleX: cs, scaleY: cs,
         duration: ANIM_SPEED.mergeScale, ease: 'Back.Out',
         onComplete: () => this.scene.time.delayedCall(Math.round(ANIM_SPEED.mergeDelay * 0.6), next),
       });
@@ -483,20 +510,15 @@ export class BattleAnimationManager {
 
     queue.push(next => {
       this.scene.tweens.add({
-        targets: tmpObjs, alpha: 0, duration: 180,
+        targets: ctx.tmpObjs, alpha: 0, duration: 180,
         onComplete: () => {
-          tmpObjs.forEach(o => { try { o?.destroy(); } catch (_) { } });
-          tmpObjs.length = 0;
+          ctx.tmpObjs.forEach(o => { try { o?.destroy(); } catch (_) { } });
+          ctx.tmpObjs.length = 0;
+          onComplete?.();
           next();
         },
       });
     });
-
-    const runNext = () => {
-      if (queue.length === 0) { onComplete?.(); return; }
-      queue.shift()(runNext);
-    };
-    runNext();
   }
 
   animateDraw(cards, handData, onComplete) {

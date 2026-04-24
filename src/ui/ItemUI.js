@@ -3,6 +3,7 @@ import { TS } from "../textStyles.js";
 import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
 import { TooltipUI } from "./TooltipUI.js";
 import { getLang, getRelicName, getRelicDesc, getItemName, getItemDesc, getUiText } from "../service/langService.js";
+import { getBingoBonusValue } from "../manager/bingoManager.js";
 
 const RARITY_STRIP = { common: 0x4a9a5a, rare: 0x4a6aaa, epic: 0x8a4aaa, legend: 0xaa8822 };
 const RARITY_COLOR = { common: '#aaffaa', rare: '#aaaaff', epic: '#cc88ff', legend: '#ffdd44' };
@@ -67,19 +68,24 @@ export class ItemUI {
   _getRelicBingoMsg(slotIdx, lang) {
     if (slotIdx < 0 || !this.player || !this.player.relicSlots) return null;
     const slots = this.player.relicSlots;
+    const levels = this.player.bingoLevels ?? { h: 1, v: 1, d: 1 };
+
     const BINGO_H = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
     const BINGO_V = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
     const BINGO_D = [[0, 4, 8], [2, 4, 6]];
 
     const msgs = [];
     if (BINGO_H.some(line => line.includes(slotIdx) && line.every(i => slots[i]))) {
-      msgs.push(getUiText(lang, 'bingo_h', {}));
+      const val = getBingoBonusValue('H', levels.h);
+      msgs.push(getUiText(lang, 'bingo_h', { val }));
     }
     if (BINGO_V.some(line => line.includes(slotIdx) && line.every(i => slots[i]))) {
-      msgs.push(getUiText(lang, 'bingo_v', {}));
+      const val = getBingoBonusValue('V', levels.v);
+      msgs.push(getUiText(lang, 'bingo_v', { val }));
     }
     if (BINGO_D.some(line => line.includes(slotIdx) && line.every(i => slots[i]))) {
-      msgs.push(getUiText(lang, 'bingo_d', {}));
+      const val = getBingoBonusValue('D', levels.d).toFixed(2);
+      msgs.push(getUiText(lang, 'bingo_d', { val }));
     }
     return msgs.length > 0 ? msgs.join('\n') : null;
   }
