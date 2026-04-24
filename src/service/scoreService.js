@@ -137,7 +137,7 @@ function checkCondition(cond, card, ctx) {
     if (cond.deckCountLte != null && ctx.deckCount > cond.deckCountLte) return false;
 
     if (cond.cardValSumLt != null) {
-        const sum = (ctx.cards ?? []).reduce((s, c) => s + (c.val ?? 0), 0);
+        const sum = (ctx.cards ?? []).reduce((s, c) => s + (c.baseScore ?? 0), 0);
         if (sum >= cond.cardValSumLt) return false;
     }
 
