@@ -237,16 +237,22 @@ export class MonsterManager {
           const [removed] = scene.handData.splice(i, 1);
 
           if (shouldConsume) {
-            // 영구 제거 (player.deck에서도 제거)
-            scene.player.deck = scene.player.deck.filter(c => c.uid !== removed.uid);
-            // 아이템 획득
-            const items = getAllItems();
-            const item = items[Math.floor(Math.random() * items.length)];
-            scene.player.items.push({
-              uid: crypto.randomUUID(),
-              id: item.id, name: item.name, desc: item.desc, rarity: item.rarity, img: item.img
-            });
-            scene.addBattleLog(`[뱀] ${removed.key} 영구 제거! 아이템 [${item.name}] 획득!`);
+            // 영구 제거 (해당 세션 및 추후 저장될 카드 목록에서 제외)
+            scene.deck.removeCardById(removed.uid);
+
+            // 인벤토리 여유 확인
+            if (scene.player.items.length < scene.player.maxItemCount) {
+              // 아이템 획득
+              const items = getAllItems();
+              const item = items[Math.floor(Math.random() * items.length)];
+              scene.player.items.push({
+                uid: crypto.randomUUID(),
+                id: item.id, name: item.name, desc: item.desc, rarity: item.rarity, img: item.img
+              });
+              scene.addBattleLog(`[뱀] ${removed.key} 영구 제거! 아이템 [${item.name}] 획득!`);
+            } else {
+              scene.addBattleLog(`[뱀] ${removed.key} 영구 제거! (아이템 인벤토리 가득 참)`);
+            }
           } else {
             scene.dummyData.push(removed);
           }
