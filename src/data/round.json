@@ -46,7 +46,7 @@
         "skeleton"
       ],
       "baseStat": {
-        "hp": 90,
+        "hp": 100,
         "atk": 7,
         "def": 4
       },
@@ -87,7 +87,7 @@
         "zombie"
       ],
       "baseStat": {
-        "hp": 350,
+        "hp": 400,
         "atk": 8,
         "def": 15
       },
@@ -128,7 +128,7 @@
         "goblin"
       ],
       "baseStat": {
-        "hp": 1300,
+        "hp": 1600,
         "atk": 10,
         "def": 30
       },

@@ -5,7 +5,7 @@ import { applyBingoBonuses, getBingoStats } from '../manager/bingoManager.js';
 
 const ADD_TYPES = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage", "addPerExcessDeck", "addCurrentHp"]);
 const PLUS_MULTI_TYPES = new Set(["plus_multi", "plusMultiPerHandUsage"]);
-const TIMES_MULTI_TYPES = new Set(["times_multi", "timesMultiPerDiagonalBingo", "plusMultiPerHandRemaining"]);
+const TIMES_MULTI_TYPES = new Set(["times_multi", "timesMultiPerDiagonalBingo", "plusMultiPerHandRemaining", "timesMultiPerRankInDeck"]);
 
 /**
  * 계산 과정을 추적하고 로그를 남기기 위한 상태 클래스
@@ -96,6 +96,12 @@ function applyEffect(score, effect, card, ctx) {
             return score * (1 + effect.value * remaining);
         }
 
+        case "timesMultiPerRankInDeck": {
+            const count = ctx.deckRankCounts?.[effect.rank] ?? 0;
+            if (count <= 0) return score;
+            return score * (1 + effect.value * count);
+        }
+
         case "addPerHandUsage":
         case "plusMultiPerHandUsage": {
             const usage = ctx.handUseCounts?.[ctx.handRank] ?? 0;
@@ -142,6 +148,7 @@ function checkCondition(cond, card, ctx) {
     }
 
     if (cond.isFullHp && ctx.hp !== ctx.maxHp) return false;
+    if (cond.cardCount != null && (ctx.cards?.length ?? 0) !== cond.cardCount) return false;
 
     return true;
 }

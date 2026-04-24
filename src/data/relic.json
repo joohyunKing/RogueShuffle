@@ -375,7 +375,7 @@
     {
       "id": "battle_chronicle",
       "name": "전투 연대기",
-      "description": "모든 족보 사용 횟수 합산 × 3점 추가",
+      "description": "모든 족보 사용 횟수 합산 × 5점 추가",
       "rarity": "epic",
       "img": "avarice.png",
       "useYn": "Y",
@@ -383,14 +383,14 @@
         {
           "scope": "final",
           "type": "addPerTotalHandUsage",
-          "value": 3
+          "value": 5
         }
       ]
     },
     {
       "id": "empty_hand",
       "name": "빈손의 도",
-      "description": "공격에 쓰지 않은 핸드 카드 1장당 최종 점수 ×1.1 (5장이면 ×1.5)",
+      "description": "공격에 쓰지 않은 핸드 카드 1장당 최종 점수 ×1.2 (5장이면 ×2)",
       "rarity": "rare",
       "img": "brown.png",
       "useYn": "Y",
@@ -398,14 +398,14 @@
         {
           "scope": "final",
           "type": "plusMultiPerHandRemaining",
-          "value": 0.1
+          "value": 0.2
         }
       ]
     },
     {
       "id": "low_card_master",
       "name": "소수의 힘",
-      "description": "사용한 카드의 숫자 합이 25 미만이면 점수 ×1.5",
+      "description": "사용한 카드의 숫자 합이 25 미만이면 점수 ×2",
       "rarity": "rare",
       "img": "one_eye.png",
       "useYn": "Y",
@@ -413,7 +413,7 @@
         {
           "scope": "final",
           "type": "times_multi",
-          "value": 1.5,
+          "value": 2,
           "condition": {
             "cardValSumLt": 25
           }
@@ -651,6 +651,69 @@
         {
           "scope": "card",
           "type": "sealedCardEcho"
+        }
+      ]
+    },
+    {
+      "id": "king_majesty",
+      "name": "왕의 위엄",
+      "description": "덱에 남아있는 K 의 수만큼 최종 점수 ×0.5 추가 (예: 2장이면 ×2)",
+      "rarity": "epic",
+      "img": "king.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "final",
+          "type": "timesMultiPerRankInDeck",
+          "rank": "K",
+          "value": 0.5
+        }
+      ]
+    },
+    {
+      "id": "black_square",
+      "name": "검은 사각형",
+      "description": "공격에 사용한 카드가 정확히 4장일 때, 배수 +16",
+      "rarity": "rare",
+      "img": "black_square.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "plus_multi",
+          "value": 16,
+          "condition": {
+            "cardCount": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "grail",
+      "name": "성배",
+      "description": "플레이어 턴 시작 시 최대 HP의 10% 회복",
+      "rarity": "rare",
+      "img": "greil.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "heal_per_turn_percent",
+          "value": 0.1
+        }
+      ]
+    },
+    {
+      "id": "snake",
+      "name": "뱀",
+      "description": "매 턴 첫 공격 시 1장만 사용하면, 카드를 영구 제거하고 랜덤 아이템 1개를 획득합니다.",
+      "rarity": "epic",
+      "img": "snake.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "consume_one_to_item"
         }
       ]
     }

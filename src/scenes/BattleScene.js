@@ -1335,6 +1335,12 @@ export class BattleScene extends Phaser.Scene {
     context.attrs = this.player.attrs;
     context.adaptability = this.player.adaptability;
     context.bingoLevels = this.player.bingoLevels;
+
+    const rankCounts = {};
+    (this.deckData ?? []).forEach(c => {
+      rankCounts[c.rank] = (rankCounts[c.rank] ?? 0) + 1;
+    });
+    context.deckRankCounts = rankCounts;
   }
 
   // ── 디버프 카드 여부 (DebuffManager에 위임) ────────────────────────────────
@@ -1407,6 +1413,24 @@ export class BattleScene extends Phaser.Scene {
       this.playerUI?.highlightHand(rank);
       this.itemUI?.rattleRelics(this._getApplicableRelicIds(rank));
     }
+  }
+
+  /** 턴 시작 시 발동하는 유물 효과 적용 */
+  _applyTurnStartRelics() {
+    (this.player.relics ?? []).forEach(relicId => {
+      const relic = _relicMap[relicId];
+      if (!relic) return;
+      relic.effects.forEach(eff => {
+        if (eff.type === 'heal_per_turn_percent') {
+          const healAmt = Math.floor(this.player.maxHp * eff.value);
+          if (healAmt > 0) {
+            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
+            this.addBattleLog(`[${relic.name}] HP ${healAmt} 회복!`);
+          }
+        }
+      });
+    });
+    this.refreshPlayerStats();
   }
 
   updatePreview() {
@@ -1569,6 +1593,9 @@ export class BattleScene extends Phaser.Scene {
   startTurn() {
     this.time.delayedCall(420, () => {
       try {
+        // ── 유물 턴 시작 효과 ──────────────────────────────────────────────────
+        this._applyTurnStartRelics();
+
         // ── 필드 보충 ──────────────────────────────────────────────────────────
         const slotPos = this.calcFieldPositions(this.player.fieldSize);
         const draw = Math.min(this.player.fieldSize, this.deckData.length);

@@ -7,6 +7,7 @@ import {
 } from "../constants.js";
 import { TS } from "../textStyles.js";
 import { getScoreDetails } from "../service/scoreService.js";
+import { getAllItems } from '../manager/itemManager.js';
 
 // 플레이어 HP바 방향 orb 목표 좌표 (bossManager.js 의 ATK_ORB 와 동일)
 const ATK_ORB = { x: PLAYER_PANEL_W / 2, y: 152 };
@@ -176,6 +177,7 @@ export class MonsterManager {
     const details = getScoreDetails(selectedCards, context);
     if (details.handRank == null || (details.cards?.length ?? 0) === 0) return;
 
+    const isFirstAttack = (scene.attackCount === 0);
     if (scene.attackCount >= scene.player.attacksPerTurn) {
       scene.addBattleLog(`이번 턴 공격 횟수 초과! (${scene.player.attacksPerTurn}회)`);
       return;
@@ -225,11 +227,29 @@ export class MonsterManager {
 
     const removeCards = () => {
       scene.selected.clear();
+      const hasSnake = scene.player.relics.includes('snake');
+      const shouldConsume = hasSnake && isFirstAttack && selectedIndices.length === 1;
+
       [...selectedIndices].sort((a, b) => b - a)
         .forEach(i => {
           const card = scene.handData[i];
           scene._flyToDummy(handPositions[i].x, HAND_Y, card.key);
-          scene.dummyData.push(...scene.handData.splice(i, 1));
+          const [removed] = scene.handData.splice(i, 1);
+
+          if (shouldConsume) {
+            // 영구 제거 (player.deck에서도 제거)
+            scene.player.deck = scene.player.deck.filter(c => c.uid !== removed.uid);
+            // 아이템 획득
+            const items = getAllItems();
+            const item = items[Math.floor(Math.random() * items.length)];
+            scene.player.items.push({
+              uid: crypto.randomUUID(),
+              id: item.id, name: item.name, desc: item.desc, rarity: item.rarity, img: item.img
+            });
+            scene.addBattleLog(`[뱀] ${removed.key} 영구 제거! 아이템 [${item.name}] 획득!`);
+          } else {
+            scene.dummyData.push(removed);
+          }
         });
       scene.render();
     };

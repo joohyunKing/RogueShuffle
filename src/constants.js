@@ -65,6 +65,7 @@ export const context = {
     handRemainingCount: 0, // 공격에 사용되지 않은 핸드 카드 수 (빈손 조건용)
     handUseCounts: {},     // 족보별 누적 사용 횟수 (성장형 유물용)
     bingoLevels: { h: 1, v: 1, d: 1 }, // 빙고별 레벨
+    deckRankCounts: {},    // 덱에 남아있는 랭크별 카드 수
 };
 
 // ─── 레이아웃 (GW=1280, GH=720 기준) ─────────────────────────────────────────
