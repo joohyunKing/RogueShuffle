@@ -50,6 +50,7 @@ export class ItemUI {
       titleMsg: title, contentMsg: desc || '', titleMsgColor: color, tooltipW: 273,
       left: this._tipLeft(), centerY: cy, clampMin: BATTLE_LOG_H + 4, clampMax: GH - 10,
       depth: 300,
+      onUse: null, btnDisabled: false, sold: false,
     });
   }
 

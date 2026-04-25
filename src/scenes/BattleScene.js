@@ -968,6 +968,7 @@ export class BattleScene extends Phaser.Scene {
   // ── 현재 선택에서 효과 받는 relic id 목록 ──────────────────────────────
   _getApplicableRelicIds(rank) {
     const deckCount = this.deckData?.length ?? 0;
+    const allDeckCount = (this.deckData?.length ?? 0) + (this.dummyData?.length ?? 0) + (this.handData?.length ?? 0) + (this.fieldData?.length ?? 0);
     const selectedCards = [...this.selected].map(i => this.handData[i]);
     const hp = this.player.hp, maxHp = this.player.maxHp;
     const handRemaining = this.handData.length - this.selected.size;
@@ -983,6 +984,9 @@ export class BattleScene extends Phaser.Scene {
         // 1. 특정 효과 타입별 조건 체크
         if (eff.type === 'timesMultiWhenNoHand' && handRemaining > 0) return false;
         if (eff.type === 'plusMultiPerHandRemaining' && handRemaining <= 0) return false;
+        if (eff.type === 'plusMultiPerItemUsage' && this.player.itemUseCount <= 0) return false;
+        if (eff.type === 'plusMultiPerExcessDeck' && allDeckCount < (eff.threshold ?? 50)) return false;
+        if (eff.type === 'addPerExcessDeck' && deckCount < (eff.threshold ?? 0)) return false;
 
         // 2. 공통 Condition 체크
         const cond = eff.condition;
@@ -1099,6 +1103,7 @@ export class BattleScene extends Phaser.Scene {
   // ── context 갱신 (ATK 레벨업 등 mid-battle 변경 반영) ────────────────────
   _refreshContext() {
     context.deckCount = this.deckData?.length ?? 0;
+    context.allDeckCount = (this.deckData?.length ?? 0) + (this.dummyData?.length ?? 0) + (this.handData?.length ?? 0) + (this.fieldData?.length ?? 0);
     context.dummyCount = this.dummyData?.length ?? 0;
     context.handConfig = this.player.getEffectiveHandConfig();
     context.relics = this.player.relics ?? [];
@@ -1109,6 +1114,7 @@ export class BattleScene extends Phaser.Scene {
     context.hp = this.player.hp;
     context.maxHp = this.player.maxHp;
     context.handUseCounts = this.player.handUseCounts ?? {};
+    context.itemUseCount = this.player.itemUseCount ?? 0;
     context.attrs = this.player.attrs;
     context.adaptability = this.player.adaptability;
     context.bingoLevels = this.player.bingoLevels;

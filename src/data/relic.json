@@ -228,8 +228,8 @@
       "name": "트리플 폭탄",
       "description": "트리플로 전체 광역 공격",
       "rarity": "rare",
-      "img": "triple2.png",
-      "useYn": "Y",
+      "img": "triple.png",
+      "useYn": "N",
       "effects": [
         {
           "scope": "special",
@@ -744,6 +744,37 @@
           "scope": "final",
           "type": "timesMultiWhenNoHand",
           "value": 7
+        }
+      ]
+    },
+    {
+      "id": "green_ring",
+      "name": "녹색반지",
+      "description": "아이템 사용 횟수만큼 배수(Plus Multi) 증가",
+      "rarity": "epic",
+      "img": "green_ring.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "plusMultiPerItemUsage",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "thick_book",
+      "name": "두꺼운 책",
+      "description": "전체 카드 수 50장 이상일 때, 초과 장당 배수(Plus Multi) +4",
+      "rarity": "rare",
+      "img": "book.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "hand",
+          "type": "plusMultiPerExcessDeck",
+          "threshold": 50,
+          "value": 4
         }
       ]
     }

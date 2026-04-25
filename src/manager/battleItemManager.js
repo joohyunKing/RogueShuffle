@@ -193,6 +193,7 @@ export class BattleItemManager {
   }
 
   _consume(idx, obj) {
+    this.scene.player.itemUseCount = (this.scene.player.itemUseCount ?? 0) + 1;
     this.scene.player.items.splice(idx, 1);
     obj?.destroy();
     this.scene.render();

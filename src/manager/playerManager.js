@@ -132,6 +132,8 @@ export class Player {
 
         /** 빙고별 레벨 { h, v, d } */
         this.bingoLevels = data.bingoLevels ?? { h: 1, v: 1, d: 1 };
+        /** 아이템 사용 횟수 (유물 효과용) */
+        this.itemUseCount = data.itemUseCount ?? 0;
     }
 
     /** 현재 레벨에서 레벨업에 필요한 총 경험치 */
@@ -394,6 +396,7 @@ export class Player {
             handUseCounts: { ...this.handUseCounts },
             lastHandRank: this.lastHandRank,
             bingoLevels: { ...this.bingoLevels },
+            itemUseCount: this.itemUseCount,
         };
     }
 }

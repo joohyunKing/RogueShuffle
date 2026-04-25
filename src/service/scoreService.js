@@ -4,7 +4,7 @@ import { sealMap } from '../manager/sealManager.js';
 import { applyBingoBonuses, getBingoStats } from '../manager/bingoManager.js';
 
 const ADD_TYPES = new Set(["add", "addPerHandUsage", "addPerTotalHandUsage", "addPerExcessDeck", "addCurrentHp"]);
-const PLUS_MULTI_TYPES = new Set(["plus_multi", "plusMultiPerHandUsage"]);
+const PLUS_MULTI_TYPES = new Set(["plus_multi", "plusMultiPerHandUsage", "plusMultiPerItemUsage", "plusMultiPerExcessDeck"]);
 const TIMES_MULTI_TYPES = new Set(["times_multi", "timesMultiPerDiagonalBingo", "plusMultiPerHandRemaining", "timesMultiPerRankInDeck", "timesMultiWhenNoHand"]);
 
 /**
@@ -108,6 +108,12 @@ function applyEffect(score, effect, card, ctx) {
             return score * effect.value;
         }
 
+        case "plusMultiPerItemUsage": {
+            const count = ctx.itemUseCount ?? 0;
+            if (count <= 0) return score;
+            return score + count * (effect.value ?? 1);
+        }
+
         case "sealedCardEcho":
         case "addPerHandUsage":
         case "plusMultiPerHandUsage": {
@@ -122,6 +128,10 @@ function applyEffect(score, effect, card, ctx) {
 
         case "addPerExcessDeck": {
             const excess = Math.max(0, (ctx.deckCount ?? 0) - (effect.threshold ?? 0));
+            return score + excess * effect.value;
+        }
+        case "plusMultiPerExcessDeck": {
+            const excess = Math.max(0, (ctx.allDeckCount ?? 0) - (effect.threshold ?? 0));
             return score + excess * effect.value;
         }
 
