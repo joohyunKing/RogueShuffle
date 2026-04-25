@@ -293,6 +293,7 @@ export class MonsterManager {
 
   // ── 기믹: 데미지 감소 여부 판정 ───────────────────────────────────────────
   _applyGimmickResist(mon, damage, attackCtx) {
+    const { scene } = this;
     const g = mon.gimmick;
     if (!g) return damage;
 
@@ -310,7 +311,7 @@ export class MonsterManager {
     }
 
     if (resisted && damage > 0) {
-      const lang = getLang(this.scene);
+      const lang = getLang(scene);
       const mName = getMonsterName(lang, mon.id);
       scene.addBattleLog(getUiText(lang, 'battle.log_gimmick_resist', { gimmick: g.name, name: mName }));
       return Math.floor(damage * g.damageMultiplier);

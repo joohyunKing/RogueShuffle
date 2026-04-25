@@ -48,6 +48,7 @@ export class BossManager {
 
   // ── 패시브 활성화 (trigger: 'boss_turn' | 'player_turn') ─────────────────
   activatePassive(boss, trigger) {
+    if (boss.isDead || boss.hp <= 0) return;
     const { scene } = this;
 
     if (trigger === 'player_turn') {
@@ -63,12 +64,15 @@ export class BossManager {
       ? (Array.isArray(phase.passive) ? phase.passive : [phase.passive])
       : [];
 
-    const allPassives = [...globalPassives, ...phasePassives];
-    if (allPassives.length === 0) return;
+    globalPassives.forEach(p => {
+      if (p.triggerOn === trigger) this._applyPassiveEffect(boss, p, p.langKey || `passive_${boss.id}`);
+    });
 
-    for (const p of allPassives) {
-      if (p.triggerOn !== trigger) continue;
-      this._applyPassiveEffect(boss, p);
+    if (phase) {
+      const phaseIdx = boss.phases.indexOf(phase);
+      phasePassives.forEach(p => {
+        if (p.triggerOn === trigger) this._applyPassiveEffect(boss, p, p.langKey || `passive_${boss.id}_${phaseIdx + 1}`);
+      });
     }
 
     this.refreshStatePassives(boss);
@@ -76,16 +80,23 @@ export class BossManager {
 
   // HP나 소환수 상태 변화 시 호출하여 실시간으로 패시브 상태 반영
   refreshStatePassives(boss) {
+    if (boss.isDead || boss.hp <= 0) return;
     const globalPassives = Array.isArray(boss.passive) ? boss.passive : (boss.passive ? [boss.passive] : []);
     const phase = this.getCurrentPhase(boss);
     const phasePassives = phase?.passive ? (Array.isArray(phase.passive) ? phase.passive : [phase.passive]) : [];
-    const allPassives = [...globalPassives, ...phasePassives];
-
-    for (const p of allPassives) {
-      // 실시간 대응이 필요한 패시브 타입들
+    globalPassives.forEach(p => {
       if (p.type === 'def_multiply_when_healthy' || p.type === 'def_multiply_when_summoned') {
-        this._applyPassiveEffect(boss, p);
+        this._applyPassiveEffect(boss, p, p.langKey || `passive_${boss.id}`);
       }
+    });
+
+    if (phase) {
+      const phaseIdx = boss.phases.indexOf(phase);
+      phasePassives.forEach(p => {
+        if (p.type === 'def_multiply_when_healthy' || p.type === 'def_multiply_when_summoned') {
+          this._applyPassiveEffect(boss, p, p.langKey || `passive_${boss.id}_${phaseIdx + 1}`);
+        }
+      });
     }
 
     this.checkPhaseChange(boss);
@@ -93,6 +104,7 @@ export class BossManager {
 
   // 페이즈 전환 감지 및 알림
   checkPhaseChange(boss) {
+    if (boss.isDead || boss.hp <= 0) return;
     const phase = this.getCurrentPhase(boss);
     if (!phase) return;
 
@@ -112,17 +124,17 @@ export class BossManager {
     }
   }
 
-  _applyPassiveEffect(boss, p) {
+  _applyPassiveEffect(boss, p, pId = null) {
     const { scene } = this;
     const monIdx = scene.monsters.indexOf(boss);
     if (monIdx === -1) return;
+    const lang = getLang(scene);
 
     if (p.type === 'atk_per_turn') {
-      const lang = getLang(scene);
       const gain = Math.floor(p.value * (boss.statMulti ?? 1));
       boss.atk += gain;
       const bName = getBossName(lang, boss.id);
-      const pName = getBossSkillName(lang, `passive_${boss.id}`, p.name);
+      const pName = getBossSkillName(lang, pId || `passive_${boss.id}`, p.name);
       scene.addBattleLog(getUiText(lang, 'battle.log_boss_stat_gain', { skill: pName, name: bName, stat: 'ATK', val: gain, total: boss.atk }));
       scene.renderMonsters();
     }
@@ -143,7 +155,6 @@ export class BossManager {
         : boss.baseDef;
 
       if (boss.def !== targetDef) {
-        const lang = getLang(scene);
         const bName = getBossName(lang, boss.id);
         const lost = boss.def > targetDef;
         boss.def = targetDef;
@@ -165,7 +176,6 @@ export class BossManager {
       const amount = Math.floor(taken * p.ratio);
       if (amount > 0) {
         boss.hp = Math.min(boss.maxHp, boss.hp + amount);
-        const lang = getLang(scene);
         const bName = getBossName(lang, boss.id);
         scene.addBattleLog(getUiText(lang, 'battle.log_reflect_heal', { name: bName, amt: amount }));
         this._showEffect(monIdx, { ...EFFECT.heal, label: `+${amount} HP`, labelColor: '#44ffcc' });
@@ -176,7 +186,6 @@ export class BossManager {
     if (p.type === 'plant_bombs') {
       const count = p.value || 3;
       this._plantBombs(count, monIdx);
-      const lang = getLang(scene);
       const bName = getBossName(lang, boss.id);
       scene.addBattleLog(getUiText(lang, 'battle.log_boss_plant_bombs', { name: bName, n: count }));
       this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 600, sfx: 'sfx_slide', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
@@ -194,7 +203,6 @@ export class BossManager {
         });
       });
 
-      const lang = getLang(scene);
       const bName = getBossName(lang, boss.id);
       scene.addBattleLog(getUiText(lang, 'battle.log_boss_discard', { name: bName, n: moved.length }));
       this._showEffect(monIdx, { ...EFFECT.debuff, label: `DISCARD ${moved.length}!`, labelColor: '#ff8844' });
@@ -209,7 +217,6 @@ export class BossManager {
         Phaser.Utils.Array.Shuffle(indices);
         const picked = indices.slice(0, Math.min(count, indices.length));
         picked.forEach(idx => { hand[idx].flipped = true; });
-        const lang = getLang(scene);
         const bName = getBossName(lang, boss.id);
         scene.addBattleLog(getUiText(lang, 'battle.log_boss_flip', { name: bName, n: picked.length }));
         this._showEffect(monIdx, { color: 0x9933cc, alpha: 0.30, duration: 600, sfx: 'sfx_shuffle', label: 'FLIP!', labelColor: '#dd88ff' });
@@ -222,7 +229,6 @@ export class BossManager {
       const amount = Math.floor(boss.maxHp * ratio);
       if (boss.hp < boss.maxHp) {
         boss.hp = Math.min(boss.maxHp, boss.hp + amount);
-        const lang = getLang(scene);
         const bName = getBossName(lang, boss.id);
         scene.addBattleLog(getUiText(lang, 'battle.log_boss_regen', { name: bName, amt: amount }));
         this._showEffect(monIdx, { color: 0x44ff44, alpha: 0.25, duration: 500, sfx: 'sfx_heal', label: 'REGEN', labelColor: '#88ff88' });
@@ -245,7 +251,6 @@ export class BossManager {
         applied++;
       }
       if (applied > 0) {
-        const lang = getLang(scene);
         const bName = getBossName(lang, boss.id);
         scene.addBattleLog(getUiText(lang, 'battle.log_boss_force_select', { name: bName }));
         this._showEffect(monIdx, { color: 0xcc4400, alpha: 0.28, duration: 550, sfx: 'sfx_chop', label: 'FORCED!', labelColor: '#ffaa44' });
@@ -256,25 +261,29 @@ export class BossManager {
     if (p.type === 'rank_disable') {
       const detail = scene.debuffManager.applyRankDisable(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
-      if (p.notice) scene.animManager?.showBossSkillNotice(p.name || '랭크 봉인', detail);
+      const sName = getBossSkillName(lang, pId || `passive_${boss.id}_rank`, p.name || 'Rank Seal');
+      if (p.notice) scene.animManager?.showBossSkillNotice(sName, detail);
     }
 
     if (p.type === 'suit_disable') {
       const detail = scene.debuffManager.applySuitDisable(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
-      if (p.notice) scene.animManager?.showBossSkillNotice(p.name || '슈트 봉인', detail);
+      const sName = getBossSkillName(lang, pId || `passive_${boss.id}_suit`, p.name || 'Suit Seal');
+      if (p.notice) scene.animManager?.showBossSkillNotice(sName, detail);
     }
 
     if (p.type === 'seal_most_used') {
       const detail = scene.debuffManager.applyMostUsedHandSeal(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
-      if (p.notice) scene.animManager?.showBossSkillNotice(p.name || '족보 봉인', detail);
+      const sName = getBossSkillName(lang, pId || `passive_${boss.id}_seal1`, p.name || 'Hand Seal');
+      if (p.notice) scene.animManager?.showBossSkillNotice(sName, detail);
     }
 
     if (p.type === 'seal_most_and_last') {
       const detail = scene.debuffManager.applyMostAndLastHandSeal(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
-      if (p.notice) scene.animManager?.showBossSkillNotice(p.name || '이중 족보 봉인', detail);
+      const sName = getBossSkillName(lang, pId || `passive_${boss.id}_seal2`, p.name || 'Double Hand Seal');
+      if (p.notice) scene.animManager?.showBossSkillNotice(sName, detail);
     }
 
     if (p.type === 'hand_reduction') {
@@ -284,7 +293,6 @@ export class BossManager {
         scene.player.handSize = Math.max(1, scene.player.handSize - val);
         scene.player.handSizeLimit = Math.max(1, scene.player.handSizeLimit - val);
         boss._handSizeReduced = val;
-        const lang = getLang(scene);
         const bName = getBossName(lang, boss.id);
         scene.addBattleLog(getUiText(lang, 'battle.log_boss_hand_down', { name: bName, val }));
         this._showEffect(monIdx, { ...EFFECT.debuff, label: 'HAND DOWN!', labelColor: '#ff8888' });
@@ -346,6 +354,7 @@ export class BossManager {
 
   // ── 보스 턴 실행 ─────────────────────────────────────────────────────────
   doTurn(boss, onDone) {
+    if (boss.isDead || boss.hp <= 0) { onDone?.(); return; }
     const { scene } = this;
     const monIdx = scene.monsters.indexOf(boss);
 
@@ -455,7 +464,9 @@ export class BossManager {
       const detail = applyDebuff(scene.debuffManager, boss.name, skill);
       scene.render();
       this._showEffect(monIdx, EFFECT.debuff);
-      if (skill.notice) scene.animManager?.showBossSkillNotice(skill.name, detail);
+      const lang = getLang(scene);
+      const sName = getBossSkillName(lang, skillId, skill.name);
+      if (skill.notice) scene.animManager?.showBossSkillNotice(sName, detail);
       const { mX, mY } = this._getMonSpritePos(monIdx);
       scene.effects.throwOrb(mX, mY, DEBUFF_ORB.x, DEBUFF_ORB.y, 0xaa44ff);
       return;

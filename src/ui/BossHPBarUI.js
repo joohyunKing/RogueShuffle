@@ -88,6 +88,7 @@ export class BossHPBarUI {
   // detectChange: true일 때만 페이즈 변경 연출 실행 (플레이어 공격 후 render에서만)
   update(boss, bossManager, detectChange = true) {
     const ratio = Math.max(0, boss.hp / boss.maxHp);
+    if (boss.isDead || boss.hp <= 0) detectChange = false;
 
     const color =
       ratio > 0.5 ? 0xcc2222 :
