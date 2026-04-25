@@ -969,20 +969,41 @@ export class BattleScene extends Phaser.Scene {
   _getApplicableRelicIds(rank) {
     const deckCount = this.deckData?.length ?? 0;
     const selectedCards = [...this.selected].map(i => this.handData[i]);
+    const hp = this.player.hp, maxHp = this.player.maxHp;
+    const handRemaining = this.handData.length - this.selected.size;
+
     return (this.player.relics ?? []).filter(id => {
       const relic = _relicMap[id];
       if (!relic) return false;
       const SCORE_SCOPES = new Set(['card', 'hand', 'final']);
+
       return relic.effects.some(eff => {
         if (!SCORE_SCOPES.has(eff.scope)) return false;
+
+        // 1. 특정 효과 타입별 조건 체크
+        if (eff.type === 'timesMultiWhenNoHand' && handRemaining > 0) return false;
+        if (eff.type === 'plusMultiPerHandRemaining' && handRemaining <= 0) return false;
+
+        // 2. 공통 Condition 체크
         const cond = eff.condition;
         if (!cond) return true;
+
         if (cond.handRank != null && cond.handRank !== rank) return false;
         if (cond.deckCountGte && deckCount < cond.deckCountGte) return false;
-        if (cond.suit || cond.rank) {
+        if (cond.deckCountLte != null && deckCount > cond.deckCountLte) return false;
+        if (cond.isFullHp && hp !== maxHp) return false;
+        if (cond.cardCount != null && selectedCards.length !== cond.cardCount) return false;
+
+        if (cond.cardValSumLt != null) {
+          const sum = selectedCards.reduce((s, c) => s + (c.baseScore ?? 0), 0);
+          if (sum >= cond.cardValSumLt) return false;
+        }
+
+        if (cond.suit || cond.rank || cond.rankIn) {
           if (!selectedCards.some(c =>
             (!cond.suit || c.suit === cond.suit) &&
-            (!cond.rank || c.rank === cond.rank)
+            (!cond.rank || c.rank === cond.rank) &&
+            (!cond.rankIn || cond.rankIn.includes(c.rank))
           )) return false;
         }
         return true;
