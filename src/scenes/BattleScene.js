@@ -1362,8 +1362,8 @@ export class BattleScene extends Phaser.Scene {
         this.fieldData = []; // 애니메이션 전 빈 상태로 렌더
 
         // ── 핸드 최솟값 보충 (드로우 애니메이션용: handData에 즉시 추가 안 함) ──
-        const handMin = this.player.handSizeMinimum ?? 0;
-        const drawLimit = this.player.turnStartDrawLimit ?? 0;
+        const handMin = this.player.getEffectiveHandSizeMinimum();
+        const drawLimit = this.player.canBypassDrawLimit() ? 99 : (this.player.turnStartDrawLimit ?? 0);
         const shortage = handMin - this.handData.length;
         const drawnCards = [];
         if (shortage > 0 && drawLimit > 0 && this.deckData.length > 0) {

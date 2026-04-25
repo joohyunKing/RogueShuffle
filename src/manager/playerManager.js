@@ -205,6 +205,25 @@ export class Player {
         return cfg;
     }
 
+    getEffectiveHandSizeMinimum() {
+        let min = this.handSizeMinimum;
+        for (const relicId of this.relics) {
+            const relic = RELIC_MAP[relicId];
+            if (!relic) continue;
+            for (const eff of relic.effects ?? []) {
+                if (eff.type === 'addHandSizeMinimum') {
+                    min = Math.max(min, eff.value);
+                }
+            }
+        }
+        return min;
+    }
+
+    /** 재생의 반지 등 드로우 제한 무시 여부 */
+    canBypassDrawLimit() {
+        return this.relics.includes('regen_ring');
+    }
+
     /**
      * relic suitAlias 효과를 반영한 suit 별칭 맵 반환.
      * 예: { H: "D" } → Hearts를 Diamonds로 취급.

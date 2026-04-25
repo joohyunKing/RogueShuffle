@@ -716,6 +716,36 @@
           "type": "consume_one_to_item"
         }
       ]
+    },
+    {
+      "id": "regen_ring",
+      "name": "재생의 반지",
+      "description": "턴 시작 시 핸드에 최소 유지 장수(5장)만큼 카드를 채워줌",
+      "rarity": "epic",
+      "img": "R_ring.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "special",
+          "type": "addHandSizeMinimum",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "id": "all_in_ring",
+      "name": "올인의 반지",
+      "description": "핸드에 남은 카드가 없을 경우 점수 배수 7배",
+      "rarity": "epic",
+      "img": "a_ring.png",
+      "useYn": "Y",
+      "effects": [
+        {
+          "scope": "final",
+          "type": "timesMultiWhenNoHand",
+          "value": 7
+        }
+      ]
     }
   ]
 }
