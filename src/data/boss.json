@@ -2,7 +2,7 @@
   "bosses": [
     {
       "id": "troll",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "트롤",
       "img": "troll.png",
       "statScale": {
@@ -76,7 +76,7 @@
     },
     {
       "id": "berserker",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "광전사",
       "img": "orc_lord.png",
       "statScale": {
@@ -130,7 +130,7 @@
     },
     {
       "id": "summoner",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "소환사",
       "img": "summoner.png",
       "statScale": {
@@ -166,7 +166,7 @@
     },
     {
       "id": "trickster",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "트릭스터",
       "img": "trickster.png",
       "initSkillId": "disable_rank",
@@ -184,7 +184,8 @@
             "name": "랭크 봉인",
             "description": "특정 랭크의 카드를 사용 불가 상태로 만듭니다.",
             "type": "rank_disable",
-            "triggerOn": "player_turn"
+            "triggerOn": "player_turn",
+            "notice": true
           },
           "actions": [
             {
@@ -199,7 +200,8 @@
             "name": "슈트 봉인",
             "description": "특정 슈트의 카드를 사용 불가 상태로 만듭니다.",
             "type": "suit_disable",
-            "triggerOn": "player_turn"
+            "triggerOn": "player_turn",
+            "notice": true
           },
           "actions": [
             {
@@ -230,7 +232,8 @@
             "name": "족보 봉인",
             "description": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다.",
             "type": "seal_most_used",
-            "triggerOn": "player_turn"
+            "triggerOn": "player_turn",
+            "notice": true
           },
           "actions": [
             {
@@ -245,7 +248,8 @@
             "name": "이중 족보 봉인",
             "description": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다.",
             "type": "seal_most_and_last",
-            "triggerOn": "player_turn"
+            "triggerOn": "player_turn",
+            "notice": true
           },
           "actions": [
             {
@@ -256,20 +260,22 @@
       ],
       "skills": {
         "seal_most_used": {
-          "type": "seal_most_used_hand",
+          "type": "seal_most_used",
           "name": "족보 봉인",
-          "description": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다."
+          "description": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다.",
+          "notice": true
         },
         "seal_most_and_last": {
-          "type": "seal_most_and_last_hand",
+          "type": "seal_most_and_last",
           "name": "이중 족보 봉인",
-          "description": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다."
+          "description": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다.",
+          "notice": true
         }
       }
     },
     {
       "id": "bomber",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "폭격자",
       "img": "skull_axe.png",
       "statScale": {
@@ -321,7 +327,7 @@
     },
     {
       "id": "butcher",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "도살자",
       "img": "butcher.png",
       "initSkillId": "",
@@ -369,7 +375,7 @@
     },
     {
       "id": "babarian",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "바바리안",
       "img": "baba.png",
       "initSkillId": "force_pick",
@@ -407,7 +413,7 @@
     },
     {
       "id": "shaman",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "주술사",
       "img": "shaman.png",
       "initSkillId": "card_veil",
@@ -444,7 +450,7 @@
     },
     {
       "id": "iron_fortress",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "방어의 화신",
       "img": "iron_fortress.png",
       "statScale": {
@@ -499,7 +505,7 @@
     },
     {
       "id": "demon",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "데몬",
       "img": "demon.png",
       "statScale": {
@@ -529,7 +535,7 @@
     },
     {
       "id": "vampire",
-      "useYn": "Y",
+      "useYn": "N",
       "name": "뱀파이어",
       "img": "vampire.png",
       "statScale": {

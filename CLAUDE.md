@@ -384,8 +384,8 @@ bossManager.doTurn(boss, onDone)          // 보스 턴 실행 (액션 큐 + 소
 | `debuff` | debuffId로 디버프 적용 |
 | `rank_disable` | 랜덤 랭크 봉인 (DebuffManager) |
 | `suit_disable` | 랜덤 슈트 봉인 (DebuffManager) |
-| `seal_most_used_hand` | 최다 사용 족보 봉인 |
-| `seal_most_and_last_hand` | 최다+최근 사용 족보 이중 봉인 |
+| `seal_most_used` | 최다 사용 족보 봉인 |
+| `seal_most_and_last` | 최다+최근 사용 족보 이중 봉인 |
 | `damage` | `atk * damMult` 강화 공격 |
 | `buff` | 보스 스탯 버프 (stat += value) |
 | `heal_lost_hp` | 잃은 HP의 ratio만큼 회복 |

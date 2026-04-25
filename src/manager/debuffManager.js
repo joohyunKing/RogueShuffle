@@ -153,6 +153,8 @@ export class DebuffManager {
     this.activeDebuffs.push({ id: 'disable_rank', turnsLeft: def.durationValue });
     scene.addBattleLog(`${sourceName}의 ${def.name}! [${rank}] 사용 불가!`);
     scene.render();
+
+    return `[${rank}] ${def.description}`;
   }
 
   // ── 최다 사용 족보 봉인 (트릭스터B 1페이즈) ──────────────────────────────────
@@ -184,6 +186,8 @@ export class DebuffManager {
     const displayName = getHandName(lang, HAND_DATA[handRankNum]?.key ?? '');
     scene.addBattleLog(`${sourceName}의 ${def.name}! [${displayName}] 사용 불가!`);
     scene.render();
+
+    return `[${displayName}] ${def.description}`;
   }
 
   // ── 최다 + 최근 족보 이중 봉인 (트릭스터B 2페이즈) ──────────────────────────
@@ -229,6 +233,8 @@ export class DebuffManager {
 
     scene.addBattleLog(`${sourceName}의 이중 봉인! [${sealed.join(', ')}] 사용 불가!`);
     scene.render();
+
+    return `[${sealed.join(', ')}] 사용 불가`;
   }
 
   // ── 슈트 봉인 적용 (트릭스터 보스) ─────────────────────────────────────────
@@ -254,5 +260,7 @@ export class DebuffManager {
     this.activeDebuffs.push({ id: 'disable_suit', turnsLeft: def.durationValue });
     scene.addBattleLog(`${sourceName}의 ${def.name}! [${SUIT_CHAR[suit] ?? suit}] 사용 불가!`);
     scene.render();
+
+    return `[${SUIT_CHAR[suit] ?? suit}] ${def.description}`;
   }
 }

@@ -203,23 +203,27 @@ export class BossManager {
     }
 
     if (p.type === 'rank_disable') {
-      scene.debuffManager.applyRankDisable(boss.name);
+      const detail = scene.debuffManager.applyRankDisable(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
+      if (p.notice) scene.animManager?.showBossSkillNotice(p.name || '랭크 봉인', detail);
     }
 
     if (p.type === 'suit_disable') {
-      scene.debuffManager.applySuitDisable(boss.name);
+      const detail = scene.debuffManager.applySuitDisable(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
+      if (p.notice) scene.animManager?.showBossSkillNotice(p.name || '슈트 봉인', detail);
     }
 
     if (p.type === 'seal_most_used') {
-      scene.debuffManager.applyMostUsedHandSeal(boss.name);
+      const detail = scene.debuffManager.applyMostUsedHandSeal(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
+      if (p.notice) scene.animManager?.showBossSkillNotice(p.name || '족보 봉인', detail);
     }
 
     if (p.type === 'seal_most_and_last') {
-      scene.debuffManager.applyMostAndLastHandSeal(boss.name);
+      const detail = scene.debuffManager.applyMostAndLastHandSeal(boss.name);
       this._showEffect(monIdx, EFFECT.debuff);
+      if (p.notice) scene.animManager?.showBossSkillNotice(p.name || '이중 족보 봉인', detail);
     }
 
     if (p.type === 'hand_reduction') {
@@ -381,9 +385,10 @@ export class BossManager {
     // 디버프 계열: DEBUFF_APPLIERS에 등록된 타입은 공통 처리
     const applyDebuff = DEBUFF_APPLIERS[skill.type];
     if (applyDebuff) {
-      applyDebuff(scene.debuffManager, boss.name, skill);
+      const detail = applyDebuff(scene.debuffManager, boss.name, skill);
       scene.render();
       this._showEffect(monIdx, EFFECT.debuff);
+      if (skill.notice) scene.animManager?.showBossSkillNotice(skill.name, detail);
       const { mX, mY } = this._getMonSpritePos(monIdx);
       scene.effects.throwOrb(mX, mY, DEBUFF_ORB.x, DEBUFF_ORB.y, 0xaa44ff);
       return;

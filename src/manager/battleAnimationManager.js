@@ -595,4 +595,72 @@ export class BattleAnimationManager {
     this.animObjs.forEach(o => o.destroy());
     this.animObjs = [];
   }
+
+  /**
+   * 보스 스킬 발동 시 화면 중앙에 멋진 알림 표시
+   * @param {string} title - 스킬 이름 (예: "랭크 봉인")
+   * @param {string} detailText - 구체적 내용 (예: "[7] 사용 불가")
+   * @param {number} [color=0xff3333] - 강조 색상
+   */
+  showBossSkillNotice(title, detailText, color = 0xff3333) {
+    const scene = this.scene;
+    const centerX = GW / 2;
+    const centerY = GH / 2;
+
+    // 1. 검은색 스트립 배경
+    const bg = scene.add.rectangle(centerX, centerY, GW, 100, 0x000000, 0.8)
+      .setDepth(1000).setAlpha(0).setScale(1, 0);
+    
+    // 2. 제목 텍스트
+    const titleTxt = scene.add.text(centerX, centerY - 20, title, {
+      fontFamily: TS.defaultFont, fontSize: '24px', color: '#ffffff',
+      stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(1001).setAlpha(0);
+
+    // 3. 상세 내용 텍스트 (강조 색상)
+    const detailTxt = scene.add.text(centerX, centerY + 22, detailText, {
+      fontFamily: TS.defaultFont, fontSize: '18px',
+      color: Phaser.Display.Color.IntegerToColor(color).rgba,
+      stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(1001).setAlpha(0);
+
+    // ── 연출 시작 ──
+    scene._sfx("sfx_milestone"); // 혹은 다른 임팩트 있는 효과음
+
+    // 배경 스트립 확장 및 페이드인
+    scene.tweens.add({
+      targets: bg,
+      alpha: 1, scaleY: 1,
+      duration: 300, ease: 'Back.easeOut'
+    });
+
+    // 텍스트 페이드인 및 펄스
+    scene.tweens.add({
+      targets: [titleTxt, detailTxt],
+      alpha: 1,
+      duration: 400, delay: 100,
+      onComplete: () => {
+        scene.tweens.add({
+          targets: [titleTxt, detailTxt],
+          scaleX: 1.05, scaleY: 1.05,
+          duration: 1000, yoyo: true, repeat: 1, ease: 'Sine.easeInOut'
+        });
+      }
+    });
+
+    // 일정 시간 후 제거
+    scene.time.delayedCall(2500, () => {
+      scene.tweens.add({
+        targets: [bg, titleTxt, detailTxt],
+        alpha: 0,
+        scaleY: { targets: bg, value: 0 },
+        duration: 300, ease: 'Power2.In',
+        onComplete: () => {
+          bg.destroy();
+          titleTxt.destroy();
+          detailTxt.destroy();
+        }
+      });
+    });
+  }
 }
