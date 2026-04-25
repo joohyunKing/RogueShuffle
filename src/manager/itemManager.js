@@ -1,4 +1,5 @@
 import itemData from '../data/item.json';
+import { getUiText } from '../service/langService.js';
 
 export const itemList = itemData.items.filter(i => i.useYn === 'Y');
 export const itemMap = Object.fromEntries(itemData.items.map(i => [i.id, i])); // 전체 (보유 아이템 효과 적용용)
@@ -43,35 +44,38 @@ export function revertItemEffect(player, itemId) {
   }
 }
 
-export function applyItemEffect(player, itemId, itemName) {
+export function applyItemEffect(player, itemId, itemName, lang = 'en') {
   const def = itemMap[itemId];
   const eff = def?.effect;
   if (!eff) return null;
 
+  const placeholders = { item: itemName, val: eff.value };
+
   switch (eff.type) {
     case 'heal':
       player.hp = Math.min(player.maxHp, player.hp + eff.value);
-      return `[${itemName}] HP +${eff.value}`;
+      return getUiText(lang, 'battle.log_item_heal', placeholders);
     case 'maxHp':
       player.maxHp += eff.value;
-      return `[${itemName}] 최대 HP +${eff.value}`;
+      return getUiText(lang, 'battle.log_item_maxHp', placeholders);
     case 'def':
       player.def += eff.value;
-      return `[${itemName}] DEF +${eff.value}`;
+      return getUiText(lang, 'battle.log_item_def', placeholders);
     case 'attacksPerTurn':
       player.attacksPerTurn += eff.value;
-      return `[${itemName}] 공격횟수 +${eff.value}`;
+      return getUiText(lang, 'battle.log_item_atk_turn', placeholders);
     case 'handSize':
       player.handSize += eff.value;
       player.handSizeLimit += eff.value;
-      return `[${itemName}] 핸드 크기 +${eff.value}`;
+      return getUiText(lang, 'battle.log_item_hand_size', placeholders);
     case 'fieldSize':
       player.fieldSize += eff.value;
       player.fieldSizeLimit += eff.value;
-      return `[${itemName}] 필드 크기 +${eff.value}`;
+      return getUiText(lang, 'battle.log_item_field_size', placeholders);
     case 'attr':
       player.attrs[eff.suit] += eff.value;
-      return `[${itemName}] ${eff.suit} 적응 +${eff.value}`;
+      const suitName = getUiText(lang, `market.suit.${eff.suit}`);
+      return getUiText(lang, 'battle.log_item_suit_adapt', { ...placeholders, suit: suitName });
     case 'hand_multi': {
       const ranks = Array.isArray(eff.handRank) ? eff.handRank : [eff.handRank];
       ranks.forEach(r => {
@@ -80,12 +84,14 @@ export function applyItemEffect(player, itemId, itemName) {
           player.handConfig[rank].multi += eff.value;
         }
       });
-      return `[${itemName}] 배수 +${eff.value}`;
+      return getUiText(lang, 'battle.log_item_hand_multi', placeholders);
     }
     case 'upgrade_bingo': {
       player.bingoLevels[eff.target] += 1;
-      const typeName = eff.target === 'h' ? '가로' : eff.target === 'v' ? '세로' : '대각선';
-      return `[${itemName}] ${typeName} 빙고 레벨 +1 (Lv.${player.bingoLevels[eff.target]})`;
+      const bingoTargetName = eff.target === 'h' ? (lang === 'ko' ? '가로' : 'Horizontal') : 
+                          eff.target === 'v' ? (lang === 'ko' ? '세로' : 'Vertical') : 
+                          (lang === 'ko' ? '대각선' : 'Diagonal');
+      return getUiText(lang, 'battle.log_item_bingo_lv', { ...placeholders, target: bingoTargetName, lv: player.bingoLevels[eff.target] });
     }
     case 'copy_hand_card':
       return null; // BattleScene._useItem에서 직접 처리

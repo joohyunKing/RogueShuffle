@@ -59,85 +59,316 @@
       }
     },
     "item": {
-      "heal_potion": { "name": "Heal Potion", "desc": "Restore 20 HP" },
-      "max_hp_up": { "name": "Vitality Boost", "desc": "Max HP +10" },
-      "shield": { "name": "Shield", "desc": "DEF +3" },
-      "extra_attack": { "name": "Berserk", "desc": "Attacks per turn +1 (this battle)" },
-      "hand_expand": { "name": "Hand Expand", "desc": "Hand size +1 (this battle)" },
-      "field_expand": { "name": "Field Expand", "desc": "Field size +1 (this battle)" },
-      "suit_spade": { "name": "Spade Boost", "desc": "♠ Adaptation level +1" },
-      "suit_heart": { "name": "Heart Boost", "desc": "♥ Adaptation level +1" },
-      "suit_diamond": { "name": "Diamond Boost", "desc": "♦ Adaptation level +1" },
-      "suit_club": { "name": "Club Boost", "desc": "♣ Adaptation level +1" },
-      "copy_scroll": { "name": "Copy Scroll", "desc": "Copy 1 selected card to hand" },
-      "stamp_red": { "name": "Red Stamp", "desc": "Give 2 selected cards Red Seal (+20 Score)" },
-      "stamp_blue": { "name": "Blue Stamp", "desc": "Give 2 selected cards Blue Seal (+2.0X Multi)" },
-      "stamp_gold": { "name": "Gold Stamp", "desc": "Give 2 selected cards Gold Seal (+5 Gold)" },
-      "stamp_pink": { "name": "Pink Stamp", "desc": "Give 2 selected cards Pink Seal (+5 HP)" },
-      "stamp_green": { "name": "Green Stamp", "desc": "Give 2 selected cards Green Seal (+Item)" },
-      "stamp_purple": { "name": "Purple Stamp", "desc": "Give 2 selected cards Purple Seal (+1 Draw)" },
-      "stamp_rainbow": { "name": "Rainbow Stamp", "desc": "Give 2 selected cards Rainbow Seal (x1.1 Final)" },
-      "hand_remover": { "name": "Remove Scroll", "desc": "Remove selected cards (max 2)" },
-      "scroll_low_hands": { "name": "Low Hand Scroll", "desc": "Increase Multi for High Card, Pair, Trips, Two Pair by 1" },
-      "scroll_high_hands": { "name": "High Hand Scroll", "desc": "Increase Multi for Straight, Flush, Full House, Four Card by 1" },
-      "scroll_epic_hands": { "name": "Epic Hand Scroll", "desc": "Increase Multi for STR Flush and higher by 2" },
-      "recycle_dummy": { "name": "Recycle Potion", "desc": "Move last 5 discard cards to deck" },
-      "field_refill": { "name": "Field Potion", "desc": "Fill field up to max capacity" },
-      "alchemist_crucible": { "name": "Alchemist", "desc": "Select 3. Randomly copy 1 card's suit & rank to others." },
-      "alchemist_legend": { "name": "Fortify Alchemy", "desc": "Select 3. Copy leftmost card's suit, rank & seal." },
-      "bingo_mana_h": { "name": "Horizontal Mana Gem", "desc": "Horizontal Bingo level +1" },
-      "bingo_mana_v": { "name": "Vertical Mana Gem", "desc": "Vertical Bingo level +1" },
-      "bingo_mana_d": { "name": "Diagonal Mana Gem", "desc": "Diagonal Bingo level +1" },
-      "talisman_s": { "name": "Spade Talisman", "desc": "Convert 3 selected cards to Spades(♠)" },
-      "talisman_h": { "name": "Heart Talisman", "desc": "Convert 3 selected cards to Hearts(♥)" },
-      "talisman_d": { "name": "Diamond Talisman", "desc": "Convert 3 selected cards to Diamonds(♦)" },
-      "talisman_c": { "name": "Club Talisman", "desc": "Convert 3 selected cards to Clubs(♣)" }
+      "heal_potion": {
+        "name": "Heal Potion",
+        "desc": "Restore 20 HP"
+      },
+      "max_hp_up": {
+        "name": "Vitality Boost",
+        "desc": "Max HP +10"
+      },
+      "shield": {
+        "name": "Shield",
+        "desc": "DEF +3"
+      },
+      "extra_attack": {
+        "name": "Berserk",
+        "desc": "Attacks per turn +1 (this battle)"
+      },
+      "hand_expand": {
+        "name": "Hand Expand",
+        "desc": "Hand size +1 (this battle)"
+      },
+      "field_expand": {
+        "name": "Field Expand",
+        "desc": "Field size +1 (this battle)"
+      },
+      "suit_spade": {
+        "name": "Spade Boost",
+        "desc": "♠ Adaptation level +1"
+      },
+      "suit_heart": {
+        "name": "Heart Boost",
+        "desc": "♥ Adaptation level +1"
+      },
+      "suit_diamond": {
+        "name": "Diamond Boost",
+        "desc": "♦ Adaptation level +1"
+      },
+      "suit_club": {
+        "name": "Club Boost",
+        "desc": "♣ Adaptation level +1"
+      },
+      "copy_scroll": {
+        "name": "Copy Scroll",
+        "desc": "Copy 1 selected card to hand"
+      },
+      "stamp_red": {
+        "name": "Red Stamp",
+        "desc": "Give 2 selected cards Red Seal (+20 Score)"
+      },
+      "stamp_blue": {
+        "name": "Blue Stamp",
+        "desc": "Give 2 selected cards Blue Seal (+2.0X Multi)"
+      },
+      "stamp_gold": {
+        "name": "Gold Stamp",
+        "desc": "Give 2 selected cards Gold Seal (+5 Gold)"
+      },
+      "stamp_pink": {
+        "name": "Pink Stamp",
+        "desc": "Give 2 selected cards Pink Seal (+5 HP)"
+      },
+      "stamp_green": {
+        "name": "Green Stamp",
+        "desc": "Give 2 selected cards Green Seal (+Item)"
+      },
+      "stamp_purple": {
+        "name": "Purple Stamp",
+        "desc": "Give 2 selected cards Purple Seal (+1 Draw)"
+      },
+      "stamp_rainbow": {
+        "name": "Rainbow Stamp",
+        "desc": "Give 2 selected cards Rainbow Seal (x1.1 Final)"
+      },
+      "hand_remover": {
+        "name": "Remove Scroll",
+        "desc": "Remove selected cards (max 2)"
+      },
+      "scroll_low_hands": {
+        "name": "Low Hand Scroll",
+        "desc": "Increase Multi for High Card, Pair, Trips, Two Pair by 1"
+      },
+      "scroll_high_hands": {
+        "name": "High Hand Scroll",
+        "desc": "Increase Multi for Straight, Flush, Full House, Four Card by 1"
+      },
+      "scroll_epic_hands": {
+        "name": "Epic Hand Scroll",
+        "desc": "Increase Multi for STR Flush and higher by 2"
+      },
+      "recycle_dummy": {
+        "name": "Recycle Potion",
+        "desc": "Move last 5 discard cards to deck"
+      },
+      "field_refill": {
+        "name": "Field Potion",
+        "desc": "Fill field up to max capacity"
+      },
+      "alchemist_crucible": {
+        "name": "Alchemist",
+        "desc": "Select 3. Randomly copy 1 card's suit & rank to others."
+      },
+      "alchemist_legend": {
+        "name": "Fortify Alchemy",
+        "desc": "Select 3. Copy leftmost card's suit, rank & seal."
+      },
+      "bingo_mana_h": {
+        "name": "Horizontal Mana Gem",
+        "desc": "Horizontal Bingo level +1"
+      },
+      "bingo_mana_v": {
+        "name": "Vertical Mana Gem",
+        "desc": "Vertical Bingo level +1"
+      },
+      "bingo_mana_d": {
+        "name": "Diagonal Mana Gem",
+        "desc": "Diagonal Bingo level +1"
+      },
+      "talisman_s": {
+        "name": "Spade Talisman",
+        "desc": "Convert 3 selected cards to Spades(♠)"
+      },
+      "talisman_h": {
+        "name": "Heart Talisman",
+        "desc": "Convert 3 selected cards to Hearts(♥)"
+      },
+      "talisman_d": {
+        "name": "Diamond Talisman",
+        "desc": "Convert 3 selected cards to Diamonds(♦)"
+      },
+      "talisman_c": {
+        "name": "Club Talisman",
+        "desc": "Convert 3 selected cards to Clubs(♣)"
+      }
     },
     "relic": {
-      "diamond_power": { "name": "Diamond Power", "desc": "+20 Score per Diamond card" },
-      "heart_power": { "name": "Heart's Blessing", "desc": "+20 Score per Heart card" },
-      "spade_power": { "name": "Spade Power", "desc": "+20 Score per Spade card" },
-      "club_power": { "name": "Club Power", "desc": "+20 Score per Club card" },
-      "pair_a": { "name": "Twin Ring", "desc": "+6 Multi for One Pair" },
-      "one_eye": { "name": "One-Eye Ring", "desc": "+8 Multi for High Card" },
-      "triple": { "name": "Triple Ring", "desc": "+7 Multi for Three of a Kind" },
-      "two_pair": { "name": "Two Pair Ring", "desc": "+8 Multi for Two Pair" },
-      "avarice": { "name": "Pouch of Avarice", "desc": "+5 Score per card over 30 in deck" },
-      "flush_draw": { "name": "Flush Rune", "desc": "Flush requires only 4 cards" },
-      "str_draw": { "name": "Straight Rune", "desc": "Straight requires only 4 cards" },
-      "dragon_medal": { "name": "Dragon Medal", "desc": "Final Score x1.5" },
-      "pair_tornado": { "name": "Storm of Pairs", "desc": "One Pair attacks all enemies" },
-      "focusing_fire": { "name": "Focused Flame", "desc": "Flush becomes single-target, Final Score x3" },
-      "suit_merge": { "name": "Suit Fusion", "desc": "Red suits (H/D) and Black suits (S/C) are treated as same suits" },
-      "coin": { "name": "Magic Coin", "desc": "Doubles current gold when this relic is removed" },
-      "pair_legacy": { "name": "Legacy of Pair", "desc": "Adds +5 Score per One Pair usage" },
-      "triple_legacy": { "name": "Legacy of Triple", "desc": "Adds +8 Score per Three of a Kind usage" },
-      "straight_ring": { "name": "Jaguar's Ring", "desc": "Adds +1 Multi per Straight usage" },
-      "mad_deck": { "name": "Deck of Madness", "desc": "Final Score x2.5 if 15 or fewer cards in deck" },
-      "battle_chronicle": { "name": "Battle Chronicle", "desc": "Adds +5 Score per total hand usage" },
-      "blue_gem": { "name": "Blue Gem", "desc": "Final Score x1.2 per unplayed card (x2 for 5 cards)" },
-      "low_card_master": { "name": "Power of Minorities", "desc": "Final Score x2 if played card sum < 25" },
-      "full_hp_focus": { "name": "Focus of Full HP", "desc": "Final Score x1.5 if HP is full" },
-      "full_house_lamp": { "name": "Lamp of Plenty", "desc": "Full House score x2" },
-      "four_ring": { "name": "Four Corners Ring", "desc": "Four Card score x2" },
-      "str_flush_ring": { "name": "Ring of Completion", "desc": "Straight Flush score x3" },
-      "five_ring": { "name": "Legendary Ring", "desc": "Five Card score x3" },
-      "side_mirror": { "name": "Lateral Resonator", "desc": "Doubles effect of left/right artifacts" },
-      "vertical_mirror": { "name": "Vertical Resonator", "desc": "Doubles effect of up/down artifacts" },
-      "odd_gem": { "name": "Odd Gem", "desc": "A/3/5/7/9 cards add +3 Multi" },
-      "even_gem": { "name": "Even Gem", "desc": "2/4/6/8/10 cards add +3 Multi" },
-      "face_gem": { "name": "Noble Gem", "desc": "A/K/Q/J cards add +3 Multi" },
-      "tree_of_life": { "name": "Tree of Life", "desc": "Add current HP to score (before Multi)" },
-      "x_cross": { "name": "Mark of X", "desc": "Final Score x1.5 per Diagonal Bingo (max x3)" },
-      "seal_echo": { "name": "Echoing Seal", "desc": "Sealed cards trigger score/relic effects once more" },
-      "king_majesty": { "name": "King's Majesty", "desc": "Final Score +0.5 multiplier per K in deck" },
-      "black_square": { "name": "Black Square", "desc": "+16 Multi if exactly 4 cards are played" },
-      "grail": { "name": "Holy Grail", "desc": "Restore 10% Max HP at start of player turn" },
-      "snake": { "name": "Snake", "desc": "First attack 1 card: permanently remove it and gain random item" },
-      "regen_ring": { "name": "Regeneration Ring", "desc": "Start of turn: fills hand up to min size (5)" },
-      "all_in_ring": { "name": "All-In Ring", "desc": "Multiplier x7 if hand is empty after attack" },
-      "green_ring": { "name": "Green Ring", "desc": "Adds Plus Multiplier per item used in battle" },
-      "thick_book": { "name": "Thick Book", "desc": "Adds +4 Multi per card over 50 in total collection" }
+      "diamond_power": {
+        "name": "Diamond Power",
+        "desc": "+20 Score per Diamond card"
+      },
+      "heart_power": {
+        "name": "Heart's Blessing",
+        "desc": "+20 Score per Heart card"
+      },
+      "spade_power": {
+        "name": "Spade Power",
+        "desc": "+20 Score per Spade card"
+      },
+      "club_power": {
+        "name": "Club Power",
+        "desc": "+20 Score per Club card"
+      },
+      "pair_a": {
+        "name": "Twin Ring",
+        "desc": "+6 Multi for One Pair"
+      },
+      "one_eye": {
+        "name": "One-Eye Ring",
+        "desc": "+8 Multi for High Card"
+      },
+      "triple": {
+        "name": "Triple Ring",
+        "desc": "+7 Multi for Three of a Kind"
+      },
+      "two_pair": {
+        "name": "Two Pair Ring",
+        "desc": "+8 Multi for Two Pair"
+      },
+      "avarice": {
+        "name": "Pouch of Avarice",
+        "desc": "+5 Score per card over 30 in deck"
+      },
+      "flush_draw": {
+        "name": "Flush Rune",
+        "desc": "Flush requires only 4 cards"
+      },
+      "str_draw": {
+        "name": "Straight Rune",
+        "desc": "Straight requires only 4 cards"
+      },
+      "dragon_medal": {
+        "name": "Dragon Medal",
+        "desc": "Final Score x1.5"
+      },
+      "pair_tornado": {
+        "name": "Storm of Pairs",
+        "desc": "One Pair attacks all enemies"
+      },
+      "focusing_fire": {
+        "name": "Focused Flame",
+        "desc": "Flush becomes single-target, Final Score x3"
+      },
+      "suit_merge": {
+        "name": "Suit Fusion",
+        "desc": "Red suits (H/D) and Black suits (S/C) are treated as same suits"
+      },
+      "coin": {
+        "name": "Magic Coin",
+        "desc": "Doubles current gold when this relic is removed"
+      },
+      "pair_legacy": {
+        "name": "Legacy of Pair",
+        "desc": "Adds +5 Score per One Pair usage"
+      },
+      "triple_legacy": {
+        "name": "Legacy of Triple",
+        "desc": "Adds +8 Score per Three of a Kind usage"
+      },
+      "straight_ring": {
+        "name": "Jaguar's Ring",
+        "desc": "Adds +1 Multi per Straight usage"
+      },
+      "mad_deck": {
+        "name": "Deck of Madness",
+        "desc": "Final Score x2.5 if 15 or fewer cards in deck"
+      },
+      "battle_chronicle": {
+        "name": "Battle Chronicle",
+        "desc": "Adds +5 Score per total hand usage"
+      },
+      "blue_gem": {
+        "name": "Blue Gem",
+        "desc": "Final Score x1.2 per unplayed card (x2 for 5 cards)"
+      },
+      "low_card_master": {
+        "name": "Power of Minorities",
+        "desc": "Final Score x2 if played card sum < 25"
+      },
+      "full_hp_focus": {
+        "name": "Focus of Full HP",
+        "desc": "Final Score x1.5 if HP is full"
+      },
+      "full_house_lamp": {
+        "name": "Lamp of Plenty",
+        "desc": "Full House score x2"
+      },
+      "four_ring": {
+        "name": "Four Corners Ring",
+        "desc": "Four Card score x2"
+      },
+      "str_flush_ring": {
+        "name": "Ring of Completion",
+        "desc": "Straight Flush score x3"
+      },
+      "five_ring": {
+        "name": "Legendary Ring",
+        "desc": "Five Card score x3"
+      },
+      "side_mirror": {
+        "name": "Lateral Resonator",
+        "desc": "Doubles effect of left/right artifacts"
+      },
+      "vertical_mirror": {
+        "name": "Vertical Resonator",
+        "desc": "Doubles effect of up/down artifacts"
+      },
+      "odd_gem": {
+        "name": "Odd Gem",
+        "desc": "A/3/5/7/9 cards add +3 Multi"
+      },
+      "even_gem": {
+        "name": "Even Gem",
+        "desc": "2/4/6/8/10 cards add +3 Multi"
+      },
+      "face_gem": {
+        "name": "Noble Gem",
+        "desc": "A/K/Q/J cards add +3 Multi"
+      },
+      "tree_of_life": {
+        "name": "Tree of Life",
+        "desc": "Add current HP to score (before Multi)"
+      },
+      "x_cross": {
+        "name": "Mark of X",
+        "desc": "Final Score x1.5 per Diagonal Bingo (max x3)"
+      },
+      "seal_echo": {
+        "name": "Echoing Seal",
+        "desc": "Sealed cards trigger score/relic effects once more"
+      },
+      "king_majesty": {
+        "name": "King's Majesty",
+        "desc": "Final Score +0.5 multiplier per K in deck"
+      },
+      "black_square": {
+        "name": "Black Square",
+        "desc": "+16 Multi if exactly 4 cards are played"
+      },
+      "grail": {
+        "name": "Holy Grail",
+        "desc": "Restore 10% Max HP at start of player turn"
+      },
+      "snake": {
+        "name": "Snake",
+        "desc": "First attack 1 card: permanently remove it and gain random item"
+      },
+      "regen_ring": {
+        "name": "Regeneration Ring",
+        "desc": "Start of turn: fills hand up to min size (5)"
+      },
+      "all_in_ring": {
+        "name": "All-In Ring",
+        "desc": "Multiplier x7 if hand is empty after attack"
+      },
+      "green_ring": {
+        "name": "Green Ring",
+        "desc": "Adds Plus Multiplier per item used in battle"
+      },
+      "thick_book": {
+        "name": "Thick Book",
+        "desc": "Adds +4 Multi per card over 50 in total collection"
+      }
     },
     "seal": {
       "red": {
@@ -233,37 +464,130 @@
         "vampire": "Vampire"
       },
       "skills": {
-        "power_strike": { "name": "Power Strike", "desc": "Deals 1.5x powerful damage to the player." },
-        "regenerate": { "name": "Regenerate", "desc": "Restores 10% of lost HP." },
-        "fierce_regenerate": { "name": "Fierce Regenerate", "desc": "Restores 20% of lost HP." },
-        "berserker_rage": { "name": "Berserker Rage", "desc": "Deals 2x damage to the player." },
-        "def_up": { "name": "Defensive Stance", "desc": "Increases Defense by 2." },
-        "seal_most_used": { "name": "Rank Seal", "desc": "Forbids the most used hand rank for this battle." },
-        "seal_most_and_last": { "name": "Double Seal", "desc": "Forbids the most used and the last used hand ranks." },
-        "explosion": { "name": "Big Explosion", "desc": "Deals 2x damage to the player." },
-        "bomb_plant": { "name": "Plant Bombs", "desc": "Plants bomb cards into the player's deck." },
-        "harvest": { "name": "Scythe of Harvest", "desc": "Deals 2x damage to the player." },
-        "force_pick": { "name": "Forced Choice", "desc": "Forces the player to select one card randomly." },
-        "card_veil": { "name": "Veil", "desc": "Flips cards in hand to hide their information." },
-        "fortify": { "name": "Iron Fortification", "desc": "Increases own Defense by 10." },
-        "final_strike": { "name": "Desperate Strike", "desc": "Deals 2x powerful damage to the player." },
-        "thief": { "name": "Gold Plunder", "desc": "Steals gold from the player." },
-        "drain": { "name": "Vampiric Strike", "desc": "Deals 1.8x damage and restores HP based on damage dealt." },
-        "passive_troll": { "name": "Iron Fortress", "desc": "Defense doubles when HP is 30% or higher." },
-        "passive_berserker": { "name": "Frenzy", "desc": "Increases Attack power every turn." },
-        "passive_summoner": { "name": "Guardian Contract", "desc": "Defense triples if summons are present." },
-        "passive_trickster_1": { "name": "Rank Seal", "desc": "Disables cards of a specific Rank." },
-        "passive_trickster_2": { "name": "Suit Seal", "desc": "Disables cards of a specific Suit." },
-        "passive_tricksterB_1": { "name": "Rank Seal", "desc": "Forbids the most used hand rank for this battle." },
-        "passive_tricksterB_2": { "name": "Double Seal", "desc": "Forbids the most used and the last used hand ranks." },
-        "passive_bomber": { "name": "Plant Bombs", "desc": "Plants 4 bomb cards into the deck every turn." },
-        "passive_butcher": { "name": "Butcher's Scythe", "desc": "Discards 4 cards from the top of the deck every turn." },
-        "passive_babarian": { "name": "Forced Pick", "desc": "Forces one card selection at the start of each turn." },
-        "passive_shaman": { "name": "Veil", "desc": "Flips 3 cards in hand every turn to hide information." },
-        "passive_iron_fortress": { "name": "Iron Fortress", "desc": "Defense triples when HP is 50% or higher." },
-        "passive_demon": { "name": "Demonic Contract", "desc": "Reduces hand size and limit by 1." },
-        "passive_troll_1": { "name": "Regeneration", "desc": "Restores 5% of Max HP each turn." },
-        "passive_troll_2": { "name": "Fierce Regeneration", "desc": "Restores 10% of Max HP each turn." }
+        "power_strike": {
+          "name": "Power Strike",
+          "desc": "Deals 1.5x powerful damage to the player."
+        },
+        "regenerate": {
+          "name": "Regenerate",
+          "desc": "Restores 10% of lost HP."
+        },
+        "fierce_regenerate": {
+          "name": "Fierce Regenerate",
+          "desc": "Restores 20% of lost HP."
+        },
+        "berserker_rage": {
+          "name": "Berserker Rage",
+          "desc": "Deals 2x damage to the player."
+        },
+        "def_up": {
+          "name": "Defensive Stance",
+          "desc": "Increases Defense by 2."
+        },
+        "seal_most_used": {
+          "name": "Rank Seal",
+          "desc": "Forbids the most used hand rank for this battle."
+        },
+        "seal_most_and_last": {
+          "name": "Double Seal",
+          "desc": "Forbids the most used and the last used hand ranks."
+        },
+        "explosion": {
+          "name": "Big Explosion",
+          "desc": "Deals 2x damage to the player."
+        },
+        "bomb_plant": {
+          "name": "Plant Bombs",
+          "desc": "Plants bomb cards into the player's deck."
+        },
+        "harvest": {
+          "name": "Scythe of Harvest",
+          "desc": "Deals 2x damage to the player."
+        },
+        "force_pick": {
+          "name": "Forced Choice",
+          "desc": "Forces the player to select one card randomly."
+        },
+        "card_veil": {
+          "name": "Veil",
+          "desc": "Flips cards in hand to hide their information."
+        },
+        "fortify": {
+          "name": "Iron Fortification",
+          "desc": "Increases own Defense by 10."
+        },
+        "final_strike": {
+          "name": "Desperate Strike",
+          "desc": "Deals 2x powerful damage to the player."
+        },
+        "thief": {
+          "name": "Gold Plunder",
+          "desc": "Steals gold from the player."
+        },
+        "drain": {
+          "name": "Vampiric Strike",
+          "desc": "Deals 1.8x damage and restores HP based on damage dealt."
+        },
+        "passive_troll": {
+          "name": "Iron Fortress",
+          "desc": "Defense doubles when HP is 30% or higher."
+        },
+        "passive_berserker": {
+          "name": "Frenzy",
+          "desc": "Increases Attack power every turn."
+        },
+        "passive_summoner": {
+          "name": "Guardian Contract",
+          "desc": "Defense triples if summons are present."
+        },
+        "passive_trickster_1": {
+          "name": "Rank Seal",
+          "desc": "Disables cards of a specific Rank."
+        },
+        "passive_trickster_2": {
+          "name": "Suit Seal",
+          "desc": "Disables cards of a specific Suit."
+        },
+        "passive_tricksterB_1": {
+          "name": "Rank Seal",
+          "desc": "Forbids the most used hand rank for this battle."
+        },
+        "passive_tricksterB_2": {
+          "name": "Double Seal",
+          "desc": "Forbids the most used and the last used hand ranks."
+        },
+        "passive_bomber": {
+          "name": "Plant Bombs",
+          "desc": "Plants 4 bomb cards into the deck every turn."
+        },
+        "passive_butcher": {
+          "name": "Butcher's Scythe",
+          "desc": "Discards 4 cards from the top of the deck every turn."
+        },
+        "passive_babarian": {
+          "name": "Forced Pick",
+          "desc": "Forces one card selection at the start of each turn."
+        },
+        "passive_shaman": {
+          "name": "Veil",
+          "desc": "Flips 3 cards in hand every turn to hide information."
+        },
+        "passive_iron_fortress": {
+          "name": "Iron Fortress",
+          "desc": "Defense triples when HP is 50% or higher."
+        },
+        "passive_demon": {
+          "name": "Demonic Contract",
+          "desc": "Reduces hand size and limit by 1."
+        },
+        "passive_troll_1": {
+          "name": "Regeneration",
+          "desc": "Restores 5% of Max HP each turn."
+        },
+        "passive_troll_2": {
+          "name": "Fierce Regeneration",
+          "desc": "Restores 10% of Max HP each turn."
+        }
       }
     },
     "monster": {
@@ -320,10 +644,22 @@
       "log_monster_attack": "{name}'s Attack! {dmg} damage!",
       "log_monster_skill": "{name}'s {skill}! {dmg} damage!",
       "gimmick": {
-        "aoe_resist": { "name": "AoE Resist", "desc": "Reduced damage from AoE attacks by 50%" },
-        "suit_resist": { "name": "Suit Resist", "desc": "Reduced damage from {suit} cards by 50%" },
-        "small_hand_resist": { "name": "Minority Resist", "desc": "Reduced damage when attacking with fewer than {n} cards by 50%" },
-        "first_turn_def": { "name": "Iron Wall", "desc": "Triple Defense on the first turn" }
+        "aoe_resist": {
+          "name": "AoE Resist",
+          "desc": "Reduced damage from AoE attacks by 50%"
+        },
+        "suit_resist": {
+          "name": "Suit Resist",
+          "desc": "Reduced damage from {suit} cards by 50%"
+        },
+        "small_hand_resist": {
+          "name": "Minority Resist",
+          "desc": "Reduced damage when attacking with fewer than {n} cards by 50%"
+        },
+        "first_turn_def": {
+          "name": "Iron Wall",
+          "desc": "Triple Defense on the first turn"
+        }
       },
       "log_phase_change": "[PHASE] {name}: {old} → {new}",
       "log_boss_stat_gain": "[{skill}] {name} {stat} +{val} (Total {total})",
@@ -346,7 +682,25 @@
       "log_boss_skill_plant": "[Skill] {name}: {skill}! {n} Bombs planted!",
       "log_boss_skill_discard": "[Skill] {name}: {skill}! {n} cards discarded!",
       "log_boss_skill_steal": "[Skill] {name}: {skill}! -{gold}G!",
-      "log_boss_skill_drain": "[Skill] {name}: {skill}! {dmg} Damage & {heal} Drain!"
+      "log_boss_skill_drain": "[Skill] {name}: {skill}! {dmg} Damage & {heal} Drain!",
+      "log_item_copy": "[{item}] {card} copied!",
+      "log_item_seal": "[{item}] {card} → {seal} seal applied!",
+      "log_item_seal_multi": "[{item}] {cards} seal applied!",
+      "log_item_seal_stamp": "[{item}] {cards} → {seal} seal applied!",
+      "log_item_suit_change": "[{item}] {n} cards → {suit} converted!",
+      "log_item_remove": "[{item}] {n} cards removed!",
+      "log_item_recycle": "[{item}] {n} cards from dummy → top of deck!",
+      "log_item_fill_field": "[{item}] {n} cards field refilled!",
+      "log_item_alchemist": "[{item}] {card} based {n} cards converted!",
+      "log_item_heal": "[{item}] HP +{val}",
+      "log_item_maxHp": "[{item}] Max HP +{val}",
+      "log_item_def": "[{item}] DEF +{val}",
+      "log_item_atk_turn": "[{item}] Attacks per turn +{val}",
+      "log_item_hand_size": "[{item}] Hand size +{val}",
+      "log_item_field_size": "[{item}] Field size +{val}",
+      "log_item_suit_adapt": "[{item}] {suit} Adaptation +{val}",
+      "log_item_hand_multi": "[{item}] Multi +{val}",
+      "log_item_bingo_lv": "[{item}] {target} Bingo Level +1 (Lv.{lv})"
     }
   },
   "ko": {
@@ -409,85 +763,316 @@
       }
     },
     "item": {
-      "heal_potion": { "name": "치료 물약", "desc": "HP를 20 회복" },
-      "max_hp_up": { "name": "생명력 강화", "desc": "최대 HP +10" },
-      "shield": { "name": "방패", "desc": "DEF +3" },
-      "extra_attack": { "name": "광폭화", "desc": "공격 횟수 +1 (이번 전투만)" },
-      "hand_expand": { "name": "패 확장", "desc": "핸드 카드 수 +1 (이번 전투만)" },
-      "field_expand": { "name": "필드 확장", "desc": "필드 카드 수 +1 (이번 전투만)" },
-      "suit_spade": { "name": "스페이드 강화", "desc": "♠ 적응 레벨 +1" },
-      "suit_heart": { "name": "하트 강화", "desc": "♥ 적응 레벨 +1" },
-      "suit_diamond": { "name": "다이아 강화", "desc": "♦ 적응 레벨 +1" },
-      "suit_club": { "name": "클럽 강화", "desc": "♣ 적응 레벨 +1" },
-      "copy_scroll": { "name": "복사 두루마리", "desc": "선택한 카드 1장을 핸드로 복사" },
-      "stamp_red": { "name": "레드 스탬프", "desc": "선택한 카드 2장에 레드 씰 부여 (+20점)" },
-      "stamp_blue": { "name": "블루 스탬프", "desc": "선택한 카드 2장에 블루 씰 부여 (+2.0X 배수)" },
-      "stamp_gold": { "name": "골드 스탬프", "desc": "선택한 카드 2장에 골드 씰 부여 (+5골드)" },
-      "stamp_pink": { "name": "핑크 스탬프", "desc": "선택한 카드 2장에 핑크 씰 부여 (+5HP)" },
-      "stamp_green": { "name": "그린 스탬프", "desc": "선택한 카드 2장에 그린 씰 부여 (+아이템)" },
-      "stamp_purple": { "name": "퍼플 스탬프", "desc": "선택한 카드 2장에 퍼플 씰 부여 (+1드로우)" },
-      "stamp_rainbow": { "name": "레인보우 스탬프", "desc": "선택한 카드 2장에 레인보우 씰 부여 (x1.1배)" },
-      "hand_remover": { "name": "제거 두루마리", "desc": "선택한 카드 제거 (최대 2장)" },
-      "scroll_low_hands": { "name": "Low Hand 강화서", "desc": "하이카드, 원페어, 트리플, 투페어의 배수 +1" },
-      "scroll_high_hands": { "name": "High Hand 강화서", "desc": "스트레이트, 플러쉬, 풀하우스, 포카드의 배수 +1" },
-      "scroll_epic_hands": { "name": "Epic Hand 강화서", "desc": "스트레이트 플러쉬 및 상위 족보의 배수 +2" },
-      "recycle_dummy": { "name": "회수의 물약", "desc": "더미 마지막 5장을 덱으로 이동" },
-      "field_refill": { "name": "공간의 물약", "desc": "필드를 최대치까지 카드로 채움" },
-      "alchemist_crucible": { "name": "연금술", "desc": "3장 선택. 랜덤 1장의 무늬/숫자를 나머지에 복사." },
-      "alchemist_legend": { "name": "강화 연금술", "desc": "3장 선택. 왼쪽 카드의 무늬/숫자/강화를 나머지에 복사." },
-      "bingo_mana_h": { "name": "가로의 마력석", "desc": "가로 빙고 레벨 +1" },
-      "bingo_mana_v": { "name": "세로의 마력석", "desc": "세로 빙고 레벨 +1" },
-      "bingo_mana_d": { "name": "대각선의 마력석", "desc": "대각선 빙고 레벨 +1" },
-      "talisman_s": { "name": "스페이드 탈리스만", "desc": "선택한 카드 3장을 스페이드(♠)로 변환" },
-      "talisman_h": { "name": "하트 탈리스만", "desc": "선택한 카드 3장을 하트(♥)로 변환" },
-      "talisman_d": { "name": "다이아 탈리스만", "desc": "선택한 카드 3장을 다이아(♦)로 변환" },
-      "talisman_c": { "name": "클럽 탈리스만", "desc": "선택한 카드 3장을 클럽(♣)로 변환" }
+      "heal_potion": {
+        "name": "치료 물약",
+        "desc": "HP를 20 회복"
+      },
+      "max_hp_up": {
+        "name": "생명력 강화",
+        "desc": "최대 HP +10"
+      },
+      "shield": {
+        "name": "방패",
+        "desc": "DEF +3"
+      },
+      "extra_attack": {
+        "name": "광폭화",
+        "desc": "공격 횟수 +1 (이번 전투만)"
+      },
+      "hand_expand": {
+        "name": "패 확장",
+        "desc": "핸드 카드 수 +1 (이번 전투만)"
+      },
+      "field_expand": {
+        "name": "필드 확장",
+        "desc": "필드 카드 수 +1 (이번 전투만)"
+      },
+      "suit_spade": {
+        "name": "스페이드 강화",
+        "desc": "♠ 적응 레벨 +1"
+      },
+      "suit_heart": {
+        "name": "하트 강화",
+        "desc": "♥ 적응 레벨 +1"
+      },
+      "suit_diamond": {
+        "name": "다이아 강화",
+        "desc": "♦ 적응 레벨 +1"
+      },
+      "suit_club": {
+        "name": "클럽 강화",
+        "desc": "♣ 적응 레벨 +1"
+      },
+      "copy_scroll": {
+        "name": "복사 두루마리",
+        "desc": "선택한 카드 1장을 핸드로 복사"
+      },
+      "stamp_red": {
+        "name": "레드 스탬프",
+        "desc": "선택한 카드 2장에 레드 씰 부여 (+20점)"
+      },
+      "stamp_blue": {
+        "name": "블루 스탬프",
+        "desc": "선택한 카드 2장에 블루 씰 부여 (+2.0X 배수)"
+      },
+      "stamp_gold": {
+        "name": "골드 스탬프",
+        "desc": "선택한 카드 2장에 골드 씰 부여 (+5골드)"
+      },
+      "stamp_pink": {
+        "name": "핑크 스탬프",
+        "desc": "선택한 카드 2장에 핑크 씰 부여 (+5HP)"
+      },
+      "stamp_green": {
+        "name": "그린 스탬프",
+        "desc": "선택한 카드 2장에 그린 씰 부여 (+아이템)"
+      },
+      "stamp_purple": {
+        "name": "퍼플 스탬프",
+        "desc": "선택한 카드 2장에 퍼플 씰 부여 (+1드로우)"
+      },
+      "stamp_rainbow": {
+        "name": "레인보우 스탬프",
+        "desc": "선택한 카드 2장에 레인보우 씰 부여 (x1.1배)"
+      },
+      "hand_remover": {
+        "name": "제거 두루마리",
+        "desc": "선택한 카드 제거 (최대 2장)"
+      },
+      "scroll_low_hands": {
+        "name": "Low Hand 강화서",
+        "desc": "하이카드, 원페어, 트리플, 투페어의 배수 +1"
+      },
+      "scroll_high_hands": {
+        "name": "High Hand 강화서",
+        "desc": "스트레이트, 플러쉬, 풀하우스, 포카드의 배수 +1"
+      },
+      "scroll_epic_hands": {
+        "name": "Epic Hand 강화서",
+        "desc": "스트레이트 플러쉬 및 상위 족보의 배수 +2"
+      },
+      "recycle_dummy": {
+        "name": "회수의 물약",
+        "desc": "더미 마지막 5장을 덱으로 이동"
+      },
+      "field_refill": {
+        "name": "공간의 물약",
+        "desc": "필드를 최대치까지 카드로 채움"
+      },
+      "alchemist_crucible": {
+        "name": "연금술",
+        "desc": "3장 선택. 랜덤 1장의 무늬/숫자를 나머지에 복사."
+      },
+      "alchemist_legend": {
+        "name": "강화 연금술",
+        "desc": "3장 선택. 왼쪽 카드의 무늬/숫자/강화를 나머지에 복사."
+      },
+      "bingo_mana_h": {
+        "name": "가로의 마력석",
+        "desc": "가로 빙고 레벨 +1"
+      },
+      "bingo_mana_v": {
+        "name": "세로의 마력석",
+        "desc": "세로 빙고 레벨 +1"
+      },
+      "bingo_mana_d": {
+        "name": "대각선의 마력석",
+        "desc": "대각선 빙고 레벨 +1"
+      },
+      "talisman_s": {
+        "name": "스페이드 탈리스만",
+        "desc": "선택한 카드 3장을 스페이드(♠)로 변환"
+      },
+      "talisman_h": {
+        "name": "하트 탈리스만",
+        "desc": "선택한 카드 3장을 하트(♥)로 변환"
+      },
+      "talisman_d": {
+        "name": "다이아 탈리스만",
+        "desc": "선택한 카드 3장을 다이아(♦)로 변환"
+      },
+      "talisman_c": {
+        "name": "클럽 탈리스만",
+        "desc": "선택한 카드 3장을 클럽(♣)로 변환"
+      }
     },
     "relic": {
-      "diamond_power": { "name": "다이아의 힘", "desc": "다이아 카드마다 +20 점수" },
-      "heart_power": { "name": "하트의 축복", "desc": "하트 카드마다 +20 점수" },
-      "spade_power": { "name": "스페이드의 힘", "desc": "스페이드 카드마다 +20 점수" },
-      "club_power": { "name": "클럽의 힘", "desc": "클럽 카드마다 +20 점수" },
-      "pair_a": { "name": "쌍둥이 반지", "desc": "페어 점수에 +6 배수 추가" },
-      "one_eye": { "name": "외눈반지", "desc": "하이카드에 +8 배수 추가" },
-      "triple": { "name": "트리플 반지", "desc": "트리플 점수에 +7 배수 추가" },
-      "two_pair": { "name": "투페어 반지", "desc": "투페어 점수에 +8 배수 추가" },
-      "avarice": { "name": "탐욕의 주머니", "desc": "덱이 30장 초과 시 초과 장당 +5 점수" },
-      "flush_draw": { "name": "플러시 룬", "desc": "플러시 요구 카드 수 1 감소 (4장)" },
-      "str_draw": { "name": "스트레이트 룬", "desc": "스트레이트 요구 카드 수 1 감소 (4장)" },
-      "dragon_medal": { "name": "드래곤 메달", "desc": "최종 점수 1.5배" },
-      "pair_tornado": { "name": "쌍의 폭풍", "desc": "원 페어로 전체 광역 공격" },
-      "focusing_fire": { "name": "집중의 불꽃", "desc": "플러시 단일 공격, 최종 점수 3배" },
-      "suit_merge": { "name": "수트 융합", "desc": "빨간 수트(♥♦)끼리, 검은 수트(♠♣)끼리 같은 수트로 인식" },
-      "coin": { "name": "마법 동전", "desc": "제거 시 보유 골드 2배" },
-      "pair_legacy": { "name": "페어의 역사", "desc": "페어 사용 횟수 × 5점 추가" },
-      "triple_legacy": { "name": "트리플의 전승", "desc": "트리플 사용 횟수 × 8점 추가" },
-      "straight_ring": { "name": "재규어의 반지", "desc": "스트레이트 사용 횟수 × 1 배수 추가" },
-      "mad_deck": { "name": "광기의 덱", "desc": "덱에 남은 카드가 15장 이하면 점수 2.5배" },
-      "battle_chronicle": { "name": "전투 연대기", "desc": "모든 족보 사용 횟수 합산 × 5점 추가" },
-      "blue_gem": { "name": "블루 젬", "desc": "공격에 쓰지 않은 카드 1장당 최종 점수 ×1.2 (5장이면 ×2)" },
-      "low_card_master": { "name": "소수의 힘", "desc": "사용한 카드의 숫자 합이 25 미만이면 점수 2배" },
-      "full_hp_focus": { "name": "만피의 집중", "desc": "현재 HP가 최대 HP와 같을 때 점수 1.5배" },
-      "full_house_lamp": { "name": "풍요의 등불", "desc": "풀하우스 점수 2배" },
-      "four_ring": { "name": "사방의 반지", "desc": "포카드 점수 2배" },
-      "str_flush_ring": { "name": "완성의 반지", "desc": "스트레이트 플러쉬 점수 3배" },
-      "five_ring": { "name": "전설의 반지", "desc": "파이브카드 점수 3배" },
-      "side_mirror": { "name": "측면 공명석", "desc": "좌우에 배치된 유물의 효과 2배" },
-      "vertical_mirror": { "name": "상하 공명석", "desc": "위아래에 배치된 유물의 효과 2배" },
-      "odd_gem": { "name": "홀수의 보석", "desc": "A·3·5·7·9 카드 1장당 배수 +3" },
-      "even_gem": { "name": "짝수의 보석", "desc": "2·4·6·8·10 카드 1장당 배수 +3" },
-      "face_gem": { "name": "귀족의 보석", "desc": "A·K·Q·J 카드 1장당 배수 +3" },
-      "tree_of_life": { "name": "생명의 나무", "desc": "현재 HP만큼 점수 추가 (곱셈 전)" },
-      "x_cross": { "name": "X의 표식", "desc": "대각선 빙고될 때마다 최종 점수 1.5배 (최대 3배)" },
-      "seal_echo": { "name": "강화 공명", "desc": "강화된 카드로 공격 시 점수/유물 효과 한 번 더 계산" },
-      "king_majesty": { "name": "왕의 위엄", "desc": "덱에 남아있는 K 한 장당 최종 배율 +0.5" },
-      "black_square": { "name": "검은 사각형", "desc": "공격 카드가 정확히 4장일 때 배수 +16" },
-      "grail": { "name": "성배", "desc": "플레이어 턴 시작 시 최대 HP의 10% 회복" },
-      "snake": { "name": "뱀", "desc": "첫 공격 1장 사용 시: 해당 카드 영구 제거 및 랜덤 아이템 획득" },
-      "regen_ring": { "name": "재생의 반지", "desc": "턴 시작 시 핸드에 최소 유지 장수(5장)만큼 카드를 채워줌" },
-      "all_in_ring": { "name": "올인의 반지", "desc": "핸드에 남은 카드가 없을 경우 배수 7배" },
-      "green_ring": { "name": "녹색반지", "desc": "전투 중 아이템 사용 횟수만큼 배수(Plus Multi) 증가" },
-      "thick_book": { "name": "두꺼운 책", "desc": "전체 카드 수 50장 이상일 때 초과 장당 배수 +4" }
+      "diamond_power": {
+        "name": "다이아의 힘",
+        "desc": "다이아 카드마다 +20 점수"
+      },
+      "heart_power": {
+        "name": "하트의 축복",
+        "desc": "하트 카드마다 +20 점수"
+      },
+      "spade_power": {
+        "name": "스페이드의 힘",
+        "desc": "스페이드 카드마다 +20 점수"
+      },
+      "club_power": {
+        "name": "클럽의 힘",
+        "desc": "클럽 카드마다 +20 점수"
+      },
+      "pair_a": {
+        "name": "쌍둥이 반지",
+        "desc": "페어 점수에 +6 배수 추가"
+      },
+      "one_eye": {
+        "name": "외눈반지",
+        "desc": "하이카드에 +8 배수 추가"
+      },
+      "triple": {
+        "name": "트리플 반지",
+        "desc": "트리플 점수에 +7 배수 추가"
+      },
+      "two_pair": {
+        "name": "투페어 반지",
+        "desc": "투페어 점수에 +8 배수 추가"
+      },
+      "avarice": {
+        "name": "탐욕의 주머니",
+        "desc": "덱이 30장 초과 시 초과 장당 +5 점수"
+      },
+      "flush_draw": {
+        "name": "플러시 룬",
+        "desc": "플러시 요구 카드 수 1 감소 (4장)"
+      },
+      "str_draw": {
+        "name": "스트레이트 룬",
+        "desc": "스트레이트 요구 카드 수 1 감소 (4장)"
+      },
+      "dragon_medal": {
+        "name": "드래곤 메달",
+        "desc": "최종 점수 1.5배"
+      },
+      "pair_tornado": {
+        "name": "쌍의 폭풍",
+        "desc": "원 페어로 전체 광역 공격"
+      },
+      "focusing_fire": {
+        "name": "집중의 불꽃",
+        "desc": "플러시 단일 공격, 최종 점수 3배"
+      },
+      "suit_merge": {
+        "name": "수트 융합",
+        "desc": "빨간 수트(♥♦)끼리, 검은 수트(♠♣)끼리 같은 수트로 인식"
+      },
+      "coin": {
+        "name": "마법 동전",
+        "desc": "제거 시 보유 골드 2배"
+      },
+      "pair_legacy": {
+        "name": "페어의 역사",
+        "desc": "페어 사용 횟수 × 5점 추가"
+      },
+      "triple_legacy": {
+        "name": "트리플의 전승",
+        "desc": "트리플 사용 횟수 × 8점 추가"
+      },
+      "straight_ring": {
+        "name": "재규어의 반지",
+        "desc": "스트레이트 사용 횟수 × 1 배수 추가"
+      },
+      "mad_deck": {
+        "name": "광기의 덱",
+        "desc": "덱에 남은 카드가 15장 이하면 점수 2.5배"
+      },
+      "battle_chronicle": {
+        "name": "기록석",
+        "desc": "모든 족보 사용 횟수 합산 × 5점 추가"
+      },
+      "blue_gem": {
+        "name": "블루 젬",
+        "desc": "공격에 쓰지 않은 카드 1장당 최종 점수 ×1.2 (5장이면 ×2)"
+      },
+      "low_card_master": {
+        "name": "소수의 힘",
+        "desc": "사용한 카드의 숫자 합이 25 미만이면 점수 2배"
+      },
+      "full_hp_focus": {
+        "name": "만피의 집중",
+        "desc": "현재 HP가 최대 HP와 같을 때 점수 1.5배"
+      },
+      "full_house_lamp": {
+        "name": "풍요의 등불",
+        "desc": "풀하우스 점수 2배"
+      },
+      "four_ring": {
+        "name": "사방의 반지",
+        "desc": "포카드 점수 2배"
+      },
+      "str_flush_ring": {
+        "name": "완성의 반지",
+        "desc": "스트레이트 플러쉬 점수 3배"
+      },
+      "five_ring": {
+        "name": "전설의 반지",
+        "desc": "파이브카드 점수 3배"
+      },
+      "side_mirror": {
+        "name": "측면 공명석",
+        "desc": "좌우에 배치된 유물의 효과 2배"
+      },
+      "vertical_mirror": {
+        "name": "상하 공명석",
+        "desc": "위아래에 배치된 유물의 효과 2배"
+      },
+      "odd_gem": {
+        "name": "홀수의 보석",
+        "desc": "A·3·5·7·9 카드 1장당 배수 +3"
+      },
+      "even_gem": {
+        "name": "짝수의 보석",
+        "desc": "2·4·6·8·10 카드 1장당 배수 +3"
+      },
+      "face_gem": {
+        "name": "귀족의 보석",
+        "desc": "A·K·Q·J 카드 1장당 배수 +3"
+      },
+      "tree_of_life": {
+        "name": "생명의 나무",
+        "desc": "현재 HP만큼 점수 추가 (곱셈 전)"
+      },
+      "x_cross": {
+        "name": "X의 표식",
+        "desc": "대각선 빙고될 때마다 최종 점수 1.5배 (최대 3배)"
+      },
+      "seal_echo": {
+        "name": "강화 공명",
+        "desc": "강화된 카드로 공격 시 점수/유물 효과 한 번 더 계산"
+      },
+      "king_majesty": {
+        "name": "왕의 위엄",
+        "desc": "덱에 남아있는 K 한 장당 최종 배율 +0.5"
+      },
+      "black_square": {
+        "name": "검은 사각형",
+        "desc": "공격 카드가 정확히 4장일 때 배수 +16"
+      },
+      "grail": {
+        "name": "성배",
+        "desc": "플레이어 턴 시작 시 최대 HP의 10% 회복"
+      },
+      "snake": {
+        "name": "뱀",
+        "desc": "첫 공격 1장 사용 시: 해당 카드 영구 제거 및 랜덤 아이템 획득"
+      },
+      "regen_ring": {
+        "name": "재생의 반지",
+        "desc": "턴 시작 시 핸드에 최소 유지 장수(5장)만큼 카드를 채워줌"
+      },
+      "all_in_ring": {
+        "name": "올인의 반지",
+        "desc": "핸드에 남은 카드가 없을 경우 배수 7배"
+      },
+      "green_ring": {
+        "name": "녹색반지",
+        "desc": "전투 중 아이템 사용 횟수만큼 배수(Plus Multi) 증가"
+      },
+      "thick_book": {
+        "name": "두꺼운 책",
+        "desc": "전체 카드 수 50장 이상일 때 초과 장당 배수 +4"
+      }
     },
     "seal": {
       "red": {
@@ -583,35 +1168,122 @@
         "vampire": "뱀파이어"
       },
       "skills": {
-        "power_strike": { "name": "강력한 내려찍기", "desc": "플레이어에게 1.5배의 강력한 피해를 입힙니다." },
-        "regenerate": { "name": "재생력", "desc": "잃은 체력의 10%를 회복합니다." },
-        "fierce_regenerate": { "name": "광포한 재생력", "desc": "잃은 체력의 20%를 회복합니다." },
-        "berserker_rage": { "name": "광전사 일격", "desc": "플레이어에게 2배의 피해를 입힙니다." },
-        "def_up": { "name": "방어 자세", "desc": "방어력을 2 증가시킵니다." },
-        "seal_most_used": { "name": "족보 봉인", "desc": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다." },
-        "seal_most_and_last": { "name": "이중 족보 봉인", "desc": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다." },
-        "explosion": { "name": "대폭발", "desc": "플레이어에게 2배의 피해를 입힙니다." },
-        "bomb_plant": { "name": "폭탄 매설", "desc": "플레이어의 덱에 폭탄 카드를 매설합니다." },
-        "harvest": { "name": "도살의 낫", "desc": "플레이어에게 2배의 피해를 입힙니다." },
-        "force_pick": { "name": "강제 선택", "desc": "플레이어의 카드를 한 장 강제로 선택하게 만듭니다." },
-        "card_veil": { "name": "베일", "desc": "핸드의 카드 정보를 뒤집어 가립니다." },
-        "fortify": { "name": "철벽 강화", "desc": "자신의 방어력을 10 증가시킵니다." },
-        "final_strike": { "name": "결사 일격", "desc": "플레이어에게 2배의 강력한 피해를 입힙니다." },
-        "thief": { "name": "금화 약탈", "desc": "플레이어의 골드를 약탈합니다." },
-        "drain": { "name": "흡혈 일격", "desc": "피해를 입히고 입힌 피해만큼 체력을 회복합니다." },
-        "passive_troll": { "name": "철벽의 요새", "desc": "체력이 30% 이상일 때 방어력이 2배가 됩니다." },
-        "passive_berserker": { "name": "광폭화", "desc": "매 턴마다 보스의 공격력이 증가합니다." },
-        "passive_summoner": { "name": "수호의 계약", "desc": "소환수가 전장에 있으면 방어력이 3배 증가합니다." },
-        "passive_trickster_1": { "name": "랭크 봉인", "desc": "특정 랭크의 카드를 사용 불가 상태로 만듭니다." },
-        "passive_trickster_2": { "name": "슈트 봉인", "desc": "특정 슈트의 카드를 사용 불가 상태로 만듭니다." },
-        "passive_tricksterB_1": { "name": "족보 봉인", "desc": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다." },
-        "passive_tricksterB_2": { "name": "이중 족보 봉인", "desc": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다." },
-        "passive_bomber": { "name": "폭탄 매설", "desc": "매 턴마다 플레이어의 덱에 폭탄 카드 4장을 매설합니다." },
-        "passive_butcher": { "name": "도살의 낫", "desc": "매 턴마다 플레이어의 덱 상단 카드 4장을 폐기합니다." },
-        "passive_babarian": { "name": "강제 선택", "desc": "매 턴 시작 시 플레이어의 카드를 한 장 강제로 선택하게 만듭니다." },
-        "passive_shaman": { "name": "베일", "desc": "매 턴마다 핸드의 카드 3장을 뒤집어 정보를 가립니다." },
-        "passive_iron_fortress": { "name": "철벽의 요새", "desc": "체력이 50% 이상일 때 방어력이 3배가 됩니다." },
-        "passive_demon": { "name": "악마의 계약", "desc": "보스가 살아있는 동안 핸드 크기와 한도가 1 감소합니다." }
+        "power_strike": {
+          "name": "강력한 내려찍기",
+          "desc": "플레이어에게 1.5배의 강력한 피해를 입힙니다."
+        },
+        "regenerate": {
+          "name": "재생력",
+          "desc": "잃은 체력의 10%를 회복합니다."
+        },
+        "fierce_regenerate": {
+          "name": "광포한 재생력",
+          "desc": "잃은 체력의 20%를 회복합니다."
+        },
+        "berserker_rage": {
+          "name": "광전사 일격",
+          "desc": "플레이어에게 2배의 피해를 입힙니다."
+        },
+        "def_up": {
+          "name": "방어 자세",
+          "desc": "방어력을 2 증가시킵니다."
+        },
+        "seal_most_used": {
+          "name": "족보 봉인",
+          "desc": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다."
+        },
+        "seal_most_and_last": {
+          "name": "이중 족보 봉인",
+          "desc": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다."
+        },
+        "explosion": {
+          "name": "대폭발",
+          "desc": "플레이어에게 2배의 피해를 입힙니다."
+        },
+        "bomb_plant": {
+          "name": "폭탄 매설",
+          "desc": "플레이어의 덱에 폭탄 카드를 매설합니다."
+        },
+        "harvest": {
+          "name": "도살의 낫",
+          "desc": "플레이어에게 2배의 피해를 입힙니다."
+        },
+        "force_pick": {
+          "name": "강제 선택",
+          "desc": "플레이어의 카드를 한 장 강제로 선택하게 만듭니다."
+        },
+        "card_veil": {
+          "name": "베일",
+          "desc": "핸드의 카드 정보를 뒤집어 가립니다."
+        },
+        "fortify": {
+          "name": "철벽 강화",
+          "desc": "자신의 방어력을 10 증가시킵니다."
+        },
+        "final_strike": {
+          "name": "결사 일격",
+          "desc": "플레이어에게 2배의 강력한 피해를 입힙니다."
+        },
+        "thief": {
+          "name": "금화 약탈",
+          "desc": "플레이어의 골드를 약탈합니다."
+        },
+        "drain": {
+          "name": "흡혈 일격",
+          "desc": "피해를 입히고 입힌 피해만큼 체력을 회복합니다."
+        },
+        "passive_troll": {
+          "name": "철벽의 요새",
+          "desc": "체력이 30% 이상일 때 방어력이 2배가 됩니다."
+        },
+        "passive_berserker": {
+          "name": "광폭화",
+          "desc": "매 턴마다 보스의 공격력이 증가합니다."
+        },
+        "passive_summoner": {
+          "name": "수호의 계약",
+          "desc": "소환수가 전장에 있으면 방어력이 3배 증가합니다."
+        },
+        "passive_trickster_1": {
+          "name": "랭크 봉인",
+          "desc": "특정 랭크의 카드를 사용 불가 상태로 만듭니다."
+        },
+        "passive_trickster_2": {
+          "name": "슈트 봉인",
+          "desc": "특정 슈트의 카드를 사용 불가 상태로 만듭니다."
+        },
+        "passive_tricksterB_1": {
+          "name": "족보 봉인",
+          "desc": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다."
+        },
+        "passive_tricksterB_2": {
+          "name": "이중 족보 봉인",
+          "desc": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다."
+        },
+        "passive_bomber": {
+          "name": "폭탄 매설",
+          "desc": "매 턴마다 플레이어의 덱에 폭탄 카드 4장을 매설합니다."
+        },
+        "passive_butcher": {
+          "name": "도살의 낫",
+          "desc": "매 턴마다 플레이어의 덱 상단 카드 4장을 폐기합니다."
+        },
+        "passive_babarian": {
+          "name": "강제 선택",
+          "desc": "매 턴 시작 시 플레이어의 카드를 한 장 강제로 선택하게 만듭니다."
+        },
+        "passive_shaman": {
+          "name": "베일",
+          "desc": "매 턴마다 핸드의 카드 3장을 뒤집어 정보를 가립니다."
+        },
+        "passive_iron_fortress": {
+          "name": "철벽의 요새",
+          "desc": "체력이 50% 이상일 때 방어력이 3배가 됩니다."
+        },
+        "passive_demon": {
+          "name": "악마의 계약",
+          "desc": "보스가 살아있는 동안 핸드 크기와 한도가 1 감소합니다."
+        }
       }
     },
     "monster": {
@@ -668,10 +1340,22 @@
       "log_monster_attack": "{name}의 공격! {dmg} 데미지!",
       "log_monster_skill": "{name}의 {skill}! {dmg} 데미지!",
       "gimmick": {
-        "aoe_resist": { "name": "광역 저항", "desc": "광역 공격 시 데미지 50% 감소" },
-        "suit_resist": { "name": "슈트 저항", "desc": "{suit} 카드 공격 시 데미지 50% 감소" },
-        "small_hand_resist": { "name": "소수 저항", "desc": "{n}장 미만 공격 시 데미지 50% 감소" },
-        "first_turn_def": { "name": "초반 철벽", "desc": "첫 턴에는 DEF 3배" }
+        "aoe_resist": {
+          "name": "광역 저항",
+          "desc": "광역 공격 시 데미지 50% 감소"
+        },
+        "suit_resist": {
+          "name": "슈트 저항",
+          "desc": "{suit} 카드 공격 시 데미지 50% 감소"
+        },
+        "small_hand_resist": {
+          "name": "소수 저항",
+          "desc": "{n}장 미만 공격 시 데미지 50% 감소"
+        },
+        "first_turn_def": {
+          "name": "초반 철벽",
+          "desc": "첫 턴에는 DEF 3배"
+        }
       },
       "log_phase_change": "[페이즈] {name}: {old} → {new}",
       "log_boss_stat_gain": "[{skill}] {name} {stat} +{val} (총 {total})",
@@ -694,7 +1378,25 @@
       "log_boss_skill_plant": "[스킬] {name}: {skill}! 폭탄 {n}장 매설됨!",
       "log_boss_skill_discard": "[스킬] {name}: {skill}! {n}장 폐기됨!",
       "log_boss_skill_steal": "[스킬] {name}: {skill}! -{gold}G!",
-      "log_boss_skill_drain": "[스킬] {name}: {skill}! {dmg} 데미지 & {heal} 흡혈!"
+      "log_boss_skill_drain": "[스킬] {name}: {skill}! {dmg} 데미지 & {heal} 흡혈!",
+      "log_item_copy": "[{item}] {card} 복사!",
+      "log_item_seal": "[{item}] {card} → {seal} 씰 강화!",
+      "log_item_seal_multi": "[{item}] {cards} 씰 강화!",
+      "log_item_seal_stamp": "[{item}] {cards} → {seal} 씰 부여!",
+      "log_item_suit_change": "[{item}] {n}장 → {suit} 변환!",
+      "log_item_remove": "[{item}] 카드 {n}장 제거",
+      "log_item_recycle": "[{item}] 더미 {n}장 → 덱 상단!",
+      "log_item_fill_field": "[{item}] 필드 {n}장 보충!",
+      "log_item_alchemist": "[{item}] {card} 기준으로 {n}장 변환!",
+      "log_item_heal": "[{item}] HP +{val}",
+      "log_item_maxHp": "[{item}] 최대 HP +{val}",
+      "log_item_def": "[{item}] DEF +{val}",
+      "log_item_atk_turn": "[{item}] 공격 횟수 +{val}",
+      "log_item_hand_size": "[{item}] 핸드 크기 +{val}",
+      "log_item_field_size": "[{item}] 필드 크기 +{val}",
+      "log_item_suit_adapt": "[{item}] {suit} 적응 +{val}",
+      "log_item_hand_multi": "[{item}] 배수 +{val}",
+      "log_item_bingo_lv": "[{item}] {target} 빙고 레벨 +1 (Lv.{lv})"
     }
   }
 }

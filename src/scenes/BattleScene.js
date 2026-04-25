@@ -682,7 +682,7 @@ export class BattleScene extends Phaser.Scene {
     this.renderHand();
     this.renderMonsters();
     this.renderDebuffIcons();
-    
+
     this.uiManager.refreshPlayerStats();
     this.uiManager.refreshAttackCount();
     this.uiManager.refreshBattleLog();
@@ -1470,7 +1470,7 @@ export class BattleScene extends Phaser.Scene {
 
     const titleText = next.isGameEnd ? "GAME CLEAR!" : (next.isNextRound ? "ROUND CLEAR!" : "BATTLE CLEAR!");
     const subText = `ROUND ${this.round}-${this.battleIndex + 1}  SCORE: ${this.player.score}`;
-    const noteText = next.isGameEnd ? "게임 클리어!" : (nextType === 'market' ? "마켓으로..." : (next.isNextRound ? "다음 라운드로..." : "다음 전투로..."));
+    const noteText = next.isGameEnd ? "" : (nextType === 'market' ? "To the Market" : (next.isNextRound ? "To the Next Round" : "To the Next Battle"));
 
     modal.addObj(this.add.text(cx, pt + 70, titleText, TS.clearTitle).setOrigin(0.5).setDepth(D + 2));
     modal.addObj(this.add.text(cx, pt + 118, subText, TS.clearSub).setOrigin(0.5).setDepth(D + 2));

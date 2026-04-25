@@ -1,5 +1,6 @@
 import { itemMap, getAllItems, applyItemEffect } from './itemManager.js';
 import { sealMap, getSealTypes } from './sealManager.js';
+import { getLang, getUiText, getItemName, getSealName } from '../service/langService.js';
 
 /**
  * 전용 아이템 핸들러 (BattleScene에서 분리)
@@ -29,9 +30,14 @@ export class BattleItemManager {
         uid: crypto.randomUUID(),
         enhancements: src.enhancements ? src.enhancements.map(e => ({ ...e })) : [],
       };
+      this.scene._sfx("sfx_fan");
       handData.push(copy);
       selected.clear();
-      this.scene.addBattleLog(`[${item.name}] ${src.key} 복사!`);
+      
+      const lang = getLang(this.scene);
+      const iName = getItemName(lang, item.id);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_item_copy', { item: iName, card: src.key }));
+      
       this._consume(idx, obj);
       return;
     }
@@ -48,7 +54,12 @@ export class BattleItemManager {
       const type = types[Math.floor(Math.random() * types.length)];
       card.enhancements = [{ type }];
       selected.clear();
-      this.scene.addBattleLog(`[${item.name}] ${card.key} → ${type} 씰 강화!`);
+      
+      const lang = getLang(this.scene);
+      const iName = getItemName(lang, item.id);
+      const sName = getSealName(lang, type);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_item_seal', { item: iName, card: card.key, seal: sName }));
+      
       this._consume(idx, obj);
       return;
     }
@@ -68,7 +79,11 @@ export class BattleItemManager {
         keys.push(`${card.key}→${type}`);
       });
       selected.clear();
-      this.scene.addBattleLog(`[${item.name}] ${keys.join(', ')} 씰 강화!`);
+      
+      const lang = getLang(this.scene);
+      const iName = getItemName(lang, item.id);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_item_seal_multi', { item: iName, cards: keys.join(', ') }));
+      
       this._consume(idx, obj);
       return;
     }
@@ -87,7 +102,12 @@ export class BattleItemManager {
         keys.push(card.key);
       });
       selected.clear();
-      this.scene.addBattleLog(`[${item.name}] ${keys.join(', ')} → ${sealId} 씰 부여!`);
+      
+      const lang = getLang(this.scene);
+      const iName = getItemName(lang, item.id);
+      const sName = getSealName(lang, sealId);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_item_seal_stamp', { item: iName, cards: keys.join(', '), seal: sName }));
+      
       this._consume(idx, obj);
       return;
     }
@@ -108,7 +128,12 @@ export class BattleItemManager {
         keys.push(card.key);
       });
       selected.clear();
-      this.scene.addBattleLog(`[${item.name}] ${cardCount}장 → ${targetSuit} 변환!`);
+      
+      const lang = getLang(this.scene);
+      const iName = getItemName(lang, item.id);
+      const sSuit = getUiText(lang, `market.suit.${targetSuit}`);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_item_suit_change', { item: iName, n: cardCount, suit: sSuit }));
+      
       this._consume(idx, obj);
       return;
     }
@@ -124,7 +149,11 @@ export class BattleItemManager {
         if (removed) dummyData.push(removed);
       });
       selected.clear();
-      this.scene.addBattleLog(`[${item.name}] 카드 ${selectedIdxs.length}장 제거`);
+      
+      const lang = getLang(this.scene);
+      const iName = getItemName(lang, item.id);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_item_remove', { item: iName, n: selectedIdxs.length }));
+      
       this._consume(idx, obj);
       return;
     }
@@ -137,7 +166,11 @@ export class BattleItemManager {
       const actual = Math.min(count, dummyData.length);
       const recycled = dummyData.splice(-actual);
       deckData.push(...recycled);
-      this.scene.addBattleLog(`[${item.name}] 더미 ${actual}장 → 덱 상단!`);
+      
+      const lang = getLang(this.scene);
+      const iName = getItemName(lang, item.id);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_item_recycle', { item: iName, n: actual }));
+      
       this._consume(idx, obj);
       return;
     }
@@ -157,7 +190,10 @@ export class BattleItemManager {
 
       fieldData.push(...newItems);
       this.scene.fieldPickCount = Math.max(0, this.scene.fieldPickCount - newItems.length);
-      this.scene.addBattleLog(`[${item.name}] 필드 ${newItems.length}장 보충!`);
+      
+      const lang = getLang(this.scene);
+      const iName = getItemName(lang, item.id);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_item_fill_field', { item: iName, n: newItems.length }));
       
       this.scene.isDealing = true;
       this.scene.animManager.createDeckStack();
@@ -197,13 +233,19 @@ export class BattleItemManager {
         }
       }
       selected.clear();
-      this.scene.addBattleLog(`[${item.name}] ${src.key} 기준으로 ${cardCount - 1}장 변환!`);
+      
+      const lang = getLang(this.scene);
+      const iName = getItemName(lang, item.id);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_item_alchemist', { item: iName, card: src.key, n: cardCount - 1 }));
+      
       this._consume(idx, obj);
       return;
     }
 
     // ── 일반 아이템 효과 (itemManager 위임) ─────────────────
-    const msg = applyItemEffect(player, item.id, item.name);
+    const lang = getLang(this.scene);
+    const iName = getItemName(lang, item.id);
+    const msg = applyItemEffect(player, item.id, iName, lang);
     if (msg) this.scene.addBattleLog(msg);
 
     if (def?.scope === 'battle') {

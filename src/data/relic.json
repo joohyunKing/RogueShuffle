@@ -374,10 +374,10 @@
     },
     {
       "id": "battle_chronicle",
-      "name": "전투 연대기",
+      "name": "기록석",
       "description": "모든 족보 사용 횟수 합산 × 5점 추가",
       "rarity": "epic",
-      "img": "avarice.png",
+      "img": "h_rune.png",
       "useYn": "Y",
       "effects": [
         {
