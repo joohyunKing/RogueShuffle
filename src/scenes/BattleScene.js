@@ -417,14 +417,17 @@ export class BattleScene extends Phaser.Scene {
   }
 
   startDealAnimation() {
-    this.animManager.startDealAnimation(this.handData, this.fieldData, () => {
-      this.isDealing = false;
-      this._applySortToHand();
-      if (this.isBoss && this.bossManager && this.monsters.length > 0) {
-        this.bossManager.activatePassive(this.monsters[0], 'player_turn');
-      }
-      this.render();
-      this._saveTurnState();
+    this.animManager.showTurnNotice("PLAYER TURN", "#55ff55");
+    this.time.delayedCall(1000, () => {
+      this.animManager.startDealAnimation(this.handData, this.fieldData, () => {
+        this.isDealing = false;
+        this._applySortToHand();
+        if (this.isBoss && this.bossManager && this.monsters.length > 0) {
+          this.bossManager.activatePassive(this.monsters[0], 'player_turn');
+        }
+        this.render();
+        this._saveTurnState();
+      });
     });
   }
 
@@ -1263,9 +1266,13 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+
+
   // ── 턴 종료 ──────────────────────────────────────────────────────────────
   onTurnEnd() {
     this.isDealing = true;
+    this.selected.clear();
+    this.render();
 
     // 플립 해제 (샤먼 베일 효과는 플레이어 턴 동안만 지속)
     this.handData.forEach(c => { delete c.flipped; });
@@ -1282,58 +1289,66 @@ export class BattleScene extends Phaser.Scene {
       }
     });
 
-    const onMonstersDone = () => {
-      try { this.render(); } catch (e) { console.error("[onTurnEnd render]", e); }
-      this.bossHPBar?.update(this.monsters[0], this.bossManager, false);
-      if (this.player.hp <= 0) {
-        this.time.delayedCall(500, () => this.showGameOver());
-        return;
-      }
-      if (this.deckData.length === 0) {
-        this.addBattleLog("덱 소진!");
-        this.refreshBattleLog();
-        this.time.delayedCall(500, () => this.showGameOver());
+    const triggerEnemyTurns = () => {
+      const onMonstersDone = () => {
+        try { this.render(); } catch (e) { console.error("[onTurnEnd render]", e); }
+        this.bossHPBar?.update(this.monsters[0], this.bossManager, false);
+        if (this.player.hp <= 0) {
+          this.time.delayedCall(500, () => this.showGameOver());
+          return;
+        }
+        if (this.deckData.length === 0) {
+          this.addBattleLog("덱 소진!");
+          this.refreshBattleLog();
+          this.time.delayedCall(500, () => this.showGameOver());
+          return;
+        }
+
+        this.fieldData.forEach(card => this._flyToDummy(card.slotX, FIELD_Y, card.key));
+        this.fieldData = [];
+        this.deck.endTurn();  // dummyData/deckData/handData는 getter → 자동 반영
+        this.render();        // 빈 필드로 즉시 재렌더 (ghost 애니메이션은 진행 중)
+
+        this.time.delayedCall(500, () => this.startTurn());
+      };
+
+      // 보스 턴
+      if (this.isBoss && this.bossManager) {
+        const boss = this.monsters[0];
+        if (!boss || boss.isDead) {
+          onMonstersDone();
+          return;
+        }
+        this.bossManager.doTurn(boss, onMonstersDone);
         return;
       }
 
-      this.fieldData.forEach(card => this._flyToDummy(card.slotX, FIELD_Y, card.key));
-      this.fieldData = [];
-      this.deck.endTurn();  // dummyData/deckData/handData는 getter → 자동 반영
-      this.render();        // 빈 필드로 즉시 재렌더 (ghost 애니메이션은 진행 중)
+      // 일반 몬스터 턴
+      const alive = this.monsterManager.monsters.filter(m => !m.isDead);
+      const ATK_GAP = 650;
 
-      this.time.delayedCall(500, () => this.startTurn());
+      alive.forEach((m, localIdx) => {
+        const globalIdx = this.monsterManager.monsters.indexOf(m);
+        this.time.delayedCall(localIdx * ATK_GAP, () => {
+          this.monsterManager.doMonsterAction(globalIdx, m);
+          this.refreshPlayerStats();
+          this.refreshBattleLog();
+        });
+      });
+
+      this.time.delayedCall(alive.length * ATK_GAP + 300, onMonstersDone);
     };
 
-    // 보스 턴
-    if (this.isBoss && this.bossManager) {
-      const boss = this.monsters[0];
-      if (!boss || boss.isDead) {
-        onMonstersDone();
-        return;
-      }
-      this.bossManager.doTurn(boss, onMonstersDone);
-      return;
-    }
-
-    // 일반 몬스터 턴
-    const alive = this.monsterManager.monsters.filter(m => !m.isDead);
-    const ATK_GAP = 650;
-
-    alive.forEach((m, localIdx) => {
-      const globalIdx = this.monsterManager.monsters.indexOf(m);
-      this.time.delayedCall(localIdx * ATK_GAP, () => {
-        this.monsterManager.doMonsterAction(globalIdx, m);
-        this.refreshPlayerStats();
-        this.refreshBattleLog();
-      });
-    });
-
-    this.time.delayedCall(alive.length * ATK_GAP + 300, onMonstersDone);
+    // 알림 후 몬스터 턴 시작
+    this.animManager.showTurnNotice("ENEMY TURN", "#ff5555");
+    this.time.delayedCall(1000, triggerEnemyTurns);
   }
 
   // ── 턴 시작 ──────────────────────────────────────────────────────────────
   startTurn() {
-    this.time.delayedCall(420, () => {
+    this.animManager.showTurnNotice("PLAYER TURN", "#55ff55");
+
+    this.time.delayedCall(800, () => {
       try {
         // ── 유물 턴 시작 효과 ──────────────────────────────────────────────────
         this._applyTurnStartRelics();

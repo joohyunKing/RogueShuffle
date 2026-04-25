@@ -13,11 +13,6 @@
       },
       "battles": [
         {
-          "type": "boss",
-          "statMulti": 3,
-          "totalCost": 3
-        },
-        {
           "type": "normal",
           "statMulti": 1,
           "totalCost": 3

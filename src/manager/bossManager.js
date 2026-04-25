@@ -84,6 +84,27 @@ export class BossManager {
         this._applyPassiveEffect(boss, p);
       }
     }
+
+    this.checkPhaseChange(boss);
+  }
+
+  // 페이즈 전환 감지 및 알림
+  checkPhaseChange(boss) {
+    const phase = this.getCurrentPhase(boss);
+    if (!phase) return;
+
+    if (boss._lastPhaseLabel === undefined) {
+      boss._lastPhaseLabel = phase.label;
+      return;
+    }
+
+    if (boss._lastPhaseLabel !== phase.label) {
+      const oldLabel = boss._lastPhaseLabel;
+      boss._lastPhaseLabel = phase.label;
+
+      this.scene.addBattleLog(`[페이즈] ${boss.name}: ${oldLabel} → ${phase.label} 상태로 돌입!`);
+      this.scene.animManager?.showBossSkillNotice("PHASE CHANGE", phase.label, 0xffcc00);
+    }
   }
 
   _applyPassiveEffect(boss, p) {

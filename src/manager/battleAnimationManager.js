@@ -663,4 +663,59 @@ export class BattleAnimationManager {
       });
     });
   }
+
+  /**
+   * 턴 전환 시 화면 중앙에 커다란 안내 표시
+   * @param {string} text - "PLAYER TURN" 또는 "ENEMY TURN"
+   * @param {string} [color='#ffffff'] - 텍스트 색상
+   */
+  showTurnNotice(text, color = '#ffffff') {
+    const scene = this.scene;
+    const centerX = GW / 2;
+    const centerY = GH / 2;
+
+    // 1. 검은색 스트립 배경
+    const bg = scene.add.rectangle(centerX, centerY, GW, 80, 0x000000, 0.6)
+      .setDepth(1999).setAlpha(0).setScale(1, 0);
+
+    // 2. 텍스트
+    const txt = scene.add.text(centerX, centerY, text, {
+      fontFamily: TS.defaultFont, fontSize: '42px', color,
+      stroke: '#000000', strokeThickness: 6,
+    }).setOrigin(0.5).setDepth(2000).setAlpha(0).setScale(0.5);
+
+    // 배경 스트립 확장
+    scene.tweens.add({
+      targets: bg,
+      alpha: 1, scaleY: 1,
+      duration: 300, ease: 'Back.easeOut'
+    });
+
+    scene.tweens.add({
+      targets: txt,
+      alpha: 1, scaleX: 1, scaleY: 1,
+      duration: 400, ease: 'Back.easeOut',
+      onComplete: () => {
+        scene.tweens.add({
+          targets: txt,
+          scaleX: 1.1, scaleY: 1.1,
+          duration: 800, yoyo: true, ease: 'Sine.easeInOut'
+        });
+      }
+    });
+
+    scene.time.delayedCall(1200, () => {
+      scene.tweens.add({
+        targets: [txt, bg],
+        alpha: 0,
+        scaleX: { targets: txt, value: 1.5 },
+        scaleY: { targets: [txt, bg], value: 1.5 },
+        duration: 300, ease: 'Power2.In',
+        onComplete: () => {
+          txt.destroy();
+          bg.destroy();
+        }
+      });
+    });
+  }
 }
