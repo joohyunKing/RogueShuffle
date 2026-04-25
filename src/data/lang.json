@@ -316,6 +316,22 @@
       "x_cross": {
         "name": "Mark of X",
         "desc": "Final Score x1.5 (up to x3) per Diagonal Bingo"
+      },
+      "regen_ring": {
+        "name": "Regeneration Ring",
+        "desc": "At the start of the turn, fills your hand up to the minimum size (5 cards)."
+      },
+      "all_in_ring": {
+        "name": "All-In Ring",
+        "desc": "Gives x7 Multiplier if there are no cards left in hand after attack."
+      },
+      "green_ring": {
+        "name": "Green Ring",
+        "desc": "Adds Plus Multiplier based on the number of items used during battle."
+      },
+      "thick_book": {
+        "name": "Thick Book",
+        "desc": "Adds +4 Plus Multiplier per card exceeding 50 in your total collection."
       }
     },
     "ui": {
@@ -672,6 +688,22 @@
       "x_cross": {
         "name": "X의 표식",
         "desc": "유물 슬롯의 대각선이 빙고될 때마다 최종 점수 ×1.5 (최대 ×3)"
+      },
+      "regen_ring": {
+        "name": "재생의 반지",
+        "desc": "턴 시작 시 핸드에 최소 유지 장수(5장)만큼 카드를 채워줌"
+      },
+      "all_in_ring": {
+        "name": "올인의 반지",
+        "desc": "핸드에 남은 카드가 없을 경우 점수 배수 7배"
+      },
+      "green_ring": {
+        "name": "녹색반지",
+        "desc": "아이템 사용 횟수만큼 배수(Plus Multi) 증가"
+      },
+      "thick_book": {
+        "name": "두꺼운 책",
+        "desc": "전체 카드 수 50장 이상일 때, 초과 장당 배수(Plus Multi) +4"
       }
     },
     "ui": {

@@ -175,6 +175,19 @@ export class BattleScene extends Phaser.Scene {
     this._optionUI = new OptionUI(this, {
       onOpen: () => { this.isDealing = true; },
       onClose: () => { this.isDealing = false; },
+      onLanguageChange: () => {
+        const state = {
+          round: this.round,
+          player: this.player.toData(),
+          deck: this.deck.getState(),
+          isBoss: this.isBoss,
+          battleIndex: this.battleIndex,
+          normalCount: this.normalCount,
+          monsters: this.monsterManager.monsters,
+          battleLog: this._fullBattleLog
+        };
+        this.scene.restart(state);
+      },
       onMainMenu: () => {
         writeSave(this.round, this.player.toData(), this.deck.getState(), {
           isBoss: this.isBoss,
@@ -182,6 +195,7 @@ export class BattleScene extends Phaser.Scene {
           normalCount: this.normalCount,
           monsters: this.monsterManager.monsters,
         });
+        this._stopBgm();
         this.scene.start("MainMenuScene");
       },
     });

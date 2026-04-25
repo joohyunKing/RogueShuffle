@@ -43,12 +43,13 @@ export class ItemUI {
 
   _add(obj) { this._objs.push(obj); return obj; }
 
-  _tipLeft() { return this.opts.panelX - 273 - 8; }
+  _tipLeft(tw) { return this.opts.panelX - tw - 8; }
 
   _showTip(cy, title, desc, color) {
+    const tw = 320;
     this._tooltip.update({
-      titleMsg: title, contentMsg: desc || '', titleMsgColor: color, tooltipW: 273,
-      left: this._tipLeft(), centerY: cy, clampMin: BATTLE_LOG_H + 4, clampMax: GH - 10,
+      titleMsg: title, contentMsg: desc || '', titleMsgColor: color, tooltipW: tw,
+      left: this._tipLeft(tw), centerY: cy, clampMin: BATTLE_LOG_H + 4, clampMax: GH - 10,
       depth: 300,
       onUse: null, btnDisabled: false, sold: false,
     });
@@ -110,9 +111,10 @@ export class ItemUI {
 
   _showItemTip(cy, item, color, onUse) {
     const lang = this._getLang();
+    const tw = 320;
     this._tooltip.update({
       titleMsg: getItemName(lang, item.id, item.name), contentMsg: getItemDesc(lang, item.id, item.desc) || '',
-      titleMsgColor: color, tooltipW: 273, left: this._tipLeft(), centerY: cy,
+      titleMsgColor: color, tooltipW: tw, left: this._tipLeft(tw), centerY: cy,
       clampMin: BATTLE_LOG_H + 4, clampMax: GH - 10, onUse, btnLabel: '사 용', depth: 300,
     });
   }

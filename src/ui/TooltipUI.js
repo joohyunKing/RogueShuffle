@@ -32,7 +32,7 @@ export class TooltipUI {
   _calcHeight() {
     const {
       contentMsg,
-      tooltipW = 210,
+      tooltipW = 300,
       onUse,
       btnDisabled,
       sold,
@@ -40,12 +40,12 @@ export class TooltipUI {
 
     const PAD = 12;
     const TITLE_H = 32;
-    const LINE_H = 20;
+    const LINE_H = 28;
     const BTN_H = 34;
     const BTN_GAP = 10;
     const innerW = tooltipW - PAD * 2;
-    // 한국어 포함 혼합 텍스트 기준 글자폭 9px (ASCII 7px, 한글 13px 절충)
-    const charsPerLine = Math.max(1, Math.floor(innerW / 9));
+    // NeoDGM(14px) 기준 한글 글자폭 약 14px, 아스키 약 8px. 평균 11px로 계산
+    const charsPerLine = Math.max(1, Math.floor(innerW / 11));
     let contentLines = 0;
     if (contentMsg) {
       const paragraphs = contentMsg.split("\n");
@@ -70,7 +70,7 @@ export class TooltipUI {
       contentMsg,
       titleMsgColor = '#ffffff',
       titleFontSize = '16px',
-      tooltipW = 210,
+      tooltipW = 300,
       left,
       top,
       centerY,
@@ -87,7 +87,7 @@ export class TooltipUI {
     const scene = this.scene;
     const PAD = 12;
     const TITLE_H = 32;
-    const LINE_H = 20;
+    const LINE_H = 26;
     const BTN_H = 34;
     const BTN_GAP = 10;
     const colorN = parseInt(titleMsgColor.replace('#', ''), 16);
@@ -128,10 +128,12 @@ export class TooltipUI {
     if (contentMsg) {
       this._objs.push(
         scene.add.text(left + PAD, ty + PAD + TITLE_H + PAD / 2, contentMsg, {
-          fontFamily: 'Arial',
-          fontSize: '13px',
+          fontFamily: TS.defaultFont,
+          fontSize: '14px',
           color: '#aaccbb',
           wordWrap: { width: tooltipW - PAD * 2 },
+          lineSpacing: 8,
+          padding: { bottom: 8 }
         }).setOrigin(0, 0).setDepth(depth + 1)
       );
     }

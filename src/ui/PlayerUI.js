@@ -48,7 +48,7 @@ export class PlayerUI {
       ...opts,
     };
     this._objs = [];
-    this._tooltip = new TooltipUI(scene, { tooltipW: 210, titleFontSize: '14px' });
+    this._tooltip = new TooltipUI(scene);
     // mutable refs
     this.roundTxt = null;
     this.goldTxt = null;
@@ -322,12 +322,11 @@ export class PlayerUI {
     this._showTooltipAt([title, effect + " " + cardLine], suitColors[suit], rowY);
   }
 
-  _showTooltipAt(lines, color, rowY, tooltipW = 210) {
+  _showTooltipAt(lines, color, rowY) {
     this._tooltip.update({
       titleMsg: lines[0],
       contentMsg: lines.slice(1).join('\n'),
       titleMsgColor: color,
-      tooltipW,
       left: PLAYER_PANEL_W + 12,
       centerY: rowY,
       depth: 300

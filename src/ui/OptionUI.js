@@ -28,9 +28,9 @@ export class OptionUI extends ModalUI {
   show() {
     if (this.isOpen) return;
 
-    const pw = 420, ph = 480;
+    const pw = 420, ph = 540;
     const { cx, cy, D } = this.createBase(pw, ph, { bgKey: "ui_battle_popup_v" });
-    const pt = ph - cy + 100;
+    const pt = cy - ph / 2 + 50;
 
     const { scene } = this;
 
@@ -82,7 +82,7 @@ export class OptionUI extends ModalUI {
 
     // ── SFX ──────────────────────────────────────────────────────────────
     let sfx = scene.registry.get("sfxVolume") ?? 7;
-    const sfxY = cy + 50;
+    const sfxY = bgmY + 100;
     this.addObj(
       scene.add.text(cx, sfxY - 28, "SFX", TS.popupContent).setOrigin(0.5).setDepth(D + 2)
     );
@@ -113,6 +113,9 @@ export class OptionUI extends ModalUI {
       sfxTxt.setText(String(sfx));
       sfxBar.setDisplaySize(Math.max(1, sfx * 20.4), 7);
       saveOptionsByRegistry(scene.registry);
+      if (sfx > 0 && scene.cache.audio.exists("sfx_place")) {
+        scene.sound.play("sfx_place", { volume: (sfx / 10) * 0.6 });
+      }
     };
     sfxMinus.on("pointerdown", () => updateSfx(sfx - 1));
     sfxPlus.on("pointerdown", () => updateSfx(sfx + 1));
@@ -121,8 +124,47 @@ export class OptionUI extends ModalUI {
     sfxPlus.on("pointerover", () => sfxPlus.setTint(0xcccccc));
     sfxPlus.on("pointerout", () => sfxPlus.clearTint());
 
+    // ── LANGUAGE ─────────────────────────────────────────────────────────
+    let lang = scene.registry.get("lang") ?? "ko";
+    const langY = sfxY + 110;
+    this.addObj(
+      scene.add.text(cx, langY - 35, "LANGUAGE", TS.popupContent).setOrigin(0.5).setDepth(D + 2)
+    );
+
+    const koBtn = scene.add.image(cx - 70, langY, "ui_btn")
+      .setDisplaySize(120, 44).setDepth(D + 2).setInteractive();
+    const koTxt = scene.add.text(cx - 70, langY, "한국어", TS.optLangBtn).setOrigin(0.5).setDepth(D + 3);
+    this.addObj(koBtn); this.addObj(koTxt);
+
+    const enBtn = scene.add.image(cx + 70, langY, "ui_btn")
+      .setDisplaySize(120, 44).setDepth(D + 2).setInteractive();
+    const enTxt = scene.add.text(cx + 70, langY, "English", TS.optLangBtn).setOrigin(0.5).setDepth(D + 3);
+    this.addObj(enBtn); this.addObj(enTxt);
+
+    const updateLangUI = () => {
+      koBtn.setTint(lang === "ko" ? 0xccffcc : 0xffffff);
+      enBtn.setTint(lang === "en" ? 0xccffcc : 0xffffff);
+    };
+    updateLangUI();
+
+    const setLang = (next) => {
+      if (lang === next) return;
+      lang = next;
+      scene.registry.set("lang", lang);
+      saveOptionsByRegistry(scene.registry);
+      updateLangUI();
+      this.opts.onLanguageChange?.(lang);
+    };
+
+    koBtn.on("pointerdown", () => setLang("ko"));
+    enBtn.on("pointerdown", () => setLang("en"));
+    koBtn.on("pointerover", () => { if (lang !== "ko") koBtn.setTint(0xcccccc); });
+    koBtn.on("pointerout", () => updateLangUI());
+    enBtn.on("pointerover", () => { if (lang !== "en") enBtn.setTint(0xcccccc); });
+    enBtn.on("pointerout", () => updateLangUI());
+
     // ── 버튼 ─────────────────────────────────────────────────────────────
-    const btnY = cy + 140;
+    const btnY = cy + (ph / 2) - 100;
 
     const exitBtn = scene.add.image(cx - 80, btnY, "ui_btn")
       .setDisplaySize(150, 52).setDepth(D + 2).setInteractive();
