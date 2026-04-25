@@ -207,6 +207,7 @@
       "btn_deck_mgmt": "Deck Mgmt",
       "btn_shop_refresh": "Refresh({cost}G)",
       "msg_no_gold": "Not enough gold!",
+      "msg_no_boss_gimmick": "No special gimmick info available.",
       "deck_title": "DECK  ({n} cards)",
       "pile_popup_title": "Pile Info",
       "suit": {
@@ -253,12 +254,16 @@
         "passive_summoner": { "name": "Guardian Contract", "desc": "Defense triples if summons are present." },
         "passive_trickster_1": { "name": "Rank Seal", "desc": "Disables cards of a specific Rank." },
         "passive_trickster_2": { "name": "Suit Seal", "desc": "Disables cards of a specific Suit." },
+        "passive_tricksterB_1": { "name": "Rank Seal", "desc": "Forbids the most used hand rank for this battle." },
+        "passive_tricksterB_2": { "name": "Double Seal", "desc": "Forbids the most used and the last used hand ranks." },
         "passive_bomber": { "name": "Plant Bombs", "desc": "Plants 4 bomb cards into the deck every turn." },
         "passive_butcher": { "name": "Butcher's Scythe", "desc": "Discards 4 cards from the top of the deck every turn." },
         "passive_babarian": { "name": "Forced Pick", "desc": "Forces one card selection at the start of each turn." },
         "passive_shaman": { "name": "Veil", "desc": "Flips 3 cards in hand every turn to hide information." },
         "passive_iron_fortress": { "name": "Iron Fortress", "desc": "Defense triples when HP is 50% or higher." },
-        "passive_demon": { "name": "Demonic Contract", "desc": "Reduces hand size and limit by 1." }
+        "passive_demon": { "name": "Demonic Contract", "desc": "Reduces hand size and limit by 1." },
+        "passive_troll_1": { "name": "Regeneration", "desc": "Restores 5% of Max HP each turn." },
+        "passive_troll_2": { "name": "Fierce Regeneration", "desc": "Restores 10% of Max HP each turn." }
       }
     },
     "monster": {
@@ -325,11 +330,11 @@
       "log_shield_down": "[Passive] {name} Shield Down! (HP {hp}%)",
       "log_shield_up": "[Passive] {name} Shield Up!",
       "log_reflect_heal": "[Reflect] {name} drained {amt} HP!",
-      "log_boss_plant_bombs": "[Passive] {name} planted {n} Bombs!",
+      "log_boss_plant_bombs": "[Passive] {name} planted {n} bombs!",
       "log_boss_discard": "[Passive] {name} discarded {n} cards from deck!",
       "log_boss_flip": "[Passive] {name} flipped {n} cards!",
-      "log_boss_regen": "[Passive] {name} regenerated {amt} HP!",
-      "log_boss_force_select": "[Passive] {name} forced selection!",
+      "log_boss_regen": "[Passive] {name}'s Regen! +{amt} HP restored",
+      "log_boss_force_select": "[Passive] {name} forced a card selection!",
       "log_boss_hand_down": "[Passive] {name}'s Contract: Hand size reduced (-{val})",
       "log_boss_hand_restore": "[Passive] {name} defeated! Hand size restored.",
       "log_boss_revive": "[Skill] {name} revived {target}!",
@@ -552,6 +557,7 @@
       "btn_deck_mgmt": "카드관리",
       "btn_shop_refresh": "상점갱신({cost}G)",
       "msg_no_gold": "골드 부족!",
+      "msg_no_boss_gimmick": "특별한 기믹 정보가 없습니다.",
       "deck_title": "DECK  ({n}장)",
       "pile_popup_title": "더미 정보",
       "suit": {
@@ -598,6 +604,8 @@
         "passive_summoner": { "name": "수호의 계약", "desc": "소환수가 전장에 있으면 방어력이 3배 증가합니다." },
         "passive_trickster_1": { "name": "랭크 봉인", "desc": "특정 랭크의 카드를 사용 불가 상태로 만듭니다." },
         "passive_trickster_2": { "name": "슈트 봉인", "desc": "특정 슈트의 카드를 사용 불가 상태로 만듭니다." },
+        "passive_tricksterB_1": { "name": "족보 봉인", "desc": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다." },
+        "passive_tricksterB_2": { "name": "이중 족보 봉인", "desc": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다." },
         "passive_bomber": { "name": "폭탄 매설", "desc": "매 턴마다 플레이어의 덱에 폭탄 카드 4장을 매설합니다." },
         "passive_butcher": { "name": "도살의 낫", "desc": "매 턴마다 플레이어의 덱 상단 카드 4장을 폐기합니다." },
         "passive_babarian": { "name": "강제 선택", "desc": "매 턴 시작 시 플레이어의 카드를 한 장 강제로 선택하게 만듭니다." },

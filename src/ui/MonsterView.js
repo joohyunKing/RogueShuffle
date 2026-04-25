@@ -1,6 +1,6 @@
 import { TS } from "../textStyles.js";
 import { TooltipUI } from "./TooltipUI.js";
-import { getLang, getGimmickName, getGimmickDesc, getUiText } from "../service/langService.js";
+import { getLang, getBossName, getBossSkillName, getBossSkillDesc, getGimmickName, getGimmickDesc, getUiText } from "../service/langService.js";
 
 export default class MonsterView {
   constructor(scene, mon, idx, x, y, onClick, imgScale = 1.0, offsetY = 0) {
@@ -396,6 +396,7 @@ export default class MonsterView {
     if (!this.mon || !this.mon.isBoss) return;
     this.hideTooltip();
 
+    const lang = getLang(this.scene);
     const boss = this.mon;
     let content = "";
 
@@ -406,33 +407,48 @@ export default class MonsterView {
     const hpRatio = boss.hp / boss.maxHp;
     const sortedPhases = [...(boss.phases || [])].sort((a, b) => b.hpThreshold - a.hpThreshold);
     const currentPhase = sortedPhases.find(p => hpRatio >= p.hpThreshold) ?? sortedPhases[sortedPhases.length - 1];
+    const phasePassives = [];
+    if (currentPhase) {
+      const pObjs = Array.isArray(currentPhase.passive) ? currentPhase.passive : (currentPhase.passive ? [currentPhase.passive] : []);
+      const phaseIdx = boss.phases.indexOf(currentPhase);
+      pObjs.forEach(p => {
+        const pId = p.langKey || `passive_${boss.id}_${phaseIdx + 1}`;
+        phasePassives.push({ ...p, pId });
+      });
+    }
 
-    const phasePassives = currentPhase && currentPhase.passive
-      ? (Array.isArray(currentPhase.passive) ? currentPhase.passive : [currentPhase.passive])
-      : [];
+    const allPassives = [];
+    globalPassives.forEach(p => allPassives.push({ ...p, pId: p.langKey || `passive_${boss.id}` }));
+    allPassives.push(...phasePassives);
 
-    const allPassives = [...globalPassives, ...phasePassives];
+    allPassives.forEach((p) => {
+      const pName = getBossSkillName(lang, p.pId, p.name);
+      const pDesc = getBossSkillDesc(lang, p.pId, p.description);
 
-    allPassives.forEach(p => {
-      if (p.name && p.description) {
-        content += `[${p.name}]\n${p.description}\n\n`;
+      if (pName && pDesc) {
+        content += `[${pName}]\n${pDesc}\n\n`;
       }
     });
 
     // 3. 고유 규칙 (initSkillId)
     if (boss.initSkillId && boss.skills?.[boss.initSkillId]) {
       const s = boss.skills[boss.initSkillId];
-      content += `[특수: ${s.name}]\n${s.description}\n\n`;
+      const sName = getBossSkillName(lang, boss.initSkillId, s.name);
+      const sDesc = getBossSkillDesc(lang, boss.initSkillId, s.description);
+      const label = lang === 'ko' ? '특수' : 'Special';
+      content += `[${label}: ${sName}]\n${sDesc}\n\n`;
     }
 
-    if (!content) content = "특별한 기믹 정보가 없습니다.";
+    if (!content) content = getUiText(lang, 'market.msg_no_boss_gimmick');
 
     const iconX = this.sprite.x;
     const tooltipW = 280;
     const left = iconX > 640 ? iconX - (tooltipW + 25) : iconX + 25;
 
+    const bTitle = getBossName(lang, boss.id, boss.name);
+
     this._tooltip = new TooltipUI(this.scene, {
-      titleMsg: `${boss.name} (BOSS)`,
+      titleMsg: `${bTitle} (BOSS)`,
       contentMsg: content.trim(),
       titleMsgColor: '#ff4444',
       tooltipW: tooltipW,
