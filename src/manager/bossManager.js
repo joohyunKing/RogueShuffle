@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GW, GH, PLAYER_PANEL_W, MONSTER_AREA_TOP, MONSTER_AREA_H } from '../constants.js';
+import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W, FIELD_Y, MONSTER_AREA_TOP, MONSTER_AREA_H } from '../constants.js';
 import { TS } from '../textStyles.js';
 
 const ACTION_GAP = 1600; // 액션 간 딜레이(ms)
@@ -7,6 +7,8 @@ const ACTION_GAP = 1600; // 액션 간 딜레이(ms)
 // ── Orb 목표 좌표 ─────────────────────────────────────────────────────────────
 const ATK_ORB = { x: PLAYER_PANEL_W / 2, y: 152 };
 const DEBUFF_ORB = { x: PLAYER_PANEL_W + 24, y: MONSTER_AREA_TOP + 58 };
+const DECK_X = PLAYER_PANEL_W + 100;
+const DUMMY_X = GW - ITEM_PANEL_W - 100;
 
 // ── 이펙트 프리셋 (flash + sfx + 떠오르는 텍스트) ──────────────────────────────
 const EFFECT = {
@@ -163,15 +165,23 @@ export class BossManager {
 
     if (p.type === 'plant_bombs') {
       const count = p.value || 3;
-      this._plantBombs(count);
+      this._plantBombs(count, monIdx);
       scene.addBattleLog(`[패시브] ${boss.name}의 매설! 폭탄 ${count}장 추가!`);
-      this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 600, sfx: 'sfx_explosion', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
+      this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 600, sfx: 'sfx_slide', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
     }
 
     if (p.type === 'discard_deck') {
       const count = p.value || 3;
       const moved = scene.deck.deckPile.splice(0, count);
       scene.deck.dummyPile.push(...moved);
+
+      // 덱에서 더미로 날아가는 애니메이션
+      moved.forEach((card, i) => {
+        scene.time.delayedCall(i * 120, () => {
+          scene.animManager.flyToDummy(DECK_X, FIELD_Y, "card_back");
+        });
+      });
+
       scene.addBattleLog(`[패시브] ${boss.name}의 도살! ${moved.length}장 폐기!`);
       this._showEffect(monIdx, { ...EFFECT.debuff, label: `DISCARD ${moved.length}!`, labelColor: '#ff8844' });
       scene.refreshPlayerStats();
@@ -261,9 +271,11 @@ export class BossManager {
     }
   }
 
-  _plantBombs(count) {
+  _plantBombs(count, monIdx = 0) {
     const { scene } = this;
     const now = Date.now();
+    const { mX, mY } = this._getMonSpritePos(monIdx);
+
     for (let i = 0; i < count; i++) {
       const bomb = {
         suit: 'B', rank: '-10', val: 0, baseScore: -10,
@@ -272,6 +284,11 @@ export class BossManager {
       };
       const insertIdx = Math.floor(Math.random() * (scene.deck.deckPile.length + 1));
       scene.deck.deckPile.splice(insertIdx, 0, bomb);
+
+      // 애니메이션 추가: 보스에서 덱으로
+      scene.time.delayedCall(i * 120, () => {
+        scene.animManager.flyCard(bomb, mX, mY, DECK_X, FIELD_Y, { noFlip: true });
+      });
     }
     scene.refreshPlayerStats();
   }
@@ -466,14 +483,22 @@ export class BossManager {
 
     } else if (skill.type === 'plant_bombs') {
       const count = skill.count ?? 6;
-      this._plantBombs(count);
+      this._plantBombs(count, monIdx);
       scene.addBattleLog(`${boss.name}의 ${skill.name}! 덱에 폭탄 ${count}장 매설!`);
-      this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 700, sfx: 'sfx_explosion', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
+      this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 700, sfx: 'sfx_slide', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
 
     } else if (skill.type === 'deck_to_dummy') {
       const count = skill.count ?? 5;
       const moved = scene.deck.deckPile.splice(0, count);
       scene.deck.dummyPile.push(...moved);
+
+      // 덱에서 더미로 날아가는 애니메이션
+      moved.forEach((card, i) => {
+        scene.time.delayedCall(i * 120, () => {
+          scene.animManager.flyToDummy(DECK_X, FIELD_Y, "card_back");
+        });
+      });
+
       scene.addBattleLog(`${boss.name}의 ${skill.name}! 덱에서 ${moved.length}장을 더미로!`);
       this._showEffect(monIdx, { ...EFFECT.debuff, label: `DISCARD ${moved.length}!`, labelColor: '#ff8844' });
       scene.refreshPlayerStats();

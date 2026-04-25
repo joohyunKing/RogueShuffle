@@ -46,24 +46,30 @@ export class BattleAnimationManager {
     this.animObjs.push(img);
 
     // 이미 뒷면 상태인 경우(보스 효과 등), 뒤집기 애니메이션 생략
-    if (cardData.flipped && !options.immediateFace) {
+    if ((cardData.flipped || options.noFlip) && !options.immediateFace) {
       this.scene.tweens.add({
-        targets: img, x: toX, y: toY, duration: 320, ease: "Power2.Out",
-        onComplete: () => options.onComplete?.(img)
+        targets: img, x: toX, y: toY, duration: 400, ease: "Power2.Out",
+        onComplete: () => {
+          if (options.destroyOnComplete !== false) img.destroy();
+          options.onComplete?.(img);
+        }
       });
       return;
     }
 
     if (options.immediateFace) {
       this.scene.tweens.add({
-        targets: img, x: toX, y: toY, duration: 320, ease: "Power2.Out",
-        onComplete: () => options.onComplete?.(img)
+        targets: img, x: toX, y: toY, duration: 400, ease: "Power2.Out",
+        onComplete: () => {
+          if (options.destroyOnComplete !== false) img.destroy();
+          options.onComplete?.(img);
+        }
       });
       return;
     }
 
     this.scene.tweens.add({
-      targets: img, x: toX, y: toY, duration: 320, ease: "Power2.Out",
+      targets: img, x: toX, y: toY, duration: 400, ease: "Power2.Out",
       onComplete: () => {
         this.scene.tweens.add({
           targets: img, displayWidth: 1, duration: 70, ease: "Linear",
@@ -72,7 +78,10 @@ export class BattleAnimationManager {
             img.setDisplaySize(1, cardHeight);
             this.scene.tweens.add({
               targets: img, displayWidth: cardWidth, duration: 70, ease: "Linear",
-              onComplete: () => options.onComplete?.(img)
+              onComplete: () => {
+                if (options.destroyOnComplete !== false) img.destroy();
+                options.onComplete?.(img);
+              }
             });
           },
         });
@@ -89,7 +98,9 @@ export class BattleAnimationManager {
     let delay = startDelay;
 
     handData.forEach((card, i) => {
-      this.scene.time.delayedCall(delay, () => this.flyCard(card, deckX, deckY, handPos[i].x, handPos[i].y));
+      this.scene.time.delayedCall(delay, () => {
+        this.flyCard(card, deckX, deckY, handPos[i].x, handPos[i].y, { destroyOnComplete: false });
+      });
       delay += DEAL_DELAY;
     });
     return delay;
@@ -103,7 +114,9 @@ export class BattleAnimationManager {
     let delay = startDelay;
 
     fieldData.forEach(card => {
-      this.scene.time.delayedCall(delay, () => this.flyCard(card, deckX, deckY, card.slotX, FIELD_Y));
+      this.scene.time.delayedCall(delay, () => {
+        this.flyCard(card, deckX, deckY, card.slotX, FIELD_Y, { destroyOnComplete: false });
+      });
       delay += DEAL_DELAY;
     });
     return delay;
@@ -121,8 +134,8 @@ export class BattleAnimationManager {
     delay = this.dealToField(delay, fieldData);
 
     this.scene.time.delayedCall(delay + 550, () => {
-      this.clearAnimObjs();
       onComplete?.();
+      this.clearAnimObjs();
     });
   }
 
@@ -570,10 +583,14 @@ export class BattleAnimationManager {
       this.scene.time.delayedCall(i * DEAL_DELAY, () => {
         this.scene._sfx('sfx_slide');
         this.flyCard(card, deckX, deckY, card.slotX, FIELD_Y, {
-          onComplete: (img) => {
-            img.destroy();
+          destroyOnComplete: false,
+          onComplete: () => {
             completed++;
-            if (completed === fieldCards.length) onComplete?.();
+            if (completed === fieldCards.length) {
+              onComplete?.();
+              // 약간의 지연 후 애니메이션 오브젝트 제거 (이미 render()가 완료된 시점)
+              this.scene.time.delayedCall(50, () => this.clearAnimObjs());
+            }
           }
         });
       });
