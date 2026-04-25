@@ -3,7 +3,7 @@ import bossData from '../data/boss.json';
 import gimmickData from '../data/gimmicks.json';
 import { roundManager } from './roundManager.js';
 
-const SUIT_SYMBOLS = { S: '♠', H: '♥', D: '♦', C: '♣' };
+
 
 function randomPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -136,7 +136,6 @@ export class SpawnManager {
 
         if (gimmick.type === 'suit_resist') {
             gimmick.suit = randomPick(['S', 'H', 'D', 'C']);
-            gimmick.description = gimmick.description.replace('{suit}', SUIT_SYMBOLS[gimmick.suit]);
         }
         if (gimmick.type === 'first_turn_def') {
             gimmick.firstTurnActive = true;

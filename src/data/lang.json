@@ -207,7 +207,14 @@
       "btn_deck_mgmt": "Deck Mgmt",
       "btn_shop_refresh": "Refresh({cost}G)",
       "msg_no_gold": "Not enough gold!",
-      "deck_title": "DECK  ({n} cards)"
+      "deck_title": "DECK  ({n} cards)",
+      "pile_popup_title": "Pile Info",
+      "suit": {
+        "S": "Spade",
+        "H": "Heart",
+        "D": "Diamond",
+        "C": "Club"
+      }
     },
     "boss": {
       "names": {
@@ -307,6 +314,12 @@
       "log_overkill_kill": "{name} chain killed! +{xp}XP",
       "log_monster_attack": "{name}'s Attack! {dmg} damage!",
       "log_monster_skill": "{name}'s {skill}! {dmg} damage!",
+      "gimmick": {
+        "aoe_resist": { "name": "AoE Resist", "desc": "Reduced damage from AoE attacks by 50%" },
+        "suit_resist": { "name": "Suit Resist", "desc": "Reduced damage from {suit} cards by 50%" },
+        "small_hand_resist": { "name": "Minority Resist", "desc": "Reduced damage when attacking with fewer than {n} cards by 50%" },
+        "first_turn_def": { "name": "Iron Wall", "desc": "Triple Defense on the first turn" }
+      },
       "log_phase_change": "[PHASE] {name}: {old} → {new}",
       "log_boss_stat_gain": "[{skill}] {name} {stat} +{val} (Total {total})",
       "log_shield_down": "[Passive] {name} Shield Down! (HP {hp}%)",
@@ -539,7 +552,14 @@
       "btn_deck_mgmt": "카드관리",
       "btn_shop_refresh": "상점갱신({cost}G)",
       "msg_no_gold": "골드 부족!",
-      "deck_title": "DECK  ({n}장)"
+      "deck_title": "DECK  ({n}장)",
+      "pile_popup_title": "더미 정보",
+      "suit": {
+        "S": "스페이드",
+        "H": "하트",
+        "D": "다이아몬드",
+        "C": "클로버"
+      }
     },
     "boss": {
       "names": {
@@ -639,6 +659,12 @@
       "log_overkill_kill": "{name} 연쇄 처치! +{xp}XP",
       "log_monster_attack": "{name}의 공격! {dmg} 데미지!",
       "log_monster_skill": "{name}의 {skill}! {dmg} 데미지!",
+      "gimmick": {
+        "aoe_resist": { "name": "광역 저항", "desc": "광역 공격 시 데미지 50% 감소" },
+        "suit_resist": { "name": "슈트 저항", "desc": "{suit} 카드 공격 시 데미지 50% 감소" },
+        "small_hand_resist": { "name": "소수 저항", "desc": "{n}장 미만 공격 시 데미지 50% 감소" },
+        "first_turn_def": { "name": "초반 철벽", "desc": "첫 턴에는 DEF 3배" }
+      },
       "log_phase_change": "[페이즈] {name}: {old} → {new}",
       "log_boss_stat_gain": "[{skill}] {name} {stat} +{val} (총 {total})",
       "log_shield_down": "[패시브] {name} 보호막 해제! (HP {hp}%)",

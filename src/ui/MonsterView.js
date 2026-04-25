@@ -1,5 +1,6 @@
 import { TS } from "../textStyles.js";
 import { TooltipUI } from "./TooltipUI.js";
+import { getLang, getGimmickName, getGimmickDesc, getUiText } from "../service/langService.js";
 
 export default class MonsterView {
   constructor(scene, mon, idx, x, y, onClick, imgScale = 1.0, offsetY = 0) {
@@ -364,11 +365,24 @@ export default class MonsterView {
     const g = this.mon?.gimmick;
     if (!g) return;
     this.hideTooltip();
+
+    const lang = getLang(this.scene);
+    const gName = getGimmickName(lang, g.id, g.name);
+    
+    // 변수 치환용 객체 생성
+    const values = { n: g.threshold || 0 };
+    if (g.suit) {
+      // market.suit 섹션에서 로컬라이징된 슈트명을 가져옴
+      values.suit = getUiText(lang, `market.suit.${g.suit}`) || g.suit;
+    }
+
+    const gDesc = getGimmickDesc(lang, g.id, values);
+
     const iconX = this.gimmickIcon.x;
     const left = iconX > 640 ? iconX - 225 : iconX + 20;
     this._tooltip = new TooltipUI(this.scene, {
-      titleMsg: g.name,
-      contentMsg: g.description,
+      titleMsg: gName,
+      contentMsg: gDesc,
       titleMsgColor: '#ffcc44',
       tooltipW: 200,
       left,

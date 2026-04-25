@@ -67,6 +67,18 @@ export function getMonsterSkillName(lang, id, fallback = id) {
   return langData[lang]?.monster?.skills?.[id] ?? fallback;
 }
 
+export function getGimmickName(lang, id, fallback = id) {
+  return langData[lang]?.battle?.gimmick?.[id]?.name ?? fallback;
+}
+
+export function getGimmickDesc(lang, id, values = {}) {
+  let str = langData[lang]?.battle?.gimmick?.[id]?.desc ?? id;
+  for (const [k, v] of Object.entries(values)) {
+    str = str.replaceAll(`{${k}}`, v);
+  }
+  return str;
+}
+
 /** 템플릿 문자열 치환 — {key} → values[key] */
 export function getUiText(lang, key, values = {}) {
   let str = "";
