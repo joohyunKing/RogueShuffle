@@ -388,11 +388,11 @@
       ]
     },
     {
-      "id": "empty_hand",
-      "name": "빈손의 도",
+      "id": "blue_gem",
+      "name": "블루 젬",
       "description": "공격에 쓰지 않은 핸드 카드 1장당 최종 점수 ×1.2 (5장이면 ×2)",
       "rarity": "rare",
-      "img": "brown.png",
+      "img": "blue_gem_dia.png",
       "useYn": "Y",
       "effects": [
         {

@@ -363,6 +363,58 @@
         "type": "upgrade_bingo",
         "target": "d"
       }
+    },
+    {
+      "id": "talisman_s",
+      "name": "스페이드 탈리스만",
+      "img": "talisman_s.png",
+      "desc": "선택한 카드 3장을 스페이드(♠)로 변환",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "change_suit",
+        "suit": "S",
+        "cards": 3
+      }
+    },
+    {
+      "id": "talisman_h",
+      "name": "하트 탈리스만",
+      "img": "talisman_h.png",
+      "desc": "선택한 카드 3장을 하트(♥)로 변환",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "change_suit",
+        "suit": "H",
+        "cards": 3
+      }
+    },
+    {
+      "id": "talisman_d",
+      "name": "다이아 탈리스만",
+      "img": "talisman_d.png",
+      "desc": "선택한 카드 3장을 다이아(♦)로 변환",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "change_suit",
+        "suit": "D",
+        "cards": 3
+      }
+    },
+    {
+      "id": "talisman_c",
+      "name": "클럽 탈리스만",
+      "img": "talisman_c.png",
+      "desc": "선택한 카드 3장을 클럽(♣)로 변환",
+      "rarity": "epic",
+      "useYn": "Y",
+      "effect": {
+        "type": "change_suit",
+        "suit": "C",
+        "cards": 3
+      }
     }
   ]
 }

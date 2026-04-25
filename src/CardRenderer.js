@@ -6,6 +6,7 @@
 import { CW, CH, SUITS, RANKS } from './constants.js';
 import { sealMap, sealList } from './manager/sealManager.js';
 import { TooltipUI } from './ui/TooltipUI.js';
+import { getLang, getSealName, getSealDesc } from './service/langService.js';
 
 const SYM_URLS = {
   S: 'assets/images/symbol/spade_symbol.png',
@@ -154,10 +155,12 @@ export class CardRenderer {
     const info = sealMap[enh?.type];
     if (!info) return;
 
-    const sym        = SUIT_SYMS_FB[card.suit] ?? '';
+    const lang = getLang(scene);
+    const sealName = getSealName(lang, enh.type, info.name);
+    const sealDesc = getSealDesc(lang, enh.type, info.desc);
+
     const suitColor  = SUIT_COLS[card.suit] ?? '#ffffff';
-    const borderHex  = info.border ?? '#ffffff';
-    const TIP_W      = 190;
+    const TIP_W      = 220;
     const TIP_H_EST  = 100; // 높이 추정값 (위/아래 위치 결정용)
 
     let top = cardY - cardH / 2 - TIP_H_EST - 8;
@@ -165,8 +168,8 @@ export class CardRenderer {
     const left = cardX - TIP_W / 2;
 
     _sealTooltip = new TooltipUI(scene, {
-      titleMsg:      info.name,
-      contentMsg:    info.desc,
+      titleMsg:      sealName,
+      contentMsg:    sealDesc,
       titleMsgColor: suitColor,
       tooltipW:      TIP_W,
       left,

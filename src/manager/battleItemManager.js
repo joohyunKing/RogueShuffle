@@ -92,6 +92,27 @@ export class BattleItemManager {
       return;
     }
 
+    // ── 카드 슈트 변환 ────────────────────────────────────────
+    if (eff?.type === 'change_suit') {
+      const cardCount = eff.cards ?? 3;
+      const targetSuit = eff.suit;
+      const selectedIdxs = [...selected];
+      if (selectedIdxs.length !== cardCount) { this._cancel(obj); return; }
+
+      const keys = [];
+      selectedIdxs.forEach(i => {
+        const card = handData[i];
+        card.suit = targetSuit;
+        // 텍스처 키 업데이트 (예: S10 -> H10)
+        card.key = targetSuit + card.key.slice(1);
+        keys.push(card.key);
+      });
+      selected.clear();
+      this.scene.addBattleLog(`[${item.name}] ${cardCount}장 → ${targetSuit} 변환!`);
+      this._consume(idx, obj);
+      return;
+    }
+
     // ── 카드 제거 ──────────────────────────────────────────
     if (eff?.type === 'remove_hand_cards') {
       const maxCards = eff.maxCards ?? 2;

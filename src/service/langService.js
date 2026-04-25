@@ -39,6 +39,14 @@ export function getRelicDesc(lang, id, fallback = '') {
   return langData[lang]?.relic?.[id]?.desc ?? fallback;
 }
 
+export function getSealName(lang, id, fallback = id) {
+  return langData[lang]?.seal?.[id]?.name ?? fallback;
+}
+
+export function getSealDesc(lang, id, fallback = '') {
+  return langData[lang]?.seal?.[id]?.desc ?? fallback;
+}
+
 /** 템플릿 문자열 치환 — {key} → values[key] */
 export function getUiText(lang, key, values = {}) {
   let str = langData[lang]?.ui?.[key] ?? key;
