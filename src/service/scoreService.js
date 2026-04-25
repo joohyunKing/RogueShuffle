@@ -321,80 +321,108 @@ export function getScoreDetails(cards, context) {
 
     // 3. 카드별 점수 및 유물(card scope) 처리
     const cardDetails = ctx.cards.map(card => {
-        let cardBase = card.baseScore;
-        const initialCardBase = cardBase;
-
+        let cumulativeBaseScore = 0;
+        let cumulativeDeltaBase = 0;
+        let cumulativeDeltaMulti = 0;
         const cardRelicDeltas = [];
 
-        // 씰 장착 효과
-        for (const enh of (card.enhancements ?? [])) {
-            if (enh.type === 'red') {
-                cardBase += sealMap['red']?.scoreBonus ?? 20;
+        const processCardEffects = (isEcho = false, echoRelicId = null) => {
+            let cardBase = card.baseScore;
+            
+            if (isEcho && echoRelicId) {
+                const msg = `[Score] ECHO:${echoRelicId}(${card.key})`;
+                state.history.push(msg);
+                if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log(msg);
             }
-            if (enh.type === 'blue') {
-                const d = sealMap['blue']?.plusMultiBonus ?? 2;
-                state.addPlusMulti(d, `BLUE SEAL (${card.key})`);
-                cardRelicDeltas.push({ relicId: 'seal_blue', type: 'plus_multi', value: d });
+
+            // 씰 장착 효과
+            for (const enh of (card.enhancements ?? [])) {
+                if (enh.type === 'red') {
+                    cardBase += sealMap['red']?.scoreBonus ?? 20;
+                }
+                if (enh.type === 'blue') {
+                    const d = sealMap['blue']?.plusMultiBonus ?? 2;
+                    state.addPlusMulti(d, `BLUE SEAL (${card.key})`);
+                    cardRelicDeltas.push({ relicId: 'seal_blue', type: 'plus_multi', value: d });
+                }
+                if (enh.type === 'rainbow') {
+                    const ratio = sealMap['rainbow']?.timesMultiBonus ?? 1.1;
+                    state.multiplyTimes(ratio, `RAINBOW SEAL (${card.key})`);
+                    cardRelicDeltas.push({ relicId: 'seal_rainbow', type: 'times_multi', value: ratio });
+                }
             }
-            if (enh.type === 'rainbow') {
-                const ratio = sealMap['rainbow']?.timesMultiBonus ?? 1.1;
-                state.multiplyTimes(ratio, `RAINBOW SEAL (${card.key})`);
-                cardRelicDeltas.push({ relicId: 'seal_rainbow', type: 'times_multi', value: ratio });
+            // 슈트 적응도 보너스
+            if (ctx.attrs && ctx.adaptability) {
+                const s = card.suit, sLevel = ctx.attrs[s] ?? 1, sAdapt = ctx.adaptability[s] ?? 0;
+                cardBase += Math.floor((sLevel - 1) * sAdapt);
             }
-        }
-        // 슈트 적응도 보너스
-        if (ctx.attrs && ctx.adaptability) {
-            const s = card.suit, sLevel = ctx.attrs[s] ?? 1, sAdapt = ctx.adaptability[s] ?? 0;
-            cardBase += Math.floor((sLevel - 1) * sAdapt);
-        }
 
-        const cardLabel = `CARD:${card.key}`;
-        state.addBase(cardBase, cardLabel);
+            const cardLabel = `CARD:${card.key}`;
+            const addedBase = state.addBase(cardBase, cardLabel);
 
-        let deltaBase = 0, deltaMulti = 0;
+            let deltaBase = addedBase, deltaMulti = 0;
 
-        // 카드 대상 유물 효과
-        for (const relic of relics) {
-            const amp = amplifierMap[relic.id] ?? 1;
-            for (const eff of (relic.effects ?? [])) {
-                if (eff.scope !== 'card') continue;
-                const relicLabel = `${cardLabel} + RELIC:${relic.id}`;
+            if (isEcho && addedBase !== 0 && echoRelicId) {
+                cardRelicDeltas.push({ relicId: echoRelicId, type: 'base', value: addedBase });
+            }
 
-                if (ADD_TYPES.has(eff.type)) {
-                    const before = state.baseScore;
-                    state.baseScore = applyAmplifiedValue(state.baseScore, eff, card, ctx, amp);
-                    const d = state.baseScore - before;
-                    if (d !== 0) {
-                        deltaBase += d;
-                        cardRelicDeltas.push({ relicId: relic.id, type: 'base', value: d });
-                        state._addLog(relicLabel, `Base: ${Math.floor(before)} -> ${Math.floor(state.baseScore)} (+${Math.floor(d)})`);
-                    }
-                } else if (PLUS_MULTI_TYPES.has(eff.type)) {
-                    const before = state.plusMulti;
-                    state.plusMulti = applyAmplifiedValue(state.plusMulti, eff, card, ctx, amp);
-                    const d = state.plusMulti - before;
-                    if (d !== 0) {
-                        deltaMulti += d;
-                        cardRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', value: d });
-                        state._addLog(relicLabel, `PlusMulti: ${before.toFixed(1)} -> ${state.plusMulti.toFixed(1)} (+${d.toFixed(1)})`);
+            // 카드 대상 유물 효과
+            for (const relic of relics) {
+                const amp = amplifierMap[relic.id] ?? 1;
+                for (const eff of (relic.effects ?? [])) {
+                    if (eff.scope !== 'card' || eff.type === 'sealedCardEcho') continue;
+                    const relicLabel = `${cardLabel} + RELIC:${relic.id}`;
+
+                    if (ADD_TYPES.has(eff.type)) {
+                        const before = state.baseScore;
+                        state.baseScore = applyAmplifiedValue(state.baseScore, eff, card, ctx, amp);
+                        const d = state.baseScore - before;
+                        if (d !== 0) {
+                            deltaBase += d;
+                            cardRelicDeltas.push({ relicId: relic.id, type: 'base', value: d });
+                            state._addLog(relicLabel, `Base: ${Math.floor(before)} -> ${Math.floor(state.baseScore)} (+${Math.floor(d)})`);
+                        }
+                    } else if (PLUS_MULTI_TYPES.has(eff.type)) {
+                        const before = state.plusMulti;
+                        state.plusMulti = applyAmplifiedValue(state.plusMulti, eff, card, ctx, amp);
+                        const d = state.plusMulti - before;
+                        if (d !== 0) {
+                            deltaMulti += d;
+                            cardRelicDeltas.push({ relicId: relic.id, type: 'plus_multi', value: d });
+                            state._addLog(relicLabel, `PlusMulti: ${before.toFixed(1)} -> ${state.plusMulti.toFixed(1)} (+${d.toFixed(1)})`);
+                        }
                     }
                 }
             }
-        }
 
-        // sealedCardEcho: 씰 강화 카드 재발동
+            if (!isEcho) {
+                cumulativeBaseScore = cardBase;
+            }
+            cumulativeDeltaBase += deltaBase;
+            cumulativeDeltaMulti += deltaMulti;
+        };
+
+        // First pass
+        processCardEffects(false);
+
+        // Echo passes
         if ((card.enhancements ?? []).length > 0) {
             for (const relic of relics) {
                 for (const eff of (relic.effects ?? [])) {
                     if (eff.scope === 'card' && eff.type === 'sealedCardEcho') {
-                        state.addBase(deltaBase + initialCardBase, `ECHO:${relic.id}(${card.key})`);
-                        cardRelicDeltas.push({ relicId: relic.id, type: 'base', value: deltaBase + initialCardBase });
+                        processCardEffects(true, relic.id);
                     }
                 }
             }
         }
 
-        return { card, baseScore: cardBase, cardRelicDeltas, deltaBase, deltaMulti };
+        return { 
+            card, 
+            baseScore: cumulativeBaseScore, 
+            cardRelicDeltas, 
+            deltaBase: cumulativeDeltaBase, 
+            deltaMulti: cumulativeDeltaMulti 
+        };
     });
 
     // 4. 핸드 범위 유물(hand scope) 처리

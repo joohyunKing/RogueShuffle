@@ -420,7 +420,7 @@ export class BattleAnimationManager {
 
   /** 카드 개별에 붙은 유물/씰 효과 연출 (Base, PlusMulti) */
   _addCardSpecificRelicSteps(queue, ctx, deltas) {
-    deltas.forEach(({ relicId, type, value }) => {
+    deltas.slice().reverse().forEach(({ relicId, type, value }) => {
       if (type === 'times_multi') return; // Times 멀티는 최후에 일괄 처리
       queue.unshift(next => { // 현재 카드 처리 직후에 끼워넣기 위해 unshift
         this.scene.itemUI?.pulseRelic(relicId);
