@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W, FIELD_Y, MONSTER_AREA_TOP, MONSTER_AREA_H } from '../constants.js';
 import { TS } from '../textStyles.js';
+import { getLang, getBossName, getBossSkillName, getBossSkillDesc, getUiText } from '../service/langService.js';
 
 const ACTION_GAP = 1600; // 액션 간 딜레이(ms)
 
@@ -104,7 +105,9 @@ export class BossManager {
       const oldLabel = boss._lastPhaseLabel;
       boss._lastPhaseLabel = phase.label;
 
-      this.scene.addBattleLog(`[페이즈] ${boss.name}: ${oldLabel} → ${phase.label} 상태로 돌입!`);
+      const lang = getLang(this.scene);
+      const bName = getBossName(lang, boss.id);
+      this.scene.addBattleLog(`[PHASE] ${bName}: ${oldLabel} → ${phase.label}`);
       this.scene.animManager?.showBossSkillNotice("PHASE CHANGE", phase.label, 0xffcc00);
     }
   }
@@ -115,9 +118,12 @@ export class BossManager {
     if (monIdx === -1) return;
 
     if (p.type === 'atk_per_turn') {
+      const lang = getLang(scene);
       const gain = Math.floor(p.value * (boss.statMulti ?? 1));
       boss.atk += gain;
-      scene.addBattleLog(`[패시브] ${boss.name} ATK +${gain} (총 ${boss.atk})`);
+      const bName = getBossName(lang, boss.id);
+      const pName = getBossSkillName(lang, `passive_${boss.id}`, p.name);
+      scene.addBattleLog(`[${pName}] ${bName} ATK +${gain} (Total ${boss.atk})`);
       scene.renderMonsters();
     }
 
@@ -137,13 +143,15 @@ export class BossManager {
         : boss.baseDef;
 
       if (boss.def !== targetDef) {
+        const lang = getLang(scene);
+        const bName = getBossName(lang, boss.id);
         const lost = boss.def > targetDef;
         boss.def = targetDef;
         if (lost) {
-          scene.addBattleLog(`[패시브] ${boss.name}의 방어막 약화! (HP ${Math.round(ratio * 100)}%)`);
+          scene.addBattleLog(`[Passive] ${bName} Shield Down! (HP ${Math.round(ratio * 100)}%)`);
           this._showEffect(monIdx, { ...EFFECT.debuff, label: 'SHIELD DOWN!', labelColor: '#ff4444' });
         } else {
-          scene.addBattleLog(`[패시브] ${boss.name}의 방어막 강화!`);
+          scene.addBattleLog(`[Passive] ${bName} Shield Up!`);
           this._showEffect(monIdx, { ...EFFECT.buff, label: 'SHIELD UP!', labelColor: '#44ff44' });
         }
         scene.renderMonsters();
@@ -227,7 +235,9 @@ export class BossManager {
         applied++;
       }
       if (applied > 0) {
-        scene.addBattleLog(`[패시브] ${boss.name}의 강제 선택!`);
+        const lang = getLang(scene);
+        const bName = getBossName(lang, boss.id);
+        scene.addBattleLog(`[Passive] ${bName} Forced Selection!`);
         this._showEffect(monIdx, { color: 0xcc4400, alpha: 0.28, duration: 550, sfx: 'sfx_chop', label: 'FORCED!', labelColor: '#ffaa44' });
         scene.render();
       }
@@ -436,33 +446,45 @@ export class BossManager {
       const raw = Math.floor(boss.atk * (skill.damMult ?? 1));
       const dmg = Math.max(0, raw - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
-      scene.addBattleLog(`${boss.name}의 ${skill.name}! ${dmg} 강력한 데미지!`);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      const sName = getBossSkillName(lang, skillId, skill.name);
+      scene.addBattleLog(`${bName}: ${sName}! ${dmg} Damage!`);
       // 공격 연출 통합 (recoil + orb + hit effect)
       scene.monsterManager._showMonsterAttack(monIdx, dmg);
     } else if (skill.type === 'buff') {
       const val = Math.floor(skill.value * boss.statMulti);
       boss[skill.stat] = (boss[skill.stat] ?? 0) + val;
-      scene.addBattleLog(`${boss.name}의 ${skill.name}! ${skill.stat.toUpperCase()} +${val}`);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      const sName = getBossSkillName(lang, skillId, skill.name);
+      scene.addBattleLog(`${bName}: ${sName}! ${skill.stat.toUpperCase()} +${val}`);
       this._showEffect(monIdx, EFFECT.buff);
 
     } else if (skill.type === 'heal_lost_hp') {
       const lost = boss.maxHp - boss.hp;
       const amount = Math.max(1, Math.floor(lost * skill.ratio));
       boss.hp = Math.min(boss.maxHp, boss.hp + amount);
-      scene.addBattleLog(`${boss.name}의 ${skill.name}! +${amount} HP`);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      const sName = getBossSkillName(lang, skillId, skill.name);
+      scene.addBattleLog(`${bName}: ${sName}! +${amount} HP`);
       this._showEffect(monIdx, { ...EFFECT.heal, label: `+${amount} HP`, labelColor: '#44ff88' });
       scene.renderMonsters();
 
     } else if (skill.type === 'force_select') {
       const hand = scene.handData;
       const available = hand.map((c, i) => i).filter(i => !scene.forcedSelectedUids?.has(hand[i].uid));
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      const sName = getBossSkillName(lang, skillId, skill.name);
       if (available.length > 0) {
         const idx = available[Math.floor(Math.random() * available.length)];
         const card = hand[idx];
         scene.forcedSelectedUids = scene.forcedSelectedUids ?? new Set();
         scene.forcedSelectedUids.add(card.uid);
         scene.selected.add(idx);
-        scene.addBattleLog(`${boss.name}의 ${skill.name}! ${card.key} 강제 선택!`);
+        scene.addBattleLog(`${bName}: ${sName}! ${card.key} Forced Selection!`);
       }
       this._showEffect(monIdx, { color: 0xcc4400, alpha: 0.28, duration: 550, sfx: 'sfx_chop', label: 'FORCED!', labelColor: '#ffaa44' });
       scene.render();
@@ -470,6 +492,9 @@ export class BossManager {
     } else if (skill.type === 'hand_flip') {
       const count = skill.count ?? 3;
       const hand = scene.handData;
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      const sName = getBossSkillName(lang, skillId, skill.name);
       const indices = [...Array(hand.length).keys()];
       for (let i = indices.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -477,14 +502,17 @@ export class BossManager {
       }
       const picked = indices.slice(0, Math.min(count, indices.length));
       picked.forEach(idx => { hand[idx].flipped = true; });
-      scene.addBattleLog(`${boss.name}의 ${skill.name}! 핸드 ${picked.length}장이 뒤집혔다!`);
+      scene.addBattleLog(`${bName}: ${sName}! ${picked.length} Cards flipped!`);
       this._showEffect(monIdx, { color: 0x9933cc, alpha: 0.30, duration: 600, sfx: 'sfx_shuffle', label: 'FLIP!', labelColor: '#dd88ff' });
       scene.render();
 
     } else if (skill.type === 'plant_bombs') {
       const count = skill.count ?? 6;
       this._plantBombs(count, monIdx);
-      scene.addBattleLog(`${boss.name}의 ${skill.name}! 덱에 폭탄 ${count}장 매설!`);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      const sName = getBossSkillName(lang, skillId, skill.name);
+      scene.addBattleLog(`${bName}: ${sName}! ${count} Bombs planted!`);
       this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 700, sfx: 'sfx_slide', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
 
     } else if (skill.type === 'deck_to_dummy') {
@@ -499,7 +527,10 @@ export class BossManager {
         });
       });
 
-      scene.addBattleLog(`${boss.name}의 ${skill.name}! 덱에서 ${moved.length}장을 더미로!`);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      const sName = getBossSkillName(lang, skillId, skill.name);
+      scene.addBattleLog(`${bName}: ${sName}! ${moved.length} discarded!`);
       this._showEffect(monIdx, { ...EFFECT.debuff, label: `DISCARD ${moved.length}!`, labelColor: '#ff8844' });
       scene.refreshPlayerStats();
     } else if (skill.type === 'steal_gold') {
@@ -507,7 +538,10 @@ export class BossManager {
       let removed = Math.min(Math.floor(g * 0.1), 10);
       removed = removed === 0 ? 1 : removed;
       scene.player.gold = Math.max(0, g - removed);
-      scene.addBattleLog(`${boss.name}의 ${skill.name}! 골드 ${removed}G 소실!`);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      const sName = getBossSkillName(lang, skillId, skill.name);
+      scene.addBattleLog(`${bName}: ${sName}! -${removed}G!`);
       this._showEffect(monIdx, { ...EFFECT.debuff, label: `-${removed}G`, labelColor: '#ffdd00' });
       scene.refreshPlayerStats();
     } else if (skill.type === 'drain_attack') {
@@ -515,13 +549,16 @@ export class BossManager {
       const dmg = Math.max(0, raw - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
       const heal = Math.floor(dmg / 3);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      const sName = getBossSkillName(lang, skillId, skill.name);
       if (heal > 0) {
         boss.hp = Math.min(boss.maxHp, boss.hp + heal);
-        scene.addBattleLog(`${boss.name}의 ${skill.name}! ${dmg} 피해 & ${heal} 흡혈!`);
+        scene.addBattleLog(`${bName}: ${sName}! ${dmg} Damage & ${heal} Drain!`);
         this._showEffect(monIdx, { ...EFFECT.heal, label: `+${heal} HP`, labelColor: '#ff2222' });
         scene.renderMonsters();
       } else {
-        scene.addBattleLog(`${boss.name}의 ${skill.name}! ${dmg} 피해!`);
+        scene.addBattleLog(`${bName}: ${sName}! ${dmg} Damage!`);
       }
       scene.monsterManager._showMonsterAttack(monIdx, dmg);
     }

@@ -208,6 +208,51 @@
       "btn_shop_refresh": "Refresh({cost}G)",
       "msg_no_gold": "Not enough gold!",
       "deck_title": "DECK  ({n} cards)"
+    },
+    "boss": {
+      "names": {
+        "troll": "Troll",
+        "berserker": "Berserker",
+        "summoner": "Summoner",
+        "trickster": "Trickster",
+        "tricksterB": "Trickster: Record",
+        "bomber": "Bomber",
+        "butcher": "Butcher",
+        "babarian": "Barbarian",
+        "shaman": "Shaman",
+        "iron_fortress": "Iron Fortress",
+        "demon": "Demon",
+        "vampire": "Vampire"
+      },
+      "skills": {
+        "power_strike": { "name": "Power Strike", "desc": "Deals 1.5x powerful damage to the player." },
+        "regenerate": { "name": "Regenerate", "desc": "Restores 10% of lost HP." },
+        "fierce_regenerate": { "name": "Fierce Regenerate", "desc": "Restores 20% of lost HP." },
+        "berserker_rage": { "name": "Berserker Rage", "desc": "Deals 2x damage to the player." },
+        "def_up": { "name": "Defensive Stance", "desc": "Increases Defense by 2." },
+        "seal_most_used": { "name": "Rank Seal", "desc": "Forbids the most used hand rank for this battle." },
+        "seal_most_and_last": { "name": "Double Seal", "desc": "Forbids the most used and the last used hand ranks." },
+        "explosion": { "name": "Big Explosion", "desc": "Deals 2x damage to the player." },
+        "bomb_plant": { "name": "Plant Bombs", "desc": "Plants bomb cards into the player's deck." },
+        "harvest": { "name": "Scythe of Harvest", "desc": "Deals 2x damage to the player." },
+        "force_pick": { "name": "Forced Choice", "desc": "Forces the player to select one card randomly." },
+        "card_veil": { "name": "Veil", "desc": "Flips cards in hand to hide their information." },
+        "fortify": { "name": "Iron Fortification", "desc": "Increases own Defense by 10." },
+        "final_strike": { "name": "Desperate Strike", "desc": "Deals 2x powerful damage to the player." },
+        "thief": { "name": "Gold Plunder", "desc": "Steals gold from the player." },
+        "drain": { "name": "Vampiric Strike", "desc": "Deals 1.8x damage and restores HP based on damage dealt." },
+        "passive_troll": { "name": "Iron Fortress", "desc": "Defense doubles when HP is 30% or higher." },
+        "passive_berserker": { "name": "Frenzy", "desc": "Increases Attack power every turn." },
+        "passive_summoner": { "name": "Guardian Contract", "desc": "Defense triples if summons are present." },
+        "passive_trickster_1": { "name": "Rank Seal", "desc": "Disables cards of a specific Rank." },
+        "passive_trickster_2": { "name": "Suit Seal", "desc": "Disables cards of a specific Suit." },
+        "passive_bomber": { "name": "Plant Bombs", "desc": "Plants 4 bomb cards into the deck every turn." },
+        "passive_butcher": { "name": "Butcher's Scythe", "desc": "Discards 4 cards from the top of the deck every turn." },
+        "passive_babarian": { "name": "Forced Pick", "desc": "Forces one card selection at the start of each turn." },
+        "passive_shaman": { "name": "Veil", "desc": "Flips 3 cards in hand every turn to hide information." },
+        "passive_iron_fortress": { "name": "Iron Fortress", "desc": "Defense triples when HP is 50% or higher." },
+        "passive_demon": { "name": "Demonic Contract", "desc": "Reduces hand size and limit by 1." }
+      }
     }
   },
   "ko": {
@@ -419,6 +464,51 @@
       "btn_shop_refresh": "상점갱신({cost}G)",
       "msg_no_gold": "골드 부족!",
       "deck_title": "DECK  ({n}장)"
+    },
+    "boss": {
+      "names": {
+        "troll": "트롤",
+        "berserker": "광전사",
+        "summoner": "소환사",
+        "trickster": "트릭스터",
+        "tricksterB": "트릭스터:레코드",
+        "bomber": "폭격자",
+        "butcher": "도살자",
+        "babarian": "바바리안",
+        "shaman": "주술사",
+        "iron_fortress": "방어의 화신",
+        "demon": "데몬",
+        "vampire": "뱀파이어"
+      },
+      "skills": {
+        "power_strike": { "name": "강력한 내려찍기", "desc": "플레이어에게 1.5배의 강력한 피해를 입힙니다." },
+        "regenerate": { "name": "재생력", "desc": "잃은 체력의 10%를 회복합니다." },
+        "fierce_regenerate": { "name": "광포한 재생력", "desc": "잃은 체력의 20%를 회복합니다." },
+        "berserker_rage": { "name": "광전사 일격", "desc": "플레이어에게 2배의 피해를 입힙니다." },
+        "def_up": { "name": "방어 자세", "desc": "방어력을 2 증가시킵니다." },
+        "seal_most_used": { "name": "족보 봉인", "desc": "가장 많이 사용한 족보를 이번 전투 동안 금지합니다." },
+        "seal_most_and_last": { "name": "이중 족보 봉인", "desc": "가장 많이 사용한 족보와 마지막으로 사용한 족보를 금지합니다." },
+        "explosion": { "name": "대폭발", "desc": "플레이어에게 2배의 피해를 입힙니다." },
+        "bomb_plant": { "name": "폭탄 매설", "desc": "플레이어의 덱에 폭탄 카드를 매설합니다." },
+        "harvest": { "name": "도살의 낫", "desc": "플레이어에게 2배의 피해를 입힙니다." },
+        "force_pick": { "name": "강제 선택", "desc": "플레이어의 카드를 한 장 강제로 선택하게 만듭니다." },
+        "card_veil": { "name": "베일", "desc": "핸드의 카드 정보를 뒤집어 가립니다." },
+        "fortify": { "name": "철벽 강화", "desc": "자신의 방어력을 10 증가시킵니다." },
+        "final_strike": { "name": "결사 일격", "desc": "플레이어에게 2배의 강력한 피해를 입힙니다." },
+        "thief": { "name": "금화 약탈", "desc": "플레이어의 골드를 약탈합니다." },
+        "drain": { "name": "흡혈 일격", "desc": "피해를 입히고 입힌 피해만큼 체력을 회복합니다." },
+        "passive_troll": { "name": "철벽의 요새", "desc": "체력이 30% 이상일 때 방어력이 2배가 됩니다." },
+        "passive_berserker": { "name": "광폭화", "desc": "매 턴마다 보스의 공격력이 증가합니다." },
+        "passive_summoner": { "name": "수호의 계약", "desc": "소환수가 전장에 있으면 방어력이 3배 증가합니다." },
+        "passive_trickster_1": { "name": "랭크 봉인", "desc": "특정 랭크의 카드를 사용 불가 상태로 만듭니다." },
+        "passive_trickster_2": { "name": "슈트 봉인", "desc": "특정 슈트의 카드를 사용 불가 상태로 만듭니다." },
+        "passive_bomber": { "name": "폭탄 매설", "desc": "매 턴마다 플레이어의 덱에 폭탄 카드 4장을 매설합니다." },
+        "passive_butcher": { "name": "도살의 낫", "desc": "매 턴마다 플레이어의 덱 상단 카드 4장을 폐기합니다." },
+        "passive_babarian": { "name": "강제 선택", "desc": "매 턴 시작 시 플레이어의 카드를 한 장 강제로 선택하게 만듭니다." },
+        "passive_shaman": { "name": "베일", "desc": "매 턴마다 핸드의 카드 3장을 뒤집어 정보를 가립니다." },
+        "passive_iron_fortress": { "name": "철벽의 요새", "desc": "체력이 50% 이상일 때 방어력이 3배가 됩니다." },
+        "passive_demon": { "name": "악마의 계약", "desc": "보스가 살아있는 동안 핸드 크기와 한도가 1 감소합니다." }
+      }
     }
   }
 }

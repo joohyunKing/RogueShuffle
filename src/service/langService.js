@@ -47,6 +47,18 @@ export function getSealDesc(lang, id, fallback = '') {
   return langData[lang]?.seal?.[id]?.desc ?? fallback;
 }
 
+export function getBossName(lang, id, fallback = id) {
+  return langData[lang]?.boss?.names?.[id] ?? fallback;
+}
+
+export function getBossSkillName(lang, id, fallback = id) {
+  return langData[lang]?.boss?.skills?.[id]?.name ?? fallback;
+}
+
+export function getBossSkillDesc(lang, id, fallback = '') {
+  return langData[lang]?.boss?.skills?.[id]?.desc ?? fallback;
+}
+
 /** 템플릿 문자열 치환 — {key} → values[key] */
 export function getUiText(lang, key, values = {}) {
   let str = langData[lang]?.ui?.[key] ?? key;
