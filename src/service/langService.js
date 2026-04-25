@@ -59,9 +59,31 @@ export function getBossSkillDesc(lang, id, fallback = '') {
   return langData[lang]?.boss?.skills?.[id]?.desc ?? fallback;
 }
 
+export function getMonsterName(lang, id, fallback = id) {
+  return langData[lang]?.monster?.names?.[id] ?? fallback;
+}
+
+export function getMonsterSkillName(lang, id, fallback = id) {
+  return langData[lang]?.monster?.skills?.[id] ?? fallback;
+}
+
 /** 템플릿 문자열 치환 — {key} → values[key] */
 export function getUiText(lang, key, values = {}) {
-  let str = langData[lang]?.ui?.[key] ?? key;
+  let str = "";
+
+  if (key.includes('.')) {
+    // 중첩 경로 지원 (예: 'battle.log_kill')
+    const parts = key.split('.');
+    let obj = langData[lang];
+    for (const p of parts) {
+      obj = obj?.[p];
+    }
+    str = (typeof obj === 'string') ? obj : key;
+  } else {
+    // 하위 호환성: 점이 없는 경우 기본적으로 'ui' 섹션에서 검색
+    str = langData[lang]?.ui?.[key] ?? key;
+  }
+
   for (const [k, v] of Object.entries(values)) {
     str = str.replaceAll(`{${k}}`, v);
   }

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GW, GH, PLAYER_PANEL_W, ITEM_PANEL_W, FIELD_Y, MONSTER_AREA_TOP, MONSTER_AREA_H } from '../constants.js';
 import { TS } from '../textStyles.js';
-import { getLang, getBossName, getBossSkillName, getBossSkillDesc, getUiText } from '../service/langService.js';
+import { getLang, getBossName, getBossSkillName, getBossSkillDesc, getMonsterName, getUiText } from '../service/langService.js';
 
 const ACTION_GAP = 1600; // 액션 간 딜레이(ms)
 
@@ -107,7 +107,7 @@ export class BossManager {
 
       const lang = getLang(this.scene);
       const bName = getBossName(lang, boss.id);
-      this.scene.addBattleLog(`[PHASE] ${bName}: ${oldLabel} → ${phase.label}`);
+      this.scene.addBattleLog(getUiText(lang, 'battle.log_phase_change', { name: bName, old: oldLabel, new: phase.label }));
       this.scene.animManager?.showBossSkillNotice("PHASE CHANGE", phase.label, 0xffcc00);
     }
   }
@@ -123,7 +123,7 @@ export class BossManager {
       boss.atk += gain;
       const bName = getBossName(lang, boss.id);
       const pName = getBossSkillName(lang, `passive_${boss.id}`, p.name);
-      scene.addBattleLog(`[${pName}] ${bName} ATK +${gain} (Total ${boss.atk})`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_stat_gain', { skill: pName, name: bName, stat: 'ATK', val: gain, total: boss.atk }));
       scene.renderMonsters();
     }
 
@@ -148,10 +148,10 @@ export class BossManager {
         const lost = boss.def > targetDef;
         boss.def = targetDef;
         if (lost) {
-          scene.addBattleLog(`[Passive] ${bName} Shield Down! (HP ${Math.round(ratio * 100)}%)`);
+          scene.addBattleLog(getUiText(lang, 'battle.log_shield_down', { name: bName, hp: Math.round(ratio * 100) }));
           this._showEffect(monIdx, { ...EFFECT.debuff, label: 'SHIELD DOWN!', labelColor: '#ff4444' });
         } else {
-          scene.addBattleLog(`[Passive] ${bName} Shield Up!`);
+          scene.addBattleLog(getUiText(lang, 'battle.log_shield_up', { name: bName }));
           this._showEffect(monIdx, { ...EFFECT.buff, label: 'SHIELD UP!', labelColor: '#44ff44' });
         }
         scene.renderMonsters();
@@ -165,7 +165,9 @@ export class BossManager {
       const amount = Math.floor(taken * p.ratio);
       if (amount > 0) {
         boss.hp = Math.min(boss.maxHp, boss.hp + amount);
-        scene.addBattleLog(`[반사] ${boss.name} ${amount} HP 흡수!`);
+        const lang = getLang(scene);
+        const bName = getBossName(lang, boss.id);
+        scene.addBattleLog(getUiText(lang, 'battle.log_reflect_heal', { name: bName, amt: amount }));
         this._showEffect(monIdx, { ...EFFECT.heal, label: `+${amount} HP`, labelColor: '#44ffcc' });
         scene.renderMonsters();
       }
@@ -174,7 +176,9 @@ export class BossManager {
     if (p.type === 'plant_bombs') {
       const count = p.value || 3;
       this._plantBombs(count, monIdx);
-      scene.addBattleLog(`[패시브] ${boss.name}의 매설! 폭탄 ${count}장 추가!`);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_plant_bombs', { name: bName, n: count }));
       this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 600, sfx: 'sfx_slide', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
     }
 
@@ -190,7 +194,9 @@ export class BossManager {
         });
       });
 
-      scene.addBattleLog(`[패시브] ${boss.name}의 도살! ${moved.length}장 폐기!`);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_discard', { name: bName, n: moved.length }));
       this._showEffect(monIdx, { ...EFFECT.debuff, label: `DISCARD ${moved.length}!`, labelColor: '#ff8844' });
       scene.refreshPlayerStats();
     }
@@ -203,7 +209,9 @@ export class BossManager {
         Phaser.Utils.Array.Shuffle(indices);
         const picked = indices.slice(0, Math.min(count, indices.length));
         picked.forEach(idx => { hand[idx].flipped = true; });
-        scene.addBattleLog(`[패시브] ${boss.name}의 간섭! ${picked.length}장 뒤집힘!`);
+        const lang = getLang(scene);
+        const bName = getBossName(lang, boss.id);
+        scene.addBattleLog(getUiText(lang, 'battle.log_boss_flip', { name: bName, n: picked.length }));
         this._showEffect(monIdx, { color: 0x9933cc, alpha: 0.30, duration: 600, sfx: 'sfx_shuffle', label: 'FLIP!', labelColor: '#dd88ff' });
         scene.render();
       }
@@ -214,7 +222,9 @@ export class BossManager {
       const amount = Math.floor(boss.maxHp * ratio);
       if (boss.hp < boss.maxHp) {
         boss.hp = Math.min(boss.maxHp, boss.hp + amount);
-        scene.addBattleLog(`[패시브] ${boss.name}의 초재생! HP +${amount} 회복`);
+        const lang = getLang(scene);
+        const bName = getBossName(lang, boss.id);
+        scene.addBattleLog(getUiText(lang, 'battle.log_boss_regen', { name: bName, amt: amount }));
         this._showEffect(monIdx, { color: 0x44ff44, alpha: 0.25, duration: 500, sfx: 'sfx_heal', label: 'REGEN', labelColor: '#88ff88' });
         scene.renderMonsters();
       }
@@ -237,7 +247,7 @@ export class BossManager {
       if (applied > 0) {
         const lang = getLang(scene);
         const bName = getBossName(lang, boss.id);
-        scene.addBattleLog(`[Passive] ${bName} Forced Selection!`);
+        scene.addBattleLog(getUiText(lang, 'battle.log_boss_force_select', { name: bName }));
         this._showEffect(monIdx, { color: 0xcc4400, alpha: 0.28, duration: 550, sfx: 'sfx_chop', label: 'FORCED!', labelColor: '#ffaa44' });
         scene.render();
       }
@@ -274,7 +284,9 @@ export class BossManager {
         scene.player.handSize = Math.max(1, scene.player.handSize - val);
         scene.player.handSizeLimit = Math.max(1, scene.player.handSizeLimit - val);
         boss._handSizeReduced = val;
-        scene.addBattleLog(`[패시브] ${boss.name}의 계약: 핸드 크기가 축소되었습니다! (-${val})`);
+        const lang = getLang(scene);
+        const bName = getBossName(lang, boss.id);
+        scene.addBattleLog(getUiText(lang, 'battle.log_boss_hand_down', { name: bName, val }));
         this._showEffect(monIdx, { ...EFFECT.debuff, label: 'HAND DOWN!', labelColor: '#ff8888' });
         scene.render();
       }
@@ -314,7 +326,9 @@ export class BossManager {
     if (boss._handSizeReduced > 0) {
       scene.player.handSize += boss._handSizeReduced;
       scene.player.handSizeLimit += boss._handSizeReduced;
-      scene.addBattleLog(`[패시브] ${boss.name} 처치! 핸드 크기가 복구되었습니다.`);
+      const lang = getLang(scene);
+      const bName = getBossName(lang, boss.id);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_hand_restore', { name: bName }));
       boss._handSizeReduced = 0;
       scene.render();
     }
@@ -408,7 +422,10 @@ export class BossManager {
 
     this._playAnim(boss, monIdx, 'skill');
     scene.renderMonsters();
-    scene.addBattleLog(`${boss.name}의 부활! ${target.name} 재생!`);
+    const lang = getLang(scene);
+    const bName = getBossName(lang, boss.id);
+    const tName = getMonsterName(lang, target.id);
+    scene.addBattleLog(getUiText(lang, 'battle.log_boss_revive', { name: bName, target: tName }));
     this._showEffect(monIdx, EFFECT.summon);
   }
 
@@ -418,7 +435,9 @@ export class BossManager {
     const m = boss;
     const dmg = Math.max(0, m.atk - scene.player.def);
     scene.player.hp = Math.max(0, scene.player.hp - dmg);
-    scene.addBattleLog(`${m.name}의 공격! ${dmg} 데미지!`);
+    const lang = getLang(scene);
+    const mName = (m.isBoss || m.id?.includes('boss')) ? getBossName(lang, m.id) : getMonsterName(lang, m.id);
+    scene.addBattleLog(getUiText(lang, 'battle.log_monster_attack', { name: mName, dmg }));
     scene.monsterManager._showMonsterAttack(monIdx, dmg);
   }
 
@@ -449,7 +468,7 @@ export class BossManager {
       const lang = getLang(scene);
       const bName = getBossName(lang, boss.id);
       const sName = getBossSkillName(lang, skillId, skill.name);
-      scene.addBattleLog(`${bName}: ${sName}! ${dmg} Damage!`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_dmg', { name: bName, skill: sName, dmg }));
       // 공격 연출 통합 (recoil + orb + hit effect)
       scene.monsterManager._showMonsterAttack(monIdx, dmg);
     } else if (skill.type === 'buff') {
@@ -458,7 +477,7 @@ export class BossManager {
       const lang = getLang(scene);
       const bName = getBossName(lang, boss.id);
       const sName = getBossSkillName(lang, skillId, skill.name);
-      scene.addBattleLog(`${bName}: ${sName}! ${skill.stat.toUpperCase()} +${val}`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_buff', { name: bName, skill: sName, stat: skill.stat.toUpperCase(), val }));
       this._showEffect(monIdx, EFFECT.buff);
 
     } else if (skill.type === 'heal_lost_hp') {
@@ -468,7 +487,7 @@ export class BossManager {
       const lang = getLang(scene);
       const bName = getBossName(lang, boss.id);
       const sName = getBossSkillName(lang, skillId, skill.name);
-      scene.addBattleLog(`${bName}: ${sName}! +${amount} HP`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_heal', { name: bName, skill: sName, amt: amount }));
       this._showEffect(monIdx, { ...EFFECT.heal, label: `+${amount} HP`, labelColor: '#44ff88' });
       scene.renderMonsters();
 
@@ -484,7 +503,7 @@ export class BossManager {
         scene.forcedSelectedUids = scene.forcedSelectedUids ?? new Set();
         scene.forcedSelectedUids.add(card.uid);
         scene.selected.add(idx);
-        scene.addBattleLog(`${bName}: ${sName}! ${card.key} Forced Selection!`);
+        scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_force', { name: bName, skill: sName, card: card.key }));
       }
       this._showEffect(monIdx, { color: 0xcc4400, alpha: 0.28, duration: 550, sfx: 'sfx_chop', label: 'FORCED!', labelColor: '#ffaa44' });
       scene.render();
@@ -502,7 +521,7 @@ export class BossManager {
       }
       const picked = indices.slice(0, Math.min(count, indices.length));
       picked.forEach(idx => { hand[idx].flipped = true; });
-      scene.addBattleLog(`${bName}: ${sName}! ${picked.length} Cards flipped!`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_flip', { name: bName, skill: sName, n: picked.length }));
       this._showEffect(monIdx, { color: 0x9933cc, alpha: 0.30, duration: 600, sfx: 'sfx_shuffle', label: 'FLIP!', labelColor: '#dd88ff' });
       scene.render();
 
@@ -512,7 +531,7 @@ export class BossManager {
       const lang = getLang(scene);
       const bName = getBossName(lang, boss.id);
       const sName = getBossSkillName(lang, skillId, skill.name);
-      scene.addBattleLog(`${bName}: ${sName}! ${count} Bombs planted!`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_plant', { name: bName, skill: sName, n: count }));
       this._showEffect(monIdx, { color: 0xff4400, alpha: 0.35, duration: 700, sfx: 'sfx_slide', label: `BOMB ×${count}!`, labelColor: '#ff6600' });
 
     } else if (skill.type === 'deck_to_dummy') {
@@ -530,7 +549,7 @@ export class BossManager {
       const lang = getLang(scene);
       const bName = getBossName(lang, boss.id);
       const sName = getBossSkillName(lang, skillId, skill.name);
-      scene.addBattleLog(`${bName}: ${sName}! ${moved.length} discarded!`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_discard', { name: bName, skill: sName, n: moved.length }));
       this._showEffect(monIdx, { ...EFFECT.debuff, label: `DISCARD ${moved.length}!`, labelColor: '#ff8844' });
       scene.refreshPlayerStats();
     } else if (skill.type === 'steal_gold') {
@@ -541,7 +560,7 @@ export class BossManager {
       const lang = getLang(scene);
       const bName = getBossName(lang, boss.id);
       const sName = getBossSkillName(lang, skillId, skill.name);
-      scene.addBattleLog(`${bName}: ${sName}! -${removed}G!`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_steal', { name: bName, skill: sName, gold: removed }));
       this._showEffect(monIdx, { ...EFFECT.debuff, label: `-${removed}G`, labelColor: '#ffdd00' });
       scene.refreshPlayerStats();
     } else if (skill.type === 'drain_attack') {
@@ -554,11 +573,11 @@ export class BossManager {
       const sName = getBossSkillName(lang, skillId, skill.name);
       if (heal > 0) {
         boss.hp = Math.min(boss.maxHp, boss.hp + heal);
-        scene.addBattleLog(`${bName}: ${sName}! ${dmg} Damage & ${heal} Drain!`);
+        scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_drain', { name: bName, skill: sName, dmg, heal }));
         this._showEffect(monIdx, { ...EFFECT.heal, label: `+${heal} HP`, labelColor: '#ff2222' });
         scene.renderMonsters();
       } else {
-        scene.addBattleLog(`${bName}: ${sName}! ${dmg} Damage!`);
+        scene.addBattleLog(getUiText(lang, 'battle.log_boss_skill_dmg', { name: bName, skill: sName, dmg }));
       }
       scene.monsterManager._showMonsterAttack(monIdx, dmg);
     }

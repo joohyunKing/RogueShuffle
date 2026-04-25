@@ -86,7 +86,7 @@ export class MainMenuScene extends Phaser.Scene {
     optBg.on("pointerout", () => optBg.clearTint());
 
     // ── 버전 ────────────────────────────────────────────────────────────
-    this.add.text(GW - 20, GH - 12, "v0.1.0", TS.version).setOrigin(1, 1);
+    this.add.text(GW - 20, GH - 12, "v0.1.1", TS.version).setOrigin(1, 1);
   }
 
 }

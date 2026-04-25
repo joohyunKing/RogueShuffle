@@ -8,6 +8,7 @@ import {
 import { TS } from "../textStyles.js";
 import { getScoreDetails } from "../service/scoreService.js";
 import { getAllItems } from '../manager/itemManager.js';
+import { getLang, getUiText, getMonsterName, getMonsterSkillName, getHandName, getItemName } from '../service/langService.js';
 
 // 플레이어 HP바 방향 orb 목표 좌표 (bossManager.js 의 ATK_ORB 와 동일)
 const ATK_ORB = { x: PLAYER_PANEL_W / 2, y: 152 };
@@ -148,11 +149,13 @@ export class MonsterManager {
     if (mon._handSizeReduced > 0 && scene.bossManager) {
       scene.bossManager.cleanupPassives(mon);
     }
+    const lang = getLang(scene);
+    const mName = getMonsterName(lang, mon.id);
     const newLevels = scene.player.addXp(mon.xp);
     scene.player.gold += mon.gold;
-    scene.addBattleLog(label ?? `${mon.name} 처치! +${mon.xp}XP +${mon.gold}G`);
+    scene.addBattleLog(label ?? getUiText(lang, 'battle.log_kill', { name: mName, xp: mon.xp, gold: mon.gold }));
     if (newLevels.length > 0) {
-      scene.addBattleLog(`LEVEL UP! Lv${scene.player.level}`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_level_up', { lv: scene.player.level }));
       scene._suitLevelUpCount += newLevels.length;
     }
 
@@ -178,8 +181,9 @@ export class MonsterManager {
     if (details.handRank == null || (details.cards?.length ?? 0) === 0) return;
 
     const isFirstAttack = (scene.attackCount === 0);
+    const lang = getLang(scene);
     if (scene.attackCount >= scene.player.attacksPerTurn) {
-      scene.addBattleLog(`이번 턴 공격 횟수 초과! (${scene.player.attacksPerTurn}회)`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_attack_limit', { n: scene.player.attacksPerTurn }));
       return;
     }
 
@@ -187,7 +191,8 @@ export class MonsterManager {
 
     // 봉인된 족보 차단
     if (handRank != null && scene.debuffManager.disabledHandRanks.has(handRank)) {
-      scene.addBattleLog(`[${HAND_DATA[handRank]?.key ?? handRank}] 봉인된 족보입니다!`);
+      const hName = getHandName(lang, handRank);
+      scene.addBattleLog(getUiText(lang, 'battle.log_hand_sealed', { hand: hName }));
       scene.refreshBattleLog();
       return;
     }
@@ -249,9 +254,10 @@ export class MonsterManager {
                 uid: crypto.randomUUID(),
                 id: item.id, name: item.name, desc: item.desc, rarity: item.rarity, img: item.img
               });
-              scene.addBattleLog(`[뱀] ${removed.key} 영구 제거! 아이템 [${item.name}] 획득!`);
+              const iName = getItemName(lang, item.id);
+              scene.addBattleLog(getUiText(lang, 'battle.log_snake_remove', { card: removed.key, item: iName }));
             } else {
-              scene.addBattleLog(`[뱀] ${removed.key} 영구 제거! (아이템 인벤토리 가득 참)`);
+              scene.addBattleLog(getUiText(lang, 'battle.log_snake_full', { card: removed.key }));
             }
           } else {
             scene.dummyData.push(removed);
@@ -304,7 +310,9 @@ export class MonsterManager {
     }
 
     if (resisted && damage > 0) {
-      this.scene.addBattleLog(`[${g.name}] ${mon.name} 저항! 데미지 반감`);
+      const lang = getLang(this.scene);
+      const mName = getMonsterName(lang, mon.id);
+      scene.addBattleLog(getUiText(lang, 'battle.log_gimmick_resist', { gimmick: g.name, name: mName }));
       return Math.floor(damage * g.damageMultiplier);
     }
     return damage;
@@ -315,12 +323,12 @@ export class MonsterManager {
     if (suitCounts.H > 0) {
       const eff = suitEff('H');
       scene.player.hp = Math.min(scene.player.maxHp, scene.player.hp + eff);
-      if (eff > 0) scene.addBattleLog(`♥ 적응: HP +${eff}`);
+      if (eff > 0) scene.addBattleLog(getUiText(getLang(scene), 'battle.log_suit_h', { val: eff }));
     }
     if (suitCounts.D > 0) {
       const eff = suitEff('D');
       scene.player.def += eff;
-      if (eff > 0) scene.addBattleLog(`♦ 적응: DEF +${eff}`);
+      if (eff > 0) scene.addBattleLog(getUiText(getLang(scene), 'battle.log_suit_d', { val: eff }));
     }
   }
 
@@ -330,10 +338,11 @@ export class MonsterManager {
     const aliveMonsters = scene.monsters.filter(m => !m.isDead);
     const aliveSprites = scene._monsterSprites?.filter((_, i) => !scene.monsters[i]?.isDead) ?? [];
 
+    const lang = getLang(scene);
     // 슈트 적응 효과 (전체 대상)
     if (suitCounts.S > 0) {
       const eff = suitEff('S');
-      if (eff > 0) { aliveMonsters.forEach(m => { m.def -= eff; }); scene.addBattleLog(`♠ 적응: 전체 DEF -${eff}`); }
+      if (eff > 0) { aliveMonsters.forEach(m => { m.def -= eff; }); scene.addBattleLog(getUiText(lang, 'battle.log_suit_s', { val: eff })); }
     }
     if (suitCounts.C > 0) {
       const eff = suitEff('C');
@@ -341,14 +350,15 @@ export class MonsterManager {
         aliveMonsters.forEach(m => {
           const reduced = Math.min(eff, m.atk);
           m.atk = Math.max(0, m.atk - eff);
-          if (reduced > 0) scene.addBattleLog(`♣ 적응: ${m.name} ATK -${reduced}`);
+          const mName = getMonsterName(lang, m.id);
+          if (reduced > 0) scene.addBattleLog(getUiText(lang, 'battle.log_suit_c', { name: mName, val: reduced }));
         });
       }
     }
     this._applySuitPlayerEffects(suitCounts, suitEff);
 
     scene.player.score += score;
-    scene.addBattleLog(`${handName}! 전체에 ${score}점 광역 공격!`);
+    scene.addBattleLog(getUiText(lang, 'battle.log_aoe_attack', { handName, val: score }));
     scene._sfx("sfx_knifeSlice");
 
     const aoeX = positions.length > 0
@@ -362,7 +372,8 @@ export class MonsterManager {
       const dmg = this._applyGimmickResist(m, rawDmg, attackCtx);
       m.hp = Math.max(0, m.hp - dmg);
       if (scene.isBoss && m === scene.monsters[0]) m._damageTaken = (m._damageTaken ?? 0) + dmg;
-      scene.addBattleLog(`${m.name}에게 ${dmg} 데미지!`);
+      const mName = getMonsterName(lang, m.id);
+      scene.addBattleLog(getUiText(lang, 'battle.log_damage_to', { target: mName, dmg }));
       if (m.hp <= 0) this._onKill(m, monIdx);
     });
 
@@ -380,17 +391,19 @@ export class MonsterManager {
   _resolveSingle(mon, monIdx, score, handName, suitCounts, suitEff, positions, attackCtx = {}) {
     const { scene } = this;
 
+    const lang = getLang(scene);
+    const mName = getMonsterName(lang, mon.id);
     // 슈트 적응 효과 (데미지 전: ♠DEF감소, ♣ATK감소)
     if (suitCounts.S > 0) {
       const eff = suitEff('S');
       mon.def -= eff;
-      if (eff > 0) scene.addBattleLog(`♠ 적응: ${mon.name} DEF -${eff}`);
+      if (eff > 0) scene.addBattleLog(getUiText(lang, 'battle.log_suit_s_single', { name: mName, val: eff }));
     }
     if (suitCounts.C > 0) {
       const eff = suitEff('C');
       const reduced = Math.min(eff, mon.atk);
       mon.atk = Math.max(0, mon.atk - eff);
-      if (reduced > 0) scene.addBattleLog(`♣ 적응: ${mon.name} ATK -${reduced}`);
+      if (reduced > 0) scene.addBattleLog(getUiText(lang, 'battle.log_suit_c', { name: mName, val: reduced }));
     }
 
     const rawDamage = Math.floor(Math.max(0, score - this._getEffectiveDef(mon)));
@@ -411,7 +424,7 @@ export class MonsterManager {
     // 슈트 적응 효과 (데미지 후: ♥HP회복, ♦DEF증가)
     this._applySuitPlayerEffects(suitCounts, suitEff);
 
-    scene.addBattleLog(`${mon.name}에게 ${handName}로 ${Math.max(0, damage)} 데미지!`);
+    scene.addBattleLog(getUiText(lang, 'battle.log_damage_with', { target: mName, hand: handName, dmg: Math.max(0, damage) }));
     scene._sfx("sfx_knifeSlice");
 
     const monSprite = scene._monsterSprites?.[monIdx];
@@ -459,7 +472,9 @@ export class MonsterManager {
         });
       } else if (bullseye) {
         scene.isDealing = true;
-        scene.addBattleLog(`BULLSEYE! ${mon.name} 최대 체력(${mon.maxHp})으로 광역!`);
+        const lang = getLang(scene);
+        const mName = getMonsterName(lang, mon.id);
+        scene.addBattleLog(getUiText(lang, 'battle.log_bullseye', { name: mName, hp: mon.maxHp }));
         this._applyBullseye(monIdx, mon.maxHp, () => {
           scene.isDealing = false;
           scene.render();
@@ -492,7 +507,9 @@ export class MonsterManager {
     aliveTargets.forEach(({ m, i }) => {
       const actualDmg = Math.max(0, dmg - m.def);
       m.hp = Math.max(0, m.hp - actualDmg);
-      scene.addBattleLog(`BULLSEYE 연쇄! ${m.name}에게 ${actualDmg} 데미지!`);
+      const lang = getLang(scene);
+      const mName = getMonsterName(lang, m.id);
+      scene.addBattleLog(getUiText(lang, 'battle.log_bullseye_chain', { target: mName, dmg: actualDmg }));
       if (m.hp <= 0 && !m.isDead) {
         this._onKill(m, i);
       } else {
@@ -539,10 +556,13 @@ export class MonsterManager {
       target.hp = Math.max(0, target.hp - actualDmg);
       const chain = Math.max(0, actualDmg - prevHp);
       this._refreshHP(idx, target);
-      scene.addBattleLog(`오버킬! ${target.name}에게 ${actualDmg} 연쇄!`);
+      const lang = getLang(scene);
+      const tName = getMonsterName(lang, target.id);
+      scene.addBattleLog(getUiText(lang, 'battle.log_overkill_chain', { target: tName, dmg: actualDmg }));
 
       if (target.hp <= 0 && !target.isDead) {
-        this._onKill(target, idx, `${target.name} 연쇄 처치! +${target.xp}XP`);
+        const killLabel = getUiText(lang, 'battle.log_overkill_kill', { name: tName, xp: target.xp });
+        this._onKill(target, idx, killLabel);
         if (chain > 0) {
           scene.time.delayedCall(120, () => this._applyOverkill(idx, chain, onDone));
         } else {
@@ -592,7 +612,9 @@ export class MonsterManager {
     } else {
       const dmg = Math.max(0, m.atk - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
-      scene.addBattleLog(`${m.name}의 공격! ${dmg} 데미지!`);
+      const lang = getLang(scene);
+      const mName = getMonsterName(lang, m.id);
+      scene.addBattleLog(getUiText(lang, 'battle.log_monster_attack', { name: mName, dmg }));
       this._showMonsterAttack(monIdx, dmg);
     }
   }
@@ -608,7 +630,10 @@ export class MonsterManager {
       const raw = skill.value ?? Math.floor(m.atk * (skill.damMult ?? 1));
       const dmg = Math.max(0, raw - scene.player.def);
       scene.player.hp = Math.max(0, scene.player.hp - dmg);
-      scene.addBattleLog(`${m.name}의 ${skill.name}! ${dmg} 데미지!`);
+      const lang = getLang(scene);
+      const mName = getMonsterName(lang, m.id);
+      const sName = getMonsterSkillName(lang, skill.name, skill.name);
+      scene.addBattleLog(getUiText(lang, 'battle.log_monster_skill', { name: mName, skill: sName, dmg }));
       // 스킬은 보라빛 플래시 + 약간 더 강한 shake
       scene.time.delayedCall(80, () => {
         this._showPlayerHitEffect(dmg, {
