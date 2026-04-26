@@ -497,19 +497,37 @@ export class BattleScene extends Phaser.Scene {
         obj.setDisplaySize(Math.round(CW * 0.9), Math.round(CH * 0.9));
         const idx = this.cardObjs.indexOf(obj);
         if (idx !== -1) this.cardObjs.splice(idx, 1);
+
+        // 필드 카드 씰 이미지 추적 추가
+        const seal = obj.getData("sealImg");
+
+        console.log(seal);
+
+        if (seal?.active) {
+          this._dragSealImg = seal;
+          this._dragSealOffsetX = seal.x - obj.x;
+          this._dragSealOffsetY = seal.y - obj.y;
+          seal.setDepth(201);
+          const sIdx = this.cardObjs.indexOf(seal);
+          if (sIdx !== -1) this.cardObjs.splice(sIdx, 1);
+        } else {
+          this._dragSealImg = null;
+        }
       }
     });
 
     this.input.on("drag", (pointer, obj, dragX, dragY) => {
       obj.x = dragX;
       obj.y = dragY;
-      // 핸드 카드 이동 중: 지나치는 카드 wiggle + sealImg 추적
+      // 드래그 중 씰 이미지 추적 (핸드/필드 공통)
+      if (this._dragSealImg?.active) {
+        this._dragSealImg.x = dragX + this._dragSealOffsetX;
+        this._dragSealImg.y = dragY + this._dragSealOffsetY;
+      }
+
+      // 핸드 카드 이동 중: 지나치는 카드 wiggle
       if (obj.getData("handIndex") !== undefined) {
         this._wiggleNearestHandCard(pointer.x);
-        if (this._dragSealImg?.active) {
-          this._dragSealImg.x = dragX + this._dragSealOffsetX;
-          this._dragSealImg.y = dragY + this._dragSealOffsetY;
-        }
       }
     });
 
@@ -532,11 +550,14 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
 
+      // 공통 씰 정리
+      this._dragSealImg?.destroy();
+      this._dragSealImg = null;
+
       // ── 핸드 카드 순서 변경 drag ─────────────────────────────────────
       if (obj.getData("handIndex") !== undefined) {
         this._lastWiggleObj = null;
-        this._dragSealImg?.destroy();
-        this._dragSealImg = null;
+        this._dragSealImg = null; // 정리 로직은 위에서 공통 처리됨
         const fromIdx = obj.getData("handIndex");
         const positions = this.calcHandPositions(this.handData.length);
 
@@ -590,6 +611,8 @@ export class BattleScene extends Phaser.Scene {
         if (this.sortMode) this.doSorting(this.sortMode);
         this.fieldPickCount++;
         this.selected.clear();
+        this._dragSealImg?.destroy(); // 추가 확인
+        this._dragSealImg = null;
         obj.destroy();
         this.render();
       } else {
@@ -660,6 +683,21 @@ export class BattleScene extends Phaser.Scene {
   }
 
   _snapBack(obj) {
+    const seal = obj.getData("sealImg");
+    if (seal?.active) {
+      const offX = seal.x - obj.x;
+      const offY = seal.y - obj.y;
+      this.tweens.add({
+        targets: seal,
+        x: obj.getData("origX") + offX,
+        y: obj.getData("origY") + offY,
+        displayWidth: seal.displayWidth,
+        displayHeight: seal.displayHeight,
+        duration: 200,
+        ease: "Back.Out"
+      });
+    }
+
     this.tweens.add({
       targets: obj,
       x: obj.getData("origX"),
@@ -668,7 +706,11 @@ export class BattleScene extends Phaser.Scene {
       displayHeight: obj.getData("origH") ?? FIELD_CH,
       duration: 200,
       ease: "Back.Out",
-      onComplete: () => { obj.destroy(); this.render(); },
+      onComplete: () => {
+        obj.destroy();
+        seal?.destroy();
+        this.render();
+      },
     });
   }
 
@@ -802,6 +844,7 @@ export class BattleScene extends Phaser.Scene {
         img.setData("origY", FIELD_Y);
         img.setData("origW", FIELD_CW);
         img.setData("origH", FIELD_CH);
+        img.setData("sealImg", sealImg);
         img.on("pointerover", () => {
           if (!this.isDragging) {
             const hW = FIELD_CW * 1.4;
@@ -939,11 +982,7 @@ export class BattleScene extends Phaser.Scene {
       this.handCardObjs.push(img);
 
       if (inCombo) {
-        this.tweens.add({
-          targets: img,
-          x: { from: x - 3, to: x + 3 },
-          duration: 55, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-        });
+        CardRenderer.applyComboEffect(this, img, cardW, cardH, sel, combo.score);
       }
     });
   }

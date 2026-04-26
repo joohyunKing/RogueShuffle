@@ -185,6 +185,75 @@ export class CardRenderer {
     _sealTooltip = null;
   }
 
+  /**
+   * 콤보(족보)에 포함된 카드에 불꽃 파티클 및 흔들림 효과를 적용합니다.
+   * 점수에 따라 불꽃의 색상이 변화합니다.
+   */
+  static applyComboEffect(scene, img, cardW, cardH, sel, score) {
+    const targets = [img];
+    const sealImg = img.getData('sealImg');
+    if (sealImg) targets.push(sealImg);
+
+    // 1. 기본 흔들림 효과 (카드 + 씰 동기화)
+    const baseCardX = img.x;
+    const baseSealX = sealImg ? sealImg.x : 0;
+
+    const shakeTween = scene.tweens.add({
+      targets: targets,
+      x: (target) => target === img ? baseCardX + 2 : baseSealX + 2,
+      angle: { from: -1, to: 1 },
+      duration: 55, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+    });
+
+    // 2. 점수에 따른 색상 결정
+    let tints = [0xffeebb, 0xffcc44, 0xff8800, 0xff4400]; // 기본 (주황/노랑)
+    if (score > 50000) {
+      tints = [0xffffff, 0x00ffff, 0x0088ff, 0x0000ff]; // 초고점 (푸른 불꽃/화이트)
+    } else if (score > 10000) {
+      tints = [0xffaaff, 0xff00ff, 0xaa00ff, 0x4400aa]; // 고점 (보라/자주)
+    } else if (score > 3000) {
+      tints = [0xccffcc, 0x44ff44, 0x008800, 0x004400]; // 상급 (초록)
+    }
+
+    // 3. 픽셀 텍스처 생성 (메모리 관리: 한 번만 생성)
+    if (!scene.textures.exists('pixel_flare')) {
+      const g = scene.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(0xffffff, 1);
+      g.fillRect(0, 0, 4, 4);
+      g.generateTexture('pixel_flare', 4, 4);
+      g.destroy();
+    }
+
+    // 4. 파티클 에미터 생성
+    const emitter = scene.add.particles(0, 0, 'pixel_flare', {
+      speedY: { min: -40, max: -90 },
+      speedX: { min: -20, max: 20 },
+      scale: { start: 1, end: 0.1 },
+      alpha: { start: 0.9, end: 0 },
+      tint: tints,
+      blendMode: 'ADD',
+      lifespan: { min: 600, max: 1000 },
+      frequency: score > 10000 ? 12 : 20, // 고점일수록 더 빽빽하게
+      emitZone: { 
+        type: 'random', 
+        source: new Phaser.Geom.Rectangle(-cardW / 2 + 5, -cardH / 2, cardW - 10, cardH * 0.2) 
+      }
+    });
+    
+    emitter.setDepth(sel ? 33 : 31);
+    emitter.startFollow(img);
+    
+    // scene.cardObjs가 관리 리스트라면 추가 (BattleScene 전용)
+    if (scene.cardObjs) scene.cardObjs.push(emitter);
+
+    img.on('destroy', () => {
+      try { emitter.destroy(); } catch (e) { }
+      shakeTween.stop();
+    });
+
+    return emitter;
+  }
+
   static preload(scene) {
     Object.entries(SYM_URLS).forEach(([suit, url]) => {
       scene.load.image(`sym_${suit}`, url);

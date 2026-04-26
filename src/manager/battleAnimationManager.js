@@ -68,23 +68,72 @@ export class BattleAnimationManager {
       return;
     }
 
+    const flyTargets = [img];
+    let sealImg = null;
+    const enh = cardData.enhancements?.[0];
+    if (enh && !options.noFlip && !cardData.flipped) {
+        const sealKey = `seal_${enh.type}`;
+        if (this.scene.textures.exists(sealKey)) {
+            const sz = Math.round(Math.min(cardWidth, cardHeight) * 0.3);
+            const offX = Math.round(cardWidth * 0.16);
+            const offY = Math.round(cardHeight * 0.14);
+            sealImg = this.scene.add.image(fromX + cardWidth/2 - sz/2 - offX, fromY - cardHeight/2 + sz/2 + offY, sealKey)
+                .setDisplaySize(sz, sz).setDepth(img.depth + 1);
+            flyTargets.push(sealImg);
+            this.animObjs.push(sealImg);
+        }
+    }
+
     this.scene.tweens.add({
-      targets: img, x: toX, y: toY, duration: 400, ease: "Power2.Out",
+      targets: flyTargets, x: toX, y: (target) => {
+          if (target === img) return toY;
+          const sz = target.displayWidth;
+          const offY = Math.round(cardHeight * 0.14);
+          return toY - cardHeight/2 + sz/2 + offY;
+      }, duration: 400, ease: "Power2.Out",
+      onUpdate: () => {
+          if (sealImg) {
+             const offX = Math.round(img.displayWidth * 0.16);
+             const offY = Math.round(img.displayHeight * 0.14);
+             sealImg.x = img.x + img.displayWidth/2 - sealImg.displayWidth/2 - offX;
+             sealImg.y = img.y - img.displayHeight/2 + sealImg.displayHeight/2 + offY;
+          }
+      },
       onComplete: () => {
-        this.scene.tweens.add({
-          targets: img, displayWidth: 1, duration: 70, ease: "Linear",
-          onComplete: () => {
-            img.setTexture(cardData.key);
-            img.setDisplaySize(1, cardHeight);
+        if (!sealImg) {
             this.scene.tweens.add({
-              targets: img, displayWidth: cardWidth, duration: 70, ease: "Linear",
-              onComplete: () => {
-                if (options.destroyOnComplete !== false) img.destroy();
-                options.onComplete?.(img);
-              }
+                targets: img, displayWidth: 1, duration: 70, ease: "Linear",
+                onComplete: () => {
+                    img.setTexture(cardData.key);
+                    img.setDisplaySize(1, cardHeight);
+                    this.scene.tweens.add({
+                        targets: img, displayWidth: cardWidth, duration: 70, ease: "Linear",
+                        onComplete: () => {
+                            if (options.destroyOnComplete !== false) img.destroy();
+                            options.onComplete?.(img);
+                        }
+                    });
+                },
             });
-          },
-        });
+        } else {
+            // 씰이 있는 경우 뒤집기 연출
+            this.scene.tweens.add({
+                targets: [img, sealImg], displayWidth: 1, duration: 70, ease: "Linear",
+                onComplete: () => {
+                    img.setTexture(cardData.key);
+                    img.setDisplaySize(1, cardHeight);
+                    sealImg.setDisplaySize(1, sealImg.displayHeight);
+                    this.scene.tweens.add({
+                        targets: [img, sealImg], displayWidth: (t) => t === img ? cardWidth : Math.round(Math.min(cardWidth, cardHeight) * 0.3), 
+                        duration: 70, ease: "Linear",
+                        onComplete: () => {
+                            if (options.destroyOnComplete !== false) { img.destroy(); sealImg.destroy(); }
+                            options.onComplete?.(img);
+                        }
+                    });
+                },
+            });
+        }
       },
     });
   }
