@@ -254,6 +254,77 @@ export class CardRenderer {
     return emitter;
   }
 
+  /**
+   * 카드의 마우스 오버/아웃 호버 연출을 설정합니다.
+   * 필드와 핸드 양쪽의 중복된 연출 로직을 통합합니다.
+   */
+  static addHoverEffect(scene, img, sealImg, cardW, cardH, baseOffset = 0) {
+    const hoverW = Math.round(cardW * 1.35);
+    const hoverH = Math.round(cardH * 1.35);
+    const baseDepth = img.depth;
+    const baseY = img.y;
+
+    img.on("pointerover", () => {
+      // 드래그 중이거나 씬이 정지 상태면 스킵 (필요시 scene.isDragging 체크)
+      if (scene.isDragging) return;
+
+      scene.tweens.add({ 
+        targets: img, 
+        displayWidth: hoverW, 
+        displayHeight: hoverH, 
+        y: baseY - 10, 
+        duration: 100 
+      });
+      img.setDepth(baseDepth + 10);
+
+      if (sealImg?.active) {
+        const hSz = Math.round(Math.min(hoverW, hoverH) * 0.3);
+        const offX = Math.round(hoverW * 0.16);
+        const offY = Math.round(hoverH * 0.14);
+        scene.tweens.add({ 
+          targets: sealImg, 
+          displayWidth: hSz, 
+          displayHeight: hSz, 
+          x: img.x + hoverW / 2 - hSz / 2 - offX, 
+          y: (baseY - 10) - hoverH / 2 + hSz / 2 + offY, 
+          duration: 100 
+        });
+        sealImg.setDepth(baseDepth + 12);
+      }
+      
+      // 툴팁 표시 여부는 호출부에서 card 데이터를 알고 있을 때만 처리하거나 
+      // 이 메서드 인자로 card를 넘겨받아 여기서 처리 가능
+    });
+
+    img.on("pointerout", () => {
+      if (scene.isDragging) return;
+
+      scene.tweens.add({ 
+        targets: img, 
+        displayWidth: cardW, 
+        displayHeight: cardH, 
+        y: baseY, 
+        duration: 100 
+      });
+      img.setDepth(baseDepth);
+
+      if (sealImg?.active) {
+        const oSz = Math.round(Math.min(cardW, cardH) * 0.3);
+        const oOffX = Math.round(cardW * 0.16);
+        const oOffY = Math.round(cardH * 0.14);
+        scene.tweens.add({ 
+          targets: sealImg, 
+          displayWidth: oSz, 
+          displayHeight: oSz, 
+          x: img.x + cardW / 2 - oSz / 2 - oOffX, 
+          y: baseY - cardH / 2 + oSz / 2 + oOffY, 
+          duration: 100 
+        });
+        sealImg.setDepth(baseDepth + 2);
+      }
+    });
+  }
+
   static preload(scene) {
     Object.entries(SYM_URLS).forEach(([suit, url]) => {
       scene.load.image(`sym_${suit}`, url);

@@ -39,6 +39,8 @@ import { BattleAnimationManager } from '../manager/battleAnimationManager.js';
 import { BattleUIManager } from '../ui/BattleUIManager.js';
 import { BattleItemManager } from '../manager/battleItemManager.js';
 import { ModalUI } from '../ui/ModalUI.js';
+import { BattleDragManager } from '../manager/BattleDragManager.js';
+import { BattleService } from '../service/BattleService.js';
 
 
 // ─── 씬 ──────────────────────────────────────────────────────────────────────
@@ -63,6 +65,8 @@ export class BattleScene extends Phaser.Scene {
     this.animManager = new BattleAnimationManager(this);
     this.uiManager = new BattleUIManager(this);
     this.battleItemManager = new BattleItemManager(this);
+    this.dragManager = new BattleDragManager(this);
+    this.battleService = new BattleService(this);
   }
 
   _sfx(key) {
@@ -113,7 +117,7 @@ export class BattleScene extends Phaser.Scene {
     this.drawBg();
     this.createUI();
     this.createSortButton();
-    this.setupDrag();
+    // BattleDragManager 내부에서 setupDrag() 자동 실행됨
     this.startDealAnimation();
 
     this._initMonsters(data);
@@ -440,7 +444,7 @@ export class BattleScene extends Phaser.Scene {
           this.bossManager.activatePassive(this.monsters[0], 'player_turn');
         }
         this.render();
-        this._saveTurnState();
+        this.battleService.saveBattleState();
       });
     });
   }
@@ -449,230 +453,9 @@ export class BattleScene extends Phaser.Scene {
   calcFieldPositions(count) { return this.uiManager.calcFieldPositions(count); }
   calcHandPositions(count) { return this.uiManager.calcHandPositions(count); }
 
-  // ── 드래그 ───────────────────────────────────────────────────────────────
-  setupDrag() {
-    // 짧은 클릭이 drag로 오인되지 않도록 threshold 설정
-    this.input.dragDistanceThreshold = 6;
-
-    this.events.once('shutdown', () => {
-      this.input.off('dragstart');
-      this.input.off('drag');
-      this.input.off('dragend');
-    });
-
-    this.input.on("dragstart", (pointer, obj) => {
-      if (this.isDealing) return;
-      this._sfx("sfx_slide");
-      this.isDragging = true;
-      obj.setDepth(200);
-      if (obj.getData("itemIndex") !== undefined) {
-        // 아이템 컨테이너
-        this.tweens.killTweensOf(obj);
-        this.tweens.add({ targets: obj, scaleX: 0.9, scaleY: 0.9, duration: 60 });
-      } else if (obj.getData("handIndex") !== undefined) {
-        // 핸드 카드 — drag 시작 시 pending 선택 취소 (pointerup에서 처리 예정이었던 것)
-        this._pendingToggleIdx = null;
-        this._lastWiggleObj = null;
-        this.tweens.killTweensOf(obj);
-        obj.setY(HAND_Y);
-        // cardObjs에서 제거 — drag 중 render() 호출 시 파괴되지 않도록
-        const cIdx = this.cardObjs.indexOf(obj);
-        if (cIdx !== -1) this.cardObjs.splice(cIdx, 1);
-        const hIdx = this.handCardObjs?.indexOf(obj);
-        if (hIdx !== -1 && hIdx !== undefined) this.handCardObjs?.splice(hIdx, 1);
-        // sealImg도 함께 추적 — drag 중 card와 같이 이동
-        const seal = obj.getData("sealImg");
-        if (seal?.active) {
-          this._dragSealImg = seal;
-          this._dragSealOffsetX = seal.x - obj.x;
-          this._dragSealOffsetY = seal.y - obj.y;
-          seal.setDepth(201);
-          const sIdx = this.cardObjs.indexOf(seal);
-          if (sIdx !== -1) this.cardObjs.splice(sIdx, 1);
-        } else {
-          this._dragSealImg = null;
-        }
-      } else {
-        // 필드 카드
-        obj.setDisplaySize(Math.round(CW * 0.9), Math.round(CH * 0.9));
-        const idx = this.cardObjs.indexOf(obj);
-        if (idx !== -1) this.cardObjs.splice(idx, 1);
-
-        // 필드 카드 씰 이미지 추적 추가
-        const seal = obj.getData("sealImg");
-
-        console.log(seal);
-
-        if (seal?.active) {
-          this._dragSealImg = seal;
-          this._dragSealOffsetX = seal.x - obj.x;
-          this._dragSealOffsetY = seal.y - obj.y;
-          seal.setDepth(201);
-          const sIdx = this.cardObjs.indexOf(seal);
-          if (sIdx !== -1) this.cardObjs.splice(sIdx, 1);
-        } else {
-          this._dragSealImg = null;
-        }
-      }
-    });
-
-    this.input.on("drag", (pointer, obj, dragX, dragY) => {
-      obj.x = dragX;
-      obj.y = dragY;
-      // 드래그 중 씰 이미지 추적 (핸드/필드 공통)
-      if (this._dragSealImg?.active) {
-        this._dragSealImg.x = dragX + this._dragSealOffsetX;
-        this._dragSealImg.y = dragY + this._dragSealOffsetY;
-      }
-
-      // 핸드 카드 이동 중: 지나치는 카드 wiggle
-      if (obj.getData("handIndex") !== undefined) {
-        this._wiggleNearestHandCard(pointer.x);
-      }
-    });
-
-    this.input.on("dragend", (pointer, obj) => {
-      this.isDragging = false;
-
-      // ── 아이템 drag ──────────────────────────────────────────────────
-      if (obj.getData("itemIndex") !== undefined) {
-        if (this._isValidItemDropZone(pointer.x, pointer.y)) {
-          this._useItem(obj.getData("itemIndex"), obj);
-        } else {
-          this.tweens.add({
-            targets: obj,
-            x: obj.getData("origX"), y: obj.getData("origY"),
-            scaleX: 1, scaleY: 1,
-            duration: 200, ease: "Back.Out",
-            onComplete: () => { obj.destroy(); this.render(); },
-          });
-        }
-        return;
-      }
-
-      // 공통 씰 정리
-      this._dragSealImg?.destroy();
-      this._dragSealImg = null;
-
-      // ── 핸드 카드 순서 변경 drag ─────────────────────────────────────
-      if (obj.getData("handIndex") !== undefined) {
-        this._lastWiggleObj = null;
-        this._dragSealImg = null; // 정리 로직은 위에서 공통 처리됨
-        const fromIdx = obj.getData("handIndex");
-        const positions = this.calcHandPositions(this.handData.length);
-
-        // 드롭 위치에서 가장 가까운 슬롯 탐색
-        let toIdx = fromIdx;
-        let minDist = Infinity;
-        positions.forEach((p, i) => {
-          const dist = Math.abs(pointer.x - p.x);
-          if (dist < minDist) { minDist = dist; toIdx = i; }
-        });
-
-        if (toIdx !== fromIdx) {
-          const [card] = this.handData.splice(fromIdx, 1);
-          this.handData.splice(toIdx, 0, card);
-
-          // 선택 인덱스 보정
-          const newSel = new Set();
-          for (const idx of this.selected) {
-            if (idx === fromIdx) {
-              newSel.add(toIdx > fromIdx ? toIdx - 1 : toIdx);
-            } else if (fromIdx < toIdx && idx > fromIdx && idx <= toIdx) {
-              newSel.add(idx - 1);
-            } else if (fromIdx > toIdx && idx >= toIdx && idx < fromIdx) {
-              newSel.add(idx + 1);
-            } else {
-              newSel.add(idx);
-            }
-          }
-          this.selected = newSel;
-        }
-        obj.destroy();
-        this.render();
-        return;
-      }
-
-      // ── 필드 카드 drag ───────────────────────────────────────────────
-      if (pointer.y >= HAND_TOP) {
-        const cardData = obj.getData("cardData");
-        const fieldIdx = obj.getData("fieldIndex");
-        if (this.handData.length >= this.player.handSizeLimit) {
-          this._snapBack(obj);
-          return;
-        }
-        const newPositions = this.calcHandPositions(this.handData.length + 1);
-        const insertIdx = newPositions.findIndex(p => pointer.x < p.x);
-        const handInsert = insertIdx === -1 ? this.handData.length : insertIdx;
-
-        this.fieldData.splice(fieldIdx, 1);
-        this.deck.field = this.deck.field.filter(c => c.uid !== cardData.uid);
-        this.handData.splice(handInsert, 0, cardData);
-        if (this.sortMode) this.doSorting(this.sortMode);
-        this.fieldPickCount++;
-        this.selected.clear();
-        this._dragSealImg?.destroy(); // 추가 확인
-        this._dragSealImg = null;
-        obj.destroy();
-        this.render();
-      } else {
-        this._snapBack(obj);
-      }
-    });
-  }
-
-  // ── 핸드 카드 드래그 중 근처 카드 wiggle ────────────────────────────────
-  _wiggleNearestHandCard(mouseX) {
-    if (!this.handCardObjs?.length) return;
-
-    // 드래그 중인 카드를 제외한 핸드 카드 중 가장 가까운 것 탐색
-    let nearestObj = null;
-    let minDist = Infinity;
-    this.handCardObjs.forEach(cardObj => {
-      if (!cardObj?.active) return;
-      const dist = Math.abs(mouseX - cardObj.x);
-      if (dist < minDist) { minDist = dist; nearestObj = cardObj; }
-    });
-
-    // 이전과 같은 카드면 skip, 너무 멀면 skip
-    if (!nearestObj || minDist > 65 || nearestObj === this._lastWiggleObj) return;
-    this._lastWiggleObj = nearestObj;
-
-    const baseX = nearestObj.x;
-    this.tweens.killTweensOf(nearestObj);
-    this.tweens.chain({
-      targets: nearestObj,
-      tweens: [
-        { x: baseX - 7, duration: 50, ease: 'Power2.Out' },
-        { x: baseX + 7, duration: 50, ease: 'Power2.Out' },
-        { x: baseX, duration: 50, ease: 'Back.Out' },
-      ],
-    });
-  }
-
   _isValidItemDropZone(px, py) {
-    if (px < PLAYER_PANEL_W || px > GW - ITEM_PANEL_W) return false;
-    // 몬스터 영역
-    if (py >= MONSTER_AREA_TOP && py <= MONSTER_AREA_TOP + MONSTER_AREA_H) return true;
-    // 필드 영역
-    if (py >= FIELD_Y - FIELD_CH / 2 - 18 && py <= FIELD_Y + FIELD_CH / 2 + 18) return true;
-    // 핸드 영역
-    if (py >= HAND_TOP) return true;
-    return false;
-  }
-
-  _useItem(idx, obj) {
-    this.battleItemManager.use(idx, obj);
-  }
-
-  _saveTurnState() {
-    writeSave(this.round, this.player.toData(), this.deck.getState(), {
-      isBoss: this.isBoss,
-      battleIndex: this.battleIndex,
-      normalCount: this.normalCount,
-      monsterTier: this.monsterTier,
-      totalCost: this.totalCost,
-      monsters: this.monsterManager.monsters,
+    return this.battleService.isValidItemDropZone(px, py, {
+        PLAYER_PANEL_W, GW, ITEM_PANEL_W, MONSTER_AREA_TOP, MONSTER_AREA_H, FIELD_Y, FIELD_CH, HAND_TOP
     });
   }
 
@@ -680,38 +463,6 @@ export class BattleScene extends Phaser.Scene {
     if (!this._cardPreviewObjs) return;
     this._cardPreviewObjs.forEach(o => o?.destroy());
     this._cardPreviewObjs = null;
-  }
-
-  _snapBack(obj) {
-    const seal = obj.getData("sealImg");
-    if (seal?.active) {
-      const offX = seal.x - obj.x;
-      const offY = seal.y - obj.y;
-      this.tweens.add({
-        targets: seal,
-        x: obj.getData("origX") + offX,
-        y: obj.getData("origY") + offY,
-        displayWidth: seal.displayWidth,
-        displayHeight: seal.displayHeight,
-        duration: 200,
-        ease: "Back.Out"
-      });
-    }
-
-    this.tweens.add({
-      targets: obj,
-      x: obj.getData("origX"),
-      y: obj.getData("origY"),
-      displayWidth: obj.getData("origW") ?? FIELD_CW,
-      displayHeight: obj.getData("origH") ?? FIELD_CH,
-      duration: 200,
-      ease: "Back.Out",
-      onComplete: () => {
-        obj.destroy();
-        seal?.destroy();
-        this.render();
-      },
-    });
   }
 
   // ── 전체 렌더 ────────────────────────────────────────────────────────────
@@ -845,35 +596,15 @@ export class BattleScene extends Phaser.Scene {
         img.setData("origW", FIELD_CW);
         img.setData("origH", FIELD_CH);
         img.setData("sealImg", sealImg);
+        img.setData("sealImg", sealImg);
+
+        // 호버 연출 통합
+        CardRenderer.addHoverEffect(this, img, sealImg, FIELD_CW, FIELD_CH);
         img.on("pointerover", () => {
-          if (!this.isDragging) {
-            const hW = FIELD_CW * 1.4;
-            const hH = FIELD_CH * 1.4;
-            this.tweens.add({ targets: img, displayWidth: hW, displayHeight: hH, y: FIELD_Y - 10, duration: 100 });
-            img.setDepth(20);
-            if (sealImg) {
-              const sz = Math.round(Math.min(hW, hH) * 0.3);
-              const offX = Math.round(hW * 0.16);
-              const offY = Math.round(hH * 0.14);
-              this.tweens.add({ targets: sealImg, displayWidth: sz, displayHeight: sz, x: x + hW / 2 - sz / 2 - offX, y: (FIELD_Y - 10) - hH / 2 + sz / 2 + offY, duration: 100 });
-              sealImg.setDepth(22);
-            }
-            CardRenderer.showSealTooltip(this, card, x, FIELD_Y, FIELD_CH);
-          }
+          if (!this.isDragging) CardRenderer.showSealTooltip(this, card, x, FIELD_Y, FIELD_CH);
         });
         img.on("pointerout", () => {
-          if (!this.isDragging) {
-            this.tweens.add({ targets: img, displayWidth: FIELD_CW, displayHeight: FIELD_CH, y: FIELD_Y, duration: 100 });
-            img.setDepth(10);
-            if (sealImg) {
-              const sz = Math.round(Math.min(FIELD_CW, FIELD_CH) * 0.3);
-              const offX = Math.round(FIELD_CW * 0.16);
-              const offY = Math.round(FIELD_CH * 0.14);
-              this.tweens.add({ targets: sealImg, displayWidth: sz, displayHeight: sz, x: x + FIELD_CW / 2 - sz / 2 - offX, y: FIELD_Y - FIELD_CH / 2 + sz / 2 + offY, duration: 100 });
-              sealImg.setDepth(12);
-            }
-            CardRenderer.hideSealTooltip();
-          }
+          if (!this.isDragging) CardRenderer.hideSealTooltip();
         });
       } else {
         img.on("pointerdown", () => {
@@ -945,33 +676,14 @@ export class BattleScene extends Phaser.Scene {
           if (this._pendingToggleIdx === i && !this.isDealing) this.toggleHand(i);
           this._pendingToggleIdx = null;
         });
+
+        // 호버 연출 통합
+        CardRenderer.addHoverEffect(this, img, sealImg, cardW, cardH);
         img.on("pointerover", () => {
-          if (!this.isDragging) {
-            this.tweens.add({ targets: img, displayWidth: hoverW, displayHeight: hoverH, y: y - 8, duration: 100 });
-            img.setDepth(40);
-            if (sealImg) {
-              const hSz = Math.round(Math.min(hoverW, hoverH) * 0.3);
-              const offX = Math.round(hoverW * 0.16);
-              const offY = Math.round(hoverH * 0.14);
-              this.tweens.add({ targets: sealImg, displayWidth: hSz, displayHeight: hSz, x: x + hoverW / 2 - hSz / 2 - offX, y: (y - 8) - hoverH / 2 + hSz / 2 + offY, duration: 100 });
-              sealImg.setDepth(42);
-            }
-            CardRenderer.showSealTooltip(this, card, x, y, cardH);
-          }
+          if (!this.isDragging) CardRenderer.showSealTooltip(this, card, x, y, cardH);
         });
         img.on("pointerout", () => {
-          if (!this.isDragging) {
-            this.tweens.add({ targets: img, displayWidth: cardW, displayHeight: cardH, y, duration: 100 });
-            img.setDepth(sel ? 32 : 30);
-            if (sealImg) {
-              const oSz = Math.round(Math.min(cardW, cardH) * 0.3);
-              const oOffX = Math.round(cardW * 0.16);
-              const oOffY = Math.round(cardH * 0.14);
-              this.tweens.add({ targets: sealImg, displayWidth: oSz, displayHeight: oSz, x: x + cardW / 2 - oSz / 2 - oOffX, y: y - cardH / 2 + oSz / 2 + oOffY, duration: 100 });
-              sealImg.setDepth(sel ? 34 : 32);
-            }
-            CardRenderer.hideSealTooltip();
-          }
+          if (!this.isDragging) CardRenderer.hideSealTooltip();
         });
       } else {
         img.on("pointerdown", () => {
@@ -1474,7 +1186,7 @@ export class BattleScene extends Phaser.Scene {
           try {
             this._animateDraw(drawnCards, () => {
               this.isDealing = false;
-              this._saveTurnState();
+              this.battleService.saveBattleState();
             });
           } catch (e) {
             console.error("[startTurn _animateDraw]", e);
@@ -1482,7 +1194,7 @@ export class BattleScene extends Phaser.Scene {
           }
         } else {
           this.isDealing = false;
-          this._saveTurnState();
+          this.battleService.saveBattleState();
         }
       } catch (e) {
         console.error("[startTurn timer]", e);
@@ -1501,15 +1213,10 @@ export class BattleScene extends Phaser.Scene {
     this.bossHPBar?.destroy();
     this.bossHPBar = null;
 
-    const next = roundManager.getNextStep(this.round, this.battleIndex);
-    const nextType = next.isGameEnd ? null : roundManager.getRoundData(next.round, next.battleIndex)?.battleInfo?.type;
+    const { next, titleText, subText, noteText } = this.battleService.getClearInfo(this.round, this.battleIndex, this.player.score);
 
     const pw = 580, ph = 330;
     const { cx, cy, D, panelTop: pt } = modal.createBase(pw, ph, { closeOnDim: false, bgKey: "ui_battle_popup" });
-
-    const titleText = next.isGameEnd ? "GAME CLEAR!" : (next.isNextRound ? "ROUND CLEAR!" : "BATTLE CLEAR!");
-    const subText = `ROUND ${this.round}-${this.battleIndex + 1}  SCORE: ${this.player.score}`;
-    const noteText = next.isGameEnd ? "" : (nextType === 'market' ? "To the Market" : (next.isNextRound ? "To the Next Round" : "To the Next Battle"));
 
     modal.addObj(this.add.text(cx, pt + 70, titleText, TS.clearTitle).setOrigin(0.5).setDepth(D + 2));
     modal.addObj(this.add.text(cx, pt + 118, subText, TS.clearSub).setOrigin(0.5).setDepth(D + 2));
@@ -1526,12 +1233,12 @@ export class BattleScene extends Phaser.Scene {
       this.deck.resetForNextBattle();
       this._battleItemEffects.forEach(id => revertItemEffect(this.player, id));
       this._battleItemEffects = [];
-
+ 
       if (next.isGameEnd) {
-        deleteSave();
+        this.battleService.clearSave();
         this.scene.start("MainMenuScene");
       } else {
-        writeSave(next.round, this.player.toData(), this.deck.getState(), { battleIndex: next.battleIndex });
+        this.battleService.saveNextBattleState(next);
         this.scene.start("GameScene", {
           round: next.round,
           battleIndex: next.battleIndex,
@@ -1607,7 +1314,7 @@ export class BattleScene extends Phaser.Scene {
   // ── 게임 오버 ────────────────────────────────────────────────────────────
   showGameOver() {
     const modal = new ModalUI(this, { depth: 300, isDealing: true });
-    deleteSave();
+    this.battleService.clearSave();
 
     const pw = 500, ph = 320;
     const { cx, cy, D, panelTop: pt } = modal.createBase(pw, ph, { closeOnDim: false, dimAlpha: 0.72, bgKey: "ui_battle_popup" });
