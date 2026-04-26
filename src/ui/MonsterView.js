@@ -439,6 +439,19 @@ export default class MonsterView {
       content += `[${label}: ${sName}]\n${sDesc}\n\n`;
     }
 
+    // 4. 일반 기술 목록 (이미 표시된 initSkillId 제외)
+    if (boss.skills) {
+      const skillLabel = lang === 'ko' ? '기술' : 'Skill';
+      Object.entries(boss.skills).forEach(([sId, s]) => {
+        if (sId === boss.initSkillId) return;
+        const sName = getBossSkillName(lang, sId, s.name);
+        const sDesc = getBossSkillDesc(lang, sId, s.description);
+        if (sName && sDesc) {
+          content += `[${skillLabel}: ${sName}]\n${sDesc}\n\n`;
+        }
+      });
+    }
+
     if (!content) content = getUiText(lang, 'market.msg_no_boss_gimmick');
 
     const iconX = this.sprite.x;
