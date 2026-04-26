@@ -1,4 +1,5 @@
 import { GW, GH, MONSTER_AREA_TOP, MONSTER_AREA_H, PLAYER_PANEL_W, ITEM_PANEL_W } from '../constants.js';
+import { getLang, getBossName, getBossPhase, getUiText } from '../service/langService.js';
 
 const BAR_Y  = MONSTER_AREA_TOP + 4;              // 몬스터 영역 최상단
 const BAR_H  = 20;
@@ -23,7 +24,10 @@ export class BossHPBarUI {
     this._drawPhaseMarkers(boss);
 
     // 보스 이름 (바 왼쪽 안)
-    this._nameText = scene.add.text(BAR_X + 6, BAR_Y + BAR_H / 2, boss.name,
+    const lang = getLang(scene);
+    const bName = getBossName(lang, boss.id, boss.name);
+
+    this._nameText = scene.add.text(BAR_X + 6, BAR_Y + BAR_H / 2, bName,
       { fontFamily: "'PressStart2P',Arial", fontSize: '8px', color: '#ffaaaa', stroke: '#000000', strokeThickness: 2 })
       .setOrigin(0, 0.5)
       .setDepth(23);
@@ -42,7 +46,7 @@ export class BossHPBarUI {
 
     // 보스 이름 (바 아래 중앙)
     const statY = BAR_Y + BAR_H + 6;
-    this._bigNameText = scene.add.text(BAR_X + BAR_W / 2, statY, boss.name,
+    this._bigNameText = scene.add.text(BAR_X + BAR_W / 2, statY, bName,
       { fontFamily: "'PressStart2P',Arial", fontSize: '11px', color: '#ffdddd', stroke: '#000000', strokeThickness: 3 })
       .setOrigin(0.5, 0)
       .setDepth(23);
@@ -63,9 +67,8 @@ export class BossHPBarUI {
       .setOrigin(0, 0.5).setDepth(23);
 
     // 초기 페이즈 저장 (변경 감지용)
-    this._trackedPhaseLabel = bossManager
-      ? (bossManager.getCurrentPhase(boss)?.label ?? '')
-      : '';
+    const curPhase = bossManager?.getCurrentPhase(boss);
+    this._trackedPhaseLabel = curPhase?.label ?? '';
 
     this.update(boss, bossManager, false);
   }
@@ -107,17 +110,21 @@ export class BossHPBarUI {
 
     const phase = bossManager.getCurrentPhase(boss);
     const label = phase?.label ?? '';
-    this._phaseLabel.setText(label);
+    const lang = getLang(this.scene);
+    this._phaseLabel.setText(getBossPhase(lang, boss.id, label));
 
     if (detectChange && label !== this._trackedPhaseLabel) {
       this._trackedPhaseLabel = label;
-      this._showPhaseChange(label);
+      this._showPhaseChange(boss.id, label);
     }
   }
 
   // ── 페이즈 전환 연출 ─────────────────────────────────────────────────────
-  _showPhaseChange(label) {
+  _showPhaseChange(bossId, label) {
     const { scene } = this;
+    const lang = getLang(scene);
+    const localizedLabel = getBossPhase(lang, bossId, label);
+
     const cx = PLAYER_PANEL_W + (GW - PLAYER_PANEL_W - ITEM_PANEL_W) / 2;
     const cy = MONSTER_AREA_TOP + MONSTER_AREA_H / 2;
 
@@ -126,7 +133,7 @@ export class BossHPBarUI {
     scene.tweens.add({ targets: flash, alpha: 0, duration: 700, onComplete: () => flash.destroy() });
 
     // 페이즈 이름 텍스트
-    const txt = scene.add.text(cx, cy, `⚠ ${label} ⚠`,
+    const txt = scene.add.text(cx, cy, `⚠ ${localizedLabel} ⚠`,
       { fontFamily: "'PressStart2P',Arial", fontSize: '20px', color: '#ffcc44', stroke: '#000000', strokeThickness: 5 })
       .setOrigin(0.5)
       .setDepth(501)
@@ -150,7 +157,7 @@ export class BossHPBarUI {
       }
     });
 
-    scene.addBattleLog?.(`⚠ 보스 페이즈 전환: ${label}!`);
+    scene.addBattleLog?.(getUiText(lang, 'boss.log_phase_transition', { label: localizedLabel }));
     scene.refreshBattleLog?.();
   }
 

@@ -368,7 +368,7 @@ export default class MonsterView {
 
     const lang = getLang(this.scene);
     const gName = getGimmickName(lang, g.id, g.name);
-    
+
     // 변수 치환용 객체 생성
     const values = { n: g.threshold || 0 };
     if (g.suit) {
@@ -384,7 +384,7 @@ export default class MonsterView {
       titleMsg: gName,
       contentMsg: gDesc,
       titleMsgColor: '#ffcc44',
-      tooltipW: 200,
+      tooltipW: 260,
       left,
       centerY: this._gimmickIconY,
       depth: 350,
@@ -442,13 +442,13 @@ export default class MonsterView {
     if (!content) content = getUiText(lang, 'market.msg_no_boss_gimmick');
 
     const iconX = this.sprite.x;
-    const tooltipW = 280;
+    const tooltipW = 320;
     const left = iconX > 640 ? iconX - (tooltipW + 25) : iconX + 25;
 
     const bTitle = getBossName(lang, boss.id, boss.name);
 
     this._tooltip = new TooltipUI(this.scene, {
-      titleMsg: `${bTitle} (BOSS)`,
+      titleMsg: `${bTitle}`,
       contentMsg: content.trim(),
       titleMsgColor: '#ff4444',
       tooltipW: tooltipW,

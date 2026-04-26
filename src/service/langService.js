@@ -63,6 +63,10 @@ export function getBossSkillDesc(lang, id, fallback = '') {
   return langData[lang]?.boss?.skills?.[id]?.desc ?? fallback;
 }
 
+export function getBossPhase(lang, bossId, label) {
+  return langData[lang]?.boss?.phases?.[bossId]?.[label] ?? label;
+}
+
 export function getMonsterName(lang, id, fallback = id) {
   return langData[lang]?.monster?.names?.[id] ?? fallback;
 }

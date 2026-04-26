@@ -591,7 +591,22 @@
           "name": "Fierce Regeneration",
           "desc": "Restores 10% of Max HP each turn."
         }
-      }
+      },
+      "phases": {
+        "troll": { "재생": "Regeneration", "초재생/광포": "Frenzy/Regen" },
+        "berserker": { "일반": "Normal", "광전사 모드": "Berserker Mode" },
+        "summoner": { "소환": "Summoning" },
+        "trickster": { "속임수": "Trickery", "대혼란": "Chaos" },
+        "tricksterB": { "족보 봉인": "Rank Seal", "이중 족보 봉인": "Double Seal" },
+        "bomber": { "매설": "Planting", "대폭발": "Big Explosion" },
+        "butcher": { "도살": "Butcher", "광란": "Frenzy" },
+        "babarian": { "강제": "Forced" },
+        "shaman": { "주술": "Shamanism" },
+        "iron_fortress": { "철벽 방어": "Iron Defense", "결사 반격": "Desperate Counter" },
+        "demon": { "악마": "Demon" },
+        "vampire": { "약탈": "Plunder", "흡혈": "Drain" }
+      },
+      "log_phase_transition": "⚠ Boss Phase: {label} ⚠"
     },
     "monster": {
       "names": {
@@ -1294,7 +1309,22 @@
           "name": "악마의 계약",
           "desc": "보스가 살아있는 동안 핸드 크기와 한도가 1 감소합니다."
         }
-      }
+      },
+      "phases": {
+        "troll": { "재생": "재생", "초재생/광포": "초재생/광포" },
+        "berserker": { "일반": "일반", "광전사 모드": "광전사 모드" },
+        "summoner": { "소환": "소환" },
+        "trickster": { "속임수": "속임수", "대혼란": "대혼란" },
+        "tricksterB": { "족보 봉인": "족보 봉인", "이중 족보 봉인": "이중 족보 봉인" },
+        "bomber": { "매설": "매설", "대폭발": "대폭발" },
+        "butcher": { "도살": "도살", "광란": "광란" },
+        "babarian": { "강제": "강제" },
+        "shaman": { "주술": "주술" },
+        "iron_fortress": { "철벽 방어": "철벽 방어", "결사 반격": "결사 반격" },
+        "demon": { "악마": "악마" },
+        "vampire": { "약탈": "약탈", "흡혈": "흡혈" }
+      },
+      "log_phase_transition": "⚠ 보스 페이즈 전환: {label} ⚠"
     },
     "monster": {
       "names": {

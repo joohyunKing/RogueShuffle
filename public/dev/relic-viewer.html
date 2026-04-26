@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Rogue Shuffle — 아이템 목록</title>
+  <title>Rogue Shuffle — 유물 목록</title>
   <style>
     * {
       box-sizing: border-box;
@@ -22,7 +22,7 @@
       text-align: center;
       font-size: 22px;
       margin-bottom: 8px;
-      color: #80cbc4;
+      color: #f0c040;
       letter-spacing: 2px;
     }
 
@@ -57,8 +57,9 @@
     }
 
     .filter-btn.active {
-      border-color: #80cbc4;
-      color: #80cbc4;
+      border-color: #f0c040;
+      color: #f0c040;
+      background: #2a2a3e;
     }
 
     .grid {
@@ -94,10 +95,6 @@
       border-left: 4px solid #ab47bc;
     }
 
-    .card.legend {
-      border-left: 4px solid orange;
-    }
-
     .card.disabled {
       opacity: 0.4;
     }
@@ -117,7 +114,7 @@
       align-items: center;
       justify-content: center;
       font-size: 10px;
-      color: #555;
+      color: #666;
       flex-shrink: 0;
       overflow: hidden;
     }
@@ -126,11 +123,6 @@
       width: 100%;
       height: 100%;
       object-fit: contain;
-    }
-
-    .img-box.no-img {
-      color: #444;
-      font-size: 20px;
     }
 
     .card-title {
@@ -153,7 +145,6 @@
       display: flex;
       gap: 6px;
       align-items: center;
-      flex-wrap: wrap;
     }
 
     .badge {
@@ -178,12 +169,6 @@
       color: #ce93d8;
     }
 
-
-    .badge.legend {
-      background: orange;
-      color: #bbb;
-    }
-
     .badge.use-y {
       background: #1b5e20;
       color: #a5d6a7;
@@ -194,19 +179,13 @@
       color: #ef9a9a;
     }
 
-    .badge.scope {
-      background: #2a3a2a;
-      color: #a5d6a7;
-      font-size: 10px;
-    }
-
     .desc {
       font-size: 13px;
       color: #ccc;
       line-height: 1.5;
     }
 
-    .effect-label {
+    .effects-label {
       font-size: 11px;
       color: #666;
       text-transform: uppercase;
@@ -221,18 +200,42 @@
       color: #aaa;
       font-family: 'Consolas', monospace;
       white-space: pre-wrap;
+      word-break: break-all;
       line-height: 1.6;
     }
 
-    .type-tag {
+    .scope-tag {
       display: inline-block;
       padding: 1px 6px;
       border-radius: 4px;
       font-size: 10px;
       font-weight: bold;
       margin-right: 4px;
+    }
+
+    .scope-card {
+      background: #1a3a1a;
+      color: #81c784;
+    }
+
+    .scope-hand {
       background: #1a2a3a;
       color: #64b5f6;
+    }
+
+    .scope-final {
+      background: #3a1a2a;
+      color: #f48fb1;
+    }
+
+    .scope-special {
+      background: #3a2a0a;
+      color: #ffcc80;
+    }
+
+    .scope-onRemove {
+      background: #2a1a3a;
+      color: #b39ddb;
     }
 
     .count {
@@ -246,7 +249,7 @@
 
 <body>
 
-  <h1>⚗ Rogue Shuffle — 아이템 목록</h1>
+  <h1>⚗ Rogue Shuffle — 유물 목록</h1>
   <p class="subtitle" id="subtitle">총 0개</p>
 
   <div class="filters">
@@ -254,30 +257,41 @@
     <button class="filter-btn" data-filter="common">Common</button>
     <button class="filter-btn" data-filter="rare">Rare</button>
     <button class="filter-btn" data-filter="epic">Epic</button>
-    <button class="filter-btn" data-filter="legend">Legend</button>
     <button class="filter-btn" data-filter="Y">사용 Y</button>
     <button class="filter-btn" data-filter="N">사용 N</button>
-    <button class="filter-btn" data-filter="battle">배틀 한정</button>
+    <div style="width: 1px; height: 20px; background: #444; margin: 0 5px;"></div>
+    <button class="filter-btn" id="btn-deploy" style="background:#4a2a2a; border-color:#e06060; color:#ff9999;">[언어배포]
+      Copy lang.json</button>
   </div>
-
   <div class="grid" id="grid"></div>
   <p class="count" id="count"></p>
 
   <script>
-    const IMG_BASE = './assets/images/item/';
-    const HAND_RANK_NAME = { 0: 'HIGH_CARD', 1: 'ONE_PAIR', 2: 'TRIPLE', 3: 'TWO_PAIR', 4: 'STRAIGHT', 5: 'FLUSH_DRAW', 6: 'STRAIGHT', 7: 'FLUSH', 8: 'FULL_HOUSE', 9: 'FOUR_OF_A_KIND', 10: 'STRAIGHT_FLUSH', 11: 'FIVE_CARD' };
+    const IMG_BASE = '../assets/images/relic/';
+    const HAND_RANK_NAME = { 0: 'HIGH_CARD', 1: 'ONE_PAIR', 2: 'TRIPLE', 3: 'TWO_PAIR', 4: 'STRAIGHT', 5: 'FLUSH_DRAW', 6: 'STRAIGHT (rank6)', 7: 'FLUSH', 8: 'FULL_HOUSE', 9: 'FOUR_CARD', 10: 'STRAIGHT_FLUSH', 11: 'FIVE_CARD' };
 
     let currentFilter = 'all';
-    let allItems = [];
+    let allRelics = [];
 
     function formatEffect(e) {
-      if (!e) return '(없음)';
       const parts = [];
+      parts.push(`scope: ${e.scope}`);
       parts.push(`type: ${e.type}`);
       if (e.value !== undefined) parts.push(`value: ${e.value}`);
-      if (e.suit !== undefined) parts.push(`suit: ${e.suit}`);
       if (e.handRank !== undefined) parts.push(`handRank: ${e.handRank} (${HAND_RANK_NAME[e.handRank] ?? '?'})`);
-      if (e.maxCards !== undefined) parts.push(`maxCards: ${e.maxCards}`);
+      if (e.condition) {
+        const cond = e.condition;
+        const condParts = [];
+        if (cond.suit) condParts.push(`suit=${cond.suit}`);
+        if (cond.handRank != null) condParts.push(`handRank=${cond.handRank} (${HAND_RANK_NAME[cond.handRank] ?? '?'})`);
+        if (cond.deckCountGte) condParts.push(`deck >= ${cond.deckCountGte}`);
+        if (cond.deckCountLte != null) condParts.push(`deck <= ${cond.deckCountLte}`);
+        if (cond.cardValSumLt != null) condParts.push(`카드합 < ${cond.cardValSumLt}`);
+        if (cond.isFullHp) condParts.push(`isFullHp`);
+        if (condParts.length) parts.push(`조건: ${condParts.join(', ')}`);
+      }
+      if (e.suit) parts.push(`suit: ${e.suit}`);
+      if (e.aliasTo) parts.push(`aliasTo: ${e.aliasTo}`);
       return parts.join('\n');
     }
 
@@ -285,44 +299,40 @@
       const grid = document.getElementById('grid');
       grid.innerHTML = '';
 
-      const filtered = allItems.filter(item => {
+      const filtered = allRelics.filter(r => {
         if (currentFilter === 'all') return true;
-        if (currentFilter === 'Y' || currentFilter === 'N') return item.useYn === currentFilter;
-        if (currentFilter === 'battle') return item.scope === 'battle';
-        return item.rarity === currentFilter;
+        if (currentFilter === 'Y' || currentFilter === 'N') return r.useYn === currentFilter;
+        return r.rarity === currentFilter;
       });
 
-      document.getElementById('subtitle').textContent = `총 ${allItems.length}개`;
-      document.getElementById('count').textContent = `표시 중: ${filtered.length} / ${allItems.length}`;
+      document.getElementById('subtitle').textContent = `총 ${allRelics.length}개`;
+      document.getElementById('count').textContent = `표시 중: ${filtered.length} / ${allRelics.length}`;
 
-      filtered.forEach(item => {
+      filtered.forEach(r => {
         const card = document.createElement('div');
-        card.className = `card ${item.rarity}${item.useYn === 'N' ? ' disabled' : ''}`;
+        card.className = `card ${r.rarity}${r.useYn === 'N' ? ' disabled' : ''}`;
 
-        const imgHtml = item.img
-          ? `<img src="${IMG_BASE}${item.img}" alt="${item.name}" onerror="this.parentElement.innerHTML='?'">`
-          : `<span style="font-size:22px;color:#444">?</span>`;
-
-        const scopeBadge = item.scope === 'battle'
-          ? `<span class="badge scope">배틀 한정</span>`
-          : '';
+        const effectsHtml = r.effects.map(e => {
+          return `<div class="effect-item"><span class="scope-tag scope-${e.scope}">${e.scope}</span>${formatEffect(e)}</div>`;
+        }).join('');
 
         card.innerHTML = `
       <div class="card-header">
-        <div class="img-box">${imgHtml}</div>
+        <div class="img-box">
+          <img src="${IMG_BASE}${r.img}" alt="${r.name}" onerror="this.parentElement.textContent='${r.img}'">
+        </div>
         <div class="card-title">
-          <div class="card-name">${item.name}</div>
-          <div class="card-id">${item.id}</div>
+          <div class="card-name">${r.name}</div>
+          <div class="card-id">${r.id}</div>
         </div>
       </div>
       <div class="badge-row">
-        <span class="badge ${item.rarity}">${item.rarity}</span>
-        <span class="badge ${item.useYn === 'Y' ? 'use-y' : 'use-n'}">사용 ${item.useYn}</span>
-        ${scopeBadge}
+        <span class="badge ${r.rarity}">${r.rarity}</span>
+        <span class="badge ${r.useYn === 'Y' ? 'use-y' : 'use-n'}">사용 ${r.useYn}</span>
       </div>
-      <div class="desc">${item.desc}</div>
-      <div class="effect-label">Effect</div>
-      <div class="effect-item"><span class="type-tag">${item.effect?.type ?? '?'}</span>${formatEffect(item.effect)}</div>
+      <div class="desc">${r.description}</div>
+      <div class="effects-label">Effects</div>
+      ${effectsHtml}
     `;
 
         grid.appendChild(card);
@@ -338,15 +348,46 @@
       });
     });
 
-    fetch('/dev-data/item.json')
+    document.getElementById('btn-deploy').addEventListener('click', async () => {
+      try {
+        const langRes = await fetch('/dev-data/lang.json');
+        if (!langRes.ok) throw new Error("lang.json fetch fallback");
+        const langData = await langRes.json();
+
+        // Update KO
+        const koRelic = {};
+        const enRelic = langData.en?.relic ?? {};
+
+        allRelics.forEach(r => {
+          koRelic[r.id] = { name: r.name, desc: r.description };
+          if (!enRelic[r.id]) {
+            enRelic[r.id] = { name: `[TODO] ${r.name}`, desc: `[TODO] ${r.description}` };
+          }
+        });
+
+        langData.ko = langData.ko || {};
+        langData.ko.relic = koRelic;
+
+        langData.en = langData.en || {};
+        langData.en.relic = enRelic;
+
+        const newJson = JSON.stringify(langData, null, 2);
+        await navigator.clipboard.writeText(newJson);
+        alert('lang.json 코드가 클립보드에 복사되었습니다!\nsrc/data/lang.json 파일에 붙여넣기 하세요.');
+      } catch (err) {
+        alert('lang.json을 불러올 수 없습니다. dev 서버가 켜져 있는지 확인해주세요.\n' + err.message);
+      }
+    });
+
+    fetch('/dev-data/relic.json')
       .then(r => r.json())
       .then(data => {
-        allItems = data.items;
+        allRelics = data.relics;
         render();
       })
       .catch(err => {
         document.getElementById('grid').innerHTML =
-          `<p style="color:#f88;grid-column:1/-1">item.json 로드 실패: ${err.message}<br>dev 서버(npm run dev)가 실행 중인지 확인하세요.</p>`;
+          `<p style="color:#f88;grid-column:1/-1">relic.json 로드 실패: ${err.message}<br>dev 서버(npm run dev)가 실행 중인지 확인하세요.</p>`;
       });
   </script>
 </body>

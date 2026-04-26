@@ -5,7 +5,11 @@
   <meta charset="UTF-8">
   <title>Rogue Shuffle — 보스 목록</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       background: #1a1a2e;
@@ -48,8 +52,14 @@
       transition: all 0.15s;
     }
 
-    .filter-btn:hover { background: #3a3a5e; }
-    .filter-btn.active { border-color: #f0c040; color: #f0c040; }
+    .filter-btn:hover {
+      background: #3a3a5e;
+    }
+
+    .filter-btn.active {
+      border-color: #f0c040;
+      color: #f0c040;
+    }
 
     .grid {
       display: grid;
@@ -69,9 +79,17 @@
       transition: transform 0.15s;
     }
 
-    .card:hover { transform: translateY(-2px); }
-    .card.disabled { opacity: 0.4; }
-    .card.use-y { border-left-color: #e53935; }
+    .card:hover {
+      transform: translateY(-2px);
+    }
+
+    .card.disabled {
+      opacity: 0.4;
+    }
+
+    .card.use-y {
+      border-left-color: #e53935;
+    }
 
     .card-header {
       display: flex;
@@ -99,7 +117,9 @@
       object-fit: contain;
     }
 
-    .card-title { flex: 1; }
+    .card-title {
+      flex: 1;
+    }
 
     .card-name {
       font-size: 17px;
@@ -127,10 +147,25 @@
       font-weight: bold;
     }
 
-    .badge.use-y  { background: #1b5e20; color: #a5d6a7; }
-    .badge.use-n  { background: #b71c1c; color: #ef9a9a; }
-    .badge.init   { background: #1a237e; color: #90caf9; }
-    .badge.summon { background: #4a148c; color: #ce93d8; }
+    .badge.use-y {
+      background: #1b5e20;
+      color: #a5d6a7;
+    }
+
+    .badge.use-n {
+      background: #b71c1c;
+      color: #ef9a9a;
+    }
+
+    .badge.init {
+      background: #1a237e;
+      color: #90caf9;
+    }
+
+    .badge.summon {
+      background: #4a148c;
+      color: #ce93d8;
+    }
 
     /* stat scale */
     .stat-row {
@@ -147,8 +182,16 @@
       font-size: 11px;
     }
 
-    .stat-box .stat-label { color: #666; margin-bottom: 2px; }
-    .stat-box .stat-val   { color: #f0c040; font-weight: bold; font-size: 13px; }
+    .stat-box .stat-label {
+      color: #666;
+      margin-bottom: 2px;
+    }
+
+    .stat-box .stat-val {
+      color: #f0c040;
+      font-weight: bold;
+      font-size: 13px;
+    }
 
     /* passive */
     .section-label {
@@ -171,7 +214,11 @@
     }
 
     /* phases */
-    .phase-list { display: flex; flex-direction: column; gap: 6px; }
+    .phase-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
     .phase-item {
       background: #0d1b2a;
@@ -188,15 +235,33 @@
       margin-bottom: 4px;
     }
 
-    .phase-threshold { color: #666; font-size: 11px; }
+    .phase-threshold {
+      color: #666;
+      font-size: 11px;
+    }
 
-    .action-item { color: #aaa; }
-    .action-skill { color: #90caf9; }
-    .action-attack { color: #a5d6a7; }
-    .action-summon { color: #ce93d8; }
+    .action-item {
+      color: #aaa;
+    }
+
+    .action-skill {
+      color: #90caf9;
+    }
+
+    .action-attack {
+      color: #a5d6a7;
+    }
+
+    .action-summon {
+      color: #ce93d8;
+    }
 
     /* skills */
-    .skill-list { display: flex; flex-direction: column; gap: 4px; }
+    .skill-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
     .skill-item {
       background: #0d1b2a;
@@ -208,7 +273,12 @@
       line-height: 1.6;
     }
 
-    .skill-name { color: #fff; font-size: 12px; font-weight: bold; margin-bottom: 2px; }
+    .skill-name {
+      color: #fff;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
 
     .count {
       text-align: center;
@@ -234,7 +304,7 @@
   <p class="count" id="count"></p>
 
   <script>
-    const IMG_BASE = './assets/images/monster/';
+    const IMG_BASE = '../assets/images/monster/';
     let currentFilter = 'all';
     let allBosses = [];
 
