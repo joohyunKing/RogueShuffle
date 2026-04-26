@@ -170,6 +170,10 @@ export class BattleAnimationManager {
     // 4. 애니메이션 시작
     const runNext = () => {
       if (queue.length === 0) return;
+      
+      // 단계가 진행될수록 애니메이션 속도 증가 (최대 3배속 정도까지)
+      ctx.speedMultiplier = Math.max(0.35, ctx.speedMultiplier * 0.95);
+      
       const step = queue.shift();
       step(runNext);
     };
@@ -193,8 +197,14 @@ export class BattleAnimationManager {
       orbTarget: { x: 0, y: 0 },
       scoreTxt: null,
       handNameTxt: null,
-      details
+      details,
+      speedMultiplier: 1.1 // 초기에는 약간 여유있게 시작
     };
+  }
+
+  /** 가변 배율 적용된 지속 시간 반환 */
+  _getDur(ctx, baseDur) {
+    return Math.round(baseDur * (ctx.speedMultiplier ?? 1));
   }
 
   _createScoreText(ctx) {
@@ -242,7 +252,7 @@ export class BattleAnimationManager {
     const t = { v: 0 };
 
     this.scene.tweens.add({
-      targets: t, v: 1, duration: ANIM_SPEED.orbFlight, ease: 'Sine.easeIn',
+      targets: t, v: 1, duration: this._getDur(ctx, ANIM_SPEED.orbFlight), ease: 'Quint.easeIn',
       onUpdate: () => {
         const s = t.v, r = 1 - s;
         const x = r * r * fromX + 2 * r * s * cpX + s * s * ctx.orbTarget.x;
@@ -253,7 +263,7 @@ export class BattleAnimationManager {
         this.scene.tweens.add({
           targets: txt,
           scaleX: 2.5, scaleY: 2.5, alpha: 0,
-          duration: ANIM_SPEED.orbFade, ease: 'Sine.easeOut',
+          duration: this._getDur(ctx, ANIM_SPEED.orbFade), ease: 'Sine.easeOut',
         });
       },
     });
@@ -370,7 +380,7 @@ export class BattleAnimationManager {
         const PW = PLAYER_PANEL_W;
         const rankRow = this.scene.playerUI?._handConfigRows?.[details.handRank];
         this._throwOrbLabel(ctx, rankRow?.multiTxt?.x ?? PW / 2, rankRow?.multiTxt?.y ?? 400, 0x44eeff, `x${details.baseHandMulti}`);
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => this._countUpValue(ctx, 'multi', details.baseHandMulti, ANIM_SPEED.countUp, next));
+        this.scene.time.delayedCall(this._getDur(ctx, ANIM_SPEED.queueDelay), () => this._countUpValue(ctx, 'multi', details.baseHandMulti, this._getDur(ctx, ANIM_SPEED.countUp), next));
       } else next();
     });
 
@@ -381,7 +391,7 @@ export class BattleAnimationManager {
         const PW = PLAYER_PANEL_W;
         const atkText = this.scene.playerUI?.playerAtkTxt;
         this._throwOrbLabel(ctx, atkText ? atkText.x : PW * 0.75, atkText ? atkText.y : 168, 0xff8833, `+${details.atk}`);
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => this._countUpValue(ctx, 'base', ctx.base + details.atk, ANIM_SPEED.countUp, next));
+        this.scene.time.delayedCall(this._getDur(ctx, ANIM_SPEED.queueDelay), () => this._countUpValue(ctx, 'base', ctx.base + details.atk, this._getDur(ctx, ANIM_SPEED.countUp), next));
       });
     }
   }
@@ -390,13 +400,13 @@ export class BattleAnimationManager {
     cardFlyInfo.forEach((info) => {
       queue.push(next => {
         if (info.isFlipped && info.obj?.active) info.obj.setTexture(info.key);
-        this._pulseCardObj(info.obj);
+        this._pulseCardObj(ctx, info.obj);
 
         if (info.scoringDetail) {
           const cd = info.scoringDetail;
           this._throwOrbLabel(ctx, info.fromX, info.fromY, 0xffdd44, `+${cd.baseScore}`);
-          this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-            this._countUpValue(ctx, 'base', ctx.base + cd.baseScore, ANIM_SPEED.countUp, () => {
+          this.scene.time.delayedCall(this._getDur(ctx, ANIM_SPEED.queueDelay), () => {
+            this._countUpValue(ctx, 'base', ctx.base + cd.baseScore, this._getDur(ctx, ANIM_SPEED.countUp), () => {
               // 해당 카드의 씰/유물 효과 처리 (Times Multi 제외)
               this._addCardSpecificRelicSteps(queue, ctx, cd.cardRelicDeltas);
               next();
@@ -407,13 +417,13 @@ export class BattleAnimationManager {
     });
   }
 
-  _pulseCardObj(obj) {
+  _pulseCardObj(ctx, obj) {
     if (!obj?.active) return;
     this.scene.tweens.killTweensOf(obj);
     const bx = obj.scaleX, by = obj.scaleY;
     this.scene.tweens.add({
       targets: obj, scaleX: bx * 1.1, scaleY: by * 1.1,
-      duration: ANIM_SPEED.pulseCard, yoyo: true, ease: 'Sine.easeInOut',
+      duration: this._getDur(ctx, ANIM_SPEED.pulseCard), yoyo: true, ease: 'Sine.easeInOut',
       onComplete: () => { try { obj.setScale(bx, by); } catch (_) { } },
     });
   }
@@ -429,9 +439,9 @@ export class BattleAnimationManager {
         const displayVal = isBase ? Math.floor(value) : Number(value.toFixed(2));
         const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
         this._throwOrbLabel(ctx, rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          if (isBase) this._countUpValue(ctx, 'base', ctx.base + value, ANIM_SPEED.countUp, next);
-          else this._countUpValue(ctx, 'multi', ctx.multi + value, ANIM_SPEED.countUp, next);
+        this.scene.time.delayedCall(this._getDur(ctx, ANIM_SPEED.queueDelay), () => {
+          if (isBase) this._countUpValue(ctx, 'base', ctx.base + value, this._getDur(ctx, ANIM_SPEED.countUp), next);
+          else this._countUpValue(ctx, 'multi', ctx.multi + value, this._getDur(ctx, ANIM_SPEED.countUp), next);
         });
       });
     });
@@ -448,9 +458,9 @@ export class BattleAnimationManager {
         const displayVal = isBase ? Math.floor(value) : Number(value.toFixed(2));
         const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
         this._throwOrbLabel(ctx, rp.x, rp.y, isBase ? 0xcc88ff : 0x44eeff, label);
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          if (isBase) this._countUpValue(ctx, 'base', ctx.base + value, ANIM_SPEED.countUp, next);
-          else this._countUpValue(ctx, 'multi', ctx.multi + value, ANIM_SPEED.countUp, next);
+        this.scene.time.delayedCall(this._getDur(ctx, ANIM_SPEED.queueDelay), () => {
+          if (isBase) this._countUpValue(ctx, 'base', ctx.base + value, this._getDur(ctx, ANIM_SPEED.countUp), next);
+          else this._countUpValue(ctx, 'multi', ctx.multi + value, this._getDur(ctx, ANIM_SPEED.countUp), next);
         });
       });
     });
@@ -465,9 +475,9 @@ export class BattleAnimationManager {
         const displayVal = isBase ? Math.floor(value) : Number(value.toFixed(2));
         const label = isBase ? `+${displayVal}` : `+${displayVal}X`;
         this._throwOrbLabel(ctx, rp.x, rp.y, isBase ? 0xee66ff : 0x44eeff, label);
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          if (isBase) this._countUpValue(ctx, 'base', ctx.base + value, ANIM_SPEED.countUp, next);
-          else this._countUpValue(ctx, 'multi', ctx.multi + value, ANIM_SPEED.countUp, next);
+        this.scene.time.delayedCall(this._getDur(ctx, ANIM_SPEED.queueDelay), () => {
+          if (isBase) this._countUpValue(ctx, 'base', ctx.base + value, this._getDur(ctx, ANIM_SPEED.countUp), next);
+          else this._countUpValue(ctx, 'multi', ctx.multi + value, this._getDur(ctx, ANIM_SPEED.countUp), next);
         });
       });
     });
@@ -512,9 +522,8 @@ export class BattleAnimationManager {
         const displayRatio = Number(value.toFixed(2));
 
         this._throwOrbLabel(ctx, rp.x, rp.y, 0xff0044, `x${displayRatio}`);
-
-        this.scene.time.delayedCall(ANIM_SPEED.queueDelay, () => {
-          this._countUpValue(ctx, 'multi', targetMulti, Math.round(ANIM_SPEED.countUp * 1.5), next);
+        this.scene.time.delayedCall(this._getDur(ctx, ANIM_SPEED.queueDelay), () => {
+          this._countUpValue(ctx, 'multi', targetMulti, Math.round(this._getDur(ctx, ANIM_SPEED.countUp) * 1.5), next);
         });
       });
     });
@@ -526,8 +535,8 @@ export class BattleAnimationManager {
       ctx.scoreTxt.setScale(cs * 1.25, cs * 1.25);
       this.scene.tweens.add({
         targets: ctx.scoreTxt, scaleX: cs, scaleY: cs,
-        duration: ANIM_SPEED.mergeScale, ease: 'Back.Out',
-        onComplete: () => this.scene.time.delayedCall(Math.round(ANIM_SPEED.mergeDelay * 0.6), next),
+        duration: this._getDur(ctx, ANIM_SPEED.mergeScale), ease: 'Back.Out',
+        onComplete: () => this.scene.time.delayedCall(Math.round(this._getDur(ctx, ANIM_SPEED.mergeDelay) * 0.6), next),
       });
     });
 
@@ -627,7 +636,7 @@ export class BattleAnimationManager {
     // 1. 검은색 스트립 배경
     const bg = scene.add.rectangle(centerX, centerY, GW, 100, 0x000000, 0.8)
       .setDepth(1000).setAlpha(0).setScale(1, 0);
-    
+
     // 2. 제목 텍스트
     const titleTxt = scene.add.text(centerX, centerY - 20, title, {
       fontFamily: TS.defaultFont, fontSize: '24px', color: '#ffffff',
