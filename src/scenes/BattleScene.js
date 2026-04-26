@@ -10,7 +10,7 @@ import {
   context
 } from "../constants.js";
 import { getLang, getHandName, getUiText, getItemName } from "../service/langService.js";
-import { relicMap as _relicMap } from "../manager/relicManager.js";
+import { relicMap as _relicMap, getActiveRelics } from "../manager/relicManager.js";
 import { sealMap, getSealTypes } from '../manager/sealManager.js';
 
 import { writeSave, deleteSave } from "../save.js";
@@ -742,9 +742,8 @@ export class BattleScene extends Phaser.Scene {
     const hp = this.player.hp, maxHp = this.player.maxHp;
     const handRemaining = this.handData.length - this.selected.size;
 
-    return (this.player.relics ?? []).filter(id => {
-      const relic = _relicMap[id];
-      if (!relic) return false;
+    const activeRelics = getActiveRelics(this.player.relics, this.player.relicSlots);
+    return activeRelics.filter(relic => {
       const SCORE_SCOPES = new Set(['card', 'hand', 'final']);
 
       return relic.effects.some(eff => {
@@ -781,7 +780,7 @@ export class BattleScene extends Phaser.Scene {
         }
         return true;
       });
-    });
+    }).map(r => r.id);
   }
 
   // ── 디버프 아이콘 렌더 (몬스터 영역 좌상단) ──────────────────────────────
@@ -970,9 +969,7 @@ export class BattleScene extends Phaser.Scene {
 
   /** 턴 시작 시 발동하는 유물 효과 적용 */
   _applyTurnStartRelics() {
-    (this.player.relics ?? []).forEach(relicId => {
-      const relic = _relicMap[relicId];
-      if (!relic) return;
+    getActiveRelics(this.player.relics, this.player.relicSlots).forEach(relic => {
       relic.effects.forEach(eff => {
         if (eff.type === 'heal_per_turn_percent') {
           const healAmt = Math.floor(this.player.maxHp * eff.value);

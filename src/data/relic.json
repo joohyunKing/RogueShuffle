@@ -777,6 +777,15 @@
           "value": 4
         }
       ]
+    },
+    {
+      "id": "up_rune",
+      "name": "상승의 룬",
+      "description": "위에 있는 유물의 효과를 복사합니다.",
+      "rarity": "epic",
+      "img": "up_rune.png",
+      "useYn": "Y",
+      "effects": []
     }
   ]
 }

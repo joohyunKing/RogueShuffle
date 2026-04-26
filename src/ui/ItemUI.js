@@ -1,6 +1,6 @@
 import { ITEM_PANEL_W, GW, GH, BATTLE_LOG_H } from "../constants.js";
 import { TS } from "../textStyles.js";
-import { relicMap as RELIC_MAP } from "../manager/relicManager.js";
+import { relicMap as RELIC_MAP, getActiveRelics } from "../manager/relicManager.js";
 import { TooltipUI } from "./TooltipUI.js";
 import { getLang, getRelicName, getRelicDesc, getItemName, getItemDesc, getUiText } from "../service/langService.js";
 import { getBingoBonusValue } from "../manager/bingoManager.js";
@@ -282,7 +282,8 @@ export class ItemUI {
 
       const relicId = relicSlots[i];
       if (!relicId) continue;
-      const relic = RELIC_MAP[relicId];
+      const activeRelics = getActiveRelics([relicId], relicSlots);
+      const relic = activeRelics.length > 0 ? activeRelics[0] : null;
       if (!relic) continue;
 
       const borderC = RARITY_STRIP[relic.rarity] ?? RARITY_STRIP.common;

@@ -1,5 +1,5 @@
 import { HAND_RANK, HAND_DATA, DEBUG_MODE } from "../constants.js";
-import { relicMap } from '../manager/relicManager.js';
+import { relicMap, getActiveRelics } from '../manager/relicManager.js';
 import { sealMap } from '../manager/sealManager.js';
 import { applyBingoBonuses, getBingoStats } from '../manager/bingoManager.js';
 
@@ -180,9 +180,7 @@ function applyAmplifiedValue(currentVal, effect, card, ctx, amp) {
 }
 
 function getRelicsFromContext(context) {
-    return (context.relics ?? [])
-        .map(id => relicMap[id])
-        .filter(Boolean);
+    return getActiveRelics(context.relics, context.relicSlots);
 }
 
 function buildAmplifierMap(relics, relicSlots) {

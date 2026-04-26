@@ -4,7 +4,7 @@
  * 씬 전환 시 player.toData() 로 직렬화하여 넘깁니다.
  */
 import { HAND_DATA, DEBUG_MODE } from "../constants.js";
-import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice } from './relicManager.js';
+import { relicMap as RELIC_MAP, getAllRelics, getRelicPrice, getActiveRelics } from './relicManager.js';
 import { getItemPrice } from './itemManager.js';
 import { getBingoStats } from './bingoManager.js';
 import deckData from '../data/deck.json';
@@ -174,9 +174,8 @@ export class Player {
                 .filter(([, d]) => d.enabled !== false)
                 .map(([k]) => Number(k))
         );
-        for (const relicId of this.relics) {
-            const relic = RELIC_MAP[relicId];
-            if (!relic) continue;
+        const activeRelics = getActiveRelics(this.relics, this.relicSlots);
+        for (const relic of activeRelics) {
             for (const eff of relic.effects ?? []) {
                 if (eff.type === 'enableHand' && eff.handRank != null)
                     enabled.add(Number(eff.handRank));
@@ -192,9 +191,8 @@ export class Player {
      */
     getEffectiveHandConfig() {
         const cfg = JSON.parse(JSON.stringify(this.handConfig));
-        for (const relicId of this.relics) {
-            const relic = RELIC_MAP[relicId];
-            if (!relic) continue;
+        const activeRelics = getActiveRelics(this.relics, this.relicSlots);
+        for (const relic of activeRelics) {
             for (const eff of relic.effects ?? []) {
                 const rank = String(eff.handRank);
                 if (cfg[rank] == null) continue;
@@ -209,9 +207,8 @@ export class Player {
 
     getEffectiveHandSizeMinimum() {
         let min = this.handSizeMinimum;
-        for (const relicId of this.relics) {
-            const relic = RELIC_MAP[relicId];
-            if (!relic) continue;
+        const activeRelics = getActiveRelics(this.relics, this.relicSlots);
+        for (const relic of activeRelics) {
             for (const eff of relic.effects ?? []) {
                 if (eff.type === 'addHandSizeMinimum') {
                     min = Math.max(min, eff.value);
@@ -233,9 +230,8 @@ export class Player {
      */
     getEffectiveSuitAliases() {
         const aliases = {};
-        for (const relicId of this.relics) {
-            const relic = RELIC_MAP[relicId];
-            if (!relic) continue;
+        const activeRelics = getActiveRelics(this.relics, this.relicSlots);
+        for (const relic of activeRelics) {
             for (const eff of relic.effects ?? []) {
                 if (eff.type === 'suitAlias' && eff.suit && eff.aliasTo)
                     aliases[eff.suit] = eff.aliasTo;
@@ -249,7 +245,8 @@ export class Player {
      * relics 배열에서 제거하기 전에 호출해야 함.
      */
     applyRelicOnRemove(relicId) {
-        const relic = RELIC_MAP[relicId];
+        const activeRelics = getActiveRelics([relicId], this.relicSlots);
+        const relic = activeRelics.length > 0 ? activeRelics[0] : null;
         if (!relic) return;
         // onRemove scope 효과 먼저 적용 (환급 전 골드 기준)
         for (const eff of relic.effects ?? []) {
