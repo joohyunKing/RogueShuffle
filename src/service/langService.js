@@ -5,6 +5,10 @@ export function getLang(scene) {
   return scene?.registry?.get('lang') ?? 'ko';
 }
 
+export function getAoE(lang) {
+  return langData[lang]?.AoE ?? langData['ko'].AoE;
+}
+
 export function getHandName(lang, handKey) {
   return langData[lang]?.hand?.[handKey]?.name ?? handKey;
 }

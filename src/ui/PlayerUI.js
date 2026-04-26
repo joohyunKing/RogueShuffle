@@ -1,7 +1,7 @@
 import { PLAYER_PANEL_W, GH, HAND_DATA } from "../constants.js";
 import { TS, suitColors } from "../textStyles.js";
 import { getRequiredExp } from "../manager/playerManager.js";
-import { getLang, getHandName, getHandDesc, getPlayerUI } from "../service/langService.js";
+import { getLang, getHandName, getHandDesc, getPlayerUI, getAoE } from "../service/langService.js";
 import deckData from "../data/deck.json";
 import { TooltipUI } from "./TooltipUI.js";
 
@@ -281,7 +281,7 @@ export class PlayerUI {
             .setDepth(D + 2).setInteractive()
         );
 
-        const tooltipHead = getHandNameByRank(rank, lang) + (isAoe ? " (광역)" : "");
+        const tooltipHead = getHandNameByRank(rank, lang) + (isAoe ? " (" + getAoE(lang) + ")" : "");
 
         rowHit.on('pointerover', () => this._showTooltipAt([tooltipHead, desc], TS.color.BRIGHT, rowHit.y - lineH / 2, 285));
         rowHit.on('pointerout', () => this._hideTooltip());

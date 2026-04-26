@@ -91,8 +91,7 @@ export const HAND_Y = 625;                   // 핸드 카드 중심  (패널: 5
 export const HAND_TOP = HAND_Y - CH / 2 - 18; // 535 — 드롭 판정 기준
 
 export const DEAL_DELAY = 110;
-
-export const DEBUG_MODE = true;
+export const DEBUG_MODE = import.meta.env.DEV;
 export const SLOW_ANIM = false;
 
 // ─── 전투 시스템 애니메이션 속도 ──────────────────────────────────────────────

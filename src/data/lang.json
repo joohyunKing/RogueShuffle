@@ -1,5 +1,6 @@
 {
   "en": {
+    "AoE": "AoE",
     "hand": {
       "HIGH_CARD": {
         "name": "High Card",
@@ -710,6 +711,7 @@
     }
   },
   "ko": {
+    "AoE": "광역",
     "hand": {
       "HIGH_CARD": {
         "name": "하이카드",
