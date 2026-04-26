@@ -71,16 +71,17 @@ export class BattleItemManager {
       if (selectedIdxs.length !== cardCount) { this._cancel(obj); return; }
 
       const types = getSealTypes();
+      const lang = getLang(this.scene);
       const keys = [];
       selectedIdxs.forEach(i => {
         const card = handData[i];
         const type = types[Math.floor(Math.random() * types.length)];
         card.enhancements = [{ type }];
-        keys.push(`${card.key}→${type}`);
+        const sName = getSealName(lang, type);
+        keys.push(`${card.key}→${sName}`);
       });
       selected.clear();
       
-      const lang = getLang(this.scene);
       const iName = getItemName(lang, item.id);
       this.scene.addBattleLog(getUiText(lang, 'battle.log_item_seal_multi', { item: iName, cards: keys.join(', ') }));
       

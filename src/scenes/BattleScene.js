@@ -9,7 +9,7 @@ import {
   HAND_DATA, HAND_RANK, DEBUG_MODE,
   context
 } from "../constants.js";
-import { getLang, getHandName } from "../service/langService.js";
+import { getLang, getHandName, getUiText, getItemName } from "../service/langService.js";
 import { relicMap as _relicMap } from "../manager/relicManager.js";
 import { sealMap, getSealTypes } from '../manager/sealManager.js';
 
@@ -455,7 +455,7 @@ export class BattleScene extends Phaser.Scene {
 
   _isValidItemDropZone(px, py) {
     return this.battleService.isValidItemDropZone(px, py, {
-        PLAYER_PANEL_W, GW, ITEM_PANEL_W, MONSTER_AREA_TOP, MONSTER_AREA_H, FIELD_Y, FIELD_CH, HAND_TOP
+      PLAYER_PANEL_W, GW, ITEM_PANEL_W, MONSTER_AREA_TOP, MONSTER_AREA_H, FIELD_Y, FIELD_CH, HAND_TOP
     });
   }
 
@@ -903,6 +903,7 @@ export class BattleScene extends Phaser.Scene {
   // ── 씰 효과 적용 (공격에 사용된 카드 기준) ───────────────────────────────
   _applySealEffects(cards) {
     let goldGained = 0;
+    const lang = getLang(this);
 
     for (const card of cards) {
       for (const enh of (card.enhancements ?? [])) {
@@ -917,19 +918,19 @@ export class BattleScene extends Phaser.Scene {
               id: item.id, name: item.name, desc: item.desc,
               rarity: item.rarity, img: item.img,
             });
-            this.addBattleLog(`[씰] ${card.key} → 아이템 [${item.name}] 획득!`);
+            this.addBattleLog(getUiText(lang, 'battle.log_seal_item', { card: card.key, item: getItemName(lang, item.id) }));
           }
         } else if (enh.type === 'pink') {
           const healAmt = sealMap['pink']?.healBonus ?? 5;
           this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
-          this.addBattleLog(`[씰] ${card.key} → HP +${healAmt} 회복!`);
+          this.addBattleLog(getUiText(lang, 'battle.log_seal_hp', { card: card.key, val: healAmt }));
         } else if (enh.type === 'purple') {
           // handData + 대기 중인 pending 카드까지 합산해 limit 체크
           const projectedLen = this.handData.length + this._pendingDrawCards.length;
           if (this.deckData.length > 0 && projectedLen < this.player.handSizeLimit) {
             const drawn = this.deckData.pop();
             this._pendingDrawCards.push(drawn);  // render() 후 애니메이션으로 handData에 추가
-            this.addBattleLog(`[씰] ${card.key} → 덱에서 ${drawn.key} 드로우!`);
+            this.addBattleLog(getUiText(lang, 'battle.log_seal_draw', { card: card.key, draw: drawn.key }));
           }
         }
       }
@@ -937,7 +938,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (goldGained > 0) {
       this.player.gold += goldGained;
-      this.addBattleLog(`[씰] +${goldGained}G 획득!`);
+      this.addBattleLog(getUiText(lang, 'battle.log_seal_gold', { gold: goldGained }));
     }
   }
 
@@ -1094,7 +1095,7 @@ export class BattleScene extends Phaser.Scene {
           return;
         }
         if (this.deckData.length === 0) {
-          this.addBattleLog("덱 소진!");
+          this.addBattleLog("The deck is empty!!");
           this.refreshBattleLog();
           this.time.delayedCall(500, () => this.showGameOver());
           return;
@@ -1237,7 +1238,7 @@ export class BattleScene extends Phaser.Scene {
       this.deck.resetForNextBattle();
       this._battleItemEffects.forEach(id => revertItemEffect(this.player, id));
       this._battleItemEffects = [];
- 
+
       if (next.isGameEnd) {
         this.battleService.clearSave();
         this.scene.start("MainMenuScene");
@@ -1279,9 +1280,10 @@ export class BattleScene extends Phaser.Scene {
     const pw = 500, ph = 320;
     const { cx, D, panelTop: pt } = modal.createBase(pw, ph, { closeOnDim: false, dimAlpha: 0.72, bgKey: "ui_battle_popup" });
 
-    modal.addObj(this.add.text(cx, pt + 90, `LEVEL UP!  Lv${this.player.level}`, TS.popupTitle).setOrigin(0.5).setDepth(D + 2));
+    const lang = getLang(this);
+    modal.addObj(this.add.text(cx, pt + 90, getUiText(lang, 'level_up_title', { lv: this.player.level }), TS.popupTitle).setOrigin(0.5).setDepth(D + 2));
 
-    const remTxt = this.add.text(cx, pt + 120, `SUIT 선택 (${this._suitLevelUpCount}회 남음)`, TS.popupContent).setOrigin(0.5).setDepth(D + 2);
+    const remTxt = this.add.text(cx, pt + 120, getUiText(lang, 'level_up_suit_select', { n: this._suitLevelUpCount }), TS.popupContent).setOrigin(0.5).setDepth(D + 2);
     modal.addObj(remTxt);
 
     const btnY = pt + 190, btnW = 84, btnH = 68, btnGap = 90;
@@ -1306,7 +1308,7 @@ export class BattleScene extends Phaser.Scene {
         this._suitLevelUpCount--;
         this.addBattleLog(`${SUIT_SYMS[suit]} Lv${this.player.attrs[suit]}!`);
         lvTxt.setText(`Lv${this.player.attrs[suit]}`);
-        remTxt.setText(`SUIT 선택 (${this._suitLevelUpCount}회 남음)`);
+        remTxt.setText(getUiText(lang, 'level_up_suit_select', { n: this._suitLevelUpCount }));
         this.refreshPlayerLevel();
         if (this._suitLevelUpCount <= 0) { modal.close(); onAllDone?.(); }
       });

@@ -405,7 +405,9 @@
       "relicStack_total": "Now {pts}pts (total {total})",
       "bingo_h": "[Horizontal Bingo] Score Add +{val}",
       "bingo_v": "[Vertical Bingo] Plus Multi +{val}",
-      "bingo_d": "[Diagonal Bingo] Times Multi x{val}"
+      "bingo_d": "[Diagonal Bingo] Times Multi x{val}",
+      "level_up_title": "LEVEL UP! Lv{lv}",
+      "level_up_suit_select": "Select SUIT ({n} left)"
     },
     "playerUI": {
       "def_lines": [
@@ -700,7 +702,11 @@
       "log_item_field_size": "[{item}] Field size +{val}",
       "log_item_suit_adapt": "[{item}] {suit} Adaptation +{val}",
       "log_item_hand_multi": "[{item}] Multi +{val}",
-      "log_item_bingo_lv": "[{item}] {target} Bingo Level +1 (Lv.{lv})"
+      "log_item_bingo_lv": "[{item}] {target} Bingo Level +1 (Lv.{lv})",
+      "log_seal_item": "[Seal] {card} → Gained Item [{item}]!",
+      "log_seal_hp": "[Seal] {card} → HP +{val} restored!",
+      "log_seal_draw": "[Seal] {card} → Drew {draw} from deck!",
+      "log_seal_gold": "[Seal] +{gold}G gained!"
     }
   },
   "ko": {
@@ -1109,7 +1115,9 @@
       "relicStack_total": "현재 {pts}점 (총 {total}회)",
       "bingo_h": "[가로 빙고 효과] Base Score +{val}",
       "bingo_v": "[세로 빙고 효과] Plus Multi +{val}",
-      "bingo_d": "[대각선 빙고 효과] times Multi x{val}"
+      "bingo_d": "[대각선 빙고 효과] times Multi x{val}",
+      "level_up_title": "LEVEL UP! Lv{lv}",
+      "level_up_suit_select": "SUIT 선택 ({n}회 남음)"
     },
     "playerUI": {
       "def_lines": [
@@ -1396,7 +1404,11 @@
       "log_item_field_size": "[{item}] 필드 크기 +{val}",
       "log_item_suit_adapt": "[{item}] {suit} 적응 +{val}",
       "log_item_hand_multi": "[{item}] 배수 +{val}",
-      "log_item_bingo_lv": "[{item}] {target} 빙고 레벨 +1 (Lv.{lv})"
+      "log_item_bingo_lv": "[{item}] {target} 빙고 레벨 +1 (Lv.{lv})",
+      "log_seal_item": "[씰] {card} → 아이템 [{item}] 획득!",
+      "log_seal_hp": "[씰] {card} → HP +{val} 회복!",
+      "log_seal_draw": "[씰] {card} → 덱에서 {draw} 드로우!",
+      "log_seal_gold": "[씰] +{gold}G 획득!"
     }
   }
 }
