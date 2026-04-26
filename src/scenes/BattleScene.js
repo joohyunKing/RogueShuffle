@@ -459,6 +459,10 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  _useItem(idx, obj) {
+    this.battleItemManager.use(idx, obj);
+  }
+
   _hideCardPreview() {
     if (!this._cardPreviewObjs) return;
     this._cardPreviewObjs.forEach(o => o?.destroy());
