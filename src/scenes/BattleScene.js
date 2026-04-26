@@ -1238,8 +1238,10 @@ export class BattleScene extends Phaser.Scene {
 
       if (next.isGameEnd) {
         this.battleService.clearSave();
+        this._stopBgm();
         this.scene.start("MainMenuScene");
       } else {
+        this._stopBgm();
         this.battleService.saveNextBattleState(next);
         this.scene.start("GameScene", {
           round: next.round,
@@ -1330,7 +1332,10 @@ export class BattleScene extends Phaser.Scene {
     modal.addObj(btnBg);
     modal.addObj(this.add.text(cx, pt + ph - 90, "MAIN MENU", TS.sortBtn).setOrigin(0.5).setDepth(D + 4));
 
-    btnBg.on("pointerdown", () => this.scene.start("MainMenuScene"));
+    btnBg.on("pointerdown", () => {
+      this._stopBgm();
+      this.scene.start("MainMenuScene");
+    });
     btnBg.on("pointerover", () => btnBg.setTint(0xcccccc));
     btnBg.on("pointerout", () => btnBg.clearTint());
   }

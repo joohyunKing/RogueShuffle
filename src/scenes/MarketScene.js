@@ -126,9 +126,17 @@ export class MarketScene extends Phaser.Scene {
     this._tooltip = new TooltipUI(this, {});
     this._tipPinned = false;
     this._optionUI = new OptionUI(this, {
-      onMainMenu: () => this.scene.start("MainMenuScene"),
+      onMainMenu: () => {
+        this._stopBgm();
+        this.scene.start("MainMenuScene");
+      },
     });
     this._pilePopup = new PilePopupUI(this);
+
+    this.events.once('shutdown', () => {
+      this.registry.events.off('changedata-bgmVolume', this._bgmListener);
+      this._stopBgm();
+    });
 
     this._drawScene();
   }

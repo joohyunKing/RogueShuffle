@@ -30,7 +30,7 @@ export class OptionUI extends ModalUI {
 
     const pw = 420, ph = 540;
     const { cx, cy, D } = this.createBase(pw, ph, { bgKey: "ui_battle_popup_v" });
-    const pt = cy - ph / 2 + 50;
+    const pt = cy - ph / 2 + 100;
 
     const { scene } = this;
 
@@ -125,6 +125,8 @@ export class OptionUI extends ModalUI {
     sfxPlus.on("pointerout", () => sfxPlus.clearTint());
 
     // ── LANGUAGE ─────────────────────────────────────────────────────────
+    /*
+    // 게임 진행중에 언어 바꿨을때 이상한거 잡기 힘들듯.
     let lang = scene.registry.get("lang") ?? "ko";
     const langY = sfxY + 110;
     this.addObj(
@@ -162,9 +164,11 @@ export class OptionUI extends ModalUI {
     koBtn.on("pointerout", () => updateLangUI());
     enBtn.on("pointerover", () => { if (lang !== "en") enBtn.setTint(0xcccccc); });
     enBtn.on("pointerout", () => updateLangUI());
+    */
 
     // ── 버튼 ─────────────────────────────────────────────────────────────
-    const btnY = cy + (ph / 2) - 100;
+    //const btnY = cy + (ph / 2) - 100;
+    const btnY = sfxY + 110;
 
     const exitBtn = scene.add.image(cx - 80, btnY, "ui_btn")
       .setDisplaySize(150, 52).setDepth(D + 2).setInteractive();
