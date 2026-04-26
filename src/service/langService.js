@@ -87,6 +87,14 @@ export function getGimmickDesc(lang, id, values = {}) {
   return str;
 }
 
+export function getDebuffName(lang, id, fallback = id) {
+  return langData[lang]?.debuff?.[id]?.name ?? fallback;
+}
+
+export function getDebuffDesc(lang, id, fallback = '') {
+  return langData[lang]?.debuff?.[id]?.desc ?? fallback;
+}
+
 /** 템플릿 문자열 치환 — {key} → values[key] */
 export function getUiText(lang, key, values = {}) {
   let str = "";

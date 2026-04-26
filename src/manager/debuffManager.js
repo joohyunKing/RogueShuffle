@@ -1,6 +1,6 @@
 import debuffData from '../data/debuff.json';
 import { HAND_DATA } from '../constants.js';
-import { getLang, getHandName } from '../service/langService.js';
+import { getLang, getHandName, getUiText, getDebuffName, getDebuffDesc } from '../service/langService.js';
 
 export { debuffData };
 export const debuffMap = Object.fromEntries(debuffData.debuffs.map(d => [d.id, d]));
@@ -21,16 +21,20 @@ export class DebuffManager {
     const def = debuffMap[debuffId];
     if (!def) return;
 
+    const lang = getLang(scene);
+    const debuffName = getDebuffName(lang, debuffId, def.name);
+    const mName = monsterName ?? getUiText(lang, 'battle.msg_monster');
+
     const existing = this.activeDebuffs.find(d => d.id === debuffId);
     if (existing) {
       if (existing.turnsLeft > 0) existing.turnsLeft = def.durationValue;
-      scene.addBattleLog(`${monsterName ?? '몬스터'}의 ${def.name} 갱신!`);
+      scene.addBattleLog(getUiText(lang, 'battle.log_debuff_refresh', { monster: mName, debuff: debuffName }));
       return;
     }
 
     const turnsLeft = def.duration === 'turn' ? def.durationValue : -1;
     this.activeDebuffs.push({ id: debuffId, turnsLeft });
-    scene.addBattleLog(`${monsterName ?? '몬스터'}의 ${def.name} 디버프 적용!`);
+    scene.addBattleLog(getUiText(lang, 'battle.log_debuff_apply', { monster: mName, debuff: debuffName }));
 
     switch (def.type) {
       case '공격력감소':
@@ -99,7 +103,9 @@ export class DebuffManager {
     const { scene } = this;
     const def = debuffMap[debuffId];
     if (!def) return;
-    if (!silent) scene.addBattleLog(`${def.name} 디버프 해제`);
+    const lang = getLang(scene);
+    const debuffName = getDebuffName(lang, debuffId, def.name);
+    if (!silent) scene.addBattleLog(getUiText(lang, 'battle.log_debuff_remove', { debuff: debuffName }));
     switch (def.type) {
       case '공격력감소':
         scene.player.atk += def.value;
@@ -149,12 +155,15 @@ export class DebuffManager {
     const rank = ranks[Math.floor(Math.random() * ranks.length)];
     this.disabledRanks.add(rank);
 
+    const lang = getLang(scene);
     const def = debuffMap['disable_rank'];
+    const debuffName = getDebuffName(lang, 'disable_rank', def.name);
+
     this.activeDebuffs.push({ id: 'disable_rank', turnsLeft: def.durationValue });
-    scene.addBattleLog(`${sourceName}의 ${def.name}! [${rank}] 사용 불가!`);
+    scene.addBattleLog(getUiText(lang, 'battle.log_debuff_disable_rank', { source: sourceName, debuff: debuffName, rank }));
     scene.render();
 
-    return `[${rank}] ${def.description}`;
+    return `[${rank}] ${getDebuffDesc(lang, 'disable_rank', def.description)}`;
   }
 
   // ── 최다 사용 족보 봉인 (트릭스터B 1페이즈) ──────────────────────────────────
@@ -184,10 +193,11 @@ export class DebuffManager {
     this.activeDebuffs.push({ id: 'seal_hand', turnsLeft: def.durationValue });
 
     const displayName = getHandName(lang, HAND_DATA[handRankNum]?.key ?? '');
-    scene.addBattleLog(`${sourceName}의 ${def.name}! [${displayName}] 사용 불가!`);
+    const debuffName = getDebuffName(lang, 'seal_hand', def.name);
+    scene.addBattleLog(getUiText(lang, 'battle.log_debuff_disable_hand', { source: sourceName, debuff: debuffName, hand: displayName }));
     scene.render();
 
-    return `[${displayName}] ${def.description}`;
+    return `[${displayName}] ${getDebuffDesc(lang, 'seal_hand', def.description)}`;
   }
 
   // ── 최다 + 최근 족보 이중 봉인 (트릭스터B 2페이즈) ──────────────────────────
@@ -231,10 +241,10 @@ export class DebuffManager {
     const def = debuffMap['seal_hand'];
     this.activeDebuffs.push({ id: 'seal_hand', turnsLeft: def.durationValue });
 
-    scene.addBattleLog(`${sourceName}의 이중 봉인! [${sealed.join(', ')}] 사용 불가!`);
+    scene.addBattleLog(getUiText(lang, 'battle.log_debuff_double_seal', { source: sourceName, hands: sealed.join(', ') }));
     scene.render();
 
-    return `[${sealed.join(', ')}] 사용 불가`;
+    return `[${sealed.join(', ')}] ${getUiText(lang, 'battle.msg_disabled')}`;
   }
 
   // ── 슈트 봉인 적용 (트릭스터 보스) ─────────────────────────────────────────
@@ -255,12 +265,14 @@ export class DebuffManager {
     const suit = suits[Math.floor(Math.random() * suits.length)];
     this.disabledSuits.add(suit);
 
+    const lang = getLang(scene);
     const SUIT_CHAR = { S: '♠', H: '♥', D: '♦', C: '♣' };
     const def = debuffMap['disable_suit'];
+    const debuffName = getDebuffName(lang, 'disable_suit', def.name);
     this.activeDebuffs.push({ id: 'disable_suit', turnsLeft: def.durationValue });
-    scene.addBattleLog(`${sourceName}의 ${def.name}! [${SUIT_CHAR[suit] ?? suit}] 사용 불가!`);
+    scene.addBattleLog(getUiText(lang, 'battle.log_debuff_disable_suit', { source: sourceName, debuff: debuffName, suit: SUIT_CHAR[suit] ?? suit }));
     scene.render();
 
-    return `[${SUIT_CHAR[suit] ?? suit}] ${def.description}`;
+    return `[${SUIT_CHAR[suit] ?? suit}] ${getDebuffDesc(lang, 'disable_suit', def.description)}`;
   }
 }

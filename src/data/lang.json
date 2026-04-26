@@ -639,6 +639,16 @@
         "bolt": "Bolt"
       }
     },
+    "debuff": {
+      "weakness": { "name": "Weakness", "desc": "ATK -3 (2 turns)" },
+      "confusion": { "name": "Confusion", "desc": "1 random card disabled (1 turn)" },
+      "poison_deck": { "name": "Poisoned Deck", "desc": "Add poison card to deck (end of battle)" },
+      "small_hand": { "name": "Hand-tie", "desc": "Hand size -2 (2 turns)" },
+      "small_field": { "name": "Narrow Vision", "desc": "Field size -1 (2 turns)" },
+      "disable_rank": { "name": "Rank Seal", "desc": "Random rank disabled (1 turn)" },
+      "disable_suit": { "name": "Suit Seal", "desc": "Random suit disabled (1 turn)" },
+      "seal_hand": { "name": "Hand Seal", "desc": "Specific hand rank disabled (1 turn)" }
+    },
     "battle": {
       "log_kill": "{name} defeated! +{xp}XP +{gold}G",
       "log_level_up": "LEVEL UP! Lv{lv}",
@@ -722,7 +732,16 @@
       "log_seal_item": "[Seal] {card} → Gained Item [{item}]!",
       "log_seal_hp": "[Seal] {card} → HP +{val} restored!",
       "log_seal_draw": "[Seal] {card} → Drew {draw} from deck!",
-      "log_seal_gold": "[Seal] +{gold}G gained!"
+      "log_seal_gold": "[Seal] +{gold}G gained!",
+      "log_debuff_refresh": "{monster} - {debuff} Refreshed!",
+      "log_debuff_apply": "{monster} - {debuff} Applied!",
+      "log_debuff_remove": "{debuff} Expired",
+      "log_debuff_disable_rank": "{source} - {debuff}! [{rank}] Disabled!",
+      "log_debuff_disable_hand": "{source} - {debuff}! [{hand}] Disabled!",
+      "log_debuff_double_seal": "{source} - Double Seal! [{hands}] Disabled!",
+      "log_debuff_disable_suit": "{source} - {debuff}! [{suit}] Disabled!",
+      "msg_monster": "Monster",
+      "msg_disabled": "Disabled"
     }
   },
   "ko": {
@@ -1357,6 +1376,16 @@
         "bolt": "볼트"
       }
     },
+    "debuff": {
+      "weakness": { "name": "약화", "desc": "공격력 -3 (2턴)" },
+      "confusion": { "name": "혼란", "desc": "랜덤 카드 1장 사용 불가 (1턴)" },
+      "poison_deck": { "name": "저주받은 덱", "desc": "덱에 독 카드 1장 추가 (배틀 종료까지)" },
+      "small_hand": { "name": "손 묶임", "desc": "핸드 크기 -2 (2턴)" },
+      "small_field": { "name": "시야 좁힘", "desc": "필드 크기 -1 (2턴)" },
+      "disable_rank": { "name": "랭크 봉인", "desc": "랜덤 랭크 카드 사용 불가 (1턴)" },
+      "disable_suit": { "name": "슈트 봉인", "desc": "랜덤 슈트 카드 사용 불가 (1턴)" },
+      "seal_hand": { "name": "족보 봉인", "desc": "특정 족보 사용 불가 (1턴)" }
+    },
     "battle": {
       "log_kill": "{name} 처치! +{xp}XP +{gold}G",
       "log_level_up": "LEVEL UP! Lv{lv}",
@@ -1440,7 +1469,16 @@
       "log_seal_item": "[씰] {card} → 아이템 [{item}] 획득!",
       "log_seal_hp": "[씰] {card} → HP +{val} 회복!",
       "log_seal_draw": "[씰] {card} → 덱에서 {draw} 드로우!",
-      "log_seal_gold": "[씰] +{gold}G 획득!"
+      "log_seal_gold": "[씰] +{gold}G 획득!",
+      "log_debuff_refresh": "{monster}의 {debuff} 갱신!",
+      "log_debuff_apply": "{monster}의 {debuff} 디버프 적용!",
+      "log_debuff_remove": "{debuff} 디버프 해제",
+      "log_debuff_disable_rank": "{source}의 {debuff}! [{rank}] 사용 불가!",
+      "log_debuff_disable_hand": "{source}의 {debuff}! [{hand}] 사용 불가!",
+      "log_debuff_double_seal": "{source}의 이중 봉인! [{hands}] 사용 불가!",
+      "log_debuff_disable_suit": "{source}의 {debuff}! [{suit}] 사용 불가!",
+      "msg_monster": "몬스터",
+      "msg_disabled": "사용 불가"
     }
   }
 }
